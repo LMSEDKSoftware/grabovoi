@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/sphere_3d.dart';
-import '../../widgets/music_controller.dart';
+import '../../widgets/golden_sphere.dart';
+import '../../widgets/streamed_music_controller.dart';
+import '../../widgets/audio_preload_indicator.dart';
+import '../../services/audio_preload_service.dart';
 
 class CodeDetailScreen extends StatefulWidget {
   final String codigo;
@@ -23,23 +25,25 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   
   bool _isPiloting = false;
   int _secondsRemaining = 0;
+  bool _isPreloading = false;
+  final AudioPreloadService _preloadService = AudioPreloadService();
 
   @override
   void initState() {
     super.initState();
     
     _pulseController = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 3),
       vsync: this,
     )..repeat(reverse: true);
     
     _rotationController = AnimationController(
-      duration: const Duration(seconds: 20),
+      duration: const Duration(seconds: 25),
       vsync: this,
     )..repeat();
     
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    _pulseAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
     );
     
   }
@@ -48,11 +52,21 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   void dispose() {
     _pulseController.dispose();
     _rotationController.dispose();
+    // Evitar setState tras dispose en countdown
+    _secondsRemaining = 0;
     super.dispose();
   }
 
-  void _startPiloting() {
+  Future<void> _startPiloting() async {
     setState(() {
+      _isPreloading = true;
+    });
+    
+    // Iniciar precarga de audio
+    await _preloadService.startPreload();
+    
+    setState(() {
+      _isPreloading = false;
       _isPiloting = true;
       _secondsRemaining = 300; // 5 minutos
     });
@@ -62,6 +76,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
 
   void _startCountdown() {
     Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return; // no llamar setState si ya no está montado
       if (_secondsRemaining > 0) {
         setState(() {
           _secondsRemaining--;
@@ -142,13 +157,15 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GlowBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+      body: Stack(
+        children: [
+          GlowBackground(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
                 // Header
                 Row(
                   children: [
@@ -180,46 +197,52 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Esfera 3D de fondo
+                    // Esfera dorada de fondo
                     Transform.scale(
                       scale: _isPiloting ? _pulseAnimation.value : 1.0,
-                      child: Sphere3D(
+                      child: GoldenSphere(
                         size: 280,
                         color: const Color(0xFFFFD700),
-                        glowIntensity: _isPiloting ? 0.5 : 0.3,
+                        glowIntensity: _isPiloting ? 0.8 : 0.6,
                         isAnimated: true,
                       ),
                     ),
-                    // Código superpuesto
+                    // Código superpuesto sin círculo negro
                     AnimatedBuilder(
                       animation: _pulseAnimation,
                       builder: (context, child) {
                         return Transform.scale(
                           scale: _isPiloting ? _pulseAnimation.value : 1.0,
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFFFFD700).withOpacity(0.5),
-                                width: 2,
-                              ),
-                            ),
-                            child: Text(
-                              widget.codigo,
-                              style: GoogleFonts.spaceMono(
-                                fontSize: 42,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFFD700),
-                                letterSpacing: 6,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.8),
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
+                          child: Text(
+                            widget.codigo,
+                            style: GoogleFonts.spaceMono(
+                              fontSize: 42,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 6,
+                              shadows: [
+                                // Múltiples sombras para efecto 3D pronunciado
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.9),
+                                  blurRadius: 15,
+                                  offset: const Offset(3, 3),
+                                ),
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.7),
+                                  blurRadius: 8,
+                                  offset: const Offset(1, 1),
+                                ),
+                                Shadow(
+                                  color: Colors.white.withOpacity(0.5),
+                                  blurRadius: 2,
+                                  offset: const Offset(-1, -1),
+                                ),
+                                Shadow(
+                                  color: Colors.yellow.withOpacity(0.4),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 0),
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -248,12 +271,11 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
                 ),
                 const SizedBox(height: 30),
                 
-                // Control de Música Energizante
-                const MusicController(showMusicList: false),
-                const SizedBox(height: 30),
-                
-                // Timer si está pilotando
+                // Control de Música y Timer si está pilotando
                 if (_isPiloting) ...[
+                  // Reproductor con precarga estilo streaming
+                  const StreamedMusicController(autoPlay: true),
+                  const SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -294,11 +316,46 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
                 ],
                 
                 // Botón de Acción
-                if (!_isPiloting)
+                if (!_isPiloting && !_isPreloading)
                   CustomButton(
                     text: 'Pilotar Ahora',
                     onPressed: _startPiloting,
                     icon: Icons.play_arrow,
+                  ),
+                
+                // Indicador de precarga
+                if (_isPreloading)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: const Color(0xFFFFD700), width: 2),
+                    ),
+                    child: Column(
+                      children: [
+                        const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Precargando Audio...',
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFFFFD700),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Preparando música energizante',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 
                 const SizedBox(height: 40),
@@ -336,10 +393,15 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
                     ],
                   ),
                 ),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          
+          // Indicador flotante de precarga
+          if (_isPreloading) const AudioPreloadIndicator(),
+        ],
       ),
     );
   }

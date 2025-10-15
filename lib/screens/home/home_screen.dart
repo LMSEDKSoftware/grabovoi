@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/sacred_circle.dart';
+import '../../widgets/golden_sphere.dart';
 import '../../services/ai_service.dart';
 import '../pilotaje/pilotaje_screen.dart';
 import '../desafios/desafios_screen.dart';
@@ -50,7 +50,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 40),
-                const Center(child: SacredCircle(size: 180)),
+                const Center(child: GoldenSphere(size: 180)),
                 const SizedBox(height: 30),
                 _buildEnergyCard('Nivel Energético', '${analisis['nivel']}/10', Icons.bolt),
                 const SizedBox(height: 20),
@@ -58,31 +58,33 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 _buildNextStep(analisis['proximoPaso']),
                 const SizedBox(height: 30),
-                CustomButton(
-                  text: 'Comenzar Pilotaje', 
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const PilotajeScreen(),
-                      ),
-                    );
-                  },
+                Center(
+                  child: CustomButton(
+                    text: 'Comenzar Pilotaje', 
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const PilotajeScreen(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
                 const SizedBox(height: 15),
-                CustomButton(
-                  text: 'Ver Desafíos', 
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const DesafiosScreen(),
-                      ),
-                    );
-                  }, 
-                  isOutlined: true,
+                Center(
+                  child: CustomButton(
+                    text: 'Ver Desafíos', 
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const DesafiosScreen(),
+                        ),
+                      );
+                    }, 
+                    isOutlined: true,
+                  ),
                 ),
                 const SizedBox(height: 30),
-                _buildCodeOfDay(context, analisis['codigoRecomendado']),
-                const SizedBox(height: 20),
                 Center(
                   child: Text(
                     'Tu energía se eleva con cada pilotaje consciente',

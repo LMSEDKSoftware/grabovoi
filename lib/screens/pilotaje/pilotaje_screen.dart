@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/sacred_circle.dart';
-import '../../widgets/music_controller.dart';
+import '../../widgets/golden_sphere.dart';
+import '../../widgets/streamed_music_controller.dart';
 import '../../widgets/music_info_card.dart';
 import '../codes/code_detail_screen.dart';
 
@@ -14,7 +14,7 @@ class PilotajeScreen extends StatefulWidget {
   State<PilotajeScreen> createState() => _PilotajeScreenState();
 }
 
-class _PilotajeScreenState extends State<PilotajeScreen> {
+class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStateMixin {
   final List<String> _codigosRecomendados = [
     '5197148', // Todo es Posible
     '1884321', // Norma Absoluta
@@ -25,6 +25,35 @@ class _PilotajeScreenState extends State<PilotajeScreen> {
   ];
 
   String _codigoSeleccionado = '5197148';
+  late AnimationController _pulseController;
+  late AnimationController _rotationController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 25),
+      vsync: this,
+    )..repeat();
+    
+    _pulseAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _rotationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,12 +96,64 @@ class _PilotajeScreenState extends State<PilotajeScreen> {
                 ),
                 const SizedBox(height: 40),
                 
-                // Círculo Sagrado
-                const Center(child: SacredCircle(size: 150)),
+                // Esfera Dorada con Código
+                Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Esfera dorada de fondo
+                      Transform.scale(
+                        scale: _pulseAnimation.value,
+                        child: GoldenSphere(
+                          size: 200,
+                          color: const Color(0xFFFFD700),
+                          glowIntensity: 0.8,
+                          isAnimated: true,
+                        ),
+                      ),
+                      // Código superpuesto
+                      AnimatedBuilder(
+                        animation: _pulseAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _pulseAnimation.value,
+                            child: Text(
+                              _codigoSeleccionado,
+                              style: GoogleFonts.spaceMono(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 4,
+                                shadows: [
+                                  // Múltiples sombras para efecto 3D pronunciado
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.9),
+                                    blurRadius: 12,
+                                    offset: const Offset(2, 2),
+                                  ),
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.7),
+                                    blurRadius: 6,
+                                    offset: const Offset(1, 1),
+                                  ),
+                                  Shadow(
+                                    color: Colors.white.withOpacity(0.5),
+                                    blurRadius: 2,
+                                    offset: const Offset(-1, -1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 30),
                 
-                // Control de Música Energizante
-                const MusicController(showMusicList: true),
+                // Control de Música Energizante con reproducción automática
+                const StreamedMusicController(autoPlay: true),
                 const SizedBox(height: 20),
                 
                 // Información sobre Frecuencias
