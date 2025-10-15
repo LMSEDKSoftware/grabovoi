@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glow_background.dart';
 import '../../models/code_model.dart';
+import '../codes/repetition_session_screen.dart';
+import '../../services/ai/openai_codes_service.dart';
 
 class BibliotecaScreen extends StatefulWidget {
   const BibliotecaScreen({super.key});
@@ -14,12 +17,47 @@ class BibliotecaScreen extends StatefulWidget {
 
 class _BibliotecaScreenState extends State<BibliotecaScreen> {
   List<CodigoGrabovoi> codigos = [];
+  List<CodigoGrabovoi> filtrados = [];
   bool isLoading = true;
+  String _query = '';
+  String _filtroCategoria = 'Todos';
+  String _tab = 'Todos'; // Todos | Favoritos | Popularidad
+  final List<String> _categorias = const [
+    'Todos', 'Salud', 'Abundancia', 'Protección', 'Amor', 'Armonía', 'Sanación'
+  ];
+
+  Set<String> _favoritos = {};
+  Map<String, int> _popularidad = {};
+
+  late final OpenAICodesService _openai;
 
   @override
   void initState() {
     super.initState();
-    _loadCodigos();
+    _openai = OpenAICodesService(
+      apiKey: const String.fromEnvironment('OPENAI_API_KEY', defaultValue: ''),
+    );
+    _restoreState().then((_) => _loadCodigos());
+  }
+
+  Future<void> _restoreState() async {
+    final prefs = await SharedPreferences.getInstance();
+    _favoritos = prefs.getStringList('favoritos')?.toSet() ?? {};
+    final popJson = prefs.getString('popularidad');
+    if (popJson != null) {
+      final map = json.decode(popJson) as Map<String, dynamic>;
+      _popularidad = map.map((k, v) => MapEntry(k, (v as num).toInt()));
+    }
+  }
+
+  Future<void> _persistFavoritos() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('favoritos', _favoritos.toList());
+  }
+
+  Future<void> _persistPopularidad() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('popularidad', json.encode(_popularidad));
   }
 
   Future<void> _loadCodigos() async {
@@ -28,12 +66,105 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       final List<dynamic> jsonList = json.decode(jsonString);
       setState(() {
         codigos = jsonList.map((json) => CodigoGrabovoi.fromJson(json)).toList();
+        if (codigos.length > 100) {
+          codigos = codigos.take(100).toList();
+        }
+        filtrados = List.from(codigos);
         isLoading = false;
       });
     } catch (e) {
       setState(() => isLoading = false);
       debugPrint('Error cargando códigos: $e');
     }
+  }
+
+  void _aplicarFiltros() {
+    List<CodigoGrabovoi> base = List.from(codigos);
+    if (_filtroCategoria != 'Todos') {
+      base = base.where((c) => c.categoria.toLowerCase() == _filtroCategoria.toLowerCase()).toList();
+    }
+    if (_query.trim().isNotEmpty) {
+      final q = _query.trim().toLowerCase();
+      base = base.where((c) =>
+        c.codigo.toLowerCase().contains(q) ||
+        c.nombre.toLowerCase().contains(q) ||
+        c.descripcion.toLowerCase().contains(q)
+      ).toList();
+    }
+
+    if (_tab == 'Favoritos') {
+      base = base.where((c) => _favoritos.contains(c.codigo)).toList();
+    } else if (_tab == 'Popularidad') {
+      base.sort((a, b) => (_popularidad[b.codigo] ?? 0).compareTo((_popularidad[a.codigo] ?? 0)));
+    }
+
+    setState(() {
+      filtrados = base;
+    });
+  }
+
+  Future<void> _buscarConOpenAI() async {
+    if (_query.trim().isEmpty) return;
+    final sugeridos = await _openai.sugerirCodigosPorIntencion(_query.trim());
+    if (!mounted) return;
+    if (sugeridos.isEmpty) {
+      _mostrarDialogoSugerirPilotaje();
+      return;
+    }
+    final existentes = codigos.map((c) => c.codigo).toSet();
+    final nuevos = sugeridos
+        .where((s) => s.isNotEmpty && !existentes.contains(s))
+        .map((s) => CodigoGrabovoi(
+              codigo: s,
+              nombre: 'Sugerido por IA',
+              descripcion: 'Sugerencia dinámica basada en tu intención',
+              categoria: 'Sugeridos',
+            ))
+        .toList();
+    if (nuevos.isEmpty) {
+      _mostrarDialogoSugerirPilotaje();
+    } else {
+      setState(() {
+        codigos = [...codigos, ...nuevos];
+      });
+      _aplicarFiltros();
+    }
+  }
+
+  void _mostrarDialogoSugerirPilotaje() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        title: Text('Crea tu propio pilotaje', style: GoogleFonts.inter(color: Colors.white)),
+        content: Text(
+          'No encontramos resultados entre los 100 códigos.\nPuedes crear tu propio pilotaje basado en tu intención.',
+          style: GoogleFonts.inter(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cerrar', style: TextStyle(color: Color(0xFFFFD700))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toggleFavorito(String codigo) {
+    setState(() {
+      if (_favoritos.contains(codigo)) {
+        _favoritos.remove(codigo);
+      } else {
+        _favoritos.add(codigo);
+      }
+    });
+    _persistFavoritos();
+  }
+
+  void _sumarPopularidad(String codigo) {
+    _popularidad[codigo] = (_popularidad[codigo] ?? 0) + 1;
+    _persistPopularidad();
   }
 
   @override
@@ -71,6 +202,85 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                         color: Colors.white70,
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      onChanged: (v) {
+                        _query = v;
+                        _aplicarFiltros();
+                      },
+                      onSubmitted: (_) {
+                        if (filtrados.isEmpty) _buscarConOpenAI();
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Buscar código, intención o categoría...',
+                        hintStyle: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+                        prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.06),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
+                          borderSide: BorderSide(color: Color(0xFFFFD700)),
+                        ),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        for (final t in const ['Todos', 'Favoritos', 'Popularidad'])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(t, style: GoogleFonts.inter()),
+                              selected: _tab == t,
+                              onSelected: (_) {
+                                setState(() => _tab = t);
+                                _aplicarFiltros();
+                              },
+                              selectedColor: const Color(0xFFFFD700),
+                              backgroundColor: Colors.white.withOpacity(0.08),
+                              labelStyle: TextStyle(
+                                color: _tab == t ? const Color(0xFF0B132B) : Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _categorias.map((cat) {
+                          final selected = _filtroCategoria == cat;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(cat),
+                              selected: selected,
+                              onSelected: (_) {
+                                setState(() => _filtroCategoria = cat);
+                                _aplicarFiltros();
+                              },
+                              selectedColor: const Color(0xFFFFD700),
+                              backgroundColor: Colors.white.withOpacity(0.08),
+                              labelStyle: TextStyle(
+                                color: selected ? const Color(0xFF0B132B) : Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -83,9 +293,9 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: codigos.length,
+                        itemCount: filtrados.length,
                         itemBuilder: (context, index) {
-                          final codigo = codigos[index];
+                          final codigo = filtrados[index];
                           return _buildCodigoCard(codigo);
                         },
                       ),
@@ -113,6 +323,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: () {
+            _sumarPopularidad(codigo.codigo);
             _showCodigoDetail(codigo);
           },
           child: Padding(
@@ -143,13 +354,27 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  codigo.nombre,
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        codigo.nombre,
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => _toggleFavorito(codigo.codigo),
+                      icon: Icon(
+                        _favoritos.contains(codigo.codigo) ? Icons.favorite : Icons.favorite_border,
+                        color: _favoritos.contains(codigo.codigo) ? const Color(0xFFFFD700) : Colors.white70,
+                      ),
+                    )
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -247,23 +472,33 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFD700),
-                foregroundColor: const Color(0xFF0B132B),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => RepetitionSessionScreen(
+                            codigo: codigo.codigo,
+                            nombre: codigo.nombre,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFD700),
+                      foregroundColor: const Color(0xFF0B132B),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    child: Text(
+                      'Iniciar sesión de repetición',
+                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-              ),
-              child: Text(
-                'Pilotar Ahora',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              ],
             ),
           ],
         ),
