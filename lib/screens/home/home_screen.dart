@@ -4,6 +4,9 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/sacred_circle.dart';
 import '../../services/ai_service.dart';
+import '../pilotaje/pilotaje_screen.dart';
+import '../desafios/desafios_screen.dart';
+import '../codes/code_detail_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -55,18 +58,40 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 _buildNextStep(analisis['proximoPaso']),
                 const SizedBox(height: 30),
-                CustomButton(text: 'Comenzar Pilotaje', onPressed: () {}),
+                CustomButton(
+                  text: 'Comenzar Pilotaje', 
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PilotajeScreen(),
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 15),
-                CustomButton(text: 'Ver Desafíos', onPressed: () {}, isOutlined: true),
-                const SizedBox(height: 40),
+                CustomButton(
+                  text: 'Ver Desafíos', 
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const DesafiosScreen(),
+                      ),
+                    );
+                  }, 
+                  isOutlined: true,
+                ),
+                const SizedBox(height: 30),
+                _buildCodeOfDay(context, analisis['codigoRecomendado']),
+                const SizedBox(height: 20),
                 Center(
                   child: Text(
-                    '5197148',
-                    style: GoogleFonts.spaceMono(
+                    'Tu energía se eleva con cada pilotaje consciente',
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.white30,
-                      letterSpacing: 2,
+                      fontStyle: FontStyle.italic,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ],
@@ -112,34 +137,43 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildCodeOfDay(BuildContext context, String codigo) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFFFD700).withOpacity(0.2),
-            const Color(0xFFFFD700).withOpacity(0.05),
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => CodeDetailScreen(codigo: codigo),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFFFFD700).withOpacity(0.2),
+              const Color(0xFFFFD700).withOpacity(0.05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFFD700), width: 2),
+        ),
+        child: Column(
+          children: [
+            Text('Código Recomendado', style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
+            const SizedBox(height: 12),
+            Text(
+              codigo,
+              style: GoogleFonts.spaceMono(
+                color: const Color(0xFFFFD700),
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 4,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('Toca para pilotar', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFD700), width: 2),
-      ),
-      child: Column(
-        children: [
-          Text('Código Recomendado', style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
-          const SizedBox(height: 12),
-          Text(
-            codigo,
-            style: GoogleFonts.spaceMono(
-              color: const Color(0xFFFFD700),
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 4,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text('Toca para pilotar', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
-        ],
       ),
     );
   }

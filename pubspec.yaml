@@ -31,6 +31,11 @@ dependencies:
   # Gráficos y Visualización
   fl_chart: ^0.67.0
   
+  # Audio y Música
+  audioplayers: ^6.0.0
+  just_audio: ^0.9.36
+  
+  
   # Utilidades
   intl: ^0.19.0
   http: ^1.2.1
@@ -48,10 +53,10 @@ flutter:
   
   assets:
     - lib/data/
-  #   - assets/images/
-  #   - assets/audios/
-  #   - assets/lottie/
-  #   - assets/icons/
+    - assets/images/
+    - assets/audios/
+    - assets/lottie/
+    - assets/icons/
     
   # fonts:
   #   - family: Poppins
