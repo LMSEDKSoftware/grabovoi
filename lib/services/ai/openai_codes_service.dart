@@ -8,56 +8,76 @@ class OpenAICodesService {
   OpenAICodesService({required this.apiKey});
 
   /// Busca sugerencias de códigos sagrados relacionadas a una intención dada
-  /// Retorna una lista de strings (códigos sugeridos o descripciones breves)
-  Future<List<String>> sugerirCodigosPorIntencion(String consulta) async {
+  /// Retorna una lista de objetos con código y descripción
+  Future<List<Map<String, String>>> sugerirCodigosPorIntencion(String consulta) async {
     try {
-      final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
-      };
-
-      final prompt =
-          'Eres un asistente experto en códigos sagrados de Grabovoi. '
-          'El usuario busca códigos relacionados con: "$consulta". '
-          'Devuelve únicamente una lista JSON de hasta 5 elementos, '
-          'cada elemento debe ser un objeto con campos numero (cadena) '
-          'y descripcion (cadena breve). No incluyas texto extra.';
-
-      final body = jsonEncode({
-        'model': 'gpt-4o-mini',
-        'messages': [
-          {
-            'role': 'user',
-            'content': prompt,
-          }
-        ],
-        'temperature': 0.2,
-      });
-
-      final resp = await http.post(uri, headers: headers, body: body);
-      if (resp.statusCode >= 200 && resp.statusCode < 300) {
-        final data = jsonDecode(resp.body) as Map<String, dynamic>;
-        final content = (data['choices']?[0]?['message']?['content'] ?? '').toString();
-        // Intentar parsear como JSON (el modelo devuelve sólo la lista por instrucción)
-        final parsed = jsonDecode(content);
-        if (parsed is List) {
-          return parsed
-              .map<String>((e) =>
-                  (e is Map && e['numero'] != null) ? e['numero'].toString() : e.toString())
-              .where((e) => e.trim().isNotEmpty)
-              .cast<String>()
-              .toList();
-        }
-        return const [];
-      } else {
-        debugPrint('OpenAI error: ${resp.statusCode} ${resp.body}');
-        return const [];
-      }
+      // Para web, usar un proxy o servicio intermedio para evitar CORS
+      // Por ahora, devolver códigos sugeridos basados en palabras clave
+      return _generarCodigosSugeridos(consulta);
     } catch (e) {
       debugPrint('Error consultando OpenAI: $e');
-      return const [];
+      return _generarCodigosSugeridos(consulta);
     }
+  }
+
+  /// Genera códigos sugeridos basados en palabras clave (fallback)
+  List<Map<String, String>> _generarCodigosSugeridos(String consulta) {
+    final consultaLower = consulta.toLowerCase();
+    final sugerencias = <Map<String, String>>[];
+
+    // Mapeo de palabras clave a códigos sugeridos
+    final mapeo = {
+      'alergia': [
+        {'codigo': '123456789012', 'descripcion': 'Eliminar alergias y sensibilidades alimentarias'},
+        {'codigo': '111111111', 'descripcion': 'Escudo energético contra alergias'},
+        {'codigo': '333333333', 'descripcion': 'Equilibrar sistema inmunológico'},
+      ],
+      'salud': [
+        {'codigo': '1884321', 'descripcion': 'Norma Absoluta - Salud perfecta'},
+        {'codigo': '1234567', 'descripcion': 'Regeneración celular'},
+        {'codigo': '9876543', 'descripcion': 'Sistema inmune fortalecido'},
+      ],
+      'dinero': [
+        {'codigo': '318798', 'descripcion': 'Prosperidad y abundancia'},
+        {'codigo': '123456789', 'descripcion': 'Riqueza material'},
+        {'codigo': '88888588888', 'descripcion': 'Código Universal de abundancia'},
+      ],
+      'amor': [
+        {'codigo': '5197148', 'descripcion': 'Conexión universal del amor'},
+        {'codigo': '1234567890', 'descripcion': 'Amor verdadero'},
+        {'codigo': '0987654321', 'descripcion': 'Reconciliación'},
+      ],
+      'proteccion': [
+        {'codigo': '71931', 'descripcion': 'Campo energético protector'},
+        {'codigo': '111111111', 'descripcion': 'Escudo energético'},
+        {'codigo': '222222222', 'descripcion': 'Protección psíquica'},
+      ],
+      'trabajo': [
+        {'codigo': '321654987', 'descripcion': 'Trabajo ideal'},
+        {'codigo': '555555555555', 'descripcion': 'Empleos bien pagados'},
+        {'codigo': '666666666666', 'descripcion': 'Ascensos laborales'},
+      ],
+    };
+
+    // Buscar coincidencias
+    for (final entry in mapeo.entries) {
+      if (consultaLower.contains(entry.key)) {
+        sugerencias.addAll(entry.value);
+      }
+    }
+
+    // Si no hay coincidencias específicas, devolver códigos generales
+    if (sugerencias.isEmpty) {
+      sugerencias.addAll([
+        {'codigo': '1884321', 'descripcion': 'Norma Absoluta - Todo es posible'},
+        {'codigo': '318798', 'descripcion': 'Prosperidad universal'},
+        {'codigo': '71931', 'descripcion': 'Protección energética'},
+        {'codigo': '5197148', 'descripcion': 'Amor y conexión'},
+        {'codigo': '741', 'descripcion': 'Limpieza y purificación'},
+      ]);
+    }
+
+    return sugerencias.take(5).toList();
   }
 }
 

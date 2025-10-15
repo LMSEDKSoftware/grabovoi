@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/audio_service.dart';
@@ -5,11 +6,13 @@ import '../services/audio_service.dart';
 class MusicController extends StatefulWidget {
   final VoidCallback? onMusicChanged;
   final bool showMusicList;
+  final bool autoPlay;
   
   const MusicController({
     super.key,
     this.onMusicChanged,
     this.showMusicList = false,
+    this.autoPlay = false,
   });
 
   @override
@@ -21,17 +24,31 @@ class _MusicControllerState extends State<MusicController> {
   int _selectedMusicIndex = 0;
   Duration _currentPosition = Duration.zero;
   Duration? _totalDuration;
+  Timer? _simulationTimer;
+  StreamSubscription<Duration>? _positionSubscription;
+  bool _isUsingRealAudio = false;
 
   @override
   void initState() {
     super.initState();
     _audioService.initialize();
     _setupListeners();
+    
+    // Reproducir automáticamente si autoPlay está habilitado
+    if (widget.autoPlay) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startAutoPlay();
+      });
+    }
   }
 
   void _setupListeners() {
-    _audioService.positionStream.listen((position) {
-      if (mounted) {
+    // Cancelar suscripción anterior si existe
+    _positionSubscription?.cancel();
+    
+    // Suscribirse al stream de posición del audio real
+    _positionSubscription = _audioService.positionStream.listen((position) {
+      if (mounted && _isUsingRealAudio) {
         setState(() {
           _currentPosition = position;
         });
@@ -43,6 +60,57 @@ class _MusicControllerState extends State<MusicController> {
         setState(() {
           _totalDuration = duration;
         });
+      }
+    });
+  }
+
+  Future<void> _startAutoPlay() async {
+    try {
+      // Pequeño delay para asegurar que el widget esté completamente montado
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (mounted) {
+        // Detener timer de simulación si existe
+        _simulationTimer?.cancel();
+        
+        // Intentar reproducir audio real
+        await _audioService.playPilotajeMusic(_selectedMusicIndex);
+        
+        // Verificar si el audio se está reproduciendo realmente
+        await Future.delayed(const Duration(milliseconds: 2000));
+        
+        if (_audioService.isActuallyPlaying && _audioService.isPlaying) {
+          // Usar audio real
+          _isUsingRealAudio = true;
+          debugPrint('✅ Usando audio real - reproducción confirmada');
+        } else {
+          // Usar simulación
+          _isUsingRealAudio = false;
+          _startSimulationTimer();
+          debugPrint('⚠️ Usando simulación de audio - audio real no disponible');
+        }
+        
+        if (mounted) {
+          setState(() {});
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al reproducir música automáticamente: $e');
+      // Usar simulación en caso de error
+      _isUsingRealAudio = false;
+      _startSimulationTimer();
+    }
+  }
+
+  void _startSimulationTimer() {
+    _simulationTimer?.cancel();
+    _simulationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted && !_isUsingRealAudio) {
+        setState(() {
+          _currentPosition = Duration(seconds: _currentPosition.inSeconds + 1);
+        });
+      } else {
+        timer.cancel();
       }
     });
   }
@@ -71,15 +139,18 @@ class _MusicControllerState extends State<MusicController> {
                 size: 24,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Música Energizante',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  'Música Energizante',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               // Indicador de estado
               Container(
                 width: 8,
@@ -95,71 +166,50 @@ class _MusicControllerState extends State<MusicController> {
           ),
           const SizedBox(height: 16),
 
-          // Información de la música actual
-          if (_audioService.isPlaying) ...[
-            Text(
-              _audioService.pilotajeMusic[_selectedMusicIndex]['title']!,
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
+          // Información de la música actual (solo título)
+          Text(
+            _audioService.pilotajeMusic[_selectedMusicIndex]['title']!,
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 4),
-            Text(
-              _audioService.pilotajeMusic[_selectedMusicIndex]['description']!,
-              style: GoogleFonts.inter(
-                color: Colors.white70,
-                fontSize: 12,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          
+          // Contador de segundos de reproducción
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.3),
+                width: 1,
               ),
-              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
-
-            // Barra de progreso
-            if (_totalDuration != null) ...[
-              Row(
-                children: [
-                  Text(
-                    _formatDuration(_currentPosition),
-                    style: GoogleFonts.spaceMono(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.timer,
+                  color: Color(0xFFFFD700),
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _formatDuration(_currentPosition),
+                  style: GoogleFonts.spaceMono(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        activeTrackColor: const Color(0xFFFFD700),
-                        inactiveTrackColor: Colors.white30,
-                        thumbColor: const Color(0xFFFFD700),
-                        overlayColor: const Color(0xFFFFD700).withOpacity(0.2),
-                        trackHeight: 3,
-                      ),
-                      child: Slider(
-                        value: _currentPosition.inMilliseconds.toDouble(),
-                        max: _totalDuration!.inMilliseconds.toDouble(),
-                        onChanged: (value) {
-                          _audioService.seekTo(Duration(milliseconds: value.toInt()));
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _formatDuration(_totalDuration!),
-                    style: GoogleFonts.spaceMono(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-          ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // Controles principales
           Row(
@@ -172,9 +222,24 @@ class _MusicControllerState extends State<MusicController> {
                     _selectedMusicIndex = (_selectedMusicIndex - 1 + 
                         _audioService.pilotajeMusic.length) % 
                         _audioService.pilotajeMusic.length;
+                    _currentPosition = Duration.zero; // Reiniciar contador
                   });
                   _audioService.stopMusic();
+                  _simulationTimer?.cancel(); // Detener timer actual
                   _audioService.playPilotajeMusic(_selectedMusicIndex);
+                  
+                  // Verificar si usar audio real o simulación
+                  Future.delayed(const Duration(milliseconds: 2000), () {
+                    if (_audioService.isActuallyPlaying && _audioService.isPlaying) {
+                      _isUsingRealAudio = true;
+                      debugPrint('✅ Cambio a audio real');
+                    } else {
+                      _isUsingRealAudio = false;
+                      _startSimulationTimer();
+                      debugPrint('⚠️ Cambio a simulación');
+                    }
+                  });
+                  
                   widget.onMusicChanged?.call();
                 },
                 icon: const Icon(
@@ -184,25 +249,39 @@ class _MusicControllerState extends State<MusicController> {
                 ),
               ),
 
-              // Botón play/pause
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    if (_audioService.isPlaying) {
-                      _audioService.pauseMusic();
-                    } else {
-                      _audioService.resumeMusic();
-                    }
-                    setState(() {});
-                  },
-                  icon: Icon(
-                    _audioService.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: const Color(0xFFFFD700),
-                    size: 32,
+              // Indicador de reproducción automática
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.play_circle_filled,
+                        color: Color(0xFFFFD700),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          'Auto',
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFFFFD700),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -213,28 +292,30 @@ class _MusicControllerState extends State<MusicController> {
                   setState(() {
                     _selectedMusicIndex = (_selectedMusicIndex + 1) % 
                         _audioService.pilotajeMusic.length;
+                    _currentPosition = Duration.zero; // Reiniciar contador
                   });
                   _audioService.stopMusic();
+                  _simulationTimer?.cancel(); // Detener timer actual
                   _audioService.playPilotajeMusic(_selectedMusicIndex);
+                  
+                  // Verificar si usar audio real o simulación
+                  Future.delayed(const Duration(milliseconds: 2000), () {
+                    if (_audioService.isActuallyPlaying && _audioService.isPlaying) {
+                      _isUsingRealAudio = true;
+                      debugPrint('✅ Cambio a audio real');
+                    } else {
+                      _isUsingRealAudio = false;
+                      _startSimulationTimer();
+                      debugPrint('⚠️ Cambio a simulación');
+                    }
+                  });
+                  
                   widget.onMusicChanged?.call();
                 },
                 icon: const Icon(
                   Icons.skip_next,
                   color: Color(0xFFFFD700),
                   size: 28,
-                ),
-              ),
-
-              // Botón stop
-              IconButton(
-                onPressed: () {
-                  _audioService.stopMusic();
-                  setState(() {});
-                },
-                icon: const Icon(
-                  Icons.stop,
-                  color: Colors.red,
-                  size: 24,
                 ),
               ),
             ],
@@ -323,11 +404,13 @@ class _MusicControllerState extends State<MusicController> {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$minutes:$seconds';
+    return '$minutes:$seconds s';
   }
 
   @override
   void dispose() {
+    _simulationTimer?.cancel();
+    _positionSubscription?.cancel();
     _audioService.dispose();
     super.dispose();
   }

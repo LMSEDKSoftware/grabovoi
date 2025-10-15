@@ -94,8 +94,6 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
 
     if (_tab == 'Favoritos') {
       base = base.where((c) => _favoritos.contains(c.codigo)).toList();
-    } else if (_tab == 'Popularidad') {
-      base.sort((a, b) => (_popularidad[b.codigo] ?? 0).compareTo((_popularidad[a.codigo] ?? 0)));
     }
 
     setState(() {
@@ -111,24 +109,71 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       _mostrarDialogoSugerirPilotaje();
       return;
     }
-    final existentes = codigos.map((c) => c.codigo).toSet();
-    final nuevos = sugeridos
-        .where((s) => s.isNotEmpty && !existentes.contains(s))
-        .map((s) => CodigoGrabovoi(
-              codigo: s,
-              nombre: 'Sugerido por IA',
-              descripcion: 'Sugerencia dinámica basada en tu intención',
-              categoria: 'Sugeridos',
-            ))
-        .toList();
-    if (nuevos.isEmpty) {
-      _mostrarDialogoSugerirPilotaje();
-    } else {
-      setState(() {
-        codigos = [...codigos, ...nuevos];
-      });
-      _aplicarFiltros();
-    }
+    
+    // Mostrar códigos sugeridos como seleccionables
+    _mostrarCodigosSugeridos(sugeridos);
+  }
+
+  void _mostrarCodigosSugeridos(List<Map<String, String>> sugeridos) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        title: Text(
+          'Códigos Sugeridos para "${_query}"',
+          style: GoogleFonts.inter(color: Colors.white, fontSize: 18),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: sugeridos.length,
+            itemBuilder: (context, index) {
+              final sugerido = sugeridos[index];
+              return Card(
+                color: Colors.white.withOpacity(0.05),
+                child: ListTile(
+                  title: Text(
+                    sugerido['codigo']!,
+                    style: GoogleFonts.spaceMono(
+                      color: const Color(0xFFFFD700),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Text(
+                    sugerido['descripcion']!,
+                    style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward, color: Color(0xFFFFD700)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _iniciarPilotajeConCodigo(sugerido['codigo']!, sugerido['descripcion']!);
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cerrar', style: TextStyle(color: Color(0xFFFFD700))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _iniciarPilotajeConCodigo(String codigo, String descripcion) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RepetitionSessionScreen(
+          codigo: codigo,
+          nombre: descripcion,
+        ),
+      ),
+    );
   }
 
   void _mostrarDialogoSugerirPilotaje() {
@@ -235,7 +280,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        for (final t in const ['Todos', 'Favoritos', 'Popularidad'])
+                        for (final t in const ['Todos', 'Favoritos'])
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: ChoiceChip(
@@ -367,12 +412,23 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => _toggleFavorito(codigo.codigo),
-                      icon: Icon(
-                        _favoritos.contains(codigo.codigo) ? Icons.favorite : Icons.favorite_border,
-                        color: _favoritos.contains(codigo.codigo) ? const Color(0xFFFFD700) : Colors.white70,
-                      ),
+                    Column(
+                      children: [
+                        IconButton(
+                          onPressed: () => _toggleFavorito(codigo.codigo),
+                          icon: Icon(
+                            _favoritos.contains(codigo.codigo) ? Icons.favorite : Icons.favorite_border,
+                            color: _favoritos.contains(codigo.codigo) ? const Color(0xFFFFD700) : Colors.white70,
+                          ),
+                        ),
+                        Text(
+                          'Popularidad: ${_popularidad[codigo.codigo] ?? 0}',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ],
                     )
                   ],
                 ),

@@ -95,16 +95,17 @@ class _Sphere3DPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width / 2) * scale;
 
-    // Crear gradiente radial para el efecto 3D
+    // Crear gradiente radial para el efecto 3D sin círculo oscuro
     final radialGradient = RadialGradient(
       colors: [
-        color.withOpacity(0.9),
+        color.withOpacity(0.6),
         color.withOpacity(0.7),
-        color.withOpacity(0.4),
+        color.withOpacity(0.5),
+        color.withOpacity(0.3),
         color.withOpacity(0.1),
         Colors.transparent,
       ],
-      stops: const [0.0, 0.3, 0.6, 0.8, 1.0],
+      stops: const [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
     );
 
     // Dibujar esfera principal con gradiente

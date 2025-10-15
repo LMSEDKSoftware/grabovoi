@@ -49,18 +49,48 @@ class AudioService {
   List<Map<String, String>> get pilotajeMusic => _pilotajeMusic;
 
   bool get isPlaying => _isPlaying;
+  
+  bool get isActuallyPlaying => _isInitialized && _audioPlayer.playing;
 
   Future<void> playPilotajeMusic(int index) async {
     if (!_isInitialized) await initialize();
     
     try {
       final music = _pilotajeMusic[index];
+      debugPrint('Intentando reproducir: ${music['title']} - ${music['file']}');
+      
+      // Detener reproducción anterior
+      await _audioPlayer.stop();
+      _isPlaying = false;
+      
       await _audioPlayer.setAsset(music['file']!);
       await _audioPlayer.play();
-      _isPlaying = true;
+      
+      // Esperar un momento para que el audio se inicie
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      // Verificar múltiples veces si realmente está reproduciendo
+      bool isActuallyPlaying = false;
+      for (int i = 0; i < 3; i++) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (_audioPlayer.playing && _audioPlayer.position.inSeconds > 0) {
+          isActuallyPlaying = true;
+          break;
+        }
+      }
+      
+      if (isActuallyPlaying) {
+        _isPlaying = true;
+        debugPrint('✅ Confirmado: Audio reproduciéndose correctamente');
+      } else {
+        _isPlaying = false;
+        debugPrint('❌ Audio no se está reproduciendo realmente');
+        debugPrint('Estado del player: playing=${_audioPlayer.playing}, position=${_audioPlayer.position}');
+      }
+      
     } catch (e) {
-      debugPrint('Error playing music: $e');
-      // Si no existe el archivo, reproducir en silencio (para desarrollo)
+      debugPrint('❌ Error playing music: $e');
+      debugPrint('Archivo intentado: ${_pilotajeMusic[index]['file']}');
       _isPlaying = false;
     }
   }

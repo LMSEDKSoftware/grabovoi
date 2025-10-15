@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../widgets/glow_background.dart';
-import '../../widgets/sphere_3d.dart';
+import '../../widgets/golden_sphere.dart';
 
 class RepetitionSessionScreen extends StatefulWidget {
   final String codigo;
@@ -101,30 +101,44 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
                                 ),
                               ),
                             ),
-                            Sphere3D(
+                            GoldenSphere(
                               size: 260,
                               color: const Color(0xFFFFD700),
-                              glowIntensity: 0.45,
-                              isAnimated: false,
+                              glowIntensity: 0.8,
+                              isAnimated: true,
                             ),
-                            ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                colors: [Color(0xFFFFF4C2), Color(0xFFFFD700)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
-                              child: Text(
-                                widget.codigo,
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.spaceMono(
-                                  fontSize: 46,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 6,
-                                  shadows: const [
-                                    Shadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 2)),
-                                    Shadow(color: Colors.black54, blurRadius: 16, offset: Offset(0, 6)),
-                                  ],
-                                ),
+                            // Números con efecto 3D mejorado, sin círculo negro
+                            Text(
+                              widget.codigo,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.spaceMono(
+                                fontSize: 46,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 6,
+                                color: const Color(0xFFFFD700),
+                                shadows: [
+                                  // Múltiples sombras para efecto 3D pronunciado
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.9),
+                                    blurRadius: 15,
+                                    offset: const Offset(3, 3),
+                                  ),
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.7),
+                                    blurRadius: 8,
+                                    offset: const Offset(1, 1),
+                                  ),
+                                  Shadow(
+                                    color: Colors.white.withOpacity(0.5),
+                                    blurRadius: 2,
+                                    offset: const Offset(-1, -1),
+                                  ),
+                                  Shadow(
+                                    color: Colors.yellow.withOpacity(0.4),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 0),
+                                  ),
+                                ],
                               ),
                             ),
                             if (widget.nombre != null && widget.nombre!.isNotEmpty)
@@ -146,7 +160,90 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
+                
+                // Mensaje sobre Grabovoi y repetición
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Importante sobre Grabovoi',
+                            style: GoogleFonts.inter(
+                              color: Colors.blue,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Grabovoi no menciona que se deba repetir el código, pero si es tu deseo, puedes hacerlo.',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Notas de la versión 1
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.medical_services, color: Colors.orange, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Nota Importante',
+                            style: GoogleFonts.inter(
+                              color: Colors.orange,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
+                        'Siempre consulta con profesionales de la salud para cualquier condición médica. '
+                        'Estos códigos son herramientas complementarias de bienestar.',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
                 Row(
                   children: [
                     Expanded(
