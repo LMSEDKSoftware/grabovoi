@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
-import '../../widgets/custom_button.dart';
 
-class PilotajeScreen extends StatelessWidget {
-  const PilotajeScreen({super.key});
+class EvolucionScreen extends StatelessWidget {
+  const EvolucionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +16,7 @@ class PilotajeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pilotaje Consciente',
+                  'Evolución Energética',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -26,7 +25,7 @@ class PilotajeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Dirige tu realidad con intención',
+                  'Tu progreso vibracional',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: Colors.white70,
@@ -35,17 +34,12 @@ class PilotajeScreen extends StatelessWidget {
                 const Spacer(),
                 Center(
                   child: Icon(
-                    Icons.my_location,
+                    Icons.show_chart,
                     size: 100,
                     color: const Color(0xFFFFD700).withOpacity(0.5),
                   ),
                 ),
                 const Spacer(),
-                CustomButton(
-                  text: 'Iniciar Pilotaje',
-                  onPressed: () {},
-                ),
-                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -54,3 +48,4 @@ class PilotajeScreen extends StatelessWidget {
     );
   }
 }
+

@@ -1,0 +1,39 @@
+[
+  {
+    "categoria": "Salud",
+    "nombre": "Norma Absoluta",
+    "codigo": "1884321",
+    "descripcion": "Restaurar la armonía del cuerpo y alcanzar el estado de salud perfecta."
+  },
+  {
+    "categoria": "Abundancia",
+    "nombre": "Prosperidad",
+    "codigo": "318798",
+    "descripcion": "Atraer prosperidad y riqueza en todas sus formas."
+  },
+  {
+    "categoria": "Protección",
+    "nombre": "Campo Energético",
+    "codigo": "71931",
+    "descripcion": "Fortalecer tu protección energética y campo áurico."
+  },
+  {
+    "categoria": "Armonía",
+    "nombre": "Todo es Posible",
+    "codigo": "5197148",
+    "descripcion": "Recordar el poder infinito de manifestar la realidad deseada."
+  },
+  {
+    "categoria": "Amor",
+    "nombre": "Amor Universal",
+    "codigo": "888412",
+    "descripcion": "Abrir el corazón al amor incondicional y las relaciones armoniosas."
+  },
+  {
+    "categoria": "Sanación",
+    "nombre": "Regeneración Celular",
+    "codigo": "5432189",
+    "descripcion": "Activar los procesos de regeneración y renovación celular."
+  }
+]
+
