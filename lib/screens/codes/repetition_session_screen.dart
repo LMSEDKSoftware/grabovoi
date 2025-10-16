@@ -1,12 +1,15 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
+
 
 class RepetitionSessionScreen extends StatefulWidget {
   final String codigo;
@@ -26,11 +29,22 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
       final Uint8List? pngBytes = await _screenshotController.capture(pixelRatio: 2.0);
       if (pngBytes == null) return;
 
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/grabovoi_${widget.codigo}.png');
-      await file.writeAsBytes(pngBytes);
+      // Solo para móvil, web no soporta compartir imágenes
+      if (!kIsWeb) {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/grabovoi_${widget.codigo}.png');
+        await file.writeAsBytes(pngBytes);
 
-      await Share.shareXFiles([XFile(file.path)], text: 'Manifestación Numérica Grabovoi');
+        await Share.shareXFiles([XFile(file.path)], text: 'Manifestación Numérica Grabovoi');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Función de compartir no disponible en web'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al compartir: $e')),
@@ -43,8 +57,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
     return Scaffold(
       body: GlowBackground(
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -55,6 +69,39 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                     ),
                     const Spacer(),
+                    // Botón copiar en la parte superior derecha
+                    IconButton(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: widget.codigo));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Código ${widget.codigo} copiado'),
+                            backgroundColor: const Color(0xFFFFD700),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
+                    ),
+                    // Botón ver detalle
+                    IconButton(
+                      onPressed: () {
+                        // Aquí puedes agregar la navegación a una pantalla de detalles
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Función en desarrollo'),
+                            backgroundColor: Colors.blue,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
+                    ),
+                    // Botón compartir/descargar
+                    IconButton(
+                      onPressed: _shareImage,
+                      icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -69,93 +116,72 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Vista a capturar
-                Expanded(
-                  child: Center(
-                    child: Screenshot(
-                      controller: _screenshotController,
-                      child: Container(
-                        width: 320,
-                        height: 420,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF0B132B), Color(0xFF1C2541)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFFFD700), width: 2),
+                // Vista a capturar - Solo esfera como en pilotaje
+                Center(
+                  child: Screenshot(
+                    controller: _screenshotController,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Esfera dorada sin contenedor rectangular
+                        GoldenSphere(
+                          size: 300,
+                          color: const Color(0xFFFFD700),
+                          glowIntensity: 0.8,
+                          isAnimated: true,
                         ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Positioned(
-                              top: 28,
+                        // Números blancos que siempre quepan en una línea - 90% del ancho
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Calcular el tamaño de fuente para que use el 90% del ancho disponible
+                            final availableWidth = constraints.maxWidth * 0.9;
+                            final codeLength = widget.codigo.length;
+                            
+                            // Calcular fontSize para que quepa en una línea usando el 90% del ancho
+                            double fontSize = (availableWidth / codeLength) * 0.85; // 0.85 para dar margen
+                            fontSize = fontSize.clamp(16.0, 60.0); // Limitar entre 16 y 60
+                            
+                            return Container(
+                              width: availableWidth,
                               child: Text(
-                                'Manifestación Numérica Grabovoi',
-                                style: TextStyle(
-                                  color: Color(0xFFFFD700),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.0,
+                                widget.codigo,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.visible,
+                                style: GoogleFonts.spaceMono(
+                                  fontSize: fontSize,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: fontSize > 30 ? 3 : 1, // Ajustar espaciado según tamaño
+                                  color: Colors.white,
+                                  shadows: [
+                                    // Múltiples sombras para efecto 3D pronunciado
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.9),
+                                      blurRadius: 15,
+                                      offset: const Offset(3, 3),
+                                    ),
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.7),
+                                      blurRadius: 8,
+                                      offset: const Offset(1, 1),
+                                    ),
+                                    Shadow(
+                                      color: Colors.white.withOpacity(0.5),
+                                      blurRadius: 2,
+                                      offset: const Offset(-1, -1),
+                                    ),
+                                    Shadow(
+                                      color: Colors.yellow.withOpacity(0.4),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 0),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            GoldenSphere(
-                              size: 260,
-                              color: const Color(0xFFFFD700),
-                              glowIntensity: 0.8,
-                              isAnimated: true,
-                            ),
-                            // Números con efecto 3D mejorado, sin círculo negro
-                            Text(
-                              widget.codigo,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.spaceMono(
-                                fontSize: 46,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 6,
-                                color: const Color(0xFFFFD700),
-                                shadows: [
-                                  // Múltiples sombras para efecto 3D pronunciado
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.9),
-                                    blurRadius: 15,
-                                    offset: const Offset(3, 3),
-                                  ),
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.7),
-                                    blurRadius: 8,
-                                    offset: const Offset(1, 1),
-                                  ),
-                                  Shadow(
-                                    color: Colors.white.withOpacity(0.5),
-                                    blurRadius: 2,
-                                    offset: const Offset(-1, -1),
-                                  ),
-                                  Shadow(
-                                    color: Colors.yellow.withOpacity(0.4),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 0),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (widget.nombre != null && widget.nombre!.isNotEmpty)
-                              Positioned(
-                                bottom: 20,
-                                child: Text(
-                                  widget.nombre!,
-                                  style: GoogleFonts.inter(
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                          ],
+                            );
+                          },
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -200,7 +226,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 
                 // Notas de la versión 1
                 Container(
@@ -242,34 +268,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 20),
-                
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _shareImage,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFD700),
-                          foregroundColor: const Color(0xFF0B132B),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                        icon: const Icon(Icons.share),
-                        label: Text(
-                          'Compartir / Descargar',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Toca el botón para compartir o guardar tu imagen con la esfera dorada y el código al centro.',
-                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

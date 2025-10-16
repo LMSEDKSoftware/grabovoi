@@ -15,6 +15,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
         coreLibraryDesugaringEnabled true
     }
+    
+    // Configuración TLS moderna para compatibilidad con Let's Encrypt
+    packagingOptions {
+        pickFirst '**/libc++_shared.so'
+        pickFirst '**/libjsc.so'
+    }
 
     kotlinOptions {
         jvmTarget = '11'
