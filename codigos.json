@@ -5,98 +5,3588 @@
     "nombre": "Abundancia laboral",
     "descripcion": "Abre caminos de reconocimiento y crecimiento profesional.",
     "categoria": "Abundancia",
-    "color": "#4ECDC4",
+    "color": "#FFD700",
     "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
   },
   {
-    "id": "888_412_128_9012",
-    "codigo": "888_412_128_9012",
-    "nombre": "Sanación Universal",
-    "descripcion": "Para sanación física, mental y espiritual.",
-    "categoria": "Sanación",
-    "color": "#FF6B6B",
-    "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
-  },
-  {
-    "id": "520_741_963_8520",
-    "codigo": "520_741_963_8520",
-    "nombre": "Abundancia y Prosperidad",
-    "descripcion": "Atrae abundancia y prosperidad a tu vida.",
-    "categoria": "Abundancia",
-    "color": "#4ECDC4",
-    "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
-  },
-  {
-    "id": "714_825_936_7142",
-    "codigo": "714_825_936_7142",
-    "nombre": "Amor y Relaciones",
-    "descripcion": "Fortalece relaciones y atrae amor verdadero.",
-    "categoria": "Amor",
-    "color": "#FFE66D",
-    "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
-  },
-  {
-    "id": "369_147_258_3691",
-    "codigo": "369_147_258_3691",
-    "nombre": "Protección Espiritual",
-    "descripcion": "Protección contra energías negativas.",
-    "categoria": "Protección",
-    "color": "#A8E6CF",
-    "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
-  },
-  {
-    "id": "123_456_789_0123",
-    "codigo": "123_456_789_0123",
-    "nombre": "Paz Interior",
-    "descripcion": "Encuentra paz y equilibrio interior.",
-    "categoria": "Paz",
-    "color": "#FFB6C1",
-    "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
-  },
-  {
-    "id": "741_852_963_7418",
-    "codigo": "741_852_963_7418",
-    "nombre": "Claridad Mental",
-    "descripcion": "Mejora la concentración y claridad mental.",
-    "categoria": "Mental",
-    "color": "#9B59B6",
-    "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
-  },
-  {
-    "id": "852_963_741_8529",
-    "codigo": "852_963_741_8529",
-    "nombre": "Fortaleza Física",
-    "descripcion": "Fortalece el sistema inmunológico y la salud física.",
+    "id": "1b1021d3-0587-43d9-ba13-a2cfdafeef58",
+    "codigo": "718_319_819_17",
+    "nombre": "Aceleración de curación",
+    "descripcion": "Multiplica procesos de sanación.",
     "categoria": "Salud",
-    "color": "#E74C3C",
-    "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
   },
   {
-    "id": "963_741_852_9639",
-    "codigo": "963_741_852_9639",
-    "nombre": "Sabiduría Interior",
-    "descripcion": "Desarrolla la intuición y sabiduría interior.",
-    "categoria": "Espiritual",
-    "color": "#F39C12",
+    "id": "9ec620f5-54ba-484e-b31f-f8398d72c714",
+    "codigo": "318_798",
+    "nombre": "Activar la abundancia",
+    "descripcion": "Inicia el flujo de prosperidad y recursos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
     "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
   },
   {
-    "id": "147_258_369_1472",
-    "codigo": "147_258_369_1472",
-    "nombre": "Equilibrio Energético",
-    "descripcion": "Equilibra los chakras y la energía vital.",
-    "categoria": "Energía",
-    "color": "#1ABC9C",
+    "id": "f216a2ac-7a55-4d8f-a7c4-94a1e51b233d",
+    "codigo": "319719714218",
+    "nombre": "Activar tecnologías del alma",
+    "descripcion": "Despierta las capacidades latentes del espíritu para co-crear conscientemente.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "6c4d0e6e-f9a7-43d0-bc6c-53e9c235fb09",
+    "codigo": "819_814_713_81",
+    "nombre": "Afecto",
+    "descripcion": "Activa dulzura y empatía.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "931561bf-cc37-4eb5-93e5-9c750d281814",
+    "codigo": "819_714_718_81",
+    "nombre": "Aliento universal",
+    "descripcion": "Integra respiración y energía cósmica.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "c83b13da-c16b-457e-8658-48c8a2932293",
+    "codigo": "919_819_714",
+    "nombre": "Alineación con la prosperidad",
+    "descripcion": "Sincroniza pensamiento, emoción y acción con la riqueza.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "d06ce5e1-65b9-4ba1-86c9-157ee543a5fc",
+    "codigo": "814_819_714_81",
+    "nombre": "Alineación divina",
+    "descripcion": "Equilibrio entre la mente humana y la divina.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "203ed3a2-271f-49b8-8dda-9e792008fa5e",
+    "codigo": "918_719_814_81",
+    "nombre": "Alineación financiera",
+    "descripcion": "Armoniza pensamiento y acción económica.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "158f41f4-5639-414a-9509-03ab4bd283b8",
+    "codigo": "819_819_713_81",
+    "nombre": "Alivio mental",
+    "descripcion": "Relaja el cuerpo y calma la mente.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T23:25:24.931024+00:00",
+    "updated_at": "2025-10-15T23:55:55.90253+00:00"
+  },
+  {
+    "id": "ccdd3d9b-c440-49c0-a1de-7b06e9d8543d",
+    "codigo": "819_714_813_81",
+    "nombre": "Amistad sincera",
+    "descripcion": "Fortalece lazos basados en amor genuino.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "4fd82d3f-201a-48f9-8b36-52d77b07313d",
+    "codigo": "714_219_817",
+    "nombre": "Amistad sincera",
+    "descripcion": "Atrae relaciones de lealtad, confianza y respeto.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "2ae9fdcd-9f4f-42b7-bcc3-ddddf4a52ab6",
+    "codigo": "918_819_814",
+    "nombre": "Amor bendecido",
+    "descripcion": "Integra amor, respeto y crecimiento espiritual conjunto.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "c410ed5c-c5cc-45f7-9987-a26217e207b7",
+    "codigo": "714_819_814_19",
+    "nombre": "Amor divino",
+    "descripcion": "Canaliza la vibración del amor universal.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "0e0fdb6e-8db4-4ce0-aa96-9bbeeade423a",
+    "codigo": "718_819_713_91",
+    "nombre": "Amor espiritual",
+    "descripcion": "Eleva la unión hacia planos superiores.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "eaa7648f-d711-499b-825a-26bf062c9212",
+    "codigo": "713_819_814_81",
+    "nombre": "Amor eterno",
+    "descripcion": "Sostiene vínculos en el tiempo y el alma.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "79936d4e-33f5-43cf-9c09-14b57851bb24",
+    "codigo": "918_714_819",
+    "nombre": "Amor eterno",
+    "descripcion": "Sella relaciones basadas en el respeto y la libertad mutua.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "df8879c5-b853-472c-a70a-fdf5852d39ad",
+    "codigo": "819_819_819",
+    "nombre": "Amor eterno y puro",
+    "descripcion": "Establece unidad perfecta con el alma gemela o afín.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "2bf797e0-04cd-49da-9e12-147977e8f036",
+    "codigo": "719_814_819_91",
+    "nombre": "Amor incondicional",
+    "descripcion": "Expande compasión hacia todos los seres.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "ee885869-761d-49b8-b62a-6a002c4e340c",
+    "codigo": "918_718_819",
+    "nombre": "Amor inquebrantable",
+    "descripcion": "Consolida relaciones verdaderas bajo la norma divina.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "0e11865e-2316-4c8d-9620-4c76f10393d2",
+    "codigo": "819_814_719_81",
+    "nombre": "Amor propio",
+    "descripcion": "Reconecta con el valor interior.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "9f062070-88bf-41d6-84a9-1e0a30c7cc9d",
+    "codigo": "814_718_819_91",
+    "nombre": "Amor universal",
+    "descripcion": "Integra lo divino y lo humano en la relación.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "dd8a8c1c-3560-4d40-b414-39d6210e70cf",
+    "codigo": "519606",
+    "nombre": "Amor verdadero",
+    "descripcion": "Atrae pareja compatible y consciente.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
     "created_at": "2025-10-15T19:50:44.063358+00:00",
-    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "6f9fda07-6637-4d88-b206-2eb4e0833c9b",
+    "codigo": "19712893",
+    "nombre": "Anclaje energético",
+    "descripcion": "Integra la energía espiritual en la materia.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "2b903399-07cd-4485-b770-aba3b56c2e04",
+    "codigo": "714_813_814_91",
+    "nombre": "Anclaje seguro",
+    "descripcion": "Fija tu energía en estabilidad y confianza.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "a992b0a9-f69b-4b99-8a14-6dfd85702e95",
+    "codigo": "59189171_481",
+    "nombre": "Anestesia energética",
+    "descripcion": "Disuelve el dolor energético y físico.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "ba6ed9e1-d7fa-429c-bf17-16242cf280df",
+    "codigo": "814_418_719",
+    "nombre": "Apertura al amor",
+    "descripcion": "Activa el magnetismo del amor verdadero.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "7b069b24-5bc6-4445-a76d-e8a8076b08f8",
+    "codigo": "519_819_714",
+    "nombre": "Apertura de caminos económicos",
+    "descripcion": "Desbloquea oportunidades y abundancia inmediata.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "a6c140dd-5222-4f50-9832-c962fedff612",
+    "codigo": "819_718_714_91",
+    "nombre": "Apertura estelar",
+    "descripcion": "Expande los canales energéticos del alma.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "b42d5668-6d5f-45fc-9afa-a42844fbf438",
+    "codigo": "718_714_819_91",
+    "nombre": "Armonía de pareja",
+    "descripcion": "Promueve comprensión y paciencia mutua.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "44ae0d23-0cd1-43c4-9bab-08cd3380a7e9",
+    "codigo": "718_819_713_81",
+    "nombre": "Armonía relacional",
+    "descripcion": "Equilibra energías entre personas.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "2876fbba-4268-4075-ae31-e5b8aa032f42",
+    "codigo": "718_819_814_81",
+    "nombre": "Armonía total",
+    "descripcion": "Integra amor, respeto y crecimiento.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "06a161e9-22d5-42e2-bfc3-b936774aa36c",
+    "codigo": "71042",
+    "nombre": "Armonizar el presente",
+    "descripcion": "Alinea las circunstancias actuales con la vibración perfecta.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "f02ec3d0-6d00-419d-8775-c146b7a82b32",
+    "codigo": "819_419_714_81",
+    "nombre": "Armonizar sistema nervioso",
+    "descripcion": "Calma ansiedad y restablece equilibrio.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "6e048b4c-8755-4d3a-9fa5-d33543fae245",
+    "codigo": "819_713_718",
+    "nombre": "Ascensión",
+    "descripcion": "Activa la transformación hacia la luz pura.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "6e88df54-1899-4651-81e1-56a20129f896",
+    "codigo": "718912718",
+    "nombre": "Ascensión de la conciencia",
+    "descripcion": "Eleva la frecuencia del ser hacia estados de luz y creación pura.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "496751a7-4489-4183-98a6-dd9ce25b10f4",
+    "codigo": "714_819_713_81",
+    "nombre": "Atracción consciente",
+    "descripcion": "Canaliza energía sexual de forma amorosa.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "cd08ebaf-bb27-4b8f-a2e8-2a7ac5577c24",
+    "codigo": "519_481",
+    "nombre": "Atracción de oportunidades",
+    "descripcion": "Atrae negocios, proyectos y alianzas beneficiosas.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "c93b2a8a-9b39-47f0-8cf3-259552cc87a9",
+    "codigo": "813_814_719_81",
+    "nombre": "Atracción magnética",
+    "descripcion": "Aumenta la conexión energética entre almas afines.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "fbba132c-691c-4325-952e-62527e20bcef",
+    "codigo": "721348192",
+    "nombre": "Autocuración",
+    "descripcion": "Impulsa la sanación interior guiada por el alma.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "cac7e55e-18d5-4929-a82c-847b499b27a9",
+    "codigo": "817992191",
+    "nombre": "Autoregeneración",
+    "descripcion": "Fomenta la regeneración celular natural.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "8f4b9f0a-e70f-4dc8-8ea2-ea10986e6239",
+    "codigo": "4118819",
+    "nombre": "Autosanación cuántica",
+    "descripcion": "Reconecta el cuerpo energético con la vibración de la Norma.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "c8eb37c3-9e5d-45d2-8d48-1ea562843954",
+    "codigo": "714_813_819",
+    "nombre": "Bendición familiar",
+    "descripcion": "Armoniza la relación entre padres e hijos.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "c0aee33b-d61c-4afe-86b9-c9d8eabdf48d",
+    "codigo": "819_419_817_81",
+    "nombre": "Bienestar total",
+    "descripcion": "Integra cuerpo, mente y espíritu en armonía.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "d32712b7-18c1-49c9-b532-adf0d301e2b6",
+    "codigo": "819_718_819_81",
+    "nombre": "Blindaje de luz",
+    "descripcion": "Crea frecuencia impenetrable de seguridad.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "f6e83c29-5798-4241-b58a-7330a33e42d0",
+    "codigo": "12516176",
+    "nombre": "Bloqueos",
+    "descripcion": "Desbloquea energía estancada y emociones reprimidas.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T23:58:51.173453+00:00"
+  },
+  {
+    "id": "d0ba71ac-ceb1-463e-812d-3e1795554d4c",
+    "codigo": "318798",
+    "nombre": "Caminos económicos",
+    "descripcion": "Apertura y expansión financiera.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "31c6e990-4f7c-40bb-836e-445efbd2df0a",
+    "codigo": "917_814_713",
+    "nombre": "Campo azul protector",
+    "descripcion": "Sella la energía personal con luz de alta frecuencia.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "89f31ac3-fb8d-413a-adf1-62caf3eff531",
+    "codigo": "9187948181",
+    "nombre": "Campo de protección vibracional",
+    "descripcion": "Escudo luminoso ante energías densas.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "6a567bb7-fa99-459f-83fd-1f9568c95570",
+    "codigo": "714_819_814_91",
+    "nombre": "Campo unificado",
+    "descripcion": "Une vibraciones múltiples en coherencia universal.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "faa76679-d731-4237-a5a7-46e0e9f20585",
+    "codigo": "8888888",
+    "nombre": "Campo unificado de creación",
+    "descripcion": "Fusión total con la frecuencia del Creador.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "b212c7a0-98c4-4506-bd1d-381839d1af34",
+    "codigo": "318_917_318",
+    "nombre": "Canal de abundancia universal",
+    "descripcion": "Conecta con la frecuencia de riqueza divina.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "b45dccf1-8b9c-46eb-bfcf-88f67dd94819",
+    "codigo": "814_718_719",
+    "nombre": "Canal de oro",
+    "descripcion": "Alinea la energía material con la frecuencia del oro.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "a1caa264-a55c-43f8-9d1c-bee889e08d47",
+    "codigo": "314_819_719",
+    "nombre": "Canal dorado",
+    "descripcion": "Activa el flujo energético del oro divino.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "6f9054b0-efdf-4263-9360-97b36cf5e3b3",
+    "codigo": "814_713_819",
+    "nombre": "Canalización pura",
+    "descripcion": "Recibe inspiración y guía del alma.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "807a6150-816a-4f44-bb22-5687dbfc02bd",
+    "codigo": "318614718",
+    "nombre": "Células rejuvenecidas",
+    "descripcion": "Activa procesos de renovación y vitalidad.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "822ecf69-14dd-4660-8eec-42977992d83e",
+    "codigo": "481_219_714",
+    "nombre": "Círculo dorado",
+    "descripcion": "Protege y mantiene el flujo de prosperidad constante.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "e2c6a8d2-3f0d-4c4d-a50d-b518fc06538e",
+    "codigo": "819_819_718_81",
+    "nombre": "Claridad espiritual",
+    "descripcion": "Elimina confusión y dualidad mental.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "844a3478-c49e-45de-a73c-f73045d0069d",
+    "codigo": "819_819_714",
+    "nombre": "Coherencia creadora",
+    "descripcion": "Une mente, emoción y espíritu en manifestación pura.",
+    "categoria": "Maestría",
+    "color": "#FFF8DC",
+    "created_at": "2025-10-15T22:37:47.776422+00:00",
+    "updated_at": "2025-10-15T22:37:47.776422+00:00"
+  },
+  {
+    "id": "dc8f3c76-db89-4221-b5b5-2ba2c3215e50",
+    "codigo": "719_814_719_81",
+    "nombre": "Compasión",
+    "descripcion": "Despierta la capacidad de perdonar.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "1dea118f-7d5d-4117-9a58-ef8d93ffe389",
+    "codigo": "714_819_813",
+    "nombre": "Compasión activa",
+    "descripcion": "Despierta empatía y comprensión en vínculos.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "a4229bb9-0cf6-4467-91b2-0d9bcbb80480",
+    "codigo": "819_814_719_91",
+    "nombre": "Comprensión divina",
+    "descripcion": "Acceso directo al conocimiento universal.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "d191b2bb-0e4e-403a-a719-71fbd1cb4b0f",
+    "codigo": "819_714_819_81",
+    "nombre": "Comunicación amorosa",
+    "descripcion": "Favorece el diálogo afectivo y comprensión mutua.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "57b7c38e-4304-446b-9aff-a33765c30dd0",
+    "codigo": "713_819_819",
+    "nombre": "Conciencia infinita",
+    "descripcion": "Expande la mente hacia realidades superiores.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "037b5bd5-b5bc-4699-981a-d90b3feff029",
+    "codigo": "713_814_819_91",
+    "nombre": "Conciencia pura",
+    "descripcion": "Presencia completa sin juicio.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "ceeeeaf5-f612-44e5-ba68-44305495f610",
+    "codigo": "1884321",
+    "nombre": "Condición física desconocida",
+    "descripcion": "Restaura el equilibrio corporal incluso sin diagnóstico.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "42a6876d-0d39-4d67-ac16-7e7b4a67940c",
+    "codigo": "718_814_719",
+    "nombre": "Conexión afectiva",
+    "descripcion": "Fomenta la unión emocional profunda.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "e9f0a97a-2f4b-4c39-b237-ba725c27bc37",
+    "codigo": "819_713_813",
+    "nombre": "Conexión ascendente",
+    "descripcion": "Eleva la conciencia hacia planos superiores de existencia.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "7151b880-c5cf-4c58-a96a-b0304d11d3d8",
+    "codigo": "819_714_819_91",
+    "nombre": "Conexión con abundancia",
+    "descripcion": "Sintoniza mente y corazón con prosperidad.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "058f8475-d02c-4c6b-a0a9-77b50f05eeb9",
+    "codigo": "719_718_819",
+    "nombre": "Conexión galáctica",
+    "descripcion": "Abre comunicación vibracional con planos cósmicos.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "5963cf66-7820-4623-94a2-67ab81b9aa2f",
+    "codigo": "714_814_719_81",
+    "nombre": "Conexión profunda",
+    "descripcion": "Fortalece unión espiritual con la pareja.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "ab3ecd3d-a7af-4377-8308-449bffcd96f7",
+    "codigo": "819_713_819_91",
+    "nombre": "Conexión superior",
+    "descripcion": "Eleva el canal espiritual y percepción extrasensorial.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "cd3f0b7a-398f-46a0-ab5e-0907fab4ce04",
+    "codigo": "718_819_814_91",
+    "nombre": "Confianza",
+    "descripcion": "Elimina celos, temores y desconfianza.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "0f0f188a-1d50-41f5-a38b-827c6d0903d2",
+    "codigo": "713_819_814_91",
+    "nombre": "Corazón abierto",
+    "descripcion": "Elimina bloqueos al amor.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "154e43cc-3028-40f5-b8f0-4848bdca382c",
+    "codigo": "1487219",
+    "nombre": "Corazón saludable",
+    "descripcion": "Equilibra la energía cardíaca y emocional.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "528bc624-4075-4463-8270-cceee6d201af",
+    "codigo": "918_481_719",
+    "nombre": "Cosecha perfecta",
+    "descripcion": "Activa resultados favorables tras el esfuerzo.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "5aa63189-5caa-4c92-89fb-6e94f474a735",
+    "codigo": "718_419_814_19",
+    "nombre": "Creación de riqueza",
+    "descripcion": "Canaliza energía creadora hacia abundancia tangible.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "1e6d92d2-e875-446a-ac55-08bb1caffeb3",
+    "codigo": "819_814_719",
+    "nombre": "Crecimiento de activos",
+    "descripcion": "Multiplica los recursos existentes.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "58a4773e-7e92-409b-a579-cd3eba1716ab",
+    "codigo": "714_718_819",
+    "nombre": "Crecimiento espiritual",
+    "descripcion": "Activa el desarrollo constante del alma.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "0aefe912-c09e-4730-9a06-21e474c057cd",
+    "codigo": "148_721_9",
+    "nombre": "Crecimiento financiero",
+    "descripcion": "Expansión y desarrollo de los recursos materiales.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "fadeac74-2283-49ce-9ca1-83cd546e58a7",
+    "codigo": "814_219_719",
+    "nombre": "Crecimiento laboral",
+    "descripcion": "Ascensos, promociones y reconocimiento profesional.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "285b5799-e0d4-40f2-bdcd-ed1ad170ea87",
+    "codigo": "591061718_489",
+    "nombre": "Creencias limitantes",
+    "descripcion": "Disuelve patrones mentales repetitivos.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T23:58:51.173453+00:00"
+  },
+  {
+    "id": "2dc7d517-624c-410b-aa31-057f4d05c42b",
+    "codigo": "713_819_214",
+    "nombre": "Cuerpo liviano",
+    "descripcion": "Elimina densidad energética y favorece la ligereza.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "875dae79-deae-4368-865c-fd4b89d9134b",
+    "codigo": "918_714_819_31",
+    "nombre": "Cura de emergencia",
+    "descripcion": "Activación rápida de energía sanadora.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "a6366bc4-324c-4bea-8e4a-957bff4bdeff",
+    "codigo": "888_912_448_19",
+    "nombre": "Cura para infecciones",
+    "descripcion": "Elimina virus, bacterias o agentes invasores.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "fffc2f22-ad9d-4402-94ec-97c346939f2e",
+    "codigo": "88888588888",
+    "nombre": "Cura para todos",
+    "descripcion": "Activa la energía universal de curación total.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "d7b061ba-cdb0-48b2-ab54-51d6b20f23a4",
+    "codigo": "814_719_219_81",
+    "nombre": "Curación cuántica",
+    "descripcion": "Sanación integral desde todos los planos.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "0148cc4f-ec7a-41bc-9959-b92502df355c",
+    "codigo": "719471319",
+    "nombre": "Curación instantánea",
+    "descripcion": "Eleva la vibración corporal hacia la Norma.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "ea8dcb57-77e5-4989-ac54-e287da610fec",
+    "codigo": "819_819_714_81",
+    "nombre": "Curación multidimensional",
+    "descripcion": "Sana el cuerpo desde todas las dimensiones.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "5e2f6241-890d-4293-90ae-3845bd7f8baf",
+    "codigo": "918_198_719_81",
+    "nombre": "Defensa espiritual",
+    "descripcion": "Escudo contra influencias invisibles.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "57c64573-618b-49f7-be96-d7ebc340150a",
+    "codigo": "819_819_814",
+    "nombre": "Defensa interior",
+    "descripcion": "Activa la seguridad espiritual desde el corazón.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "f2fd587f-e16b-4776-b6aa-32ab64ff79e7",
+    "codigo": "819_819_713",
+    "nombre": "Defensa total",
+    "descripcion": "Sella el campo áurico y bloquea cualquier intromisión.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "c02cf440-3071-48c9-ae96-355a39df37b1",
+    "codigo": "713_819_814",
+    "nombre": "Desactivar miedo",
+    "descripcion": "Desconecta respuestas mentales de temor o ansiedad.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T22:36:07.636131+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "fba330e8-c60c-4402-b683-659319458a2f",
+    "codigo": "814_718_713_81",
+    "nombre": "Desbloquear corazón",
+    "descripcion": "Permite sentir sin miedo.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T23:25:24.931024+00:00",
+    "updated_at": "2025-10-15T23:55:55.90253+00:00"
+  },
+  {
+    "id": "c88749dd-f277-49f5-8889-f5a75a41cd78",
+    "codigo": "418_719_814_19",
+    "nombre": "Desbloqueo de prosperidad",
+    "descripcion": "Rompe patrones limitantes de carencia.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "d0a96db7-1cd8-44bc-9af4-be991405f7ca",
+    "codigo": "819_713_713",
+    "nombre": "Descanso mental",
+    "descripcion": "Disminuye hiperactividad mental y pensamientos constantes.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T22:36:07.636131+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "4f659323-6ab6-4a34-9f7e-cf281fabb804",
+    "codigo": "419_718_491_89",
+    "nombre": "Desintoxicación",
+    "descripcion": "Limpia órganos de residuos energéticos.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "d89fef28-777f-437b-8107-d24b5ad29a23",
+    "codigo": "1884322",
+    "nombre": "Desintoxicación general",
+    "descripcion": "Elimina toxinas físicas y energéticas del cuerpo.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "8ac3c288-1b7d-4535-b383-d92448d72d69",
+    "codigo": "71949181971",
+    "nombre": "Despertar cuántico",
+    "descripcion": "Amplía la percepción multidimensional y activa la inteligencia divina.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "9d65b8e9-af5d-41d1-92d4-33f476cabedb",
+    "codigo": "719_849_819_81",
+    "nombre": "Despertar espiritual",
+    "descripcion": "Activa la sabiduría interna y multidimensional.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "496c898f-2887-4daf-8d79-79ad34cf5af9",
+    "codigo": "718_819_714",
+    "nombre": "Dinero fácil y honesto",
+    "descripcion": "Facilita ingresos con integridad y sin esfuerzo.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "61d989cf-e61c-417b-9a08-4832a034a638",
+    "codigo": "814_719_819_81",
+    "nombre": "Dinero fluido",
+    "descripcion": "Circulación constante y armoniosa del dinero.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "97f3364d-d7e5-4ad4-92f7-431a474a07ae",
+    "codigo": "718_913_819_81",
+    "nombre": "Disolver culpa",
+    "descripcion": "Libera carga emocional del remordimiento.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T23:25:24.931024+00:00",
+    "updated_at": "2025-10-15T23:55:55.90253+00:00"
+  },
+  {
+    "id": "d8d70282-4398-4072-887f-099c112ac5cf",
+    "codigo": "918_713_819",
+    "nombre": "Disolver ego",
+    "descripcion": "Reduce autoexigencia y comparaciones.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T22:36:07.636131+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "42a39beb-ee8c-4704-af71-e65d48e678f1",
+    "codigo": "817_819_719_81",
+    "nombre": "Dolor disuelto",
+    "descripcion": "Neutraliza cualquier tipo de malestar físico o emocional.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "06cfa088-610d-483a-ae89-d4eb8e3afe10",
+    "codigo": "17481741",
+    "nombre": "Dominio de los planos sutiles",
+    "descripcion": "Activa el control consciente sobre energías y vibraciones superiores.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "60898b3f-d9e7-41f7-bb69-f93ba787c555",
+    "codigo": "518491317519",
+    "nombre": "Dominio total de la información",
+    "descripcion": "Permite manipular positivamente las estructuras informacionales del universo.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "d77bbe48-f0bc-495d-8733-5d2544ba586a",
+    "codigo": "819_814_718",
+    "nombre": "Elevación espiritual",
+    "descripcion": "Despierta la energía divina interior.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "dd90fc7c-dacc-438f-a631-731b8a66fee2",
+    "codigo": "713_819_718",
+    "nombre": "Elevación vibracional",
+    "descripcion": "Aumenta la frecuencia energética del ser.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "137161ef-27bb-4751-b171-45a9a409eeee",
+    "codigo": "4812951",
+    "nombre": "Eliminación de inflamaciones",
+    "descripcion": "Reduce procesos inflamatorios internos.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "d08731ce-101b-47c0-b36a-37738356a5ff",
+    "codigo": "11179",
+    "nombre": "Eliminación de tumores",
+    "descripcion": "Disuelve la energía densa causante de masas físicas.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "52f19b19-ff43-4b31-b514-154ea5a48608",
+    "codigo": "61881971",
+    "nombre": "Eliminar ansiedad",
+    "descripcion": "Calma el sistema nervioso y mente activa.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T23:58:51.173453+00:00"
+  },
+  {
+    "id": "ce688721-8e83-40c1-8cb9-cc4f12c51dd9",
+    "codigo": "4812412",
+    "nombre": "Eliminar bloqueos financieros",
+    "descripcion": "Disuelve patrones de carencia y deuda.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "d817bdfd-248d-4c32-8160-2fb208ad4eed",
+    "codigo": "781_319_471",
+    "nombre": "Eliminar carencias",
+    "descripcion": "Rompe con los programas de escasez heredados.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "2598f588-6df1-4d7a-866a-74ee82342dac",
+    "codigo": "498712891319",
+    "nombre": "Eliminar dolor",
+    "descripcion": "Neutraliza el dolor físico o emocional.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "c9584ad2-af4e-46fe-be64-5dcc66eccb9e",
+    "codigo": "489_716_819_48",
+    "nombre": "Eliminar interferencias mentales",
+    "descripcion": "Purifica pensamientos densos.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "b7a0ad3a-d265-4e56-9203-5505a32274e6",
+    "codigo": "8917419",
+    "nombre": "Eliminar karma acumulado",
+    "descripcion": "Limpia memorias ancestrales y patrones repetitivos.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T22:25:54.392956+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "fb9d7d02-5911-457d-abcc-d7b63eb6c63b",
+    "codigo": "548491698719",
+    "nombre": "Eliminar resistencias inconscientes",
+    "descripcion": "Disuelve bloqueos internos y creencias ocultas que impiden el avance.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "2d99f458-154e-4cd9-9876-fd5d0353a97a",
+    "codigo": "812_319_718_91",
+    "nombre": "Empoderamiento económico",
+    "descripcion": "Recupera confianza para generar riqueza.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "1d034216-9bbe-4264-b261-97e2c5b10bac",
+    "codigo": "819_713_819",
+    "nombre": "Emprendimiento alineado",
+    "descripcion": "Manifiesta negocios desde la inspiración y propósito.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "aee6412c-5ad5-46fe-92c3-f3f9c6665ccf",
+    "codigo": "918_719_814",
+    "nombre": "Empresa próspera",
+    "descripcion": "Activa expansión y rentabilidad de negocios.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "6a2693d4-267a-43ae-aa8e-3111dfd2e6c2",
+    "codigo": "419319498",
+    "nombre": "Equilibrio de temperatura",
+    "descripcion": "Normaliza procesos febriles o hipotermia.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "0e699f59-2471-426a-8ca7-15ad19066368",
+    "codigo": "819_713_814",
+    "nombre": "Equilibrio emocional",
+    "descripcion": "Restaura la calma y comprensión en relaciones afectivas.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "d835450f-8443-4a50-ab58-549a2799f3fa",
+    "codigo": "889_319_714_89",
+    "nombre": "Equilibrio energético",
+    "descripcion": "Restaura el balance tras cargas emocionales.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "8848ae41-794d-4211-840a-bb452343e5a1",
+    "codigo": "317519814",
+    "nombre": "Equilibrio espiritual",
+    "descripcion": "Alinea los cuerpos físico, mental y espiritual.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T22:25:54.392956+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "4a60b327-79a4-47b3-a8a9-a2fc5fedf050",
+    "codigo": "913_481_719_84",
+    "nombre": "Equilibrio hormonal",
+    "descripcion": "Armoniza sistema endocrino y emocional.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "f8c30b9c-a6e5-4c01-a99d-2e0f48727857",
+    "codigo": "81398193",
+    "nombre": "Equilibrio hormonal",
+    "descripcion": "Restaura glándulas endocrinas y metabolismo.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "3745922c-7ebc-48b4-92c5-43383247a760",
+    "codigo": "718_219_817_19",
+    "nombre": "Equilibrio total",
+    "descripcion": "Unifica mente, cuerpo y espíritu.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "81dce046-33c2-44ed-a536-116fa1a2cd69",
+    "codigo": "814_719_813_81",
+    "nombre": "Equilibrio y defensa",
+    "descripcion": "Armoniza mientras protege.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "a2efdbde-bf1f-4804-843c-531a91c7e05e",
+    "codigo": "819_713_814_81",
+    "nombre": "Escudo celestial",
+    "descripcion": "Protección concedida por planos superiores.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "e8133434-812d-4685-8231-c68ac403d97b",
+    "codigo": "814_719_819",
+    "nombre": "Escudo contra manipulación",
+    "descripcion": "Evita control mental, emocional o energético externo.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "9343e505-087e-4c25-86bb-037d87bdf421",
+    "codigo": "819_718_714",
+    "nombre": "Escudo divino",
+    "descripcion": "Proyección de la voluntad del Creador como protección.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "4276c5d4-c88d-4c61-8343-4f85ea0edad8",
+    "codigo": "318_918_719",
+    "nombre": "Escudo dorado",
+    "descripcion": "Combina la energía del oro divino con la luz azul de protección.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "4b1fcb99-69a2-4e17-90b8-e8449cf0db5c",
+    "codigo": "719849817",
+    "nombre": "Escudo energético",
+    "descripcion": "Refleja toda energía discordante.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "12655a17-ced2-4c20-829e-e996a4474c62",
+    "codigo": "918_819_819",
+    "nombre": "Escudo universal",
+    "descripcion": "Crea un campo protector colectivo de alta vibración.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "11b66314-3354-43c1-93f0-e09a390ade4e",
+    "codigo": "819_819_714_91",
+    "nombre": "Escudo universal",
+    "descripcion": "Activa protección simultánea en todas las dimensiones.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "058590a0-0d66-4f33-987c-475b401bb6ad",
+    "codigo": "819_718_814_81",
+    "nombre": "Escudo vivo",
+    "descripcion": "Protección dinámica que se adapta al entorno.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "2738c7e6-fb02-498e-9960-71cd2c37fc9c",
+    "codigo": "913_714_819",
+    "nombre": "Estabilidad económica",
+    "descripcion": "Crea equilibrio duradero en ingresos y egresos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "2a3b6b44-f2e3-46d2-a676-d710dfd7b9d3",
+    "codigo": "51971421897",
+    "nombre": "Evolución acelerada",
+    "descripcion": "Acelera la expansión del alma en coherencia con el propósito superior.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "ed6c5ed9-0b70-4ce3-801a-d22c38cbe465",
+    "codigo": "888_714_819",
+    "nombre": "Evolución del alma",
+    "descripcion": "Expande la conciencia multidimensional.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "4d927fe0-ecd2-4bc1-ba80-0ebd732563c6",
+    "codigo": "812_718_814_91",
+    "nombre": "Éxito completo",
+    "descripcion": "Culmina procesos de prosperidad con plenitud.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "bd88b975-a7d9-41b4-a5b8-5643dca4ffd0",
+    "codigo": "713_814_819_81",
+    "nombre": "Éxito creativo",
+    "descripcion": "Canaliza la inspiración hacia logros financieros.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "e0a82ac7-5885-4532-9258-a4e7e4182289",
+    "codigo": "71421981921",
+    "nombre": "Éxito empresarial",
+    "descripcion": "Favorece expansión y crecimiento de negocios.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "5232ed8e-4df4-4f47-825c-209ffdefdd22",
+    "codigo": "518491617",
+    "nombre": "Éxito en proyectos",
+    "descripcion": "Canaliza la energía hacia logros concretos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "26fa6d23-ebc0-45b6-836a-1e86fe438c7a",
+    "codigo": "741_889_719_8",
+    "nombre": "Éxito financiero",
+    "descripcion": "Manifiesta éxito material y estabilidad.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "07411044-fb2b-487f-955a-a1df57dec444",
+    "codigo": "318_519_814_19",
+    "nombre": "Éxito profesional",
+    "descripcion": "Conecta propósito y recompensa material.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "4a0e515e-68ad-4ce5-8033-8d691aed7276",
+    "codigo": "812_719_481",
+    "nombre": "Éxito profesional",
+    "descripcion": "Facilita logros y reconocimientos en el trabajo.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "3e619e19-9633-4de7-b723-017fa6984c84",
+    "codigo": "719_819_819",
+    "nombre": "Éxito total",
+    "descripcion": "Culmina ciclos de esfuerzo con recompensas materiales.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "9fa85e5b-7759-4ee1-80ab-786518d59379",
+    "codigo": "718_819_713",
+    "nombre": "Expansión de propósito",
+    "descripcion": "Alinea la acción con la misión del alma.",
+    "categoria": "Maestría",
+    "color": "#FFF8DC",
+    "created_at": "2025-10-15T22:37:47.776422+00:00",
+    "updated_at": "2025-10-15T22:37:47.776422+00:00"
+  },
+  {
+    "id": "20a517d1-c39a-4810-a422-46aab2d2d896",
+    "codigo": "113819214",
+    "nombre": "Expansión del propósito",
+    "descripcion": "Alinea la misión personal con el plan divino.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "e8c51b17-38ef-4f2c-9efd-8e677fbbf979",
+    "codigo": "819_418_719_81",
+    "nombre": "Expansión empresarial",
+    "descripcion": "Multiplica resultados y crecimiento sostenido.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "852a0fc3-f8a5-4b72-9b46-e2927bbf5665",
+    "codigo": "819_813_719",
+    "nombre": "Expansión empresarial",
+    "descripcion": "Multiplica las oportunidades de negocio y éxito.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "63403a9d-6b23-438c-bba2-c5164342f872",
+    "codigo": "814_719_814_91",
+    "nombre": "Expresión amorosa",
+    "descripcion": "Permite manifestar sentimientos con confianza.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "8edefd47-8579-4113-a8a0-7665ccf38182",
+    "codigo": "714_813_819_91",
+    "nombre": "Fidelidad",
+    "descripcion": "Refuerza compromiso y estabilidad emocional.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "cd9f95be-7c77-4662-aa44-ca19c0b8c9ec",
+    "codigo": "814_718_713_91",
+    "nombre": "Fluir con el universo",
+    "descripcion": "Permite expansión sin resistencia.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "20615f30-61cf-4711-9fed-9f37c847af1f",
+    "codigo": "819_714_713_91",
+    "nombre": "Fluir sin resistencia",
+    "descripcion": "Apertura y aceptación total.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T23:25:24.931024+00:00",
+    "updated_at": "2025-10-15T23:55:55.90253+00:00"
+  },
+  {
+    "id": "6558ff88-85f4-4fbf-a9ee-0c48ef2f63b2",
+    "codigo": "718_918_719_81",
+    "nombre": "Flujo constante de riqueza",
+    "descripcion": "Mantiene la abundancia circulando sin bloqueos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "31ba8566-aaae-47ad-948b-dd07c3e045da",
+    "codigo": "719_819_812_18",
+    "nombre": "Flujo de clientes",
+    "descripcion": "Atrae personas alineadas al valor ofrecido.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "a04f9edc-c0e6-47e3-87e6-450c6611c69c",
+    "codigo": "814_719_481",
+    "nombre": "Flujo de clientes",
+    "descripcion": "Multiplica oportunidades comerciales y contactos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "96568bea-41e4-4073-90f3-a36526e118b4",
+    "codigo": "818_719_819_81",
+    "nombre": "Flujo ilimitado",
+    "descripcion": "Elimina límites en ingresos y oportunidades.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "160f79d6-6ede-43b7-8527-804363b9957f",
+    "codigo": "918_814_719_81",
+    "nombre": "Flujo sanguíneo perfecto",
+    "descripcion": "Armoniza la circulación sanguínea.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "402f0cbe-3386-45e4-bc7b-cd31c13b2723",
+    "codigo": "713_819_819_81",
+    "nombre": "Flujo universal",
+    "descripcion": "Sincroniza la abundancia con el orden divino.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "2e0a2117-8078-4448-8086-e81ae3bb9e8e",
+    "codigo": "813_819_714_81",
+    "nombre": "Flujo universal",
+    "descripcion": "Mantiene la expansión continua del ser.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "4bcc1ddb-4fb2-4854-93a3-a77407c3fce6",
+    "codigo": "819_489_718_918",
+    "nombre": "Fortalecer sistema inmune",
+    "descripcion": "Refuerza defensas naturales del cuerpo.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "c78b3326-cb41-451d-a669-99d967c5d5fc",
+    "codigo": "919_719_481",
+    "nombre": "Fortuna activa",
+    "descripcion": "Invoca oportunidades y buena suerte económica.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "7c0e95c2-89a4-443f-b9c9-94e2ced177a6",
+    "codigo": "714_819_318_91",
+    "nombre": "Fortuna divina",
+    "descripcion": "Activa la energía espiritual de prosperidad.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "cd76da0f-1b80-4350-a5f3-121a84e524cd",
+    "codigo": "918_719_813",
+    "nombre": "Fortuna divina",
+    "descripcion": "Atrae riquezas bajo la gracia del Creador.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "431170d8-54e6-43ef-a3a9-988e629c61e0",
+    "codigo": "718_814_819_81",
+    "nombre": "Generosidad",
+    "descripcion": "Equilibra dar y recibir en abundancia.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "6a40ff93-b214-4a43-8459-640b486aa8cb",
+    "codigo": "813_819_714_91",
+    "nombre": "Gratitud amorosa",
+    "descripcion": "Eleva vibración del vínculo desde la gratitud.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "6ff1b3a0-68bb-441d-9212-c84c23ac2fc2",
+    "codigo": "819_719_819_71",
+    "nombre": "Hígado en armonía",
+    "descripcion": "Regenera y limpia el hígado de toxinas.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "391b2f98-e6ef-4303-9213-0da8e4212eb4",
+    "codigo": "888_991_481_89",
+    "nombre": "Iluminación interior",
+    "descripcion": "Despierta claridad, lucidez y propósito.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "ee062d03-aa2f-4f98-9e00-debdd3ed16d3",
+    "codigo": "819_713_718_91",
+    "nombre": "Iluminación total",
+    "descripcion": "Fusión del ser con la conciencia universal.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "b6754da0-181b-4ce8-9fbe-5e282d09d87b",
+    "codigo": "819_819_718_91",
+    "nombre": "Ingreso elevado",
+    "descripcion": "Eleva la frecuencia del dinero recibido.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "4b7a25ae-37a8-439e-ae78-275dd90516f2",
+    "codigo": "219814819",
+    "nombre": "Ingresos inesperados",
+    "descripcion": "Atrae dinero de fuentes no previstas.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "dfc5fc81-f1c7-4e19-bc6c-c6686667a241",
+    "codigo": "618_491_719_81",
+    "nombre": "Ingresos recurrentes",
+    "descripcion": "Establece estabilidad y flujo financiero constante.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "8ec2abfc-a9e8-456a-8ee1-fa9a76740467",
+    "codigo": "819_718_814",
+    "nombre": "Integración espiritual",
+    "descripcion": "Une las dimensiones del ser con armonía universal.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "65b951a8-8fae-4c5c-8c84-b69a4379e5fa",
+    "codigo": "318_914_719",
+    "nombre": "Inversiones exitosas",
+    "descripcion": "Guía para tomar decisiones económicas acertadas.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "0218ec3a-2251-4758-a1ea-7675508f2f3c",
+    "codigo": "819_819_814_91",
+    "nombre": "Invulnerabilidad",
+    "descripcion": "Evita absorción de energía ajena.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "adb34103-9da9-42a7-959e-47a7f2823ad2",
+    "codigo": "814_714_819",
+    "nombre": "Lazos sagrados",
+    "descripcion": "Fortalece los vínculos de amor puro y propósito.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "a1e1ea73-7be4-47b2-b4f5-31e62a4ed302",
+    "codigo": "814_819_713_81",
+    "nombre": "Lealtad",
+    "descripcion": "Fortalece la fidelidad emocional.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "7a96a47a-9061-4026-b12b-af6d7eacd4d9",
+    "codigo": "41281891718",
+    "nombre": "Liberación de juicios",
+    "descripcion": "Libera condicionamientos mentales limitantes.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T22:25:54.392956+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "30869c14-9af7-429e-844c-afab7410f4c3",
+    "codigo": "718_914_819",
+    "nombre": "Liberación emocional",
+    "descripcion": "Permite expresar y liberar emociones contenidas.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T22:36:07.636131+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "041f5d88-c82d-417c-bdaf-27d0c771b133",
+    "codigo": "814_713_819_81",
+    "nombre": "Liberar cansancio",
+    "descripcion": "Restaura energía vital agotada.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T23:25:24.931024+00:00",
+    "updated_at": "2025-10-15T23:55:55.90253+00:00"
+  },
+  {
+    "id": "ebe30213-317b-4ba2-bd12-6825b5a71de6",
+    "codigo": "813_814_819_81",
+    "nombre": "Liberar cargas externas",
+    "descripcion": "Elimina energías adquiridas de otros.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "b33a8b98-88cf-4899-9b70-75eeb8cb8fb9",
+    "codigo": "714_819_819",
+    "nombre": "Liberar influencias",
+    "descripcion": "Rompe pactos, ataduras y conexiones energéticas nocivas.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "4a4c2d50-c246-45c2-b985-cb58407432e5",
+    "codigo": "61_988_184_161",
+    "nombre": "Limpieza de memorias emocionales",
+    "descripcion": "Libera memorias dolorosas del subconsciente.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "74e042e7-1835-4c6f-8df5-e14640144e8c",
+    "codigo": "714_819_714",
+    "nombre": "Limpieza espiritual",
+    "descripcion": "Elimina densidades acumuladas en el cuerpo etérico.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "1ed90f7c-061a-4a96-9fdb-ac586a42e1a9",
+    "codigo": "913_819_714",
+    "nombre": "Lluvia de bendiciones",
+    "descripcion": "Atrae abundancia divina en múltiples formas.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "de3481c4-9586-4280-bbea-c2a94be028dc",
+    "codigo": "918_814_719",
+    "nombre": "Luz celestial",
+    "descripcion": "Conecta con energías superiores que disuelven el miedo.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "a5fe4d92-de5e-42b8-8baf-60ef443af805",
+    "codigo": "111_119_481",
+    "nombre": "Luz cristalina divina",
+    "descripcion": "Activa la energía blanca de purificación total.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T22:25:54.392956+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "59496237-3af1-45ca-a24f-ab6bf28c31cd",
+    "codigo": "819_718_713",
+    "nombre": "Luz de comprensión",
+    "descripcion": "Despierta sabiduría en el proceso de expansión personal.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "6d8f847a-98d8-4ed3-bf7c-98f6f1c48abd",
+    "codigo": "111_99_888",
+    "nombre": "Luz de protección divina",
+    "descripcion": "Invoca protección celestial directa.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "35d48232-ccfc-48ba-b071-df6567ae66cc",
+    "codigo": "819_814_713",
+    "nombre": "Luz de resguardo",
+    "descripcion": "Crea un escudo luminoso interno y externo.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "ea6ea4dc-a58d-48f8-9b3d-385b275b58bb",
+    "codigo": "193751891",
+    "nombre": "Luz del conocimiento",
+    "descripcion": "Trae comprensión y conciencia superior.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T23:58:51.173453+00:00"
+  },
+  {
+    "id": "c172c97c-70be-4c77-b49a-6d7dd6b1af53",
+    "codigo": "714_819_713",
+    "nombre": "Luz interior",
+    "descripcion": "Activa el fuego divino en el corazón espiritual.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "9a7e095f-50a1-4abb-9667-65dfa7893f26",
+    "codigo": "714_819_814_81",
+    "nombre": "Luz interior",
+    "descripcion": "Activa iluminación y percepción sutil.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "2743167e-4084-44c1-885d-213eaa0633f8",
+    "codigo": "12370744",
+    "nombre": "Luz pura del Creador",
+    "descripcion": "Activa la iluminación interior y claridad mental.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "7e4271c6-5409-4853-bddb-fb3423d6de0c",
+    "codigo": "819_714_713_81",
+    "nombre": "Luz superior",
+    "descripcion": "Eleva la vibración de los pensamientos.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "800b6a8b-cb8b-45d4-b053-b46267cd771c",
+    "codigo": "718_814_713",
+    "nombre": "Luz violeta",
+    "descripcion": "Purifica emociones densas y eleva la vibración espiritual.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "9e08d952-3d0f-449c-bf20-6369162d0626",
+    "codigo": "319817318",
+    "nombre": "Macrosalvación universal",
+    "descripcion": "Expande la energía de salvación para toda la humanidad.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "f0bdc011-54d0-4666-abab-d282d051a42c",
+    "codigo": "81917981",
+    "nombre": "Maestría creadora",
+    "descripcion": "Expande la conciencia hacia el dominio de la realidad cuántica.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "697be8f3-554f-483b-913e-4f1e16c3f1d4",
+    "codigo": "718_814_819_91",
+    "nombre": "Maestría interior",
+    "descripcion": "Activa la sabiduría dormida en tu ADN.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "3d0d4a6d-fd3f-4600-89b9-55646507f87b",
+    "codigo": "714_814_718_91",
+    "nombre": "Magnetismo financiero",
+    "descripcion": "Potencia atracción de oportunidades.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "fc07bd74-10c4-4703-a480-b59424bf78d5",
+    "codigo": "813_819_718",
+    "nombre": "Manifestación consciente",
+    "descripcion": "Crea realidades desde el pensamiento divino.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "09e76fc6-4e4c-46e4-a7c7-9cd311d4cc0d",
+    "codigo": "741741741",
+    "nombre": "Manifestación cuántica",
+    "descripcion": "Potencia el proceso de creación consciente a través de la vibración pura.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "2b54c636-7427-47b4-ba35-91798f3c9a9b",
+    "codigo": "819_719_481",
+    "nombre": "Manifestación económica",
+    "descripcion": "Transforma ideas en resultados financieros reales.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "af516224-6f38-4fbd-9c66-811c0410f34f",
+    "codigo": "817_719_319_81",
+    "nombre": "Manifestación material",
+    "descripcion": "Convierte ideas en resultados concretos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "ace01202-ffaa-41f7-af1c-767d11173191",
+    "codigo": "714_819_719",
+    "nombre": "Manifestación superior",
+    "descripcion": "Proyecta realidades en sincronía con el Creador.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "ac571325-c19d-4be1-91f4-add0947190e6",
+    "codigo": "819_819_718",
+    "nombre": "Manifestar desde el alma",
+    "descripcion": "Crea desde la coherencia espiritual y el amor.",
+    "categoria": "Maestría",
+    "color": "#FFF8DC",
+    "created_at": "2025-10-15T22:37:47.776422+00:00",
+    "updated_at": "2025-10-15T22:37:47.776422+00:00"
+  },
+  {
+    "id": "76e22fd8-3a27-42c6-897f-5961652c3c51",
+    "codigo": "289417519",
+    "nombre": "Materialización instantánea",
+    "descripcion": "Manifiesta realidades coherentes con la intención divina.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "3c4b3d23-4ac6-4c31-889d-e0e97e91ec0c",
+    "codigo": "819_718_714_81",
+    "nombre": "Memoria universal",
+    "descripcion": "Accede a información del campo cuántico.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "bfc35d8a-e4e9-4cc2-9f4c-fc8ab0c3e524",
+    "codigo": "818_719_319_714",
+    "nombre": "Mente y cuerpo sincronizados",
+    "descripcion": "Equilibra el sistema nervioso y las emociones.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "36cc7a13-7982-42e9-8193-916c195941d6",
+    "codigo": "719_819_714",
+    "nombre": "Milagro financiero",
+    "descripcion": "Manifiesta ingresos inesperados y perfectos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "644c39d6-dae3-4516-b7c8-4f04061ecc9d",
+    "codigo": "518_819_714",
+    "nombre": "Multiplicación de ingresos",
+    "descripcion": "Expande los flujos financieros de forma natural.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "1f988aae-9f55-4dcb-84c1-8d65741edd7e",
+    "codigo": "719_481_219_81",
+    "nombre": "Multiplicación de oportunidades",
+    "descripcion": "Expande posibilidades de crecimiento material.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "df01bcb2-f226-4510-b0ed-d2699861e189",
+    "codigo": "714_814_819_91",
+    "nombre": "Multiplicación de recursos",
+    "descripcion": "Aumenta bienes y oportunidades disponibles.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "b4367985-66b4-4458-861d-abcfde52d0c4",
+    "codigo": "814418719",
+    "nombre": "Multiplicar ingresos",
+    "descripcion": "Aumenta los ingresos y oportunidades económicas.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "3280821c-6215-4309-b39a-b02231e0e809",
+    "codigo": "91481987",
+    "nombre": "Negocios conscientes",
+    "descripcion": "Integra la expansión espiritual con la prosperidad material armónica.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "d54760cc-1127-4f50-a713-bc9a0b7c4aba",
+    "codigo": "813_719_814_19",
+    "nombre": "Negocios exitosos",
+    "descripcion": "Expansión estable y consciente de proyectos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "d1a91ae1-5223-4400-9128-74bf7741d5fc",
+    "codigo": "812_714_819_31",
+    "nombre": "Negocios prósperos",
+    "descripcion": "Fortalece alianzas y relaciones comerciales.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "3b64218f-d0bd-4446-b4b2-8692b5a86d16",
+    "codigo": "814_713_814_81",
+    "nombre": "Neutralización",
+    "descripcion": "Disuelve residuos energéticos antiguos.",
+    "categoria": "Limpieza",
+    "color": "#E8E8E8",
+    "created_at": "2025-10-15T23:28:55.937122+00:00",
+    "updated_at": "2025-10-15T23:28:55.937122+00:00"
+  },
+  {
+    "id": "af0f8a86-5bb4-4e74-9942-982e1590a0b4",
+    "codigo": "917_198_719_81",
+    "nombre": "Neutralizar ataques energéticos",
+    "descripcion": "Bloquea intenciones negativas externas.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "c2190aea-72fe-4cc4-916c-9edb25c2a1f9",
+    "codigo": "819_713_714",
+    "nombre": "Neutralizar cargas",
+    "descripcion": "Limpia la energía del cuerpo físico y emocional.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "25d7734c-68e8-4557-a674-a7e872b8d5e4",
+    "codigo": "914_819_713",
+    "nombre": "Neutralizar mal de ojo",
+    "descripcion": "Elimina vibraciones de envidia o interferencia ajena.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "43851504-9f9c-4b19-88e9-f9e07bd646c8",
+    "codigo": "489_712_819_48",
+    "nombre": "Neutralizar miedos",
+    "descripcion": "Transforma el miedo en confianza y serenidad.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "e3f9a4a4-e822-4763-adef-3a5354d578f0",
+    "codigo": "7193718",
+    "nombre": "Normalizar futuro",
+    "descripcion": "Armoniza líneas de tiempo personales.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T23:58:51.173453+00:00"
+  },
+  {
+    "id": "b1ec2ef8-9d27-47a5-9d2e-13a504500018",
+    "codigo": "718_914_812_19",
+    "nombre": "Oído saludable",
+    "descripcion": "Alinea frecuencias auditivas.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "9efec153-7bce-4b16-b159-7dc26fab8c61",
+    "codigo": "813_918_719_81",
+    "nombre": "Oídos equilibrados",
+    "descripcion": "Restaura la audición física y espiritual.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "a76ad134-4171-4fc2-8adf-20c9f679cedd",
+    "codigo": "714_819_812_19",
+    "nombre": "Oportunidad perfecta",
+    "descripcion": "Atrae situaciones favorables en el momento justo.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "462f85ac-5b69-4612-b693-1b43b881ffc8",
+    "codigo": "519_714_819_31",
+    "nombre": "Oportunidades infinitas",
+    "descripcion": "Genera sincronicidades económicas positivas.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "ff223212-3208-4951-8a08-dac95550c636",
+    "codigo": "819_814_718_91",
+    "nombre": "Oro energético",
+    "descripcion": "Frecuencia dorada que magnetiza recursos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "7d87e6a5-4def-4744-8e5f-e817d386676f",
+    "codigo": "714_219_819",
+    "nombre": "Pago de deudas",
+    "descripcion": "Acelera la liberación de compromisos financieros.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "26d18376-40d4-4e61-8b5e-fb7e2015e7da",
+    "codigo": "814_719_814_81",
+    "nombre": "Pareja consciente",
+    "descripcion": "Genera equilibrio emocional y espiritual en la relación.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "d449626e-40f2-4097-9dd5-b083eec25561",
+    "codigo": "819_718_813",
+    "nombre": "Pasión consciente",
+    "descripcion": "Une la energía del deseo con la conexión espiritual.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "28c9678c-48dc-45f3-8df1-66459384a65f",
+    "codigo": "41781971981",
+    "nombre": "Paz interior",
+    "descripcion": "Restablece serenidad y equilibrio emocional.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T23:58:51.173453+00:00"
+  },
+  {
+    "id": "5e33ae10-1950-40a0-95e6-954da5439d2d",
+    "codigo": "813_814_718_91",
+    "nombre": "Perdón divino",
+    "descripcion": "Sana el alma de heridas relacionales.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "26a35c0d-942f-49ed-8345-f797f1bc9854",
+    "codigo": "7199719",
+    "nombre": "Perdón y reconciliación",
+    "descripcion": "Sana conflictos emocionales y pasados.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "ad3f9534-a38e-431f-8d29-e6506d354a14",
+    "codigo": "814_819_714_91",
+    "nombre": "Perdonar pasado",
+    "descripcion": "Desconecta energía de experiencias antiguas.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T23:25:24.931024+00:00",
+    "updated_at": "2025-10-15T23:55:55.90253+00:00"
+  },
+  {
+    "id": "9881c1dc-d908-42e3-abb3-35aae1d37d3a",
+    "codigo": "91471981",
+    "nombre": "Piel perfecta",
+    "descripcion": "Rejuvenece la piel, elimina imperfecciones y cicatrices.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "172daf2b-4d5a-4d36-9790-8d43d8e0bac8",
+    "codigo": "1231115015",
+    "nombre": "Presencia del Creador",
+    "descripcion": "Reconexión con la fuente divina, restablece la conexión original con el Creador.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "208d5867-a588-4b25-8204-8f382d473f82",
+    "codigo": "819_913_714",
+    "nombre": "Prosperidad familiar",
+    "descripcion": "Atrae bienestar para todo el núcleo familiar.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "56a8ba5e-e228-4092-8168-4cfb69471635",
+    "codigo": "71427321893",
+    "nombre": "Prosperidad infinita",
+    "descripcion": "Abre portales de riqueza continua y sostenida.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "c7803ab9-11b6-4cf5-ab72-f8f578090c01",
+    "codigo": "71931",
+    "nombre": "Protección",
+    "descripcion": "Crea un campo protector ante energías negativas.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "267c4e04-fe10-44fd-998d-e3d8b21b48fe",
+    "codigo": "819_718_913",
+    "nombre": "Protección angelical",
+    "descripcion": "Invoca la asistencia directa de fuerzas superiores.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "2e423dd0-d3e2-4979-a5d2-9ccad6cc74fe",
+    "codigo": "918_819_713",
+    "nombre": "Protección contra miedos",
+    "descripcion": "Refuerza la fe y confianza espiritual.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "d9ef6180-27b5-4b8e-8d7b-62549a84e9e4",
+    "codigo": "917_819_714",
+    "nombre": "Protección de la conciencia",
+    "descripcion": "Preserva la claridad mental ante ataques energéticos.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "4b0665af-8406-4624-aac2-ec45c4e18e5d",
+    "codigo": "819_718_713_91",
+    "nombre": "Protección diaria",
+    "descripcion": "Frecuencia para mantener defensa constante.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "afa9917b-295b-4aab-8b85-9a6ec578c53f",
+    "codigo": "918_819_714",
+    "nombre": "Protección divina inmediata",
+    "descripcion": "Crea un escudo de emergencia ante amenazas energéticas.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "27456e27-5ded-4f8f-9d01-6ef3d3d7da75",
+    "codigo": "914_718_219_81",
+    "nombre": "Protección en viajes",
+    "descripcion": "Seguridad durante traslados y trayectos.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "95ff0851-0144-41d6-a002-480a89d72bbf",
+    "codigo": "888_991_418_19",
+    "nombre": "Protección familiar",
+    "descripcion": "Ampara a seres queridos y entorno cercano.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "f5bc860c-9cc0-4e9b-851c-5893a87bd8d4",
+    "codigo": "718_819_813",
+    "nombre": "Protección instantánea",
+    "descripcion": "Activa defensa inmediata en situaciones de riesgo energético.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "e4f926b5-ba2e-4fa8-9113-078908e5953c",
+    "codigo": "819_713_819_81",
+    "nombre": "Protección instantánea",
+    "descripcion": "Acción inmediata ante agresión energética.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "133b9003-f2f3-4405-9324-81661b322131",
+    "codigo": "917_814_719",
+    "nombre": "Protección laboral",
+    "descripcion": "Evita sabotajes, conflictos y energías densas en el trabajo.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "82d7bbf6-c2e6-40e4-9d05-9d14ccef3c4b",
+    "codigo": "713_819_219",
+    "nombre": "Protección nocturna",
+    "descripcion": "Protege durante el descanso y sueños.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "40f65c5c-cc96-46e8-8e6a-7255776bf1cb",
+    "codigo": "518_719_813",
+    "nombre": "Proyecto exitoso",
+    "descripcion": "Logros materiales alineados al propósito.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "1367b381-1eb4-44ae-8ce7-cdcc5d32ada0",
+    "codigo": "31481972",
+    "nombre": "Pulmones sanos",
+    "descripcion": "Armoniza el sistema respiratorio.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "7e51c93a-2ad7-451e-ab79-21f24fe1db50",
+    "codigo": "71381921",
+    "nombre": "Punto de poder creador",
+    "descripcion": "Conecta con la fuente de manifestación consciente.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "ca5ab157-b20f-44ed-9f68-5804df32fa1c",
+    "codigo": "819_718_819",
+    "nombre": "Purificación con luz azul",
+    "descripcion": "Envuelve el cuerpo en la vibración protectora del rayo azul.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "5dfe18c0-947c-4fd1-bac0-8d33ac78791f",
+    "codigo": "819_714_814_91",
+    "nombre": "Purificación de aura",
+    "descripcion": "Restaura pureza energética del ser.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T23:23:08.331927+00:00",
+    "updated_at": "2025-10-15T23:56:24.545957+00:00"
+  },
+  {
+    "id": "8c80fe5f-a386-4036-a4b6-f6c2da30a7a1",
+    "codigo": "514_219_819_14",
+    "nombre": "Purificación de la sangre",
+    "descripcion": "Armoniza circulación y limpieza sanguínea.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "5026e04e-8736-49ea-be4e-6ac141f6a470",
+    "codigo": "548432198",
+    "nombre": "Purificación del ADN",
+    "descripcion": "Restaura la información genética original.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "07d1c2a7-da0a-4dd1-805d-35d358208563",
+    "codigo": "8881111",
+    "nombre": "Purificación energética",
+    "descripcion": "Elimina energías densas y restaura el flujo vital.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T22:25:54.392956+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "97575085-98b1-4ba3-a3b4-a852d92b029c",
+    "codigo": "718_918_714",
+    "nombre": "Purificación mental",
+    "descripcion": "Disuelve pensamientos intrusivos y restaura claridad.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T22:25:54.392956+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "57cd3463-5f51-4dea-9d69-40e67319eab8",
+    "codigo": "718_819_719",
+    "nombre": "Purificar energía familiar",
+    "descripcion": "Limpia linajes y memorias heredadas.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "cb6b63b1-e1d5-473e-985a-ae2687855762",
+    "codigo": "7189719",
+    "nombre": "Purificar espacios",
+    "descripcion": "Limpieza energética del entorno.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "54e99cd6-1489-4d82-8281-c954a654d738",
+    "codigo": "714_819_718_91",
+    "nombre": "Realización económica",
+    "descripcion": "Manifiesta prosperidad en equilibrio interior.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "f8729689-05b7-4298-9677-3d1a64d17cc2",
+    "codigo": "519_814_714_81",
+    "nombre": "Recibir merecidamente",
+    "descripcion": "Abre la conciencia para aceptar prosperidad.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "92031fe6-302b-4244-855a-c924b89c45ad",
+    "codigo": "713_819_714_81",
+    "nombre": "Reconciliación",
+    "descripcion": "Restaura la conexión con seres amados.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "1c608eea-9d33-4fdc-8ae1-78c858335350",
+    "codigo": "819_713_814_91",
+    "nombre": "Reconexión emocional",
+    "descripcion": "Restaura el flujo del cariño.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "6be5219f-5417-4660-bf7f-134ea21f3893",
+    "codigo": "918794818",
+    "nombre": "Reconfiguración de líneas de tiempo",
+    "descripcion": "Corrige eventos pasados y futuros dentro del campo de conciencia.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "6604ba4e-5fed-4e87-8c90-c2b1ea46ef8c",
+    "codigo": "713_918_214",
+    "nombre": "Reconocimiento financiero",
+    "descripcion": "Recibir valor y compensación por el talento.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "36cfe417-50fb-426b-9555-d34f4dbd2392",
+    "codigo": "713_814_719_81",
+    "nombre": "Recuperación milagrosa",
+    "descripcion": "Conecta la intención con la curación inmediata.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "1948a36f-35c8-48e3-8f15-ce979eae89bf",
+    "codigo": "914_719_819_18",
+    "nombre": "Recuperación muscular",
+    "descripcion": "Revitaliza fibras y tejido muscular.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "a8e5c646-c290-4065-b6af-e8f20517db5b",
+    "codigo": "319764",
+    "nombre": "Recuperación postoperatoria",
+    "descripcion": "Acelera la recuperación tras intervenciones médicas.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "fc7c82c9-523e-40be-be8e-5c0970b62278",
+    "codigo": "481219319",
+    "nombre": "Recuperar energía vital",
+    "descripcion": "Aumenta la vitalidad general del cuerpo.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "141c6393-c13d-4d80-891a-802fc80c7674",
+    "codigo": "819_719_319_81",
+    "nombre": "Reequilibrio energético",
+    "descripcion": "Reordena frecuencias internas de salud.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "db991230-5c34-49c4-b2e6-5af37137b5d1",
+    "codigo": "31427814",
+    "nombre": "Reescribir la matriz personal",
+    "descripcion": "Permite actualizar patrones de pensamiento hacia estados de perfección.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "0981d535-4153-4860-ac12-15f44ca20f8d",
+    "codigo": "51421981419",
+    "nombre": "Reestructurar la realidad",
+    "descripcion": "Corrige distorsiones y restablece la Norma.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T22:25:54.392956+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "df4da65b-5ca0-4503-8a43-bc3a0bfcec92",
+    "codigo": "7194718189",
+    "nombre": "Regeneración celular",
+    "descripcion": "Restaura las células en su estado perfecto.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "7a095299-cbb3-41cb-8935-3b24d5c2e8c6",
+    "codigo": "811_719_319_84",
+    "nombre": "Regeneración completa",
+    "descripcion": "Sanación multidimensional del cuerpo físico.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "eec5e17c-cb89-4ab1-b251-434d4cabcbce",
+    "codigo": "419312819212",
+    "nombre": "Regeneración de órganos",
+    "descripcion": "Reconstruye tejidos y órganos en perfección.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "f0e3e15b-2056-4c15-b586-36c9c008d61b",
+    "codigo": "913814719",
+    "nombre": "Regeneración del cerebro",
+    "descripcion": "Activa el potencial neuronal y claridad mental.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "f234369d-b283-468d-8feb-960210711616",
+    "codigo": "8191949819",
+    "nombre": "Regeneración muscular",
+    "descripcion": "Restablece la fuerza y estructura del tejido muscular.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "46a3f79b-2d38-4d12-9e8e-0f9419aac4bd",
+    "codigo": "819_217_319_84",
+    "nombre": "Regeneración pulmonar",
+    "descripcion": "Equilibra oxigenación y respiración consciente.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "1aafbc38-3c48-46f9-8562-b7553202a21d",
+    "codigo": "917_819_714_819",
+    "nombre": "Regeneración total",
+    "descripcion": "Acelera la curación completa del organismo.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "b5dfb0b1-cc41-4b57-a9c0-dd77855854e4",
+    "codigo": "71181932",
+    "nombre": "Regenerar huesos",
+    "descripcion": "Fortalece el sistema óseo y su capacidad de reparación.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "c253e449-e4d7-441d-ba57-1e4e7ca58085",
+    "codigo": "811_942_714_19",
+    "nombre": "Regenerar piel",
+    "descripcion": "Restablece el brillo y salud dérmica.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "bdb3c081-ebf8-4106-af55-16e243eef8c0",
+    "codigo": "7897418",
+    "nombre": "Reinicio energético",
+    "descripcion": "Reinicia tu campo vibracional a su estado original.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T22:25:54.392956+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "98386c44-c6b4-4788-909b-bbe928c786f7",
+    "codigo": "918_719_714_81",
+    "nombre": "Rejuvenecimiento biológico",
+    "descripcion": "Restaura el cuerpo a su estado ideal de juventud.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "9d329dac-e6a8-4cce-83ea-0e8d6959046c",
+    "codigo": "714_819_817_19",
+    "nombre": "Relación ideal",
+    "descripcion": "Manifiesta vínculos basados en respeto y crecimiento.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "177a6b62-138d-4bac-b68a-406eedeed0d6",
+    "codigo": "518_491_617",
+    "nombre": "Relaciones exitosas",
+    "descripcion": "Armoniza vínculos personales y laborales.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "2c0a9099-4004-4aa9-8fe2-b90fc65732dd",
+    "codigo": "889_8",
+    "nombre": "Reparación energética profunda",
+    "descripcion": "Restaura el flujo vital en todos los niveles.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "aa3b3f31-a79c-4772-af45-954f4966de79",
+    "codigo": "913_719_819_48",
+    "nombre": "Reparar ADN",
+    "descripcion": "Restaura códigos de perfección genética.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "a63f193d-98b0-4ad8-aee9-2305fa9b7c97",
+    "codigo": "819_719_814",
+    "nombre": "Reparar escudo energético",
+    "descripcion": "Restaura fisuras en el campo áurico.",
+    "categoria": "Protección",
+    "color": "#1E90FF",
+    "created_at": "2025-10-15T22:29:55.35787+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "c28adf21-6cc6-4ffc-8d19-73562c660d97",
+    "codigo": "714_814_819",
+    "nombre": "Reprogramación espiritual",
+    "descripcion": "Reescribe patrones mentales desde la sabiduría del alma.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "c09974b3-d7bc-44cf-89ae-97d447f8345d",
+    "codigo": "814_714_819_91",
+    "nombre": "Reprogramar mente",
+    "descripcion": "Sustituye creencias limitantes por conciencia divina.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "09cff58e-67e9-4951-98e8-34cd2fe693d2",
+    "codigo": "9788891719",
+    "nombre": "Resolución total",
+    "descripcion": "Cierra ciclos emocionales inconclusos.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T23:58:51.173453+00:00"
+  },
+  {
+    "id": "8d0e144e-dfa6-4d8c-8713-4c159a13b4ed",
+    "codigo": "9788819719",
+    "nombre": "Resolver problemas generales",
+    "descripcion": "Lleva cualquier conflicto a la armonía universal.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "45d08877-b9c6-40a0-9e61-53322e92837f",
+    "codigo": "718_714_819_81",
+    "nombre": "Resonancia superior",
+    "descripcion": "Sintoniza con las frecuencias más elevadas.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "73811046-ba8c-4539-915e-40200bdaae47",
+    "codigo": "713_819_718_91",
+    "nombre": "Respeto mutuo",
+    "descripcion": "Fomenta comprensión y empatía.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "46aa5a86-22fb-44a9-bbb6-8b45bc535966",
+    "codigo": "819_814_714_91",
+    "nombre": "Respeto y entrega",
+    "descripcion": "Equilibra el dar y recibir amor.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "b3738c81-c776-4d8e-9c47-6f8c7dc3e478",
+    "codigo": "717918219",
+    "nombre": "Respiración profunda",
+    "descripcion": "Libera bloqueos pulmonares y mejora la oxigenación.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "e8c6b1e2-ad42-4b36-b2a3-1deb6b613ab4",
+    "codigo": "918_419_817_18",
+    "nombre": "Restaurar médula ósea",
+    "descripcion": "Regenera estructuras internas de vitalidad.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "88d72730-d7c9-4978-9873-c689443d3540",
+    "codigo": "814_718_819_81",
+    "nombre": "Revelación universal",
+    "descripcion": "Abre la visión del propósito cósmico.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "bd719c39-6aab-4120-8c06-bf24c8b88832",
+    "codigo": "819_719_714",
+    "nombre": "Riqueza consciente",
+    "descripcion": "Genera abundancia desde la conexión espiritual.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "809a8671-95b9-4ed0-b2d0-44b29ad9875b",
+    "codigo": "319_714_814_19",
+    "nombre": "Riqueza constante",
+    "descripcion": "Estabiliza recursos materiales a largo plazo.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "acff08b1-d731-4066-acc6-74f50214d1d6",
+    "codigo": "813_819_714",
+    "nombre": "Riqueza divina",
+    "descripcion": "Alinea la prosperidad con la conciencia del Creador.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "24acc33c-8921-45ea-9b67-a33f3bbf68db",
+    "codigo": "819_719_814_19",
+    "nombre": "Riqueza en equilibrio",
+    "descripcion": "Recursos abundantes sin exceso ni carencia.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "2923a68e-b2e2-4d13-a24c-22a2ac2115c8",
+    "codigo": "819_719_813",
+    "nombre": "Riqueza integral",
+    "descripcion": "Flujo de prosperidad en mente, cuerpo y espíritu.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "d23b3f0c-a956-47b7-95f4-821ef547dcc3",
+    "codigo": "913_814_718_91",
+    "nombre": "Riqueza interior",
+    "descripcion": "Armoniza el sentimiento de merecimiento.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "b13f76f4-50b9-4099-a7d8-54880ec5dd5a",
+    "codigo": "819_319_714",
+    "nombre": "Riqueza sostenida",
+    "descripcion": "Genera prosperidad continua en todas las áreas.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "ddf1ed6b-190f-4fc2-b224-39e009b9fd85",
+    "codigo": "714_719_814_91",
+    "nombre": "Riqueza total",
+    "descripcion": "Plenitud en todos los aspectos materiales.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "84fb856e-24b7-4d78-945a-4c5c1c9bd7fc",
+    "codigo": "819_714_718_91",
+    "nombre": "Romance",
+    "descripcion": "Activa pasión y ternura equilibradas.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "526bc0f9-9915-4005-bb0c-c96a84ace39a",
+    "codigo": "819_718_913_81",
+    "nombre": "Romper patrones",
+    "descripcion": "Ayuda a trascender hábitos autodestructivos.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T23:25:24.931024+00:00",
+    "updated_at": "2025-10-15T23:55:55.90253+00:00"
+  },
+  {
+    "id": "3fad55ba-f069-4ebd-a802-883b48755a93",
+    "codigo": "819_718_814_91",
+    "nombre": "Romper soledad",
+    "descripcion": "Atrae compañía y conexión emocional auténtica.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "128e2e00-6b88-4519-a8db-258ed8da60d3",
+    "codigo": "819_714_718",
+    "nombre": "Sabiduría divina",
+    "descripcion": "Conecta intelecto y espíritu.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "09970b89-ccea-44e3-96d6-a8cd1d804494",
+    "codigo": "713_819_21",
+    "nombre": "Sabiduría interior",
+    "descripcion": "Despierta el conocimiento ancestral.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "cdf8a416-40b1-4f48-b789-ae95c55db17c",
+    "codigo": "819_714_814_81",
+    "nombre": "Sabiduría práctica",
+    "descripcion": "Trae la comprensión espiritual a la vida diaria.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "fc370781-9816-4eec-814f-dad2c84a49a6",
+    "codigo": "814_718_819",
+    "nombre": "Sanación de pareja",
+    "descripcion": "Disuelve conflictos recurrentes entre parejas.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "15e257eb-c89d-4ef3-816a-bde2903680e8",
+    "codigo": "918_794_818_1",
+    "nombre": "Sanación del corazón",
+    "descripcion": "Cura heridas emocionales profundas.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "a99c49d4-b7c7-41c0-95b6-37c27b5cfa02",
+    "codigo": "798481",
+    "nombre": "Sanación del pasado",
+    "descripcion": "Transmuta experiencias dolorosas en aprendizaje.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T22:25:54.392956+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "f183aa2a-3719-4ea1-8696-c2834a63a51b",
+    "codigo": "819_819_814_81",
+    "nombre": "Sanar pasado",
+    "descripcion": "Transforma memorias de dolor en aprendizaje.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T23:25:24.931024+00:00",
+    "updated_at": "2025-10-15T23:55:55.90253+00:00"
+  },
+  {
+    "id": "1aa3da72-3237-4c90-8479-27d0dfbbbf28",
+    "codigo": "819_714_819",
+    "nombre": "Sanar relaciones familiares",
+    "descripcion": "Limpia la energía ancestral de conflictos en el linaje.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T22:31:07.314177+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "09f35931-156f-4d57-b826-fbbad49e9421",
+    "codigo": "918_719_814_9",
+    "nombre": "Sanar riñones",
+    "descripcion": "Armoniza la función renal y depuración de líquidos.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "dcbf74a9-cded-49b7-a139-671673a15dd5",
+    "codigo": "814_819_714",
+    "nombre": "Silencio interior",
+    "descripcion": "Accede al espacio de quietud espiritual.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "1b16beb8-8f57-4a71-a9de-5ea01cd07733",
+    "codigo": "713_814_819",
+    "nombre": "Silencio sagrado",
+    "descripcion": "Facilita la meditación profunda y la contemplación divina.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "3e274d46-41a7-4742-ac32-c35f9c273a24",
+    "codigo": "3333333",
+    "nombre": "Sincronización multidimensional",
+    "descripcion": "Activa la coherencia entre planos físico, mental y espiritual.",
+    "categoria": "Avanzados",
+    "color": "#00BFFF",
+    "created_at": "2025-10-15T23:43:24.453718+00:00",
+    "updated_at": "2025-10-15T23:43:24.453718+00:00"
+  },
+  {
+    "id": "b8577c03-734d-4b63-92bb-ff32fe540577",
+    "codigo": "2194189",
+    "nombre": "Sistema digestivo",
+    "descripcion": "Armoniza el proceso digestivo y metabólico.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "6687538c-a30e-4e5c-8af5-22fc5809b9d7",
+    "codigo": "918_718_819_81",
+    "nombre": "Sistema endocrino equilibrado",
+    "descripcion": "Restaura el balance hormonal y glandular.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "d9d6ae3c-7219-497f-9ca9-df1d2939e234",
+    "codigo": "518_719_814_817",
+    "nombre": "Sistema inmune activado",
+    "descripcion": "Defensa total del cuerpo físico y sutil.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "d3c92382-d28e-481a-9aeb-f0af793041ae",
+    "codigo": "812_314_719_89",
+    "nombre": "Sistema inmunológico fuerte",
+    "descripcion": "Activa defensas energéticas frente a enfermedades.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "d5036931-c51b-4c14-802a-f01b962e11a5",
+    "codigo": "518_719_814_19",
+    "nombre": "Sistema inmunológico óptimo",
+    "descripcion": "Fortalece el campo bioenergético del cuerpo.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "5b5200f1-c6af-429a-9b26-ae657e282db8",
+    "codigo": "718_919_714_819",
+    "nombre": "Sistema nervioso en armonía",
+    "descripcion": "Calma la mente y los impulsos eléctricos del cuerpo.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "0ecd2dbc-10d0-49e2-bdea-470bf78f12bc",
+    "codigo": "741",
+    "nombre": "Solución inmediata",
+    "descripcion": "Resuelve problemas o dolencias de forma rápida.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "f5a36067-3a4a-4c61-8ac0-da3afbb8831d",
+    "codigo": "418_819_719_81",
+    "nombre": "Suerte material",
+    "descripcion": "Activa vibración favorable en inversiones.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "25dbea19-554b-4b22-acf0-24042058d9e6",
+    "codigo": "819_713_814_19",
+    "nombre": "Ternura",
+    "descripcion": "Despierta suavidad y amor genuino.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "e4bccd43-5363-470f-be7f-f50076f69e32",
+    "codigo": "519_7148",
+    "nombre": "Todo es posible",
+    "descripcion": "Abre caminos infinitos de manifestación.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "59c38d77-dea7-46b3-8c19-63b14be53c94",
+    "codigo": "5197148",
+    "nombre": "Todo es posible (sanación)",
+    "descripcion": "Activa la fe celular y la confianza en la recuperación.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "2e400e8e-3410-4aa0-ab53-1c11dc51cf81",
+    "codigo": "819_819_819_81",
+    "nombre": "Totalidad universal",
+    "descripcion": "Representa la expansión máxima de conciencia.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "e04463fe-2c7c-4c8d-b979-a12f5d021352",
+    "codigo": "714_219_718",
+    "nombre": "Trabajo ideal",
+    "descripcion": "Manifiesta ocupación alineada con propósito y prosperidad.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T22:28:05.349549+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "d4089ac6-ae6b-470d-b6a1-59ad3d779de8",
+    "codigo": "814_819_718_81",
+    "nombre": "Tranquilidad",
+    "descripcion": "Recupera serenidad y claridad emocional.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T23:25:24.931024+00:00",
+    "updated_at": "2025-10-15T23:55:55.90253+00:00"
+  },
+  {
+    "id": "cb5a9423-2d5f-4a26-abe7-944c2d9e2e36",
+    "codigo": "1888948",
+    "nombre": "Transmutación de pensamientos negativos",
+    "descripcion": "Convierte energía mental negativa en expansión.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "afdae5e6-cafc-477a-b858-869b0c905a95",
+    "codigo": "818_713_819",
+    "nombre": "Trascendencia",
+    "descripcion": "Libera al alma de los límites del tiempo y el miedo.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "6b2ffff8-93f3-4556-bcbe-b248392a1dae",
+    "codigo": "819_819_819_91",
+    "nombre": "Trascendencia final",
+    "descripcion": "Realiza la unión total con la fuente.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "1a2b2863-f8c8-48e2-b61b-e83e31e4fb0c",
+    "codigo": "49851431918",
+    "nombre": "Traumas",
+    "descripcion": "Limpia memorias dolorosas del pasado.",
+    "categoria": "Liberación",
+    "color": "#00CED1",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T23:58:51.173453+00:00"
+  },
+  {
+    "id": "da0239b4-fb8d-4549-9b66-55a0f1977902",
+    "codigo": "718_219_714_8",
+    "nombre": "Unidad familiar",
+    "descripcion": "Refuerza la armonía entre miembros de la familia.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "e7c77e5f-b7b1-4149-aa94-404510c327c8",
+    "codigo": "819_714_719_81",
+    "nombre": "Unión sagrada",
+    "descripcion": "Vínculo espiritual equilibrado y luminoso.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "54076994-11e9-4353-9374-f2191900eb28",
+    "codigo": "318514517",
+    "nombre": "Ventas exitosas",
+    "descripcion": "Potencia resultados positivos en ventas.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "5e378be6-cc6f-48d0-88b2-a02b6b71264f",
+    "codigo": "718_819_819",
+    "nombre": "Vibración alta",
+    "descripcion": "Mantiene la energía elevada en toda circunstancia.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T22:34:36.744149+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "449e52fe-0e9b-43cf-886e-245d0977e755",
+    "codigo": "814_819_719_81",
+    "nombre": "Vibración amorosa",
+    "descripcion": "Aumenta la frecuencia del corazón.",
+    "categoria": "Amor",
+    "color": "#FF3B3B",
+    "created_at": "2025-10-15T23:22:15.679269+00:00",
+    "updated_at": "2025-10-15T23:22:15.679269+00:00"
+  },
+  {
+    "id": "0a5480e9-7fcf-45c1-9eab-d9f01f983910",
+    "codigo": "819_714_813",
+    "nombre": "Vibración ascendente",
+    "descripcion": "Aumenta la frecuencia del alma en espiral evolutiva.",
+    "categoria": "Expansión",
+    "color": "#7FFF00",
+    "created_at": "2025-10-15T23:38:44.731744+00:00",
+    "updated_at": "2025-10-15T23:56:45.034295+00:00"
+  },
+  {
+    "id": "12ed262e-6f35-4528-b848-54e407c731d4",
+    "codigo": "713_814_718_91",
+    "nombre": "Victoria económica",
+    "descripcion": "Manifiesta resultados favorables continuos.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "e9024e7b-b509-4fe5-8f22-489628f8f95f",
+    "codigo": "819_719_819_31",
+    "nombre": "Victoria financiera",
+    "descripcion": "Logro de metas materiales con equilibrio espiritual.",
+    "categoria": "Abundancia",
+    "color": "#FFD700",
+    "created_at": "2025-10-15T23:21:10.160548+00:00",
+    "updated_at": "2025-10-15T23:21:10.160548+00:00"
+  },
+  {
+    "id": "5a018360-65a2-443a-ae3c-dccaeae8b63e",
+    "codigo": "1489999",
+    "nombre": "Vida biológica eterna",
+    "descripcion": "Promueve longevidad y vitalidad espiritual.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "a10c3a9a-a552-4601-8ef2-4daab9ad01f5",
+    "codigo": "814_819_718_91",
+    "nombre": "Visión interna",
+    "descripcion": "Accede a la comprensión profunda de la realidad.",
+    "categoria": "Conciencia",
+    "color": "#8A2BE2",
+    "created_at": "2025-10-15T23:24:18.073738+00:00",
+    "updated_at": "2025-10-15T23:24:18.073738+00:00"
+  },
+  {
+    "id": "66d445d8-7803-47ab-84b6-dac187d98997",
+    "codigo": "714_219_814_91",
+    "nombre": "Visión perfecta",
+    "descripcion": "Restaura claridad visual y percepción.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
+  },
+  {
+    "id": "8af5962a-9903-455c-987f-7735f0c3d4d4",
+    "codigo": "91919481981",
+    "nombre": "Visión perfecta",
+    "descripcion": "Restablece la vista física y espiritual.",
+    "categoria": "Salud",
+    "color": "#00FF7F",
+    "created_at": "2025-10-15T22:26:45.724097+00:00",
+    "updated_at": "2025-10-15T22:53:52.851031+00:00"
+  },
+  {
+    "id": "7226c19a-84ac-4886-8ea9-efc796d11127",
+    "codigo": "918197185",
+    "nombre": "Visualización del resultado perfecto",
+    "descripcion": "Sintoniza la mente con la realidad ideal.",
+    "categoria": "Limpieza",
+    "color": "#FFFFFF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:47:35.502246+00:00"
+  },
+  {
+    "id": "db0e11bf-f6bb-4711-a5ef-027e53813423",
+    "codigo": "812_719_819_14",
+    "nombre": "Vitalidad",
+    "descripcion": "Aumenta energía y fuerza interior.",
+    "categoria": "Salud",
+    "color": "#32CD32",
+    "created_at": "2025-10-15T23:17:04.714899+00:00",
+    "updated_at": "2025-10-15T23:17:04.714899+00:00"
   }
 ]
