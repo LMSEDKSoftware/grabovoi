@@ -1,0 +1,102 @@
+[
+  {
+    "id": "414ca43a-8e91-4b19-9525-603949e7fdaf",
+    "codigo": "514_812_919_81",
+    "nombre": "Abundancia laboral",
+    "descripcion": "Abre caminos de reconocimiento y crecimiento profesional.",
+    "categoria": "Abundancia",
+    "color": "#4ECDC4",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  },
+  {
+    "id": "888_412_128_9012",
+    "codigo": "888_412_128_9012",
+    "nombre": "Sanación Universal",
+    "descripcion": "Para sanación física, mental y espiritual.",
+    "categoria": "Sanación",
+    "color": "#FF6B6B",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  },
+  {
+    "id": "520_741_963_8520",
+    "codigo": "520_741_963_8520",
+    "nombre": "Abundancia y Prosperidad",
+    "descripcion": "Atrae abundancia y prosperidad a tu vida.",
+    "categoria": "Abundancia",
+    "color": "#4ECDC4",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  },
+  {
+    "id": "714_825_936_7142",
+    "codigo": "714_825_936_7142",
+    "nombre": "Amor y Relaciones",
+    "descripcion": "Fortalece relaciones y atrae amor verdadero.",
+    "categoria": "Amor",
+    "color": "#FFE66D",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  },
+  {
+    "id": "369_147_258_3691",
+    "codigo": "369_147_258_3691",
+    "nombre": "Protección Espiritual",
+    "descripcion": "Protección contra energías negativas.",
+    "categoria": "Protección",
+    "color": "#A8E6CF",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  },
+  {
+    "id": "123_456_789_0123",
+    "codigo": "123_456_789_0123",
+    "nombre": "Paz Interior",
+    "descripcion": "Encuentra paz y equilibrio interior.",
+    "categoria": "Paz",
+    "color": "#FFB6C1",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  },
+  {
+    "id": "741_852_963_7418",
+    "codigo": "741_852_963_7418",
+    "nombre": "Claridad Mental",
+    "descripcion": "Mejora la concentración y claridad mental.",
+    "categoria": "Mental",
+    "color": "#9B59B6",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  },
+  {
+    "id": "852_963_741_8529",
+    "codigo": "852_963_741_8529",
+    "nombre": "Fortaleza Física",
+    "descripcion": "Fortalece el sistema inmunológico y la salud física.",
+    "categoria": "Salud",
+    "color": "#E74C3C",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  },
+  {
+    "id": "963_741_852_9639",
+    "codigo": "963_741_852_9639",
+    "nombre": "Sabiduría Interior",
+    "descripcion": "Desarrolla la intuición y sabiduría interior.",
+    "categoria": "Espiritual",
+    "color": "#F39C12",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  },
+  {
+    "id": "147_258_369_1472",
+    "codigo": "147_258_369_1472",
+    "nombre": "Equilibrio Energético",
+    "descripcion": "Equilibra los chakras y la energía vital.",
+    "categoria": "Energía",
+    "color": "#1ABC9C",
+    "created_at": "2025-10-15T19:50:44.063358+00:00",
+    "updated_at": "2025-10-15T20:00:00.000000+00:00"
+  }
+]
