@@ -5,7 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 
 class StreamedMusicController extends StatefulWidget {
   final bool autoPlay;
-  const StreamedMusicController({super.key, this.autoPlay = true});
+  const StreamedMusicController({super.key, this.autoPlay = false});
 
   @override
   State<StreamedMusicController> createState() => _StreamedMusicControllerState();

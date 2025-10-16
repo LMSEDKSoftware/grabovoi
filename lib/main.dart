@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation, Sys
 import 'package:google_fonts/google_fonts.dart';
 import 'services/supabase_config.dart';
 import 'services/migration_service.dart';
+import 'widgets/app_initializer.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/biblioteca/static_biblioteca_screen.dart';
 import 'screens/pilotaje/pilotaje_screen.dart';
@@ -83,7 +84,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MainNavigation(),
+      home: const AppInitializer(),
     );
   }
 }

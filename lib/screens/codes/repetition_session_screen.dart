@@ -9,6 +9,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
+import '../../widgets/streamed_music_controller.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -186,6 +187,11 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 20),
+                
+                // Control de Música para sesión de repetición
+                const StreamedMusicController(autoPlay: true),
+                
                 const SizedBox(height: 20),
                 
                 // Mensaje sobre Grabovoi y repetición
