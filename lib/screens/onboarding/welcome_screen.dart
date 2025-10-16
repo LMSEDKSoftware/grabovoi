@@ -105,10 +105,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     super.dispose();
   }
 
-  void _enterApp() async {
-    // Marcar el onboarding como completado
-    await OnboardingService.markOnboardingCompleted();
-    
+  void _enterApp() {
+    // No marcar como completado permanentemente, solo ir a la app
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => const MainNavigation(),

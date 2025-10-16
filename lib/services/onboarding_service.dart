@@ -1,37 +1,19 @@
-import 'package:shared_preferences/shared_preferences.dart';
-
 class OnboardingService {
-  static const String _onboardingKey = 'onboarding_completed';
+  // Variable en memoria que se resetea cada vez que se cierra la app
+  static bool _onboardingSkipped = false;
   
-  /// Verifica si el usuario ya completó el onboarding
-  static Future<bool> isOnboardingCompleted() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_onboardingKey) ?? false;
-    } catch (e) {
-      // En caso de error, asumimos que no se completó
-      return false;
-    }
+  /// Verifica si el usuario saltó el onboarding en esta sesión
+  static bool isOnboardingSkipped() {
+    return _onboardingSkipped;
   }
   
-  /// Marca el onboarding como completado
-  static Future<void> markOnboardingCompleted() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_onboardingKey, true);
-    } catch (e) {
-      // Error al guardar, pero no es crítico
-      print('Error al marcar onboarding como completado: $e');
-    }
+  /// Marca el onboarding como saltado (solo para esta sesión)
+  static void markOnboardingSkipped() {
+    _onboardingSkipped = true;
   }
   
-  /// Resetea el estado del onboarding (útil para testing)
-  static Future<void> resetOnboarding() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_onboardingKey);
-    } catch (e) {
-      print('Error al resetear onboarding: $e');
-    }
+  /// Resetea el estado del onboarding (se llama automáticamente al iniciar la app)
+  static void resetOnboarding() {
+    _onboardingSkipped = false;
   }
 }

@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
+import '../../services/onboarding_service.dart';
+import '../../main.dart';
 import 'welcome_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -62,6 +64,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  void _skipOnboarding() {
+    // Marcar como saltado para esta sesión
+    OnboardingService.markOnboardingSkipped();
+    
+    // Ir directamente a la app principal
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const MainNavigation(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,32 +114,51 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // Botones de navegación
               Padding(
                 padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
-                    if (_currentPage > 0)
-                      TextButton(
-                        onPressed: () {
-                          _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        child: Text(
-                          'Atrás',
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 16,
-                          ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (_currentPage > 0)
+                          TextButton(
+                            onPressed: () {
+                              _pageController.previousPage(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                            child: Text(
+                              'Atrás',
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
+                        else
+                          const SizedBox(width: 60),
+                        
+                        CustomButton(
+                          text: _currentPage == _slides.length - 1 ? 'Comenzar' : 'Siguiente',
+                          onPressed: _nextPage,
+                          icon: _currentPage == _slides.length - 1 ? Icons.rocket_launch : Icons.arrow_forward,
                         ),
-                      )
-                    else
-                      const SizedBox(width: 60),
+                      ],
+                    ),
                     
-                    CustomButton(
-                      text: _currentPage == _slides.length - 1 ? 'Comenzar' : 'Siguiente',
-                      onPressed: _nextPage,
-                      icon: _currentPage == _slides.length - 1 ? Icons.rocket_launch : Icons.arrow_forward,
+                    const SizedBox(height: 16),
+                    
+                    // Botón Saltar
+                    TextButton(
+                      onPressed: _skipOnboarding,
+                      child: Text(
+                        'Saltar',
+                        style: GoogleFonts.inter(
+                          color: Colors.white54,
+                          fontSize: 14,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
                     ),
                   ],
                 ),

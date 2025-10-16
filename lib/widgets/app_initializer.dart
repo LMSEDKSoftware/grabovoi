@@ -20,25 +20,17 @@ class _AppInitializerState extends State<AppInitializer> {
     _checkOnboardingStatus();
   }
 
-  Future<void> _checkOnboardingStatus() async {
-    try {
-      final isCompleted = await OnboardingService.isOnboardingCompleted();
-      
-      if (mounted) {
-        setState(() {
-          _showOnboarding = !isCompleted;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      // En caso de error, mostramos el onboarding por seguridad
-      if (mounted) {
-        setState(() {
-          _showOnboarding = true;
-          _isLoading = false;
-        });
-      }
-    }
+  void _checkOnboardingStatus() {
+    // Resetear el estado del onboarding al iniciar la app
+    OnboardingService.resetOnboarding();
+    
+    // Verificar si el usuario ya saltó el onboarding en esta sesión
+    final isSkipped = OnboardingService.isOnboardingSkipped();
+    
+    setState(() {
+      _showOnboarding = !isSkipped;
+      _isLoading = false;
+    });
   }
 
   @override
