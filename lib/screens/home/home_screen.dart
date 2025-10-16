@@ -3,21 +3,47 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
-import '../../services/ai_service.dart';
+import '../../services/biblioteca_supabase_service.dart';
 import '../pilotaje/pilotaje_screen.dart';
 import '../desafios/desafios_screen.dart';
 import '../codes/code_detail_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic> _datosHome = {
+    'nivel': 1,
+    'codigoRecomendado': '5197148',
+    'fraseMotivacional': '🌙 El viaje de mil millas comienza con un solo paso.',
+    'proximoPaso': 'Realiza tu primer pilotaje consciente hoy',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatosHome();
+  }
+
+  Future<void> _cargarDatosHome() async {
+    try {
+      final datos = await BibliotecaSupabaseService.getDatosParaHome();
+      if (mounted) {
+        setState(() {
+          _datosHome = datos;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cargar datos de home: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final analisis = AIService.analizarPatrones(
-      categoriasUsadas: ['Abundancia', 'Salud', 'Armonía'],
-      diasConsecutivos: 5,
-      totalPilotajes: 12,
-    );
 
     return Scaffold(
       body: GlowBackground(
@@ -43,7 +69,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  analisis['fraseMotivacional'],
+                  _datosHome['fraseMotivacional'],
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: Colors.white70,
@@ -52,11 +78,11 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 40),
                 const Center(child: GoldenSphere(size: 180)),
                 const SizedBox(height: 30),
-                _buildEnergyCard('Nivel Energético', '${analisis['nivel']}/10', Icons.bolt),
+                _buildEnergyCard('Nivel Energético', '${_datosHome['nivel']}/10', Icons.bolt),
                 const SizedBox(height: 20),
-                _buildCodeOfDay(context, analisis['codigoRecomendado']),
+                _buildCodeOfDay(context, _datosHome['codigoRecomendado']),
                 const SizedBox(height: 20),
-                _buildNextStep(analisis['proximoPaso']),
+                _buildNextStep(_datosHome['proximoPaso']),
                 const SizedBox(height: 30),
                 Center(
                   child: CustomButton(

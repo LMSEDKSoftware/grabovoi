@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation, SystemUiOverlayStyle;
 import 'package:google_fonts/google_fonts.dart';
+import 'services/supabase_config.dart';
+import 'services/migration_service.dart';
 import 'screens/home/home_screen.dart';
-import 'screens/biblioteca/biblioteca_screen.dart';
+import 'screens/biblioteca/static_biblioteca_screen.dart';
 import 'screens/pilotaje/pilotaje_screen.dart';
 import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializar Supabase
+  await SupabaseConfig.initialize();
   
   // Configurar orientación
   SystemChrome.setPreferredOrientations([
@@ -95,7 +100,7 @@ class _MainNavigationState extends State<MainNavigation> {
   
   final List<Widget> _screens = const [
     HomeScreen(),
-    BibliotecaScreen(),
+    StaticBibliotecaScreen(),
     PilotajeScreen(),
     DesafiosScreen(),
     EvolucionScreen(),

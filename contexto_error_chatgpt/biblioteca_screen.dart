@@ -3,10 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../models/supabase_models.dart';
 import '../codes/repetition_session_screen.dart';
-import '../../services/simple_api_service.dart';
+import '../../services/api_service.dart';
 import '../../services/ai/openai_codes_service.dart';
 import '../../services/ai_codes_service.dart';
-import '../diag/diag_screen.dart';
 
 class BibliotecaScreen extends StatefulWidget {
   const BibliotecaScreen({super.key});
@@ -40,41 +39,21 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
   }
 
   Future<void> _loadData() async {
-    print('🔄 [BIBLIOTECA] ===========================================');
-    print('🔄 [BIBLIOTECA] INICIANDO CARGA DE DATOS');
-    print('🔄 [BIBLIOTECA] ===========================================');
-    print('🔄 [BIBLIOTECA] Timestamp: ${DateTime.now()}');
-    print('🔄 [BIBLIOTECA] Estado actual: isLoading=$isLoading');
-    print('🔄 [BIBLIOTECA] Códigos actuales: ${codigos.length}');
-    print('🔄 [BIBLIOTECA] Filtrados actuales: ${filtrados.length}');
-    print('🔄 [BIBLIOTECA] ===========================================');
-    
     try {
       setState(() => isLoading = true);
-      print('🔄 [BIBLIOTECA] setState: isLoading = true');
-      print('🔄 [BIBLIOTECA] Iniciando carga de datos via API...');
+      print('🔄 Iniciando carga de datos via API...');
       
       // Cargar códigos desde API
-      print('🔄 [BIBLIOTECA] Llamando SimpleApiService.getCodigos()...');
-      final codigosData = await SimpleApiService.getCodigos();
-      
-      print('📚 [BIBLIOTECA] ===========================================');
-      print('📚 [BIBLIOTECA] DATOS OBTENIDOS DE API');
-      print('📚 [BIBLIOTECA] ===========================================');
-      print('📚 [BIBLIOTECA] Códigos cargados: ${codigosData.length}');
-      print('📚 [BIBLIOTECA] Primer código: ${codigosData.isNotEmpty ? codigosData.first.nombre : 'N/A'}');
-      print('📚 [BIBLIOTECA] Último código: ${codigosData.isNotEmpty ? codigosData.last.nombre : 'N/A'}');
-      print('📚 [BIBLIOTECA] Categorías en datos: ${codigosData.map((c) => c.categoria).toSet().toList()}');
-      print('📚 [BIBLIOTECA] Primeros 3 códigos: ${codigosData.take(3).map((c) => '${c.codigo} - ${c.nombre}').toList()}');
-      print('📚 [BIBLIOTECA] ===========================================');
+      final codigosData = await ApiService.getCodigos();
+      print('📚 Códigos cargados: ${codigosData.length}');
       
       // Cargar categorías desde API
-      final categoriasData = await SimpleApiService.getCategorias();
+      final categoriasData = await ApiService.getCategorias();
       print('🏷️ Categorías cargadas: ${categoriasData.length}');
       print('🏷️ Categorías: $categoriasData');
       
       // Cargar favoritos desde API
-      final favoritosData = await SimpleApiService.getFavoritos('user_demo');
+      final favoritosData = await ApiService.getFavoritos('user_demo');
       print('❤️ Favoritos cargados: ${favoritosData.length}');
       
       // Popularidad se maneja por separado
@@ -94,15 +73,6 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
         filtrados = List.from(codigos);
         isLoading = false;
       });
-      
-      print('📚 [BIBLIOTECA] ===========================================');
-      print('📚 [BIBLIOTECA] DESPUÉS DE setState');
-      print('📚 [BIBLIOTECA] ===========================================');
-      print('📚 [BIBLIOTECA] codigos.length: ${codigos.length}');
-      print('📚 [BIBLIOTECA] filtrados.length: ${filtrados.length}');
-      print('📚 [BIBLIOTECA] isLoading: $isLoading');
-      print('📚 [BIBLIOTECA] _categorias: $_categorias');
-      print('📚 [BIBLIOTECA] ===========================================');
       
       // Aplicar filtros iniciales después de cargar los datos
       _aplicarFiltros();
@@ -184,28 +154,21 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
   }
 
   void _aplicarFiltros() async {
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] APLICANDO FILTROS');
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] Timestamp: ${DateTime.now()}');
-    print('🔍 [FILTROS] Tab actual: $_tab');
-    print('🔍 [FILTROS] Categoría: $_filtroCategoria');
-    print('🔍 [FILTROS] Query: "$_query"');
-    print('🔍 [FILTROS] Códigos disponibles: ${codigos.length}');
-    print('🔍 [FILTROS] Favoritos disponibles: ${favoritos.length}');
-    print('🔍 [FILTROS] Filtrados ANTES: ${filtrados.length}');
-    print('🔍 [FILTROS] ===========================================');
+    print('🔍 APLICANDO FILTROS...');
+    print('   Tab actual: $_tab');
+    print('   Categoría: $_filtroCategoria');
+    print('   Query: "$_query"');
+    print('   Códigos disponibles: ${codigos.length}');
+    print('   Favoritos disponibles: ${favoritos.length}');
     
     List<CodigoGrabovoi> base = [];
     
     if (_tab == 'Favoritos') {
       base = List.from(favoritos);
-      print('🔍 [FILTROS] Usando favoritos como base: ${base.length}');
-      print('🔍 [FILTROS] Favoritos: ${favoritos.map((f) => f.codigoId).toList()}');
+      print('   ✅ Usando favoritos: ${base.length}');
     } else {
       base = List.from(codigos);
-      print('🔍 [FILTROS] Usando todos los códigos como base: ${base.length}');
-      print('🔍 [FILTROS] Primeros 3 códigos: ${base.take(3).map((c) => c.nombre).toList()}');
+      print('   ✅ Usando todos los códigos: ${base.length}');
       
       if (_filtroCategoria != 'Todos') {
         base = base.where((c) => c.categoria.toLowerCase() == _filtroCategoria.toLowerCase()).toList();
@@ -214,7 +177,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       if (_query.trim().isNotEmpty) {
         try {
           // Usar búsqueda de Supabase si hay query
-          base = await SimpleApiService.getCodigos(search: _query.trim());
+          base = await ApiService.getCodigos(search: _query.trim());
           
           // Si no se encontraron resultados, usar el sistema de 3 niveles
           if (base.isEmpty) {
@@ -222,7 +185,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
             // Recargar datos después de la búsqueda inteligente
             await _loadData();
             // Aplicar filtros nuevamente
-            base = await SimpleApiService.getCodigos(search: _query.trim());
+            base = await ApiService.getCodigos(search: _query.trim());
           }
         } catch (e) {
           // Fallback a búsqueda local
@@ -248,25 +211,15 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       }
     }
 
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] RESULTADO FINAL DE FILTROS');
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] Códigos filtrados: ${base.length}');
-    print('🔍 [FILTROS] Primeros 3 códigos: ${base.take(3).map((c) => c.nombre).toList()}');
-    print('🔍 [FILTROS] Últimos 3 códigos: ${base.length > 3 ? base.skip(base.length - 3).map((c) => c.nombre).toList() : base.map((c) => c.nombre).toList()}');
-    print('🔍 [FILTROS] Categorías en filtrados: ${base.map((c) => c.categoria).toSet().toList()}');
-    print('🔍 [FILTROS] ===========================================');
+    print('   📊 RESULTADO FINAL:');
+    print('   Códigos filtrados: ${base.length}');
+    print('   Primeros 3 códigos: ${base.take(3).map((c) => c.nombre).toList()}');
     
     setState(() {
       filtrados = base;
     });
     
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] setState COMPLETADO');
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] Filtrados DESPUÉS: ${filtrados.length}');
-    print('🔍 [FILTROS] UI actualizada con ${filtrados.length} códigos');
-    print('🔍 [FILTROS] ===========================================');
+    print('   ✅ setState completado. UI actualizada.');
   }
 
   Future<void> _buscarConIA(String consulta) async {
@@ -445,7 +398,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
 
   void _toggleFavorito(String codigo) async {
     try {
-      await SimpleApiService.toggleFavorito('user_demo', codigo);
+      await ApiService.toggleFavorito('user_demo', codigo);
       
       // Actualizar estado local
       setState(() {
@@ -478,7 +431,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
 
   void _sumarPopularidad(String codigo) async {
     try {
-      await SimpleApiService.incrementarPopularidad(codigo);
+      await ApiService.incrementarPopularidad(codigo);
     } catch (e) {
       debugPrint('Error al incrementar popularidad: $e');
     }
@@ -768,7 +721,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       print('🧪 INICIANDO PRUEBA DE CONEXIÓN SUPABASE');
       
       // Probar conexión básica
-      final testResult = await SimpleApiService.getCodigos();
+      final testResult = await ApiService.getCodigos();
       
       Navigator.of(context).pop(); // Cerrar loading dialog
       
@@ -945,21 +898,6 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                                 size: 20,
                               ),
                               tooltip: 'Información de debug',
-                            ),
-                            // Botón de diagnóstico de red
-                            IconButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const DiagScreen()),
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.network_check,
-                                color: Color(0xFFFFD700),
-                                size: 20,
-                              ),
-                              tooltip: 'Diagnóstico de red',
                             ),
                           ],
                         ),
