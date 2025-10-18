@@ -186,35 +186,35 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
             ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
                 onPressed: _isBuffering ? null : _prev,
-                icon: Icon(Icons.skip_previous, color: const Color(0xFFFFD700), size: 32),
+                icon: Icon(Icons.skip_previous, color: const Color(0xFFFFD700), size: 28),
               ),
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.play_arrow, color: const Color(0xFFFFD700), size: 16),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text('Auto', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 12, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                      ),
-                    ],
+              Expanded(
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.play_arrow, color: const Color(0xFFFFD700), size: 16),
+                        const SizedBox(width: 4),
+                        Text('Auto', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
                   ),
                 ),
               ),
               IconButton(
                 onPressed: _isBuffering ? null : _next,
-                icon: Icon(Icons.skip_next, color: const Color(0xFFFFD700), size: 32),
+                icon: Icon(Icons.skip_next, color: const Color(0xFFFFD700), size: 28),
               ),
             ],
           ),

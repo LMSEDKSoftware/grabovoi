@@ -4,7 +4,6 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../services/onboarding_service.dart';
-import '../../main.dart';
 import 'welcome_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -68,10 +67,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // Marcar como saltado para esta sesión
     OnboardingService.markOnboardingSkipped();
     
-    // Ir directamente a la app principal
+    // Ir a la pantalla de bienvenida
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => const MainNavigation(),
+        builder: (context) => const WelcomeScreen(),
       ),
     );
   }
@@ -192,44 +191,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Esfera dorada animada
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 800),
-            curve: Curves.easeOutBack,
-            builder: (context, value, child) {
-              return Transform.scale(
-                scale: value,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        slide.color.withOpacity(0.3),
-                        slide.color.withOpacity(0.1),
-                        Colors.transparent,
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: slide.color.withOpacity(0.3),
-                        blurRadius: 30,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Icon(
-                      slide.icon,
-                      size: 50,
-                      color: slide.color,
-                    ),
-                  ),
+          // Esfera dorada simple
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  slide.color.withOpacity(0.3),
+                  slide.color.withOpacity(0.1),
+                  Colors.transparent,
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: slide.color.withOpacity(0.3),
+                  blurRadius: 30,
+                  spreadRadius: 5,
                 ),
-              );
-            },
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                slide.icon,
+                size: 50,
+                color: slide.color,
+              ),
+            ),
           ),
           
           const SizedBox(height: 60),
@@ -248,7 +237,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ],
             ),
-            textAlign: TextAlign.center,
           ),
           
           const SizedBox(height: 30),
@@ -261,7 +249,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: Colors.white70,
               height: 1.5,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

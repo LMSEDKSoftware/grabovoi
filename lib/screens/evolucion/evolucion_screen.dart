@@ -4,6 +4,9 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../services/ai_service.dart';
 import '../../services/challenge_service.dart';
+import '../../services/user_progress_service.dart';
+import '../../services/auth_service_simple.dart';
+import '../../models/challenge_model.dart';
 
 class EvolucionScreen extends StatefulWidget {
   const EvolucionScreen({super.key});
@@ -13,6 +16,10 @@ class EvolucionScreen extends StatefulWidget {
 }
 
 class _EvolucionScreenState extends State<EvolucionScreen> {
+  final UserProgressService _progressService = UserProgressService();
+  final AuthServiceSimple _authService = AuthServiceSimple();
+  final ChallengeService _challengeService = ChallengeService();
+  
   Map<String, dynamic>? userProgress;
   Map<String, dynamic>? activeChallenge;
   List<Map<String, dynamic>> completedChallenges = [];
@@ -25,22 +32,56 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
   }
 
   Future<void> _loadUserData() async {
-    // Simular datos del usuario (en una app real vendrían de SharedPreferences)
-    final mockData = AIService.analizarPatrones(
-      categoriasUsadas: ['Abundancia', 'Salud', 'Armonía'],
-      diasConsecutivos: 12,
-      totalPilotajes: 45,
-    );
+    if (!_authService.isLoggedIn) {
+      setState(() {
+        userProgress = {
+          'nivel': 1,
+          'dias_consecutivos': 0,
+          'total_sesiones': 0,
+          'mensaje': 'Inicia sesión para ver tu progreso personalizado',
+        };
+        isLoading = false;
+      });
+      return;
+    }
 
-    final challenge = await ChallengeService.getActiveChallenge();
-    final completed = await ChallengeService.getCompletedChallenges();
+    try {
+      // Cargar progreso del usuario
+      final progress = await _progressService.getUserProgress();
+      final statistics = await _progressService.getUserStatistics();
+      
+      // Cargar desafíos
+      await _challengeService.initializeChallenges();
+      final userChallenges = _challengeService.getUserChallenges();
+      final activeChallenges = userChallenges.where((c) => c.status == ChallengeStatus.enProgreso).toList();
+      final completedChallenges = userChallenges.where((c) => c.status == ChallengeStatus.completado).toList();
 
-    setState(() {
-      userProgress = mockData;
-      activeChallenge = challenge;
-      completedChallenges = completed;
-      isLoading = false;
-    });
+      setState(() {
+        userProgress = progress;
+        activeChallenge = activeChallenges.isNotEmpty ? {
+          'id': activeChallenges.first.id,
+          'title': activeChallenges.first.title,
+          'status': activeChallenges.first.status.toString(),
+        } : null;
+        this.completedChallenges = completedChallenges.map((c) => {
+          'id': c.id,
+          'title': c.title,
+          'status': c.status.toString(),
+        }).toList();
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error cargando datos de evolución: $e');
+      setState(() {
+        userProgress = {
+          'nivel': 1,
+          'dias_consecutivos': 0,
+          'total_sesiones': 0,
+          'mensaje': 'Error cargando datos',
+        };
+        isLoading = false;
+      });
+    }
   }
 
   @override

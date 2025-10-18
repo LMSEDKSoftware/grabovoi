@@ -101,24 +101,23 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: GlowBackground(
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Biblioteca Sagrada',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFFFD700),
-                        shadows: [
-                          Shadow(
-                            color: const Color(0xFFFFD700).withOpacity(0.5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Biblioteca Sagrada',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFD700),
+                      shadows: [
+                        Shadow(
+                          color: const Color(0xFFFFD700).withOpacity(0.5),
                             blurRadius: 20,
                           ),
                         ],
@@ -192,7 +191,6 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 child: _buildContent(),
               ),
             ],
-          ),
         ),
       ),
     );

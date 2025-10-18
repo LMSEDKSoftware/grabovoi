@@ -21,14 +21,9 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
   void _checkOnboardingStatus() {
-    // Resetear el estado del onboarding al iniciar la app
-    OnboardingService.resetOnboarding();
-    
-    // Verificar si el usuario ya saltó el onboarding en esta sesión
-    final isSkipped = OnboardingService.isOnboardingSkipped();
-    
+    // Siempre mostrar el onboarding al iniciar la app
     setState(() {
-      _showOnboarding = !isSkipped;
+      _showOnboarding = true;
       _isLoading = false;
     });
   }

@@ -2,20 +2,26 @@ import 'package:flutter/material.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isOutlined;
   final IconData? icon;
+  final bool isLoading;
+  final Color? color;
   
   const CustomButton({
     super.key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
     this.isOutlined = false,
     this.icon,
+    this.isLoading = false,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final buttonColor = color ?? const Color(0xFFFFD700);
+    
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
@@ -23,7 +29,7 @@ class CustomButton extends StatelessWidget {
             ? null
             : [
                 BoxShadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.3),
+                  color: buttonColor.withOpacity(0.3),
                   blurRadius: 20,
                   spreadRadius: 0,
                 ),
@@ -31,59 +37,87 @@ class CustomButton extends StatelessWidget {
       ),
       child: isOutlined
           ? OutlinedButton(
-              onPressed: onPressed,
+              onPressed: isLoading ? null : onPressed,
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFFFD700),
-                side: const BorderSide(color: Color(0xFFFFD700), width: 2),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                foregroundColor: buttonColor,
+                side: BorderSide(color: buttonColor, width: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 20),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    text,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+              child: isLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(buttonColor),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (icon != null) ...[
+                          Icon(icon, size: 18),
+                          const SizedBox(width: 6),
+                        ],
+                        Flexible(
+                          child: Text(
+                            text,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             )
           : ElevatedButton(
-              onPressed: onPressed,
+              onPressed: isLoading ? null : onPressed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFD700),
-                foregroundColor: const Color(0xFF0B132B),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                backgroundColor: buttonColor,
+                foregroundColor: isOutlined ? buttonColor : const Color(0xFF0B132B),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 20),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    text,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+              child: isLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF0B132B)),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (icon != null) ...[
+                          Icon(icon, size: 18),
+                          const SizedBox(width: 6),
+                        ],
+                        Flexible(
+                          child: Text(
+                            text,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
     );
   }

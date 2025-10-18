@@ -1,18 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
-    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <!-- Show a splash screen on the activity. Automatically removed when
-             the Flutter engine draws its first frame -->
-        <item name="android:windowBackground">@drawable/launch_background</item>
+    <!-- Material Design styles -->
+    <style name="Widget.Compat.NotificationActionContainer" parent="android:Widget">
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
     </style>
-    <!-- Theme applied to the Android Window as soon as the process has started.
-         This theme determines the color of the Android Window while your
-         Flutter UI initializes, as well as behind your Flutter UI while its
-         running.
-
-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
-    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
+    
+    <style name="Widget.Compat.NotificationActionText" parent="android:TextAppearance">
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    
+    <!-- Preference styles -->
+    <style name="PreferenceSummaryTextStyle" parent="android:TextAppearance.Medium">
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+    
+    <!-- Notification text styles -->
+    <style name="TextAppearance.Compat.Notification.Time.Media" parent="android:TextAppearance.Small">
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+    
+    <style name="TextAppearance.Compat.Notification.Info.Media" parent="android:TextAppearance.Medium">
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
+    
+    <style name="TextAppearance.Compat.Notification.Info" parent="android:TextAppearance.Medium">
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
+    
+    <style name="TextAppearance.Compat.Notification.Title.Media" parent="android:TextAppearance.Medium">
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <style name="TextAppearance.Compat.Notification.Line2.Media" parent="android:TextAppearance.Small">
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+    
+    <style name="TextAppearance.Compat.Notification.Media" parent="android:TextAppearance.Small">
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+    
+    <style name="TextAppearance.Compat.Notification.Time" parent="android:TextAppearance.Small">
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+    
+    <style name="PreferenceCategoryTitleTextStyle" parent="android:TextAppearance.Medium">
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <!-- App styles -->
+    <style name="AppTheme" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/primary_color</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent_color</item>
     </style>
 </resources>

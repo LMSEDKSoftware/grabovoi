@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/streamed_music_controller.dart';
+import '../../services/challenge_tracking_service.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -25,6 +26,20 @@ class RepetitionSessionScreen extends StatefulWidget {
 class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
 
+  @override
+  void initState() {
+    super.initState();
+    _recordMeditationSession();
+  }
+
+  Future<void> _recordMeditationSession() async {
+    // Registrar sesión de meditación para desafíos
+    final trackingService = ChallengeTrackingService();
+    await trackingService.recordMeditationSession(
+      const Duration(minutes: 15), // Duración estimada de la sesión
+    );
+  }
+
   Future<void> _shareImage() async {
     try {
       final Uint8List? pngBytes = await _screenshotController.capture(pixelRatio: 2.0);
@@ -36,7 +51,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen> {
         final file = File('${dir.path}/grabovoi_${widget.codigo}.png');
         await file.writeAsBytes(pngBytes);
 
-        await Share.shareXFiles([XFile(file.path)], text: 'Manifestación Numérica Grabovoi');
+        await Share.shareXFiles([XFile(file.path)], text: '${widget.nombre}\n\n${widget.codigo}\n\nManifestación Numérica Grabovoi');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

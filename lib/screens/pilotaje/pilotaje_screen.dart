@@ -59,42 +59,40 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       body: GlowBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                
-                // Título
-                Text(
-                  'Pilotaje Consciente',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Botón de regreso
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
                   ),
+                  const Spacer(),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Título - Movido más arriba
+              Text(
+                'Pilotaje Consciente',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Dirige tu realidad con intención',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Dirige tu realidad con intención',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.white70,
                 ),
-                const SizedBox(height: 40),
+              ),
+              const SizedBox(height: 40),
                 
                 // Esfera Dorada con Código
                 Center(
@@ -305,7 +303,6 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
                 const SizedBox(height: 40),
               ],
             ),
-          ),
         ),
       ),
     );

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
-import 'challenge_progress_screen.dart';
 import '../../services/challenge_service.dart';
+import '../../models/challenge_model.dart';
+import 'challenge_progress_screen.dart';
 
 class DesafiosScreen extends StatefulWidget {
   const DesafiosScreen({super.key});
@@ -13,57 +14,23 @@ class DesafiosScreen extends StatefulWidget {
 }
 
 class _DesafiosScreenState extends State<DesafiosScreen> {
-  Map<String, dynamic>? activeChallenge;
-
-  final List<Map<String, dynamic>> _desafios = [
-    {
-      'id': '1',
-      'titulo': 'Desafío de Iniciación Energética',
-      'duracionDias': 7,
-      'descripcion': 'Comienza tu viaje de manifestación con los códigos básicos.',
-      'dificultad': 'Principiante',
-      'color': const Color(0xFF4CAF50),
-      'icon': Icons.star_border,
-    },
-    {
-      'id': '2',
-      'titulo': 'Desafío de Armonización Intermedia',
-      'duracionDias': 14,
-      'descripcion': 'Profundiza en tu conexión interior y expande tu campo energético.',
-      'dificultad': 'Intermedio',
-      'color': const Color(0xFF2196F3),
-      'icon': Icons.star_half,
-    },
-    {
-      'id': '3',
-      'titulo': 'Desafío Avanzado de Luz Dorada',
-      'duracionDias': 21,
-      'descripcion': 'Expande tu campo vibracional al máximo nivel de manifestación.',
-      'dificultad': 'Avanzado',
-      'color': const Color(0xFFFFD700),
-      'icon': Icons.star,
-    },
-    {
-      'id': '4',
-      'titulo': 'Desafío Maestro de Abundancia',
-      'duracionDias': 30,
-      'descripcion': 'Transforma tu realidad hacia la abundancia infinita.',
-      'dificultad': 'Maestro',
-      'color': const Color(0xFF9C27B0),
-      'icon': Icons.diamond,
-    },
-  ];
+  final ChallengeService _challengeService = ChallengeService();
+  List<Challenge> _availableChallenges = [];
+  List<Challenge> _userChallenges = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadActiveChallenge();
+    _initializeChallenges();
   }
 
-  Future<void> _loadActiveChallenge() async {
-    final challenge = await ChallengeService.getActiveChallenge();
+  Future<void> _initializeChallenges() async {
+    await _challengeService.initializeChallenges();
     setState(() {
-      activeChallenge = challenge;
+      _availableChallenges = _challengeService.getAvailableChallenges();
+      _userChallenges = _challengeService.getUserChallenges();
+      _isLoading = false;
     });
   }
 
@@ -71,90 +38,111 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: GlowBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    // Botón de regreso
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        ),
+                        const Spacer(),
+                      ],
                     ),
-                    const Spacer(),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                
-                // Título
-                Text(
-                  'Desafíos Vibracionales',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Rutas de transformación personal',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-                       const SizedBox(height: 30),
+                    const SizedBox(height: 10),
+                    // Título - Movido más arriba
+                    Text(
+                      'Desafíos Vibracionales',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFFD700),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Rutas de transformación personal',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
 
-                       // Desafío Activo (si existe)
-                       if (activeChallenge != null) ...[
-                         _buildActiveChallengeCard(),
-                         const SizedBox(height: 20),
-                       ],
-                       
-                       // Lista de Desafíos
-                       ..._desafios.map((desafio) => _buildDesafioCard(desafio)).toList(),
-                
-                const SizedBox(height: 30),
-                
-                // Botón de Desafío Aleatorio
-                CustomButton(
-                  text: 'Desafío Aleatorio',
-                  onPressed: () {
-                    final randomDesafio = _desafios[
-                      (DateTime.now().millisecondsSinceEpoch % _desafios.length)
-                    ];
-                    _showDesafioDialog(randomDesafio);
-                  },
-                  isOutlined: true,
-                  icon: Icons.shuffle,
+                      // Desafíos Activos
+                      if (_userChallenges.isNotEmpty) ...[
+                        Text(
+                          'Desafíos Activos',
+                          style: GoogleFonts.inter(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ..._userChallenges.map((challenge) => _buildActiveChallengeCard(challenge)).toList(),
+                        const SizedBox(height: 30),
+                      ],
+                      
+                      // Desafíos Disponibles
+                      Text(
+                        'Desafíos Disponibles',
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ..._availableChallenges.map((challenge) => _buildChallengeCard(challenge)).toList(),
+                      
+                      const SizedBox(height: 30),
+                      
+                      // Botón de Desafío Aleatorio
+                      CustomButton(
+                        text: 'Desafío Aleatorio',
+                        onPressed: () {
+                          if (_availableChallenges.isNotEmpty) {
+                            final randomChallenge = _availableChallenges[
+                              (DateTime.now().millisecondsSinceEpoch % _availableChallenges.length)
+                            ];
+                            _showChallengeDialog(randomChallenge);
+                          }
+                        },
+                        isOutlined: true,
+                        icon: Icons.shuffle,
+                      ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildDesafioCard(Map<String, dynamic> desafio) {
+  Widget _buildChallengeCard(Challenge challenge) {
+    final color = Color(int.parse(challenge.color.replaceAll('#', '0xFF')));
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: desafio['color'].withOpacity(0.3),
+          color: color.withOpacity(0.3),
           width: 1,
         ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _showDesafioDialog(desafio),
+          onTap: () => _showChallengeDialog(challenge),
           borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -166,13 +154,12 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: desafio['color'].withOpacity(0.2),
+                        color: color.withOpacity(0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        desafio['icon'],
-                        color: desafio['color'],
-                        size: 24,
+                      child: Text(
+                        challenge.icon,
+                        style: const TextStyle(fontSize: 24),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -181,7 +168,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            desafio['titulo'],
+                            challenge.title,
                             style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 18,
@@ -198,7 +185,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '${desafio['duracionDias']} días',
+                                '${challenge.durationDays} días',
                                 style: GoogleFonts.inter(
                                   color: Colors.white70,
                                   fontSize: 14,
@@ -211,13 +198,13 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: desafio['color'].withOpacity(0.2),
+                                  color: color.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  desafio['dificultad'],
+                                  _getDifficultyText(challenge.difficulty),
                                   style: GoogleFonts.inter(
-                                    color: desafio['color'],
+                                    color: color,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -237,7 +224,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  desafio['descripcion'],
+                  challenge.description,
                   style: GoogleFonts.inter(
                     color: Colors.white70,
                     fontSize: 14,
@@ -252,7 +239,9 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
     );
   }
 
-  void _showDesafioDialog(Map<String, dynamic> desafio) {
+  void _showChallengeDialog(Challenge challenge) {
+    final color = Color(int.parse(challenge.color.replaceAll('#', '0xFF')));
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -263,19 +252,18 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: desafio['color'].withOpacity(0.2),
+                color: color.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                desafio['icon'],
-                color: desafio['color'],
-                size: 20,
+              child: Text(
+                challenge.icon,
+                style: const TextStyle(fontSize: 20),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                desafio['titulo'],
+                challenge.title,
                 style: GoogleFonts.playfairDisplay(
                   color: const Color(0xFFFFD700),
                   fontSize: 20,
@@ -290,7 +278,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              desafio['descripcion'],
+              challenge.description,
               style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 14,
@@ -311,7 +299,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                       Icon(Icons.schedule, color: Colors.white70, size: 16),
                       const SizedBox(width: 8),
                       Text(
-                        'Duración: ${desafio['duracionDias']} días',
+                        'Duración: ${challenge.durationDays} días',
                         style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
                       ),
                     ],
@@ -322,8 +310,21 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                       Icon(Icons.trending_up, color: Colors.white70, size: 16),
                       const SizedBox(width: 8),
                       Text(
-                        'Nivel: ${desafio['dificultad']}',
+                        'Nivel: ${_getDifficultyText(challenge.difficulty)}',
                         style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.card_giftcard, color: Colors.white70, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Recompensas: ${challenge.rewards.join(', ')}',
+                          style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                        ),
                       ),
                     ],
                   ),
@@ -346,10 +347,10 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              _startDesafio(desafio);
+              _startChallenge(challenge);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: desafio['color'],
+              backgroundColor: color,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -365,20 +366,22 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
     );
   }
 
-  Widget _buildActiveChallengeCard() {
-    if (activeChallenge == null) return const SizedBox.shrink();
+  Widget _buildActiveChallengeCard(Challenge challenge) {
+    final color = Color(int.parse(challenge.color.replaceAll('#', '0xFF')));
+    final progress = challenge.currentDay / challenge.durationDays;
     
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFFFFD700).withOpacity(0.2),
-            const Color(0xFFFFD700).withOpacity(0.05),
+            color.withOpacity(0.2),
+            color.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFD700), width: 2),
+        border: Border.all(color: color, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,22 +391,48 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  color: color.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.play_circle_fill,
-                  color: Color(0xFFFFD700),
-                  size: 24,
+                child: Text(
+                  challenge.icon,
+                  style: const TextStyle(fontSize: 20),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      challenge.title,
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Día ${challenge.currentDay} de ${challenge.durationDays}',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Text(
-                  'Desafío Activo: ${activeChallenge!['title']}',
+                  '${(progress * 100).toStringAsFixed(0)}%',
                   style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 16,
+                    color: color,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -411,61 +440,200 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            'Día ${activeChallenge!['currentDay']} en progreso',
-            style: GoogleFonts.inter(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.white.withOpacity(0.2),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
           const SizedBox(height: 12),
-          CustomButton(
-            text: 'Continuar Desafío',
-            onPressed: () {
-              // Buscar el desafío completo para pasar a la pantalla de progreso
-              final challengeData = _desafios.firstWhere(
-                (d) => d['id'] == activeChallenge!['id'],
-                orElse: () => _desafios.first,
-              );
-              
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ChallengeProgressScreen(challenge: challengeData),
+          Row(
+            children: [
+              Expanded(
+                child: CustomButton(
+                  text: 'Ver Progreso',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ChallengeProgressScreen(challenge: challenge),
+                      ),
+                    );
+                  },
+                  icon: Icons.trending_up,
                 ),
-              );
-            },
-            icon: Icons.play_arrow,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: CustomButton(
+                  text: 'Continuar',
+                  onPressed: () {
+                    // Lógica para continuar el desafío
+                    _continueChallenge(challenge);
+                  },
+                  isOutlined: true,
+                  icon: Icons.play_arrow,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Future<void> _startDesafio(Map<String, dynamic> desafio) async {
-    // Iniciar el desafío
-    await ChallengeService.startChallenge(desafio['id'], desafio['titulo']);
-    
-    // Recargar el desafío activo
-    await _loadActiveChallenge();
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('¡Has comenzado el ${desafio['titulo']}!'),
-        backgroundColor: desafio['color'],
-        duration: const Duration(seconds: 3),
-        action: SnackBarAction(
-          label: 'Ver Progreso',
-          textColor: Colors.white,
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => ChallengeProgressScreen(challenge: desafio),
-              ),
-            );
-          },
+  String _getDifficultyText(ChallengeDifficulty difficulty) {
+    switch (difficulty) {
+      case ChallengeDifficulty.principiante:
+        return 'Principiante';
+      case ChallengeDifficulty.intermedio:
+        return 'Intermedio';
+      case ChallengeDifficulty.avanzado:
+        return 'Avanzado';
+      case ChallengeDifficulty.maestro:
+        return 'Maestro';
+    }
+  }
+
+  Future<void> _startChallenge(Challenge challenge) async {
+    try {
+      await _challengeService.startChallenge(challenge.id);
+      
+      setState(() {
+        _availableChallenges = _challengeService.getAvailableChallenges();
+        _userChallenges = _challengeService.getUserChallenges();
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('¡Has comenzado el ${challenge.title}!'),
+          backgroundColor: Color(int.parse(challenge.color.replaceAll('#', '0xFF'))),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'Ver Progreso',
+            textColor: Colors.white,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ChallengeProgressScreen(challenge: challenge),
+                ),
+              );
+            },
+          ),
         ),
+      );
+    } catch (e) {
+      // Mostrar diálogo de confirmación si ya hay un desafío activo
+      if (e.toString().contains('Ya tienes un desafío activo')) {
+        _showActiveChallengeDialog(challenge);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al iniciar el desafío: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _continueChallenge(Challenge challenge) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ChallengeProgressScreen(challenge: challenge),
       ),
     );
   }
+
+  void _showActiveChallengeDialog(Challenge newChallenge) {
+    final userChallenges = _challengeService.getUserChallenges();
+    Challenge? activeChallenge;
+    
+    try {
+      activeChallenge = userChallenges.firstWhere(
+        (challenge) => challenge.status == ChallengeStatus.enProgreso,
+      );
+    } catch (e) {
+      return; // No hay desafío activo
+    }
+    
+    if (activeChallenge == null) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C2541),
+          title: Text(
+            'Desafío Activo',
+            style: GoogleFonts.playfairDisplay(
+              color: const Color(0xFFFFD700),
+              fontSize: 20,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ya tienes un desafío en progreso:',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  activeChallenge?.title ?? 'Desafío Activo',
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Debes completar tu desafío actual antes de iniciar uno nuevo.',
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Entendido',
+                style: GoogleFonts.inter(color: Colors.white70),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                if (activeChallenge != null) {
+                  _continueChallenge(activeChallenge);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD700),
+              ),
+              child: Text(
+                'Ver Mi Desafío',
+                style: GoogleFonts.inter(color: Colors.black),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 }
 

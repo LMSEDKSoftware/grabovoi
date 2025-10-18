@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../models/supabase_models.dart';
 import '../codes/repetition_session_screen.dart';
-import '../../services/simple_api_service.dart';
+import '../../services/biblioteca_supabase_service.dart';
 import '../../services/ai/openai_codes_service.dart';
 import '../../services/ai_codes_service.dart';
 import '../diag/diag_screen.dart';
@@ -55,8 +55,8 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       print('🔄 [BIBLIOTECA] Iniciando carga de datos via API...');
       
       // Cargar códigos desde API
-      print('🔄 [BIBLIOTECA] Llamando SimpleApiService.getCodigos()...');
-      final codigosData = await SimpleApiService.getCodigos();
+      print('🔄 [BIBLIOTECA] Llamando BibliotecaSupabaseService.getTodosLosCodigos()...');
+      final codigosData = await BibliotecaSupabaseService.getTodosLosCodigos();
       
       print('📚 [BIBLIOTECA] ===========================================');
       print('📚 [BIBLIOTECA] DATOS OBTENIDOS DE API');
@@ -69,12 +69,12 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       print('📚 [BIBLIOTECA] ===========================================');
       
       // Cargar categorías desde API
-      final categoriasData = await SimpleApiService.getCategorias();
+      final categoriasData = await BibliotecaSupabaseService.getCategorias();
       print('🏷️ Categorías cargadas: ${categoriasData.length}');
       print('🏷️ Categorías: $categoriasData');
       
       // Cargar favoritos desde API
-      final favoritosData = await SimpleApiService.getFavoritos('user_demo');
+      final favoritosData = await BibliotecaSupabaseService.getFavoritos();
       print('❤️ Favoritos cargados: ${favoritosData.length}');
       
       // Popularidad se maneja por separado
@@ -445,27 +445,33 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
 
   void _toggleFavorito(String codigo) async {
     try {
-      await SimpleApiService.toggleFavorito('user_demo', codigo);
+      final codigoCompleto = codigos.firstWhere((c) => c.codigo == codigo);
+      await BibliotecaSupabaseService.toggleFavorito(codigoCompleto.id);
       
       // Actualizar estado local
       setState(() {
-        if (_favoritosSet.contains(codigo)) {
-          _favoritosSet.remove(codigo);
-          final codigoCompleto = codigos.firstWhere((c) => c.codigo == codigo);
-          favoritos.removeWhere((f) => f.codigoId == codigoCompleto.id);
+        if (_favoritosSet.contains(codigoCompleto.id)) {
+          _favoritosSet.remove(codigoCompleto.id);
         } else {
-          _favoritosSet.add(codigo);
-          // Agregar a favoritos locales
-          final codigoCompleto = codigos.firstWhere((c) => c.codigo == codigo);
-          final nuevoFavorito = UsuarioFavorito(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            userId: 'user_demo',
-            codigoId: codigoCompleto.id,
-            createdAt: DateTime.now(),
-          );
-          favoritos.add(nuevoFavorito);
+          _favoritosSet.add(codigoCompleto.id);
         }
       });
+      
+      // Mostrar mensaje de confirmación
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _favoritosSet.contains(codigoCompleto.id) 
+              ? '❤️ Agregado a favoritos' 
+              : '💔 Removido de favoritos',
+            style: GoogleFonts.inter(fontSize: 14),
+          ),
+          backgroundColor: _favoritosSet.contains(codigoCompleto.id) 
+            ? Colors.green 
+            : Colors.orange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
       
       // Aplicar filtros si estamos en la pestaña de favoritos
       if (_tab == 'Favoritos') {
@@ -473,12 +479,18 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       }
     } catch (e) {
       debugPrint('Error al toggle favorito: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   void _sumarPopularidad(String codigo) async {
     try {
-      await SimpleApiService.incrementarPopularidad(codigo);
+      await BibliotecaSupabaseService.incrementarPopularidad(codigo);
     } catch (e) {
       debugPrint('Error al incrementar popularidad: $e');
     }
@@ -1227,7 +1239,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
           ),
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),
-        padding: const EdgeInsets.all(30),
+        padding: const EdgeInsets.fromLTRB(30, 30, 30, 50), // Padding inferior para evitar el menú
         child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

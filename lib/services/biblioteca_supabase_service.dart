@@ -1,10 +1,17 @@
 import '../models/supabase_models.dart';
 import 'supabase_service.dart';
+import 'auth_service_simple.dart';
+import 'user_favorites_service.dart';
+import 'user_progress_service.dart';
 
 class BibliotecaSupabaseService {
-  static String _getUserId() {
-    // Por ahora usar un ID fijo, después implementar autenticación
-    return 'user_demo';
+  static final AuthServiceSimple _authService = AuthServiceSimple();
+  static final UserFavoritesService _favoritesService = UserFavoritesService();
+  static final UserProgressService _progressService = UserProgressService();
+
+  static String? _getUserId() {
+    if (!_authService.isLoggedIn) return null;
+    return _authService.currentUser!.id;
   }
 
   // ===== CÓDIGOS =====
@@ -112,22 +119,39 @@ class BibliotecaSupabaseService {
   // ===== FAVORITOS =====
   
   static Future<List<CodigoGrabovoi>> getFavoritos() async {
-    return await SupabaseService.getFavoritos(_getUserId());
-  }
-
-  static Future<void> toggleFavorito(String codigoId) async {
-    final userId = _getUserId();
-    final esFavorito = await SupabaseService.esFavorito(userId, codigoId);
+    if (!_authService.isLoggedIn) return [];
     
-    if (esFavorito) {
-      await SupabaseService.quitarFavorito(userId, codigoId);
-    } else {
-      await SupabaseService.agregarFavorito(userId, codigoId);
+    try {
+      final favoritesWithDetails = await _favoritesService.getFavoritesWithDetails();
+      return favoritesWithDetails.map((item) {
+        final codigoData = item['codigos_grabovoi'];
+        return CodigoGrabovoi(
+          id: codigoData['id'],
+          codigo: codigoData['codigo'],
+          nombre: codigoData['nombre'],
+          descripcion: codigoData['descripcion'],
+          categoria: codigoData['categoria'],
+          color: codigoData['color'],
+        );
+      }).toList();
+    } catch (e) {
+      print('Error obteniendo favoritos: $e');
+      return [];
     }
   }
 
+  static Future<void> toggleFavorito(String codigoId) async {
+    if (!_authService.isLoggedIn) {
+      print('⚠️ Usuario no autenticado, no se puede gestionar favoritos');
+      return;
+    }
+    
+    await _favoritesService.toggleFavorite(codigoId);
+  }
+
   static Future<bool> esFavorito(String codigoId) async {
-    return await SupabaseService.esFavorito(_getUserId(), codigoId);
+    if (!_authService.isLoggedIn) return false;
+    return await _favoritesService.isFavorite(codigoId);
   }
 
   // ===== POPULARIDAD =====
@@ -156,11 +180,48 @@ class BibliotecaSupabaseService {
   // ===== PROGRESO DE USUARIO =====
   
   static Future<UsuarioProgreso?> getProgresoUsuario() async {
-    return await SupabaseService.getProgresoUsuario(_getUserId());
+    if (!_authService.isLoggedIn) return null;
+    
+    try {
+      final progress = await _progressService.getUserProgress();
+      if (progress == null) return null;
+      
+      return UsuarioProgreso(
+        id: progress['id'],
+        userId: progress['user_id'],
+        diasConsecutivos: progress['consecutive_days'] ?? 0,
+        totalPilotajes: progress['total_sessions'] ?? 0,
+        nivelEnergetico: progress['energy_level'] ?? 50,
+        ultimoPilotaje: progress['last_session_date'] != null 
+            ? DateTime.parse(progress['last_session_date']) 
+            : DateTime.now(),
+        createdAt: DateTime.parse(progress['created_at']),
+        updatedAt: DateTime.parse(progress['updated_at']),
+      );
+    } catch (e) {
+      print('Error obteniendo progreso del usuario: $e');
+      return null;
+    }
   }
 
-  static Future<void> registrarPilotaje() async {
-    await SupabaseService.registrarPilotaje(_getUserId());
+  static Future<void> registrarPilotaje({
+    String? codeId,
+    String? codeName,
+    int durationMinutes = 0,
+    String? category,
+  }) async {
+    if (!_authService.isLoggedIn) {
+      print('⚠️ Usuario no autenticado, sesión no registrada');
+      return;
+    }
+    
+    await _progressService.recordSession(
+      sessionType: 'pilotage',
+      codeId: codeId,
+      codeName: codeName,
+      durationMinutes: durationMinutes,
+      category: category,
+    );
   }
 
   // ===== AUDIOS =====
@@ -184,6 +245,16 @@ class BibliotecaSupabaseService {
       final codigoRecomendado = codigos.isNotEmpty 
           ? codigos.first.codigo 
           : '5197148';
+
+      // Si el usuario no está autenticado, usar datos por defecto
+      if (!_authService.isLoggedIn) {
+        return {
+          'nivel': 1,
+          'codigoRecomendado': codigoRecomendado,
+          'fraseMotivacional': '🌙 Inicia sesión para personalizar tu experiencia',
+          'proximoPaso': 'Regístrate para comenzar tu viaje energético',
+        };
+      }
 
       return {
         'nivel': progreso?.nivelEnergetico ?? 1,

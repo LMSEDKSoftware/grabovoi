@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
+import '../../models/challenge_model.dart';
 import '../../services/challenge_service.dart';
 
 class ChallengeProgressScreen extends StatefulWidget {
-  final Map<String, dynamic> challenge;
+  final Challenge challenge;
 
   const ChallengeProgressScreen({super.key, required this.challenge});
 
@@ -14,286 +15,286 @@ class ChallengeProgressScreen extends StatefulWidget {
 }
 
 class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
-  Map<String, dynamic>? activeChallenge;
-  bool isLoading = true;
+  late Challenge _challenge;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadChallenge();
+    _challenge = widget.challenge;
+    _loadChallengeProgress();
   }
 
-  Future<void> _loadChallenge() async {
-    final challenge = await ChallengeService.getActiveChallenge();
+  Future<void> _loadChallengeProgress() async {
     setState(() {
-      activeChallenge = challenge;
-      isLoading = false;
+      _isLoading = false;
     });
-  }
-
-  Future<void> _updateProgress() async {
-    if (activeChallenge != null) {
-      final currentDay = (activeChallenge!['currentDay'] ?? 1) + 1;
-      await ChallengeService.updateProgress(currentDay);
-      await _loadChallenge();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Día $currentDay completado ✨'),
-          backgroundColor: const Color(0xFFFFD700),
-        ),
-      );
-    }
-  }
-
-  Future<void> _completeChallenge() async {
-    await ChallengeService.completeChallenge();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('¡Desafío completado! 🎉'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (activeChallenge == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Desafío No Encontrado'),
-          backgroundColor: Colors.transparent,
-        ),
-        body: const Center(
-          child: Text('No hay desafío activo'),
-        ),
-      );
-    }
-
-    final totalDays = widget.challenge['duracionDias'] ?? 7;
-    final currentDay = activeChallenge!['currentDay'] ?? 1;
-    final progress = ChallengeService.calculateProgress(activeChallenge!, totalDays);
-    final progressMessage = ChallengeService.getProgressMessage(activeChallenge!, totalDays);
-
     return Scaffold(
       body: GlowBackground(
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Título del Desafío
-                Text(
-                  activeChallenge!['title'] ?? 'Desafío',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.challenge['descripcion'] ?? '',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Progreso Circular
-                Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 8,
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            const Color(0xFFFFD700),
-                          ),
-                        ),
-                      ),
-                      Column(
-                        children: [
-                          Text(
-                            '$currentDay/$totalDays',
-                            style: GoogleFonts.spaceMono(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFFFD700),
-                            ),
-                          ),
-                          Text(
-                            'días',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Mensaje de Progreso
-                Container(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))
+              : SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFFFFD700).withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        _getProgressIcon(progress),
-                        color: const Color(0xFFFFD700),
-                        size: 40,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        progressMessage,
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Información del Desafío
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Título del desafío
                       Text(
-                        'Información del Desafío',
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
+                        _challenge.title,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFFFFD700),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      _buildInfoRow('Iniciado:', _formatDate(activeChallenge!['startDate'])),
-                      _buildInfoRow('Duración:', '$totalDays días'),
-                      _buildInfoRow('Progreso:', '${(progress * 100).toInt()}%'),
-                      _buildInfoRow('Dificultad:', widget.challenge['dificultad'] ?? 'Intermedio'),
+                      const SizedBox(height: 8),
+                      Text(
+                        _challenge.description,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Progreso del desafío
+                      _buildProgressCard(),
+                      
+                      const SizedBox(height: 30),
+                      
+                      // Acciones del día
+                      _buildDailyActions(),
+                      
+                      const SizedBox(height: 30),
+                      
+                      // Botones de acción
+                      _buildActionButtons(),
                     ],
                   ),
                 ),
-                const SizedBox(height: 30),
-
-                // Botones de Acción
-                if (currentDay < totalDays)
-                  CustomButton(
-                    text: 'Marcar Día Completado',
-                    onPressed: _updateProgress,
-                    icon: Icons.check_circle,
-                  )
-                else
-                  CustomButton(
-                    text: 'Completar Desafío',
-                    onPressed: _completeChallenge,
-                    icon: Icons.emoji_events,
-                  ),
-                const SizedBox(height: 15),
-                CustomButton(
-                  text: 'Ver Detalles',
-                  onPressed: () {
-                    // TODO: Mostrar detalles específicos del desafío
-                  },
-                  isOutlined: true,
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildProgressCard() {
+    final color = Color(int.parse(_challenge.color.replaceAll('#', '0xFF')));
+    final progress = _challenge.currentDay / _challenge.durationDays;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.2),
+            color.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+          Row(
+            children: [
+              Text(
+                _challenge.icon,
+                style: const TextStyle(fontSize: 32),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Progreso del Desafío',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Día ${_challenge.currentDay} de ${_challenge.durationDays}',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '${(progress * 100).toStringAsFixed(0)}%',
+                  style: GoogleFonts.inter(
+                    color: color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+          const SizedBox(height: 16),
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.white.withOpacity(0.2),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+            minHeight: 8,
           ),
         ],
       ),
     );
   }
 
-  IconData _getProgressIcon(double progress) {
-    if (progress >= 1.0) return Icons.emoji_events;
-    if (progress >= 0.75) return Icons.star;
-    if (progress >= 0.5) return Icons.trending_up;
-    if (progress >= 0.25) return Icons.play_circle;
-    return Icons.play_arrow;
+  Widget _buildDailyActions() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Acciones de Hoy',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ..._getRequiredActionsForToday().map((action) => _buildActionItem(action)).toList(),
+        ],
+      ),
+    );
   }
 
-  String _formatDate(String? dateString) {
-    if (dateString == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return 'N/A';
+  List<String> _getRequiredActionsForToday() {
+    // Obtener las acciones requeridas basadas en la dificultad del desafío
+    switch (_challenge.difficulty) {
+      case ChallengeDifficulty.principiante:
+        return [
+          '🔄 Repetir al menos 1 código',
+          '🧘 Meditar 10 minutos',
+          '⏱️ Usar la app 15 minutos'
+        ];
+      case ChallengeDifficulty.intermedio:
+        return [
+          '🔄 Repetir 2 códigos diferentes',
+          '🚀 Pilotar 1 código',
+          '🧘 Meditar 15 minutos',
+          '⏱️ Usar la app 20 minutos'
+        ];
+      case ChallengeDifficulty.avanzado:
+        return [
+          '🔄 Repetir 3 códigos diferentes',
+          '🚀 Pilotar 2 códigos',
+          '🧘 Meditar 20 minutos',
+          '⏱️ Usar la app 30 minutos'
+        ];
+      case ChallengeDifficulty.maestro:
+        return [
+          '🔄 Repetir 5 códigos diferentes',
+          '🚀 Pilotar 3 códigos',
+          '🧘 Meditar 30 minutos',
+          '⏱️ Usar la app 45 minutos'
+        ];
     }
+  }
+
+  IconData _getActionIcon(String action) {
+    if (action.contains('🔄')) return Icons.repeat;
+    if (action.contains('🚀')) return Icons.rocket_launch;
+    if (action.contains('🧘')) return Icons.self_improvement;
+    if (action.contains('⏱️')) return Icons.timer;
+    return Icons.check_circle_outline;
+  }
+
+  Widget _buildActionItem(String action) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _getActionIcon(action),
+            color: const Color(0xFFFFD700),
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              action,
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Icon(
+            Icons.check_circle,
+            color: Colors.green.withOpacity(0.7),
+            size: 20,
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        CustomButton(
+          text: 'Continuar Desafío',
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          icon: Icons.play_arrow,
+        ),
+        const SizedBox(height: 12),
+        CustomButton(
+          text: 'Ver Estadísticas',
+          onPressed: () {
+            // TODO: Implementar pantalla de estadísticas
+          },
+          isOutlined: true,
+          icon: Icons.analytics,
+        ),
+      ],
+    );
   }
 }

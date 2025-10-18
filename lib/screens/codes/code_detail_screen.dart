@@ -7,6 +7,7 @@ import '../../widgets/golden_sphere.dart';
 import '../../widgets/streamed_music_controller.dart';
 import '../../widgets/audio_preload_indicator.dart';
 import '../../services/audio_preload_service.dart';
+import '../../services/challenge_tracking_service.dart';
 
 class CodeDetailScreen extends StatefulWidget {
   final String codigo;
@@ -71,6 +72,14 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       _secondsRemaining = 300; // 5 minutos
     });
     
+    // Registrar acción de pilotaje para desafíos
+    final trackingService = ChallengeTrackingService();
+    await trackingService.recordPilotageSession(
+      widget.codigo,
+      widget.codigo,
+      const Duration(minutes: 5),
+    );
+    
     _startCountdown();
   }
 
@@ -86,6 +95,14 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         setState(() {
           _isPiloting = false;
         });
+        
+        // Registrar repetición de código completada para desafíos
+        final trackingService = ChallengeTrackingService();
+        trackingService.recordCodeRepetition(
+          widget.codigo,
+          widget.codigo,
+        );
+        
         _showCompletionDialog();
       }
     });

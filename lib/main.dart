@@ -3,18 +3,25 @@ import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation, Sys
 import 'package:google_fonts/google_fonts.dart';
 import 'services/supabase_config.dart';
 import 'services/migration_service.dart';
-import 'widgets/app_initializer.dart';
+import 'services/app_time_tracker.dart';
+import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/onboarding/user_assessment_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'widgets/auth_wrapper.dart';
 import 'screens/biblioteca/static_biblioteca_screen.dart';
 import 'screens/pilotaje/pilotaje_screen.dart';
 import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
+import 'screens/profile/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Inicializar Supabase
   await SupabaseConfig.initialize();
+  
+  // Inicializar rastreador de tiempo
+  AppTimeTracker().startSession();
   
   // Configurar orientación
   SystemChrome.setPreferredOrientations([
@@ -84,7 +91,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const AppInitializer(),
+      home: const AuthWrapper(),
     );
   }
 }
@@ -105,6 +112,7 @@ class _MainNavigationState extends State<MainNavigation> {
     PilotajeScreen(),
     DesafiosScreen(),
     EvolucionScreen(),
+    ProfileScreen(),
   ];
 
   @override
@@ -134,9 +142,9 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildNavItem(
                   icon: Icons.home_filled,
@@ -164,6 +172,11 @@ class _MainNavigationState extends State<MainNavigation> {
                   label: 'Evolución',
                   index: 4,
                 ),
+                _buildNavItem(
+                  icon: Icons.person,
+                  label: 'Perfil',
+                  index: 5,
+                ),
               ],
             ),
           ),
@@ -187,52 +200,36 @@ class _MainNavigationState extends State<MainNavigation> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
               ? const Color(0xFFFFD700).withOpacity(0.2)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isCenter && isSelected)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFFFFD700).withOpacity(0.3),
-                      Colors.transparent,
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFFFFD700),
-                  size: isCenter ? 28 : 24,
-                ),
-              )
-            else
-              Icon(
-                icon,
-                color: isSelected
-                    ? const Color(0xFFFFD700)
-                    : Colors.white.withOpacity(0.5),
-                size: isCenter ? 28 : 24,
-              ),
+            Icon(
+              icon,
+              color: isSelected
+                  ? const Color(0xFFFFD700)
+                  : Colors.white.withOpacity(0.5),
+              size: 22, // Tamaño uniforme para todos los iconos
+            ),
             const SizedBox(height: 4),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 10,
+                fontSize: 9,
                 color: isSelected
                     ? const Color(0xFFFFD700)
                     : Colors.white.withOpacity(0.5),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design attributes -->
+    <attr name="alpha" format="float" />
+    
+    <!-- App attributes -->
+    <attr name="primaryColor" format="color" />
+    <attr name="primaryDarkColor" format="color" />
+    <attr name="accentColor" format="color" />
+    
+    <!-- Preference attributes -->
+    <attr name="preferenceFragmentListStyle" format="reference" />
+</resources>
