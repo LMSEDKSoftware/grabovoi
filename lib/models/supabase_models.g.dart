@@ -39,6 +39,7 @@ UsuarioFavorito _$UsuarioFavoritoFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       userId: json['userId'] as String,
       codigoId: json['codigoId'] as String,
+      etiqueta: json['etiqueta'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
 
@@ -47,6 +48,7 @@ Map<String, dynamic> _$UsuarioFavoritoToJson(UsuarioFavorito instance) =>
       'id': instance.id,
       'userId': instance.userId,
       'codigoId': instance.codigoId,
+      'etiqueta': instance.etiqueta,
       'createdAt': instance.createdAt.toIso8601String(),
     };
 

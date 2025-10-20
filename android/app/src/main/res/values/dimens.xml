@@ -1,32 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material Design dimensions -->
     <dimen name="compat_button_inset_horizontal_material">4dp</dimen>
     <dimen name="compat_button_inset_vertical_material">4dp</dimen>
     <dimen name="compat_control_corner_material">2dp</dimen>
     <dimen name="compat_button_padding_vertical_material">8dp</dimen>
-    <dimen name="compat_button_padding_horizontal_material">8dp</dimen>
-    
-    <!-- Notification dimensions -->
+    <dimen name="compat_button_padding_horizontal_material">16dp</dimen>
     <dimen name="notification_action_icon_size">24dp</dimen>
     <dimen name="notification_large_icon_width">64dp</dimen>
     <dimen name="notification_large_icon_height">64dp</dimen>
-    <dimen name="notification_main_column_padding_top">16dp</dimen>
+    <dimen name="notification_main_column_padding_top">8dp</dimen>
     <dimen name="notification_content_margin_start">8dp</dimen>
-    <dimen name="notification_right_side_padding_top">16dp</dimen>
+    <dimen name="notification_right_side_padding_top">8dp</dimen>
     <dimen name="notification_media_narrow_margin">8dp</dimen>
     <dimen name="notification_big_circle_margin">8dp</dimen>
     <dimen name="notification_right_icon_size">24dp</dimen>
-    
-    <!-- Preference dimensions -->
     <dimen name="preference_dropdown_padding_start">16dp</dimen>
     <dimen name="preference_icon_minWidth">32dp</dimen>
     <dimen name="preference_seekbar_padding_horizontal">16dp</dimen>
     <dimen name="preference_seekbar_padding_vertical">8dp</dimen>
-    <dimen name="preference_seekbar_value_minWidth">64dp</dimen>
-    
-    <!-- App dimensions -->
-    <dimen name="margin_small">8dp</dimen>
-    <dimen name="margin_medium">16dp</dimen>
-    <dimen name="margin_large">24dp</dimen>
+    <dimen name="preference_seekbar_value_minWidth">32dp</dimen>
 </resources>

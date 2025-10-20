@@ -2,10 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../services/audio_manager_service.dart';
 
 class StreamedMusicController extends StatefulWidget {
   final bool autoPlay;
-  const StreamedMusicController({super.key, this.autoPlay = false});
+  final bool isActive; // Nuevo parámetro para controlar si está activo
+  const StreamedMusicController({super.key, this.autoPlay = false, this.isActive = false});
 
   @override
   State<StreamedMusicController> createState() => _StreamedMusicControllerState();
@@ -20,10 +22,11 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
     {'title': 'Nature Sounds - Forest Meditation', 'file': 'assets/audios/forest_meditation.mp3'},
   ];
 
-  late final AudioPlayer _player;
-  StreamSubscription<PlayerState>? _stateSub;
-  StreamSubscription<Duration>? _posSub;
-  StreamSubscription<Duration>? _durSub;
+  final AudioManagerService _audioManager = AudioManagerService();
+  StreamSubscription<bool>? _isPlayingSub;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration>? _durationSub;
+  StreamSubscription<String?>? _currentTrackSub;
 
   int _index = 0;
   bool _isBuffering = true;
@@ -34,52 +37,60 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
   @override
   void initState() {
     super.initState();
-    _player = AudioPlayer();
     _wireListeners();
-    _loadAndMaybePlay(_index);
+    // Solo cargar y reproducir si está activo y autoPlay está habilitado
+    if (widget.isActive && widget.autoPlay) {
+      _loadAndMaybePlay(_index);
+    }
+  }
+
+  @override
+  void didUpdateWidget(StreamedMusicController oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si el widget se activa, iniciar reproducción
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadAndMaybePlay(_index);
+    }
   }
 
   void _wireListeners() {
-    _stateSub = _player.onPlayerStateChanged.listen((s) {
+    _isPlayingSub = _audioManager.isPlayingStream.listen((playing) {
+      if (!mounted) return;
+      setState(() => _isPlaying = playing);
+    });
+    
+    _positionSub = _audioManager.positionStream.listen((pos) {
+      if (!mounted) return;
+      setState(() => _position = pos);
+    });
+    
+    _durationSub = _audioManager.durationStream.listen((dur) {
+      if (!mounted) return;
+      setState(() => _duration = dur);
+    });
+    
+    _currentTrackSub = _audioManager.currentTrackStream.listen((track) {
       if (!mounted) return;
       setState(() {
-        _isPlaying = s == PlayerState.playing;
+        _isBuffering = track != null && track != _tracks[_index]['file'];
       });
-    });
-    _posSub = _player.onPositionChanged.listen((p) {
-      if (!mounted) return;
-      setState(() => _position = p);
-    });
-    _durSub = _player.onDurationChanged.listen((d) {
-      if (!mounted) return;
-      setState(() => _duration = d);
     });
   }
 
   Future<void> _loadAndMaybePlay(int i) async {
+    if (!mounted) return;
+    
     setState(() {
       _isBuffering = true;
-      _isPlaying = false;
-      _position = Duration.zero;
-      _duration = Duration.zero;
     });
 
     final file = _tracks[i]['file']!;
-    // Precarga estilo streaming: setSource y espera duración
-    await _player.stop();
-    await _player.setSource(AssetSource(file.replaceFirst('assets/', '')));
-
-    // Esperar a que tengamos duración (hasta 2.5s)
-    for (int t = 0; t < 25 && (_duration == Duration.zero); t++) {
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
-
+    
+    // Usar el servicio global de audio
+    await _audioManager.playTrack(file, autoPlay: widget.isActive && widget.autoPlay);
+    
     if (!mounted) return;
     setState(() => _isBuffering = false);
-
-    if (widget.autoPlay) {
-      await _player.resume();
-    }
   }
 
   Future<void> _prev() async {
@@ -92,6 +103,13 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
     await _loadAndMaybePlay(_index);
   }
 
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$twoDigitMinutes:$twoDigitSeconds';
+  }
+
   String _fmt(Duration d) {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${two(d.inMinutes.remainder(60))}:${two(d.inSeconds.remainder(60))} s';
@@ -99,11 +117,9 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _tracks[_index]['title']!;
-
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -113,110 +129,44 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(Icons.music_note, color: const Color(0xFFFFD700), size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Música Energizante',
-                  style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _isPlaying ? const Color(0xFFFFD700) : Colors.grey.withOpacity(0.5),
-                ),
-              ),
-            ],
+          // Botón anterior
+          IconButton(
+            onPressed: _isBuffering ? null : _prev,
+            icon: Icon(Icons.skip_previous, color: const Color(0xFFFFD700), size: 28),
           ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 16),
-          if (_isBuffering)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Color(0xFFFFD700))),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('Precargando audio...', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 12, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.timer, color: const Color(0xFFFFD700), size: 16),
-                  const SizedBox(width: 6),
-                  Text(_fmt(_position), style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 14, fontWeight: FontWeight.bold)),
-                ],
-              ),
+          
+          // Tiempo transcurrido
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
             ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                onPressed: _isBuffering ? null : _prev,
-                icon: Icon(Icons.skip_previous, color: const Color(0xFFFFD700), size: 28),
-              ),
-              Expanded(
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD700).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.play_arrow, color: const Color(0xFFFFD700), size: 16),
-                        const SizedBox(width: 4),
-                        Text('Auto', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 12, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.timer, color: const Color(0xFFFFD700), size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDuration(_position),
+                  style: GoogleFonts.spaceMono(
+                    color: const Color(0xFFFFD700), 
+                    fontSize: 12, 
+                    fontWeight: FontWeight.bold
                   ),
                 ),
-              ),
-              IconButton(
-                onPressed: _isBuffering ? null : _next,
-                icon: Icon(Icons.skip_next, color: const Color(0xFFFFD700), size: 28),
-              ),
-            ],
+              ],
+            ),
+          ),
+          
+          // Botón siguiente
+          IconButton(
+            onPressed: _isBuffering ? null : _next,
+            icon: Icon(Icons.skip_next, color: const Color(0xFFFFD700), size: 28),
           ),
         ],
       ),
@@ -225,11 +175,10 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
 
   @override
   void dispose() {
-    _stateSub?.cancel();
-    _posSub?.cancel();
-    _durSub?.cancel();
-    _player.stop();
-    _player.dispose();
+    _isPlayingSub?.cancel();
+    _positionSub?.cancel();
+    _durationSub?.cancel();
+    _currentTrackSub?.cancel();
     super.dispose();
   }
 }

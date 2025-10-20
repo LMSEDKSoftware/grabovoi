@@ -6,8 +6,13 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/streamed_music_controller.dart';
 import '../../widgets/audio_preload_indicator.dart';
+import '../../widgets/illuminated_code_text.dart';
 import '../../services/audio_preload_service.dart';
 import '../../services/challenge_tracking_service.dart';
+import '../../services/supabase_service.dart';
+import '../../models/supabase_models.dart';
+import '../../utils/code_formatter.dart';
+import '../pilotaje/pilotaje_screen.dart';
 
 class CodeDetailScreen extends StatefulWidget {
   final String codigo;
@@ -28,6 +33,20 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   int _secondsRemaining = 0;
   bool _isPreloading = false;
   final AudioPreloadService _preloadService = AudioPreloadService();
+  
+  // Variables para el selector de colores
+  String _colorSeleccionado = 'dorado';
+  final Map<String, Color> _coloresDisponibles = {
+    'dorado': const Color(0xFFFFD700),
+    'plateado': const Color(0xFFC0C0C0),
+    'azul_celestial': const Color(0xFF87CEEB),
+    'categoria': const Color(0xFFFFD700), // Se actualizará dinámicamente
+  };
+  
+  // Variables para la animación de la barra de colores
+  bool _isColorBarExpanded = true;
+  late AnimationController _colorBarController;
+  late Animation<Offset> _colorBarAnimation;
 
   @override
   void initState() {
@@ -47,12 +66,27 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
     );
     
+    // Inicializar controlador de animación de la barra de colores
+    _colorBarController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _colorBarAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0.3, 0), // Se desliza hacia la derecha
+    ).animate(CurvedAnimation(
+      parent: _colorBarController,
+      curve: Curves.easeInOut,
+    ));
+    
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
     _rotationController.dispose();
+    _colorBarController.dispose();
     // Evitar setState tras dispose en countdown
     _secondsRemaining = 0;
     super.dispose();
@@ -62,6 +96,8 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     setState(() {
       _isPreloading = true;
     });
+    // Ocultar la barra de colores después de 3 segundos
+    _hideColorBarAfterDelay();
     
     // Iniciar precarga de audio
     await _preloadService.startPreload();
@@ -141,33 +177,91 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     );
   }
 
-  void _copyToClipboard() {
-    Clipboard.setData(ClipboardData(text: widget.codigo));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Código ${widget.codigo} copiado'),
-        backgroundColor: const Color(0xFFFFD700),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  void _copyToClipboard() async {
+    try {
+      // Buscar el código en la base de datos para obtener su información real
+      final codigos = await SupabaseService.getCodigos();
+      final codigoEncontrado = codigos.firstWhere(
+        (c) => c.codigo == widget.codigo,
+        orElse: () => CodigoGrabovoi(
+          id: '',
+          codigo: widget.codigo,
+          nombre: 'Código Sagrado',
+          descripcion: 'Código sagrado para la manifestación y transformación energética.',
+          categoria: 'General',
+          color: '#FFD700',
+        ),
+      );
+      
+      final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
+${codigoEncontrado.descripcion}
+Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
+      
+      Clipboard.setData(ClipboardData(text: textToCopy));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Código ${widget.codigo} copiado con descripción'),
+          backgroundColor: const Color(0xFFFFD700),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      // Fallback si hay error
+      final textToCopy = '''${widget.codigo} : Código Sagrado
+Código sagrado para la manifestación y transformación energética.
+Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
+      
+      Clipboard.setData(ClipboardData(text: textToCopy));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Código ${widget.codigo} copiado'),
+          backgroundColor: const Color(0xFFFFD700),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
-  String _getCodeDescription(String codigo) {
-    switch (codigo) {
-      case '1884321':
-        return 'Norma Absoluta - Restaurar la armonía del cuerpo y la salud perfecta.';
-      case '88888588888':
-        return 'Código Universal - Abrir canales de abundancia y prosperidad infinita.';
-      case '318798':
-        return 'Prosperidad - Atraer riqueza material y espiritual.';
-      case '5197148':
-        return 'Todo es Posible - Recordar el poder infinito de manifestación.';
-      case '71931':
-        return 'Protección - Fortalecer el campo energético y la protección áurica.';
-      case '741':
-        return 'Limpieza - Purificar energías negativas y bloqueos.';
-      default:
-        return 'Código sagrado para la manifestación y transformación energética.';
+
+  // Función helper para obtener la descripción del código desde la base de datos
+  Future<String> _getCodeDescription(String codigo) async {
+    try {
+      final codigos = await SupabaseService.getCodigos();
+      final codigoEncontrado = codigos.firstWhere(
+        (c) => c.codigo == codigo,
+        orElse: () => CodigoGrabovoi(
+          id: '',
+          codigo: codigo,
+          nombre: 'Campo Energético',
+          descripcion: 'Código sagrado para la manifestación y transformación energética.',
+          categoria: 'General',
+          color: '#FFD700',
+        ),
+      );
+      return codigoEncontrado.descripcion;
+    } catch (e) {
+      return 'Código sagrado para la manifestación y transformación energética.';
+    }
+  }
+
+  // Función helper para obtener el título del código desde la base de datos
+  Future<String> _getCodeTitulo(String codigo) async {
+    try {
+      final codigos = await SupabaseService.getCodigos();
+      final codigoEncontrado = codigos.firstWhere(
+        (c) => c.codigo == codigo,
+        orElse: () => CodigoGrabovoi(
+          id: '',
+          codigo: codigo,
+          nombre: 'Campo Energético',
+          descripcion: 'Código sagrado para la manifestación y transformación energética.',
+          categoria: 'General',
+          color: '#FFD700',
+        ),
+      );
+      return codigoEncontrado.nombre;
+    } catch (e) {
+      return 'Campo Energético';
     }
   }
 
@@ -219,7 +313,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
                       scale: _isPiloting ? _pulseAnimation.value : 1.0,
                       child: GoldenSphere(
                         size: 280,
-                        color: const Color(0xFFFFD700),
+                        color: _getColorSeleccionado(),
                         glowIntensity: _isPiloting ? 0.8 : 0.6,
                         isAnimated: true,
                       ),
@@ -228,71 +322,93 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
                     AnimatedBuilder(
                       animation: _pulseAnimation,
                       builder: (context, child) {
+                        final codigoFormateado = CodeFormatter.formatCodeForDisplay(widget.codigo);
+                        final necesitaMultilinea = CodeFormatter.needsMultilineFormat(widget.codigo);
+                        final fontSize = CodeFormatter.calculateFontSize(widget.codigo, baseSize: 42);
+                        
                         return Transform.scale(
                           scale: _isPiloting ? _pulseAnimation.value : 1.0,
-                          child: Text(
-                            widget.codigo,
-                            style: GoogleFonts.spaceMono(
-                              fontSize: 42,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 6,
-                              shadows: [
-                                // Múltiples sombras para efecto 3D pronunciado
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.9),
-                                  blurRadius: 15,
-                                  offset: const Offset(3, 3),
-                                ),
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.7),
-                                  blurRadius: 8,
-                                  offset: const Offset(1, 1),
-                                ),
-                                Shadow(
-                                  color: Colors.white.withOpacity(0.5),
-                                  blurRadius: 2,
-                                  offset: const Offset(-1, -1),
-                                ),
-                                Shadow(
-                                  color: Colors.yellow.withOpacity(0.4),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 0),
-                                ),
-                              ],
-                            ),
+                          child: IlluminatedCodeText(
+                            code: codigoFormateado,
+                            fontSize: fontSize,
+                            color: _getColorSeleccionado(),
+                            letterSpacing: 6,
+                            isAnimated: false,
                           ),
                         );
                       },
+                    ),
+                    // Selector de colores en la parte inferior
+                    Positioned(
+                      bottom: -60,
+                      child: _buildColorSelector(),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
                 
                 // Descripción
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Text(
-                    _getCodeDescription(widget.codigo),
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 16,
-                      height: 1.5,
-                    ),
-                    textAlign: TextAlign.center,
+                Center(
+                  child: FutureBuilder<Map<String, String>>(
+                    future: Future.wait([
+                      _getCodeTitulo(widget.codigo),
+                      _getCodeDescription(widget.codigo),
+                    ]).then((results) => {
+                      'titulo': results[0],
+                      'descripcion': results[1],
+                    }),
+                    builder: (context, snapshot) {
+                      final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
+                      final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                      
+                      return Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFFFD700).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              titulo,
+                              style: GoogleFonts.inter(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              descripcion,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.9),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
                 
-                // Control de Música y Timer si está pilotando
+                // Reproductor de Audio (siempre visible)
+                StreamedMusicController(
+                  autoPlay: _isPiloting,
+                  isActive: _isPiloting,
+                ),
+                const SizedBox(height: 20),
+                
+                // Control de Timer si está pilotando
                 if (_isPiloting) ...[
-                  // Reproductor con precarga estilo streaming
-                  const StreamedMusicController(autoPlay: true),
-                  const SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -377,39 +493,6 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
                 
                 const SizedBox(height: 40),
                 
-                // Instrucciones
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Instrucciones de Pilotaje',
-                        style: GoogleFonts.inter(
-                          color: const Color(0xFFFFD700),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '1. Enfoca tu atención en el código\n'
-                        '2. Visualiza el código brillando en dorado\n'
-                        '3. Siente la energía fluyendo a través de ti\n'
-                        '4. Mantén la intención durante 5 minutos',
-                        style: GoogleFonts.inter(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          height: 1.6,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
                   ],
                 ),
               ),
@@ -419,6 +502,154 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
           // Indicador flotante de precarga
           if (_isPreloading) const AudioPreloadIndicator(),
         ],
+      ),
+    );
+  }
+  
+  // Métodos para controlar la animación de la barra de colores
+  void _hideColorBarAfterDelay() {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_isPiloting && mounted) {
+        setState(() {
+          _isColorBarExpanded = false;
+        });
+        _colorBarController.forward();
+      }
+    });
+  }
+  
+  void _toggleColorBar() {
+    setState(() {
+      _isColorBarExpanded = !_isColorBarExpanded;
+    });
+    
+    if (_isColorBarExpanded) {
+      _colorBarController.reverse();
+    } else {
+      _colorBarController.forward();
+    }
+  }
+  
+  void _selectColor(String color) {
+    setState(() {
+      _colorSeleccionado = color;
+    });
+    
+    // Ocultar la barra después de 3 segundos
+    _hideColorBarAfterDelay();
+  }
+  
+  Color _getColorSeleccionado() {
+    if (_colorSeleccionado == 'categoria') {
+      return _coloresDisponibles['categoria']!;
+    }
+    return _coloresDisponibles[_colorSeleccionado]!;
+  }
+  
+  // Método para construir el selector de colores
+  Widget _buildColorSelector() {
+    return SlideTransition(
+      position: _colorBarAnimation,
+      child: GestureDetector(
+        onTap: _toggleColorBar,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(
+              color: _getColorSeleccionado().withOpacity(0.5),
+              width: 1,
+            ),
+          ),
+          child: _isColorBarExpanded
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Color:',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ..._coloresDisponibles.entries.map((entry) {
+                      final isSelected = _colorSeleccionado == entry.key;
+                      return GestureDetector(
+                        onTap: () => _selectColor(entry.key),
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: entry.value,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected ? Colors.white : Colors.transparent,
+                              width: 2,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: entry.value.withOpacity(0.8),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: isSelected
+                              ? const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 16,
+                                )
+                              : null,
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: _getColorSeleccionado(),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _getColorSeleccionado().withOpacity(0.8),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Toca para cambiar',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }

@@ -1,61 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material Design styles -->
-    <style name="Widget.Compat.NotificationActionContainer" parent="android:Widget">
-        <item name="android:background">?android:attr/selectableItemBackground</item>
-        <item name="android:clickable">true</item>
-        <item name="android:focusable">true</item>
+    <style name="Widget.Compat.NotificationActionContainer" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/notification_action_background</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
     </style>
     
-    <style name="Widget.Compat.NotificationActionText" parent="android:TextAppearance">
-        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    <style name="Widget.Compat.NotificationActionText" parent="Widget.AppCompat.Button">
+        <item name="android:textColor">@android:color/white</item>
         <item name="android:textSize">14sp</item>
     </style>
     
-    <!-- Preference styles -->
-    <style name="PreferenceSummaryTextStyle" parent="android:TextAppearance.Medium">
-        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    <style name="PreferenceSummaryTextStyle" parent="Widget.AppCompat.TextView">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@android:color/darker_gray</item>
     </style>
     
-    <!-- Notification text styles -->
-    <style name="TextAppearance.Compat.Notification.Time.Media" parent="android:TextAppearance.Small">
-        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    <style name="TextAppearance.Compat.Notification" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">14sp</item>
     </style>
     
-    <style name="TextAppearance.Compat.Notification.Info.Media" parent="android:TextAppearance.Medium">
-        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    <style name="TextAppearance.Compat.Notification.Info" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">14sp</item>
     </style>
     
-    <style name="TextAppearance.Compat.Notification.Info" parent="android:TextAppearance.Medium">
-        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    <style name="TextAppearance.Compat.Notification.Time" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">12sp</item>
     </style>
     
-    <style name="TextAppearance.Compat.Notification.Title.Media" parent="android:TextAppearance.Medium">
-        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    <style name="TextAppearance.Compat.Notification.Title" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
     </style>
     
-    <style name="TextAppearance.Compat.Notification.Line2.Media" parent="android:TextAppearance.Small">
-        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    <style name="TextAppearance.Compat.Notification.Time.Media" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">12sp</item>
     </style>
     
-    <style name="TextAppearance.Compat.Notification.Media" parent="android:TextAppearance.Small">
-        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    <style name="TextAppearance.Compat.Notification.Info.Media" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">14sp</item>
     </style>
     
-    <style name="TextAppearance.Compat.Notification.Time" parent="android:TextAppearance.Small">
-        <item name="android:textColor">?android:attr/textColorSecondary</item>
-    </style>
-    
-    <style name="PreferenceCategoryTitleTextStyle" parent="android:TextAppearance.Medium">
-        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    <style name="TextAppearance.Compat.Notification.Title.Media" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
     </style>
     
-    <!-- App styles -->
-    <style name="AppTheme" parent="Theme.Material3.DayNight">
-        <item name="colorPrimary">@color/primary_color</item>
-        <item name="colorPrimaryDark">@color/primary_dark</item>
-        <item name="colorAccent">@color/accent_color</item>
+    <style name="TextAppearance.Compat.Notification.Line2.Media" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    
+    <style name="TextAppearance.Compat.Notification.Media" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    
+    <style name="PreferenceCategoryTitleTextStyle" parent="@android:style/TextAppearance">
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
     </style>
 </resources>

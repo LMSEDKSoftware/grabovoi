@@ -57,12 +57,14 @@ class UsuarioFavorito {
   final String id;
   final String userId;
   final String codigoId;
+  final String etiqueta;
   final DateTime createdAt;
 
   UsuarioFavorito({
     required this.id,
     required this.userId,
     required this.codigoId,
+    required this.etiqueta,
     required this.createdAt,
   });
 

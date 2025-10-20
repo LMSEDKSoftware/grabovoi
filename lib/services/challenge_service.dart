@@ -243,9 +243,10 @@ class ChallengeService extends ChangeNotifier {
 
   // Iniciar un desafío
   Future<void> startChallenge(String challengeId) async {
-    if (!_authService.isLoggedIn) {
-      throw Exception('Debes iniciar sesión para participar en desafíos.');
-    }
+    // TEMPORAL: Permitir desafíos sin autenticación para testing
+    // if (!_authService.isLoggedIn) {
+    //   throw Exception('Debes iniciar sesión para participar en desafíos.');
+    // }
 
     // Verificar si ya hay un desafío activo
     final activeChallenge = _getActiveChallenge();

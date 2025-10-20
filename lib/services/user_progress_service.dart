@@ -179,7 +179,7 @@ class UserProgressService {
 
     try {
       final response = await _supabase
-          .from('user_statistics')
+          .from('user_actions')
           .select()
           .eq('user_id', _authService.currentUser!.id)
           .single();

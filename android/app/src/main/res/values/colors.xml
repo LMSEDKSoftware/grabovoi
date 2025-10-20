@@ -1,17 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material Design colors -->
+    <color name="notification_icon_bg_color">#FFD700</color>
     <color name="androidx_core_ripple_material_light">#1F000000</color>
-    <color name="notification_icon_bg_color">#FFFFFF</color>
-    
-    <!-- Browser colors -->
-    <color name="browser_actions_bg_grey">#F5F5F5</color>
-    <color name="browser_actions_title_color">#212121</color>
-    <color name="browser_actions_divider_color">#E0E0E0</color>
-    <color name="browser_actions_text_color">#424242</color>
-    
-    <!-- App colors -->
-    <color name="primary_color">#2196F3</color>
-    <color name="primary_dark">#1976D2</color>
-    <color name="accent_color">#FF4081</color>
+    <color name="browser_actions_bg_grey">#FFCCCCCC</color>
+    <color name="browser_actions_title_color">#FF000000</color>
+    <color name="browser_actions_divider_color">#FFCCCCCC</color>
+    <color name="browser_actions_text_color">#FF000000</color>
 </resources>

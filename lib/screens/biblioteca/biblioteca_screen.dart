@@ -7,6 +7,7 @@ import '../../services/biblioteca_supabase_service.dart';
 import '../../services/ai/openai_codes_service.dart';
 import '../../services/ai_codes_service.dart';
 import '../diag/diag_screen.dart';
+import '../../widgets/illuminated_code_text.dart';
 
 class BibliotecaScreen extends StatefulWidget {
   const BibliotecaScreen({super.key});
@@ -1253,22 +1254,45 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
-              codigo.codigo,
-              style: GoogleFonts.spaceMono(
-                fontSize: 40,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFFFD700),
-                letterSpacing: 4,
-              ),
+            IlluminatedCodeText(
+              code: codigo.codigo,
+              fontSize: 40,
+              color: _getCodigoColor(codigo.color),
+              letterSpacing: 4,
             ),
             const SizedBox(height: 20),
-            Text(
-              codigo.descripcion,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                color: Colors.white70,
+            // Descripción del código con formato estándar
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _getCodigoColor(codigo.color).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    codigo.nombre.isNotEmpty ? codigo.nombre : 'Campo Energético',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _getCodigoColor(codigo.color),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    codigo.descripcion,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.9),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 30),

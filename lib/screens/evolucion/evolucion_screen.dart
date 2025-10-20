@@ -87,39 +87,41 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      body: GlowBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Text(
-                  'Evolución Energética',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
-                  ),
+    return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Título de la sección
+              Text(
+                'Evolución Energética',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Tu progreso vibracional',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tu progreso vibracional',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.white70,
                 ),
-                const SizedBox(height: 30),
+              ),
+              const SizedBox(height: 30),
 
-                // Nivel Energético
+              // Contenido con scroll
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Nivel Energético
                 _buildEnergyLevelCard(),
                 const SizedBox(height: 20),
 
@@ -143,20 +145,22 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
                 _buildStatsCard(),
                 const SizedBox(height: 20),
 
-                // Acciones
-                CustomButton(
-                  text: 'Ver Reporte Detallado',
-                  onPressed: () {
-                    _showDetailedReport();
-                  },
-                  icon: Icons.analytics,
+                      // Acciones
+                      CustomButton(
+                        text: 'Ver Reporte Detallado',
+                        onPressed: () {
+                          _showDetailedReport();
+                        },
+                        icon: Icons.analytics,
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildEnergyLevelCard() {

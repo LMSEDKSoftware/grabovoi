@@ -183,20 +183,19 @@ class BibliotecaSupabaseService {
     if (!_authService.isLoggedIn) return null;
     
     try {
-      final progress = await _progressService.getUserProgress();
-      if (progress == null) return null;
+      // Obtener datos del usuario desde la tabla users
+      final user = await SupabaseService.getCurrentUser();
+      if (user == null) return null;
       
       return UsuarioProgreso(
-        id: progress['id'],
-        userId: progress['user_id'],
-        diasConsecutivos: progress['consecutive_days'] ?? 0,
-        totalPilotajes: progress['total_sessions'] ?? 0,
-        nivelEnergetico: progress['energy_level'] ?? 50,
-        ultimoPilotaje: progress['last_session_date'] != null 
-            ? DateTime.parse(progress['last_session_date']) 
-            : DateTime.now(),
-        createdAt: DateTime.parse(progress['created_at']),
-        updatedAt: DateTime.parse(progress['updated_at']),
+        id: user['id'],
+        userId: user['id'],
+        diasConsecutivos: 0, // Por ahora fijo, se puede calcular después
+        totalPilotajes: 0, // Por ahora fijo, se puede calcular después
+        nivelEnergetico: user['level'] ?? 1,
+        ultimoPilotaje: DateTime.now(),
+        createdAt: DateTime.parse(user['created_at']),
+        updatedAt: DateTime.parse(user['updated_at']),
       );
     } catch (e) {
       print('Error obteniendo progreso del usuario: $e');
@@ -296,6 +295,26 @@ class BibliotecaSupabaseService {
       return 'Continúa hasta 21 días para una transformación profunda';
     } else {
       return 'Comparte tu luz con la comunidad';
+    }
+  }
+
+  // ===== FAVORITOS CON ETIQUETAS =====
+  
+  static Future<List<String>> getEtiquetasFavoritos() async {
+    try {
+      return await SupabaseService.getEtiquetasFavoritos(_getUserId() ?? '');
+    } catch (e) {
+      print('Error obteniendo etiquetas de favoritos: $e');
+      return [];
+    }
+  }
+
+  static Future<List<CodigoGrabovoi>> getFavoritosPorEtiqueta(String etiqueta) async {
+    try {
+      return await SupabaseService.getFavoritosPorEtiqueta(_getUserId() ?? '', etiqueta);
+    } catch (e) {
+      print('Error obteniendo favoritos por etiqueta: $e');
+      return [];
     }
   }
 }

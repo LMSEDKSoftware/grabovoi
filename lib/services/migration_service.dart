@@ -27,8 +27,7 @@ class MigrationService {
       
       // Cargar datos desde JSON local
       final String jsonString = await rootBundle.loadString('lib/data/codigos_grabovoi.json');
-      final Map<String, dynamic> jsonData = json.decode(jsonString);
-      final List<dynamic> codigosData = jsonData['codigos_grabovoi'];
+      final List<dynamic> codigosData = json.decode(jsonString);
 
       // Migrar a Supabase
       await SupabaseService.migrarCodigosDesdeJson(codigosData.cast<Map<String, dynamic>>());

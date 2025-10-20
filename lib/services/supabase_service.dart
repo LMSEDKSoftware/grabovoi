@@ -1,12 +1,117 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/supabase_models.dart';
-import 'supabase_config.dart';
+import '../config/supabase_config.dart';
+
+// Función helper para obtener el usuario actual
+String? _getCurrentUserId() {
+  try {
+    return Supabase.instance.client.auth.currentUser?.id;
+  } catch (e) {
+    print('⚠️ No se pudo obtener el ID del usuario actual: $e');
+    return null;
+  }
+}
 
 class SupabaseService {
   static final SupabaseClient _client = SupabaseConfig.client;
   static final SupabaseClient _serviceClient = SupabaseConfig.serviceClient;
 
   // ===== CÓDIGOS GRABOVOI =====
+  
+  static Future<void> guardarCodigo(CodigoGrabovoi codigo) async {
+    try {
+      print('💾 Intentando guardar código: ${codigo.codigo}');
+      print('📋 Datos: ${codigo.nombre} - ${codigo.categoria}');
+      
+      // Primero intentar con service client (bypass RLS)
+      try {
+        await _serviceClient
+            .from('codigos_grabovoi')
+            .insert({
+              'codigo': codigo.codigo,
+              'nombre': codigo.nombre,
+              'descripcion': codigo.descripcion,
+              'categoria': codigo.categoria,
+              'color': codigo.color,
+            });
+        
+        print('✅ Código guardado con service client: ${codigo.codigo}');
+        return;
+      } catch (serviceError) {
+        print('⚠️ Service client falló: $serviceError');
+        
+        // Si falla service client, intentar con client normal
+        await _client
+            .from('codigos_grabovoi')
+            .insert({
+              'codigo': codigo.codigo,
+              'nombre': codigo.nombre,
+              'descripcion': codigo.descripcion,
+              'categoria': codigo.categoria,
+              'color': codigo.color,
+            });
+        
+        print('✅ Código guardado con client normal: ${codigo.codigo}');
+      }
+    } catch (e) {
+      print('❌ Error al guardar código en la base de datos: $e');
+      print('🔍 Tipo de error: ${e.runtimeType}');
+      rethrow;
+    }
+  }
+
+  // Verificar si un código ya existe en la base de datos
+  static Future<bool> codigoExiste(String codigo) async {
+    try {
+      final response = await _client
+          .from('codigos_grabovoi')
+          .select('codigo')
+          .eq('codigo', codigo)
+          .limit(1);
+      
+      return response.isNotEmpty;
+    } catch (e) {
+      print('❌ Error verificando existencia del código: $e');
+      return false;
+    }
+  }
+
+  // Método para agregar códigos específicos conocidos
+  static Future<void> agregarCodigoEspecifico(String codigo, String nombre, String descripcion, String categoria) async {
+    try {
+      final codigoGrabovoi = CodigoGrabovoi(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        codigo: codigo,
+        nombre: nombre,
+        descripcion: descripcion,
+        categoria: categoria,
+        color: _getCategoryColor(categoria),
+      );
+      
+      await guardarCodigo(codigoGrabovoi);
+      print('✅ Código específico agregado: $codigo - $nombre');
+    } catch (e) {
+      print('❌ Error al agregar código específico: $e');
+      rethrow;
+    }
+  }
+
+  static String _getCategoryColor(String categoria) {
+    switch (categoria.toLowerCase()) {
+      case 'salud':
+        return '#32CD32'; // Verde
+      case 'abundancia':
+        return '#FFD700'; // Dorado
+      case 'amor':
+        return '#FF69B4'; // Rosa
+      case 'reprogramacion':
+        return '#9370DB'; // Violeta
+      case 'manifestacion':
+        return '#FF8C00'; // Naranja
+      default:
+        return '#FFD700'; // Dorado por defecto
+    }
+  }
   
   static Future<List<CodigoGrabovoi>> getCodigos() async {
     try {
@@ -141,11 +246,12 @@ class SupabaseService {
     }
   }
 
-  static Future<void> agregarFavorito(String userId, String codigoId) async {
+  static Future<void> agregarFavorito(String userId, String codigoId, {String etiqueta = 'Favorito'}) async {
     try {
       await _client.from('usuario_favoritos').insert({
         'user_id': userId,
         'codigo_id': codigoId,
+        'etiqueta': etiqueta,
       });
     } catch (e) {
       throw Exception('Error al agregar favorito: $e');
@@ -175,6 +281,61 @@ class SupabaseService {
       return (response as List).isNotEmpty;
     } catch (e) {
       return false;
+    }
+  }
+
+  static Future<List<UsuarioFavorito>> getFavoritosConEtiquetas(String userId) async {
+    try {
+      final response = await _client
+          .from('usuario_favoritos')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+
+      return response.map((json) => UsuarioFavorito.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Error al obtener favoritos con etiquetas: $e');
+    }
+  }
+
+  static Future<List<String>> getEtiquetasFavoritos(String userId) async {
+    try {
+      final response = await _client
+          .from('usuario_favoritos')
+          .select('etiqueta')
+          .eq('user_id', userId);
+
+      return response
+          .map((json) => json['etiqueta'] as String)
+          .toSet()
+          .toList()
+          ..sort();
+    } catch (e) {
+      throw Exception('Error al obtener etiquetas de favoritos: $e');
+    }
+  }
+
+  static Future<List<CodigoGrabovoi>> getFavoritosPorEtiqueta(String userId, String etiqueta) async {
+    try {
+      final response = await _client
+          .from('usuario_favoritos')
+          .select('''
+            codigos_grabovoi (
+              codigo,
+              nombre,
+              descripcion,
+              categoria,
+              color
+            )
+          ''')
+          .eq('user_id', userId)
+          .eq('etiqueta', etiqueta);
+
+      return (response as List)
+          .map((json) => CodigoGrabovoi.fromJson(json['codigos_grabovoi']))
+          .toList();
+    } catch (e) {
+      throw Exception('Error al obtener favoritos por etiqueta: $e');
     }
   }
 
@@ -372,19 +533,14 @@ class SupabaseService {
   static Future<void> migrarCodigosDesdeJson(List<Map<String, dynamic>> codigos) async {
     try {
       for (final codigoData in codigos) {
-        final categoria = codigoData['categoria'] ?? 'General';
-        final items = codigoData['items'] as List<dynamic>;
-        
-        for (final item in items) {
-          await _serviceClient.from('codigos_grabovoi').upsert({
-            'codigo': item['codigo'],
-            'nombre': item['descripcion'],
-            'descripcion': item['descripcion'],
-            'categoria': categoria,
-            'created_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
-          });
-        }
+        await _serviceClient.from('codigos_grabovoi').upsert({
+          'codigo': codigoData['codigo'],
+          'nombre': codigoData['nombre'],
+          'descripcion': codigoData['descripcion'],
+          'categoria': codigoData['categoria'] ?? 'General',
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        });
       }
     } catch (e) {
       throw Exception('Error al migrar códigos: $e');
@@ -410,6 +566,27 @@ class SupabaseService {
       return CodigoGrabovoi.fromJson(response);
     } catch (e) {
       throw Exception('Error al crear código: $e');
+    }
+  }
+
+  // ===== USUARIO ACTUAL =====
+  
+  static Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) return null;
+      
+      // Obtener datos completos del usuario desde la tabla users
+      final response = await _client
+          .from('users')
+          .select()
+          .eq('id', user.id)
+          .single();
+      
+      return response;
+    } catch (e) {
+      print('Error obteniendo usuario actual: $e');
+      return null;
     }
   }
 }

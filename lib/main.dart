@@ -8,8 +8,10 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/onboarding/user_assessment_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'widgets/auth_wrapper.dart';
+import 'widgets/glow_background.dart';
 import 'screens/biblioteca/static_biblioteca_screen.dart';
 import 'screens/pilotaje/pilotaje_screen.dart';
+import 'screens/pilotaje/quantum_pilotage_screen.dart';
 import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
 import 'screens/profile/profile_screen.dart';
@@ -80,16 +82,6 @@ class MyApp extends StatelessWidget {
             color: Colors.white70,
           ),
         ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: GoogleFonts.playfairDisplay(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFFFFD700),
-          ),
-        ),
       ),
       home: const AuthWrapper(),
     );
@@ -106,21 +98,36 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    StaticBibliotecaScreen(),
-    PilotajeScreen(),
-    DesafiosScreen(),
-    EvolucionScreen(),
-    ProfileScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeScreen(onNavigateToTab: _changeTab),
+      const StaticBibliotecaScreen(),
+      const PilotajeScreen(),
+      const QuantumPilotageScreen(),
+      const DesafiosScreen(),
+      const EvolucionScreen(),
+      const ProfileScreen(),
+    ];
+  }
+
+  void _changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: GlowBackground(
+        child: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -160,22 +167,27 @@ class _MainNavigationState extends State<MainNavigation> {
                   icon: Icons.my_location,
                   label: 'Pilotaje',
                   index: 2,
+                ),
+                _buildNavItem(
+                  icon: Icons.auto_awesome,
+                  label: 'Cuántico',
+                  index: 3,
                   isCenter: true,
                 ),
                 _buildNavItem(
                   icon: Icons.emoji_events,
                   label: 'Desafíos',
-                  index: 3,
+                  index: 4,
                 ),
                 _buildNavItem(
                   icon: Icons.show_chart,
                   label: 'Evolución',
-                  index: 4,
+                  index: 5,
                 ),
                 _buildNavItem(
                   icon: Icons.person,
                   label: 'Perfil',
-                  index: 5,
+                  index: 6,
                 ),
               ],
             ),

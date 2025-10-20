@@ -18,12 +18,12 @@ class UserFavoritesService {
 
     try {
       final response = await _supabase
-          .from('user_favorites')
-          .select('code_id')
+          .from('usuario_favoritos')
+          .select('codigo_id')
           .eq('user_id', _authService.currentUser!.id)
-          .order('added_at', ascending: false);
+          .order('created_at', ascending: false);
 
-      return response.map((item) => item['code_id'] as String).toList();
+      return response.map((item) => item['codigo_id'] as String).toList();
     } catch (e) {
       print('Error obteniendo favoritos: $e');
       return [];
@@ -35,9 +35,22 @@ class UserFavoritesService {
     if (!_authService.isLoggedIn) return false;
 
     try {
-      await _supabase.from('user_favorites').insert({
+      // Verificar que el código existe en la tabla codigos_grabovoi
+      final codigoExists = await _supabase
+          .from('codigos_grabovoi')
+          .select('codigo')
+          .eq('codigo', codeId)
+          .maybeSingle();
+
+      if (codigoExists == null) {
+        print('⚠️ El código $codeId no existe en la base de datos');
+        return false;
+      }
+
+      await _supabase.from('usuario_favoritos').insert({
         'user_id': _authService.currentUser!.id,
-        'code_id': codeId,
+        'codigo_id': codeId,
+        'etiqueta': 'Favorito',
       });
 
       print('✅ Código agregado a favoritos: $codeId');
@@ -58,10 +71,10 @@ class UserFavoritesService {
 
     try {
       await _supabase
-          .from('user_favorites')
+          .from('usuario_favoritos')
           .delete()
           .eq('user_id', _authService.currentUser!.id)
-          .eq('code_id', codeId);
+          .eq('codigo_id', codeId);
 
       print('✅ Código removido de favoritos: $codeId');
       return true;
@@ -77,10 +90,10 @@ class UserFavoritesService {
 
     try {
       final response = await _supabase
-          .from('user_favorites')
+          .from('usuario_favoritos')
           .select('id')
           .eq('user_id', _authService.currentUser!.id)
-          .eq('code_id', codeId)
+          .eq('codigo_id', codeId)
           .maybeSingle();
 
       return response != null;
@@ -107,10 +120,11 @@ class UserFavoritesService {
 
     try {
       final response = await _supabase
-          .from('user_favorites')
+          .from('usuario_favoritos')
           .select('''
-            code_id,
-            added_at,
+            codigo_id,
+            created_at,
+            etiqueta,
             codigos_grabovoi!inner(
               id,
               codigo,
@@ -121,7 +135,7 @@ class UserFavoritesService {
             )
           ''')
           .eq('user_id', _authService.currentUser!.id)
-          .order('added_at', ascending: false);
+          .order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -136,7 +150,7 @@ class UserFavoritesService {
 
     try {
       await _supabase
-          .from('user_favorites')
+          .from('usuario_favoritos')
           .delete()
           .eq('user_id', _authService.currentUser!.id);
 
@@ -154,7 +168,7 @@ class UserFavoritesService {
 
     try {
       final response = await _supabase
-          .from('user_favorites')
+          .from('usuario_favoritos')
           .select('id')
           .eq('user_id', _authService.currentUser!.id);
 
@@ -171,10 +185,11 @@ class UserFavoritesService {
 
     try {
       final response = await _supabase
-          .from('user_favorites')
+          .from('usuario_favoritos')
           .select('''
-            code_id,
-            added_at,
+            codigo_id,
+            created_at,
+            etiqueta,
             codigos_grabovoi!inner(
               id,
               codigo,
@@ -185,7 +200,7 @@ class UserFavoritesService {
             )
           ''')
           .eq('user_id', _authService.currentUser!.id)
-          .order('added_at', ascending: false);
+          .order('created_at', ascending: false);
 
       final Map<String, List<Map<String, dynamic>>> favoritesByCategory = {};
       
