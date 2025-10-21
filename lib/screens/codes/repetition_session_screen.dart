@@ -286,46 +286,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 Center(
                   child: Screenshot(
                     controller: _screenshotController,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Esfera dorada con animaciones
-                        Transform.scale(
-                          scale: _isRepetitionActive ? _pulseAnimation.value : 1.0,
-                          child: GoldenSphere(
-                            size: 280,
-                            color: _getColorSeleccionado(),
-                            glowIntensity: _isRepetitionActive ? 0.8 : 0.6,
-                            isAnimated: true,
-                          ),
-                        ),
-                        // Números blancos con animaciones
-                        AnimatedBuilder(
-                          animation: _pulseAnimation,
-                          builder: (context, child) {
-                            // Usar CodeFormatter estándar como en otras pantallas
-                            final codigoFormateado = CodeFormatter.formatCodeForDisplay(widget.codigo);
-                            final fontSize = CodeFormatter.calculateFontSize(widget.codigo);
-                            
-                            return Transform.scale(
-                              scale: _isRepetitionActive ? _pulseAnimation.value : 1.0,
-                              child: IlluminatedCodeText(
-                                code: codigoFormateado,
-                                fontSize: fontSize,
-                                color: _getColorSeleccionado(),
-                                letterSpacing: 4,
-                                isAnimated: false,
-                              ),
-                            );
-                          },
-                        ),
-                        // Selector de colores en la parte inferior
-                        Positioned(
-                          bottom: -60,
-                          child: _buildColorSelector(),
-                        ),
-                      ],
-                    ),
+                    child: _buildIntegratedSphere(widget.codigo),
                   ),
                 ),
 
@@ -583,6 +544,49 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 ),
         ),
       ),
+    );
+  }
+
+  // ---- MÉTODO DE ESFERA INTEGRADA (igual que en Cuántico) ----
+  Widget _buildIntegratedSphere(String codigoCrudo) {
+    final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoCrudo);
+    final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo);
+
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        // 1) ESFERA DORADA — solo visual, sin 'code'
+        Transform.scale(
+          scale: _isRepetitionActive ? _pulseAnimation.value : 1.0,
+          child: GoldenSphere(
+            size: 260,
+            color: _getColorSeleccionado(),
+            glowIntensity: _isRepetitionActive ? 0.8 : 0.6,
+            isAnimated: true,
+          ),
+        ),
+
+        // 2) CÓDIGO ILUMINADO SUPERPUESTO
+        AnimatedBuilder(
+          animation: _pulseAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _isRepetitionActive ? _pulseAnimation.value : 1.0,
+              child: IlluminatedCodeText(
+                code: codigoFormateado,
+                fontSize: fontSize,
+                color: _getColorSeleccionado(),
+                letterSpacing: 4,
+                isAnimated: false,
+              ),
+            );
+          },
+        ),
+
+        // 3) SELECTOR DE COLORES
+        _buildColorSelector(),
+      ],
     );
   }
 }

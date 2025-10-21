@@ -80,6 +80,8 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       curve: Curves.easeInOut,
     ));
     
+    // Ocultar la barra de colores después de 3 segundos
+    _hideColorBarAfterDelay();
   }
 
   @override
@@ -304,48 +306,9 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 ),
                 const SizedBox(height: 40),
                 
-                // Esfera 3D con Código
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Esfera dorada de fondo
-                    Transform.scale(
-                      scale: _isPiloting ? _pulseAnimation.value : 1.0,
-                      child: GoldenSphere(
-                        size: 280,
-                        color: _getColorSeleccionado(),
-                        glowIntensity: _isPiloting ? 0.8 : 0.6,
-                        isAnimated: true,
-                      ),
-                    ),
-                    // Código superpuesto sin círculo negro
-                    AnimatedBuilder(
-                      animation: _pulseAnimation,
-                      builder: (context, child) {
-                        final codigoFormateado = CodeFormatter.formatCodeForDisplay(widget.codigo);
-                        final necesitaMultilinea = CodeFormatter.needsMultilineFormat(widget.codigo);
-                        final fontSize = CodeFormatter.calculateFontSize(widget.codigo, baseSize: 42);
-                        
-                        return Transform.scale(
-                          scale: _isPiloting ? _pulseAnimation.value : 1.0,
-                          child: IlluminatedCodeText(
-                            code: codigoFormateado,
-                            fontSize: fontSize,
-                            color: _getColorSeleccionado(),
-                            letterSpacing: 6,
-                            isAnimated: false,
-                          ),
-                        );
-                      },
-                    ),
-                    // Selector de colores en la parte inferior
-                    Positioned(
-                      bottom: -60,
-                      child: _buildColorSelector(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                // Esfera integrada (sin contenedor rectangular oscuro)
+                _buildQuantumDetailSphere(widget.codigo),
+                const SizedBox(height: 80), // Más espacio para el selector de colores
                 
                 // Descripción
                 Center(
@@ -550,69 +513,71 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
   Widget _buildColorSelector() {
     return SlideTransition(
       position: _colorBarAnimation,
-      child: GestureDetector(
-        onTap: _toggleColorBar,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(
-              color: _getColorSeleccionado().withOpacity(0.5),
-              width: 1,
-            ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: _getColorSeleccionado().withOpacity(0.5),
+            width: 1,
           ),
-          child: _isColorBarExpanded
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Color:',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+        ),
+        child: _isColorBarExpanded
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Color:',
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(width: 8),
+                  ),
+                  const SizedBox(width: 8),
                     ..._coloresDisponibles.entries.map((entry) {
                       final isSelected = _colorSeleccionado == entry.key;
                       return GestureDetector(
+                        behavior: HitTestBehavior.translucent,
                         onTap: () => _selectColor(entry.key),
                         child: Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: entry.value,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? Colors.white : Colors.transparent,
-                              width: 2,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: entry.value.withOpacity(0.8),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
-                                    ),
-                                  ]
-                                : null,
+                        margin: const EdgeInsets.only(left: 8),
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: entry.value,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? Colors.white : Colors.transparent,
+                            width: 2,
                           ),
-                          child: isSelected
-                              ? const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 16,
-                                )
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: entry.value.withOpacity(0.8),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
                               : null,
                         ),
-                      );
-                    }).toList(),
-                  ],
-                )
-              : Row(
+                        child: isSelected
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 16,
+                              )
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ],
+              )
+            : GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _toggleColorBar,
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
@@ -649,8 +614,54 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                     ),
                   ],
                 ),
-        ),
+              ),
       ),
+    );
+  }
+
+  // ---- MÉTODO DE ESFERA INTEGRADA (igual que en Cuántico y Repetición) ----
+  Widget _buildQuantumDetailSphere(String codigoCrudo) {
+    final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoCrudo);
+    final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo, baseSize: 42);
+
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        // 1️⃣ Esfera dorada (solo visual, sin contenedor rectangular)
+        Transform.scale(
+          scale: _isPiloting ? _pulseAnimation.value : 1.0,
+          child: GoldenSphere(
+            size: 260,
+            color: _getColorSeleccionado(),
+            glowIntensity: _isPiloting ? 0.85 : 0.7,
+            isAnimated: true,
+          ),
+        ),
+
+        // 2️⃣ Texto iluminado (el código sobre la esfera)
+        AnimatedBuilder(
+          animation: _pulseAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _isPiloting ? _pulseAnimation.value : 1.0,
+              child: IlluminatedCodeText(
+                code: codigoFormateado,
+                fontSize: fontSize,
+                color: _getColorSeleccionado(),
+                letterSpacing: 6,
+                isAnimated: false,
+              ),
+            );
+          },
+        ),
+
+        // 3️⃣ Selector de colores en la parte inferior
+        Positioned(
+          bottom: -40, // Ajustado para evitar superposición
+          child: _buildColorSelector(),
+        ),
+      ],
     );
   }
 }

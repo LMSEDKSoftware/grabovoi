@@ -29,44 +29,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     'proximoPaso': 'Realiza tu primer pilotaje consciente hoy',
   };
   
-  // Variables para el selector de colores
-  String _colorSeleccionado = 'dorado';
-  final Map<String, Color> _coloresDisponibles = {
-    'dorado': const Color(0xFFFFD700),
-    'plateado': const Color(0xFFC0C0C0),
-    'azul_celestial': const Color(0xFF87CEEB),
-    'categoria': const Color(0xFFFFD700), // Se actualizará dinámicamente
-  };
-  
-  // Variables para la animación de la barra de colores
-  bool _isColorBarExpanded = true;
-  late AnimationController _colorBarController;
-  late Animation<Offset> _colorBarAnimation;
+  // La esfera de inicio es solo decorativa, sin funcionalidades interactivas
 
   @override
   void initState() {
     super.initState();
     _cargarDatosHome();
-    
-    // Inicializar controlador de animación de la barra de colores
-    _colorBarController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    
-    _colorBarAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0.3, 0), // Se desliza hacia la derecha
-    ).animate(CurvedAnimation(
-      parent: _colorBarController,
-      curve: Curves.easeInOut,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _colorBarController.dispose();
-    super.dispose();
   }
 
   Future<void> _cargarDatosHome() async {
@@ -116,22 +84,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 40),
+                // Esfera decorativa simple - solo visual, sin funcionalidades
                 Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      GoldenSphere(
-                        size: 180,
-                        color: _getColorSeleccionado(),
-                        glowIntensity: 0.7,
-                        isAnimated: true,
-                      ),
-                      // Selector de colores en la parte inferior
-                      Positioned(
-                        bottom: -40,
-                        child: _buildColorSelector(),
-                      ),
-                    ],
+                  child: GoldenSphere(
+                    size: 180,
+                    color: const Color(0xFFFFD700), // Color dorado fijo
+                    glowIntensity: 0.7,
+                    isAnimated: true,
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -506,151 +465,4 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
   
-  // Métodos para controlar la animación de la barra de colores
-  void _hideColorBarAfterDelay() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _isColorBarExpanded = false;
-        });
-        _colorBarController.forward();
-      }
-    });
-  }
-  
-  void _toggleColorBar() {
-    setState(() {
-      _isColorBarExpanded = !_isColorBarExpanded;
-    });
-    
-    if (_isColorBarExpanded) {
-      _colorBarController.reverse();
-    } else {
-      _colorBarController.forward();
-    }
-  }
-  
-  void _selectColor(String color) {
-    setState(() {
-      _colorSeleccionado = color;
-    });
-    
-    // Ocultar la barra después de 3 segundos
-    _hideColorBarAfterDelay();
-  }
-  
-  Color _getColorSeleccionado() {
-    if (_colorSeleccionado == 'categoria') {
-      return _coloresDisponibles['categoria']!;
-    }
-    return _coloresDisponibles[_colorSeleccionado]!;
-  }
-  
-  // Método para construir el selector de colores
-  Widget _buildColorSelector() {
-    return SlideTransition(
-      position: _colorBarAnimation,
-      child: GestureDetector(
-        onTap: _toggleColorBar,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(
-              color: _getColorSeleccionado().withOpacity(0.5),
-              width: 1,
-            ),
-          ),
-          child: _isColorBarExpanded
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Color:',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ..._coloresDisponibles.entries.map((entry) {
-                      final isSelected = _colorSeleccionado == entry.key;
-                      return GestureDetector(
-                        onTap: () => _selectColor(entry.key),
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: entry.value,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? Colors.white : Colors.transparent,
-                              width: 2,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: entry.value.withOpacity(0.8),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: isSelected
-                              ? const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 16,
-                                )
-                              : null,
-                        ),
-                      );
-                    }).toList(),
-                  ],
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: _getColorSeleccionado(),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _getColorSeleccionado().withOpacity(0.8),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Toca para cambiar',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
 }
