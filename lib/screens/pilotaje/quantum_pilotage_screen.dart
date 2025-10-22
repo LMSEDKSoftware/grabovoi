@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/streamed_music_controller.dart';
 import '../../widgets/illuminated_code_text.dart';
+import '../../widgets/quantum_pilotage_modal.dart';
 import '../../utils/code_formatter.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
@@ -16,6 +18,7 @@ import '../../config/openai_config.dart';
 import '../../config/supabase_config.dart';
 import '../../models/busqueda_profunda_model.dart';
 import '../../services/busquedas_profundas_service.dart';
+import '../../services/audio_manager_service.dart';
 
 class QuantumPilotageScreen extends StatefulWidget {
   final String? codigoInicial;
@@ -66,7 +69,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   // Sistema de animación secuencial
   bool _showSequentialSteps = false;
   int _currentStepIndex = 0;
-  List<bool> _stepCompleted = [false, false, false, false, false];
+  List<bool> _stepCompleted = [false, false, false, false, false, false];
   
   // Lista de códigos disponibles
   List<CodigoGrabovoi> _codigos = [];
@@ -112,6 +115,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   bool _isPilotageCompleted = false;
   int _pilotageDuration = 0; // en segundos
   Timer? _pilotageTimer;
+  
+  // Modo de concentración (pantalla completa)
+  bool _isConcentrationMode = false;
 
   @override
   void initState() {
@@ -122,6 +128,40 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     
     if (widget.codigoInicial != null) {
       _codigoSeleccionado = widget.codigoInicial!;
+    }
+    
+    // El modal de pilotaje cuántico se mostrará cuando el usuario navegue a esta pantalla
+  }
+  
+  // Método público para mostrar el modal cuando el usuario navega a esta pantalla
+  void showQuantumPilotageModal() {
+    _checkQuantumPilotageModal();
+  }
+
+  // Método para mostrar información sobre Pilotaje Cuántico
+  void _showQuantumPilotageInfo() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const QuantumPilotageModal(),
+    );
+  }
+
+  Future<void> _checkQuantumPilotageModal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final quantumModalShown = prefs.getBool('quantum_pilotage_modal_shown') ?? false;
+
+    // Verifica que no se haya mostrado antes y que el widget esté montado
+    if (!quantumModalShown && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const QuantumPilotageModal(),
+        );
+        prefs.setBool('quantum_pilotage_modal_shown', true);
+      });
     }
   }
 
@@ -442,6 +482,16 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           codigoGuardado = codigoId != null;
         } catch (e) {
           print('⚠️ Error al guardar código: $e');
+        }
+        
+        // Si el código ya existe, considerarlo como "guardado" exitosamente
+        if (codigoId == null) {
+          // Verificar si el código ya existe en la base de datos
+          final existe = await SupabaseService.codigoExiste(resultado.codigo);
+          if (existe) {
+            print('ℹ️ El código ya existe en la base de datos, considerando como guardado');
+            codigoGuardado = true;
+          }
         }
         
               // Actualizar registro de búsqueda con resultado exitoso
@@ -989,6 +1039,11 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       );
     }
 
+    // Modo de concentración (pantalla completa)
+    if (_isConcentrationMode) {
+      return _buildConcentrationMode();
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B132B),
       extendBodyBehindAppBar: true,
@@ -996,7 +1051,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         children: [
           GlowBackground(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, _showAudioController ? 120 : 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1010,11 +1065,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   
                   // Zona Central - Visualización del Código
                   _buildCodeVisualization(),
-                  
-                  
-                           // Integraciones del Sistema
-                           _buildSystemIntegrations(),
-                           const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -1072,6 +1122,46 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             textAlign: TextAlign.left,
           ),
           const SizedBox(height: 12),
+          
+          // Botón para mostrar información sobre Pilotaje Cuántico
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                _showQuantumPilotageInfo();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9C27B0).withOpacity(0.2),
+                foregroundColor: const Color(0xFF9C27B0),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                  side: const BorderSide(color: Color(0xFF9C27B0), width: 1),
+                ),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.help_outline,
+                    size: 18,
+                    color: Color(0xFF9C27B0),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '¿Qué es el Pilotaje Cuántico?',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF9C27B0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -1158,6 +1248,33 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                         ),
                       );
                     }).toList(),
+                    
+                    const SizedBox(width: 16),
+                    
+                    // Botón de modo concentración
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isConcentrationMode = true;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _getColorSeleccionado().withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _getColorSeleccionado().withOpacity(0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.fullscreen,
+                          color: _getColorSeleccionado(),
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ] else ...[
                     // Solo mostrar el círculo del color seleccionado
                     Container(
@@ -1182,6 +1299,33 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                         Icons.check,
                         color: Colors.white,
                         size: 14,
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 16),
+                    
+                    // Botón de modo concentración (también en modo colapsado)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isConcentrationMode = true;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _getColorSeleccionado().withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _getColorSeleccionado().withOpacity(0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.fullscreen,
+                          color: _getColorSeleccionado(),
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -1224,9 +1368,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           Center(
             child: CustomButton(
               text: _isPilotageActive ? 'Detener Pilotaje' : 'Iniciar Pilotaje Cuántico',
-              onPressed: _isPilotageActive ? _detenerPilotaje : _startQuantumPilotage,
+              onPressed: _isPilotageActive ? _detenerPilotaje : (_codigoSeleccionado.isNotEmpty ? _startQuantumPilotage : null),
               icon: _isPilotageActive ? Icons.stop : Icons.auto_awesome,
-              color: _isPilotageActive ? Colors.red : _colorVibracional,
+              color: _isPilotageActive ? Colors.red : (_codigoSeleccionado.isNotEmpty ? _colorVibracional : Colors.grey),
             ),
           ),
           const SizedBox(height: 20),
@@ -1379,24 +1523,12 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 width: 1,
               ),
             ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Colors.orange,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'No se encontraron resultados para "$_queryBusqueda". Presiona Enter o el botón de búsqueda para confirmar.',
-                    style: GoogleFonts.inter(
-                      color: Colors.orange,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              'No se encontraron resultados para "$_queryBusqueda". Presiona Enter o el botón de búsqueda para confirmar.',
+              style: GoogleFonts.inter(
+                color: Colors.orange,
+                fontSize: 14,
+              ),
             ),
           ),
         
@@ -1561,13 +1693,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 children: [
                   Transform.scale(
                     scale: pulseScale,
-                        child: IlluminatedCodeText(
-                          code: _codigoSeleccionado,
-                          fontSize: 36,
-                          color: _colorVibracional,
-                          letterSpacing: 6,
-                          isAnimated: false,
-                        ),
+                    child: _buildAutoSizedCodeText(),
                   ),
                   const SizedBox(height: 16),
                   Container(
@@ -1592,6 +1718,71 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         }
       },
     );
+  }
+
+  // Método para construir el texto del código con tamaño automático en modo luz
+  Widget _buildAutoSizedCodeText() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calcular el tamaño máximo disponible (ancho del contenedor menos padding)
+        final maxWidth = constraints.maxWidth - 40; // 20px de padding a cada lado
+        final maxFontSize = 50.0; // Tamaño máximo
+        final minFontSize = 12.0; // Tamaño mínimo
+        
+        // Calcular el tamaño de fuente óptimo
+        double fontSize = _calculateOptimalFontSize(
+          _codigoSeleccionado,
+          maxWidth,
+          maxFontSize,
+          minFontSize,
+        );
+        
+        return IlluminatedCodeText(
+          code: _codigoSeleccionado,
+          fontSize: fontSize,
+          color: _colorVibracional,
+          letterSpacing: 6,
+          isAnimated: false,
+        );
+      },
+    );
+  }
+
+  // Método para calcular el tamaño óptimo de fuente
+  double _calculateOptimalFontSize(
+    String text,
+    double maxWidth,
+    double maxFontSize,
+    double minFontSize,
+  ) {
+    // Empezar con el tamaño máximo y reducir hasta que quepa
+    double fontSize = maxFontSize;
+    
+    while (fontSize > minFontSize) {
+      // Calcular el ancho aproximado del texto con el tamaño actual
+      final textWidth = _estimateTextWidth(text, fontSize);
+      
+      if (textWidth <= maxWidth) {
+        break; // El texto cabe, usar este tamaño
+      }
+      
+      // Reducir el tamaño de fuente
+      fontSize -= 2.0;
+    }
+    
+    // Asegurar que no sea menor al mínimo
+    return fontSize.clamp(minFontSize, maxFontSize);
+  }
+
+  // Método para estimar el ancho del texto
+  double _estimateTextWidth(String text, double fontSize) {
+    // Aproximación del ancho del texto basada en el número de caracteres y tamaño de fuente
+    // Esto es una estimación, pero funciona bien para la mayoría de casos
+    final charWidth = fontSize * 0.6; // Aproximación del ancho por carácter
+    final letterSpacing = 6.0; // El letterSpacing usado
+    final totalLetterSpacing = (text.length - 1) * letterSpacing;
+    
+    return (text.length * charWidth) + totalLetterSpacing;
   }
 
   Widget _buildSequentialStepCard() {
@@ -1625,6 +1816,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         'description': 'Agradece y sella la intención en el campo cuántico.',
         'icon': Icons.check_circle,
         'color': Colors.teal,
+      },
+      {
+        'title': 'Intención Personal',
+        'description': '¿Qué deseas armonizar con este código?',
+        'icon': Icons.edit,
+        'color': Colors.amber,
+        'hasTextField': true,
       },
     ];
 
@@ -1705,13 +1903,43 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                         ),
                         const SizedBox(height: 20),
                         
+                        // Campo de texto para el paso de intención
+                        if (currentStepData['hasTextField'] == true) ...[
+                          TextField(
+                            onChanged: (value) {
+                              setState(() {
+                                _intencionPersonal = value;
+                              });
+                            },
+                            style: GoogleFonts.inter(color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: 'Escribe tu intención aquí...',
+                              hintStyle: GoogleFonts.inter(color: Colors.white54),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.1),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.white, width: 2),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            maxLines: 3,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                        
                         // Botón de acción
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             // Indicador de progreso
                             Row(
-                              children: List.generate(5, (index) {
+                              children: List.generate(6, (index) {
                                 return Container(
                                   margin: const EdgeInsets.only(right: 4),
                                   width: 8,
@@ -2171,7 +2399,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       _isPilotageActive = true;
       _showSequentialSteps = true;
       _currentStepIndex = 0;
-      _stepCompleted = [false, false, false, false, false];
+      _stepCompleted = [false, false, false, false, false, false];
       _currentStep = QuantumPilotageStep.preparacion;
       _repeticionesRealizadas = 0;
       _nivelResonancia = 0.0;
@@ -2182,7 +2410,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   }
 
   void _nextStep() {
-    if (_currentStepIndex < 4) {
+    if (_currentStepIndex < 5) {
       // Animación de salida hacia la izquierda
       setState(() {
         _stepCompleted[_currentStepIndex] = true;
@@ -2215,12 +2443,87 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
       // Auto-detener después de 2 minutos (120 segundos)
       if (_pilotageDuration >= 120) {
-        _detenerPilotaje();
+        _completarPilotajeAutomatico();
       }
     });
   }
 
   void _detenerPilotaje() {
+    // Mostrar diálogo de confirmación antes de detener
+    _mostrarConfirmacionDetener();
+  }
+
+  void _mostrarConfirmacionDetener() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C2541),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.music_off, color: Color(0xFFFFD700), size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'Detener Pilotaje',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '¿Estás seguro de que deseas detener el pilotaje cuántico y la música?',
+            style: GoogleFonts.inter(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cerrar diálogo sin hacer nada
+              },
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cerrar diálogo
+                _confirmarDetenerPilotaje(); // Proceder con la detención
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Sí, Detener',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmarDetenerPilotaje() {
     _pilotageTimer?.cancel();
     
     setState(() {
@@ -2230,11 +2533,121 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       _isColorBarExpanded = true; // Restaurar la barra de colores
     });
     
+    // Detener el audio usando el AudioManagerService
+    final audioManager = AudioManagerService();
+    audioManager.stop();
+    
     // Restaurar la posición de la barra de colores
     _colorBarController.reverse();
 
-    // Mostrar mensaje de finalización
+    // Mostrar mensaje de cancelación (no de finalización)
+    _mostrarMensajeCancelacion();
+  }
+
+  void _completarPilotajeAutomatico() {
+    _pilotageTimer?.cancel();
+    
+    setState(() {
+      _isPilotageActive = false;
+      _isAudioPlaying = false;
+      _showAudioController = false;
+      _isColorBarExpanded = true; // Restaurar la barra de colores
+    });
+    
+    // Detener el audio usando el AudioManagerService
+    final audioManager = AudioManagerService();
+    audioManager.stop();
+    
+    // Restaurar la posición de la barra de colores
+    _colorBarController.reverse();
+
+    // Mostrar mensaje de finalización (completado exitosamente)
     _mostrarMensajeFinalizacion();
+  }
+
+  void _mostrarMensajeCancelacion() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFFF6B6B), width: 2),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.pause_circle,
+              color: const Color(0xFFFF6B6B),
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Pilotaje Cancelado',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Has cancelado la sesión de pilotaje cuántico.',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF6B6B).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFFF6B6B).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '⚠️ Sesión interrumpida',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFFF6B6B),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Para obtener mejores resultados, se recomienda completar la sesión completa de 2 minutos.',
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          CustomButton(
+            text: 'Entendido',
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            color: const Color(0xFFFF6B6B),
+          ),
+        ],
+      ),
+    );
   }
   
   // Métodos para controlar la animación de la barra de colores
@@ -2937,50 +3350,62 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
   Widget _buildAudioController() {
     return Positioned(
-      bottom: 20,
-      left: 20,
-      right: 20,
+      bottom: 0,
+      left: 0,
+      right: 0,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1C2541).withOpacity(0.9),
-          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFF1C2541).withOpacity(0.95),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
           border: Border.all(
             color: const Color(0xFFFFD700).withOpacity(0.3),
             width: 1,
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Indicador de tiempo de pilotaje
-            if (_isPilotageActive) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.timer,
-                    color: const Color(0xFFFFD700),
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Tiempo de pilotaje: ${_formatDuration(_pilotageDuration)}',
-                    style: GoogleFonts.inter(
-                      color: const Color(0xFFFFD700),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
-            StreamedMusicController(
-              autoPlay: true,
-              isActive: _isAudioPlaying,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
           ],
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Indicador de tiempo de pilotaje
+              if (_isPilotageActive) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.timer,
+                      color: const Color(0xFFFFD700),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Tiempo de pilotaje: ${_formatDuration(_pilotageDuration)}',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              StreamedMusicController(
+                autoPlay: true,
+                isActive: true,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2991,6 +3416,139 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     final remainingSeconds = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
+
+  // Modo de concentración - pantalla completa con solo la esfera
+  Widget _buildConcentrationMode() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Esfera centrada con animaciones
+          Center(
+            child: AnimatedBuilder(
+              animation: Listenable.merge([_pulseAnimation, _expansionAnimation]),
+              builder: (context, child) {
+                final pulseScale = _isAudioPlaying ? 
+                  _pulseAnimation.value * 1.3 : 
+                  _pulseAnimation.value;
+                
+                if (_isSphereMode) {
+                  // Modo Esfera - Esfera dorada con código
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Esfera con código centrado
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Esfera con animaciones
+                          Transform.scale(
+                            scale: _isPilotageActive ? pulseScale : 1.0,
+                            child: GoldenSphere(
+                              size: 320, // Más grande para pantalla completa
+                              color: _getColorSeleccionado(),
+                              glowIntensity: _isPilotageActive ? 0.9 : 0.7,
+                              isAnimated: true,
+                            ),
+                          ),
+                          // Código centrado en la esfera
+                          if (_codigoSeleccionado.isNotEmpty)
+                            AnimatedBuilder(
+                              animation: _pulseAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _isPilotageActive ? pulseScale : 1.0,
+                                  child: IlluminatedCodeText(
+                                    code: CodeFormatter.formatCodeForDisplay(_codigoSeleccionado),
+                                    fontSize: CodeFormatter.calculateFontSize(_codigoSeleccionado, baseSize: 40),
+                                    color: _getColorSeleccionado(),
+                                    letterSpacing: 6,
+                                    isAnimated: false,
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  );
+                } else {
+                  // Modo Luz - Código con ajuste automático
+                  return _buildAutoSizedCodeText();
+                }
+              },
+            ),
+          ),
+          
+          // Botón para salir del modo concentración
+          Positioned(
+            top: 50,
+            right: 20,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isConcentrationMode = false;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.fullscreen_exit,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+          
+          // Indicador de tiempo en la esquina superior izquierda
+          if (_isPilotageActive)
+            Positioned(
+              top: 50,
+              left: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _colorVibracional.withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.timer,
+                      color: _colorVibracional,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _formatDuration(_pilotageDuration),
+                      style: GoogleFonts.inter(
+                        color: _colorVibracional,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 enum QuantumPilotageStep {
@@ -2999,6 +3557,7 @@ enum QuantumPilotageStep {
   emision,
   repeticion,
   cierre,
+  intencion,
 }
 
 extension QuantumPilotageStepExtension on QuantumPilotageStep {
@@ -3014,6 +3573,8 @@ extension QuantumPilotageStepExtension on QuantumPilotageStep {
         return 'Repetición Consciente';
       case QuantumPilotageStep.cierre:
         return 'Cierre Energético';
+      case QuantumPilotageStep.intencion:
+        return 'Intención Personal';
     }
   }
 
@@ -3029,6 +3590,8 @@ extension QuantumPilotageStepExtension on QuantumPilotageStep {
         return 'Repite el código 3 veces sintiendo la vibración.';
       case QuantumPilotageStep.cierre:
         return 'Visualiza la esfera elevándose y disolviéndose.';
+      case QuantumPilotageStep.intencion:
+        return '¿Qué deseas armonizar con este código?';
     }
   }
 
@@ -3044,6 +3607,8 @@ extension QuantumPilotageStepExtension on QuantumPilotageStep {
         return Icons.repeat;
       case QuantumPilotageStep.cierre:
         return Icons.check_circle;
+      case QuantumPilotageStep.intencion:
+        return Icons.edit;
     }
   }
 }
