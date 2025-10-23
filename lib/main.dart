@@ -10,7 +10,6 @@ import 'screens/home/home_screen.dart';
 import 'widgets/auth_wrapper.dart';
 import 'widgets/glow_background.dart';
 import 'screens/biblioteca/static_biblioteca_screen.dart';
-import 'screens/pilotaje/pilotaje_screen.dart';
 import 'screens/pilotaje/quantum_pilotage_screen.dart';
 import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
@@ -106,7 +105,7 @@ class _MainNavigationState extends State<MainNavigation> {
     _screens = [
       HomeScreen(onNavigateToTab: _changeTab),
       const StaticBibliotecaScreen(),
-      const PilotajeScreen(),
+      // const PilotajeScreen(), // Oculto según solicitud
       const QuantumPilotageScreen(),
       const DesafiosScreen(),
       const EvolucionScreen(),
@@ -163,31 +162,31 @@ class _MainNavigationState extends State<MainNavigation> {
                   label: 'Biblioteca',
                   index: 1,
                 ),
-                _buildNavItem(
-                  icon: Icons.my_location,
-                  label: 'Pilotaje',
-                  index: 2,
-                ),
+                // _buildNavItem(
+                //   icon: Icons.my_location,
+                //   label: 'Pilotaje',
+                //   index: 2,
+                // ), // Oculto según solicitud
                 _buildNavItem(
                   icon: Icons.auto_awesome,
                   label: 'Cuántico',
-                  index: 3,
+                  index: 2, // Ajustado de 3 a 2
                   isCenter: true,
                 ),
                 _buildNavItem(
                   icon: Icons.emoji_events,
                   label: 'Desafíos',
-                  index: 4,
+                  index: 3, // Ajustado de 4 a 3
                 ),
                 _buildNavItem(
                   icon: Icons.show_chart,
                   label: 'Evolución',
-                  index: 5,
+                  index: 4, // Ajustado de 5 a 4
                 ),
                 _buildNavItem(
                   icon: Icons.person,
                   label: 'Perfil',
-                  index: 6,
+                  index: 5, // Ajustado de 6 a 5
                 ),
               ],
             ),
