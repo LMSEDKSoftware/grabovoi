@@ -300,6 +300,11 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
 
                 const SizedBox(height: 20),
                 
+                // Selector de colores (entre la esfera y la descripción)
+                _buildColorSelector(),
+                
+                const SizedBox(height: 20),
+                
                 // Descripción del código
                 Center(
                   child: FutureBuilder<Map<String, String>>(
@@ -452,124 +457,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     return _coloresDisponibles[_colorSeleccionado]!;
   }
   
-  // Método para construir el selector de colores
-  Widget _buildColorSelector() {
-    return SlideTransition(
-      position: _colorBarAnimation,
-      child: GestureDetector(
-        onTap: _isColorBarExpanded ? null : _showColorBar,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(
-              color: _getColorSeleccionado().withOpacity(0.5),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_isColorBarExpanded) ...[
-                Text(
-                  'Color:',
-                  style: GoogleFonts.inter(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ..._coloresDisponibles.entries.map((entry) {
-                  final isSelected = _colorSeleccionado == entry.key;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _colorSeleccionado = entry.key;
-                        if (entry.key == 'categoria') {
-                          _coloresDisponibles['categoria'] = _getColorSeleccionado();
-                        }
-                      });
-                      _onColorChanged();
-                    },
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: entry.value,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSelected ? Colors.white : Colors.transparent,
-                          width: 2,
-                        ),
-                        boxShadow: isSelected ? [
-                          BoxShadow(
-                            color: entry.value.withOpacity(0.8),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ] : null,
-                      ),
-                      child: isSelected
-                          ? const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 14,
-                            )
-                          : null,
-                    ),
-                  );
-                }).toList(),
-                
-                const SizedBox(width: 16),
-                
-                // Botón de modo concentración
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isConcentrationMode = true;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _getColorSeleccionado().withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _getColorSeleccionado().withOpacity(0.5),
-                        width: 1,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.fullscreen,
-                      color: _getColorSeleccionado(),
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ] else ...[
-                // Solo mostrar el círculo del color seleccionado
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: _getColorSeleccionado(),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // ---- MÉTODO DE ESFERA INTEGRADA (igual que en Cuántico) ----
   Widget _buildIntegratedSphere(String codigoCrudo) {
@@ -607,9 +494,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
             );
           },
         ),
-
-        // 3) SELECTOR DE COLORES
-        _buildColorSelector(),
       ],
     );
   }
@@ -640,17 +524,25 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                       ),
                     ),
                     // Código Grabovoi dentro de la esfera
-                    GestureDetector(
-                      onTap: _incrementRepetition,
-                      child: Text(
-                        widget.codigo,
-                        style: GoogleFonts.inter(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                    AnimatedBuilder(
+                      animation: _pulseAnimation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _isRepetitionActive ? _pulseAnimation.value : 1.0,
+                          child: GestureDetector(
+                            onTap: _incrementRepetition,
+                            child: Text(
+                              CodeFormatter.formatCodeForDisplay(widget.codigo),
+                              style: GoogleFonts.inter(
+                                fontSize: CodeFormatter.calculateFontSize(widget.codigo),
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 );
@@ -674,6 +566,102 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close, color: Colors.white, size: 24),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Toggle del modo de concentración
+  void _toggleConcentrationMode() {
+    setState(() {
+      _isConcentrationMode = !_isConcentrationMode;
+    });
+  }
+
+  // Selector de colores (igual que en quantum_pilotage_screen)
+  Widget _buildColorSelector() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Texto "Color:"
+          Text(
+            'Color:',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Paleta de colores
+          ..._coloresDisponibles.entries.map((entry) {
+            final colorName = entry.key;
+            final color = entry.value;
+            final isSelected = _colorSeleccionado == colorName;
+            
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _colorSeleccionado = colorName;
+                });
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white,
+                    width: isSelected ? 3 : 1,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 16,
+                      )
+                    : null,
+              ),
+            );
+          }).toList(),
+          
+          const SizedBox(width: 12),
+          
+          // Botón de concentración
+          GestureDetector(
+            onTap: _toggleConcentrationMode,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blueAccent,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blueAccent.withOpacity(0.4),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.self_improvement,
+                color: Colors.white,
+                size: 28,
               ),
             ),
           ),
