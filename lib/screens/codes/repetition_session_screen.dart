@@ -37,7 +37,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   
   bool _isRepetitionActive = false;
   
-  // Variables para el selector de colores
+  // Variables para el selector de colores (igual que en quantum_pilotage_screen)
   String _colorSeleccionado = 'dorado';
   final Map<String, Color> _coloresDisponibles = {
     'dorado': const Color(0xFFFFD700),
@@ -48,6 +48,9 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   
   // Variables para la animación de la barra de colores
   bool _isColorBarExpanded = true;
+  
+  // Modo de concentración
+  bool _isConcentrationMode = false;
   late AnimationController _colorBarController;
   late Animation<Offset> _colorBarAnimation;
 
@@ -187,6 +190,11 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Modo de concentración (pantalla completa)
+    if (_isConcentrationMode) {
+      return _buildConcentrationMode();
+    }
+
     return Scaffold(
       body: GlowBackground(
         child: SafeArea(
@@ -411,25 +419,30 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     });
   }
   
-  void _toggleColorBar() {
+  void _showColorBar() {
     setState(() {
-      _isColorBarExpanded = !_isColorBarExpanded;
+      _isColorBarExpanded = true;
     });
     
-    if (_isColorBarExpanded) {
-      _colorBarController.reverse();
-    } else {
-      _colorBarController.forward();
+    // Ocultar la barra después de 3 segundos si la repetición está activa
+    if (_isRepetitionActive) {
+      _hideColorBarAfterDelay();
     }
   }
   
-  void _selectColor(String color) {
-    setState(() {
-      _colorSeleccionado = color;
-    });
-    
-    // Ocultar la barra después de 3 segundos
-    _hideColorBarAfterDelay();
+  void _onColorChanged() {
+    // Cuando se cambia el color, reiniciar el timer de ocultación
+    if (_isRepetitionActive) {
+      _hideColorBarAfterDelay();
+    }
+  }
+
+  void _incrementRepetition() {
+    if (_isRepetitionActive) {
+      setState(() {
+        // Aquí puedes agregar lógica para contar repeticiones si es necesario
+      });
+    }
   }
   
   Color _getColorSeleccionado() {
@@ -444,7 +457,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     return SlideTransition(
       position: _colorBarAnimation,
       child: GestureDetector(
-        onTap: _toggleColorBar,
+        onTap: _isColorBarExpanded ? null : _showColorBar,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
@@ -455,93 +468,104 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
               width: 1,
             ),
           ),
-          child: _isColorBarExpanded
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Color:',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ..._coloresDisponibles.entries.map((entry) {
-                      final isSelected = _colorSeleccionado == entry.key;
-                      return GestureDetector(
-                        onTap: () => _selectColor(entry.key),
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: entry.value,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? Colors.white : Colors.transparent,
-                              width: 2,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: entry.value.withOpacity(0.8),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: isSelected
-                              ? const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 16,
-                                )
-                              : null,
-                        ),
-                      );
-                    }).toList(),
-                  ],
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isColorBarExpanded) ...[
+                Text(
+                  'Color:',
+                  style: GoogleFonts.inter(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ..._coloresDisponibles.entries.map((entry) {
+                  final isSelected = _colorSeleccionado == entry.key;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _colorSeleccionado = entry.key;
+                        if (entry.key == 'categoria') {
+                          _coloresDisponibles['categoria'] = _getColorSeleccionado();
+                        }
+                      });
+                      _onColorChanged();
+                    },
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: _getColorSeleccionado(),
+                        color: entry.value,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white,
+                          color: isSelected ? Colors.white : Colors.transparent,
                           width: 2,
                         ),
-                        boxShadow: [
+                        boxShadow: isSelected ? [
                           BoxShadow(
-                            color: _getColorSeleccionado().withOpacity(0.8),
+                            color: entry.value.withOpacity(0.8),
                             blurRadius: 8,
                             spreadRadius: 2,
                           ),
-                        ],
+                        ] : null,
                       ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 16,
+                      child: isSelected
+                          ? const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 14,
+                            )
+                          : null,
+                    ),
+                  );
+                }).toList(),
+                
+                const SizedBox(width: 16),
+                
+                // Botón de modo concentración
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isConcentrationMode = true;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _getColorSeleccionado().withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _getColorSeleccionado().withOpacity(0.5),
+                        width: 1,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Toca para cambiar',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 10,
-                      ),
+                    child: Icon(
+                      Icons.fullscreen,
+                      color: _getColorSeleccionado(),
+                      size: 20,
                     ),
-                  ],
+                  ),
                 ),
+              ] else ...[
+                // Solo mostrar el círculo del color seleccionado
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: _getColorSeleccionado(),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -587,6 +611,74 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
         // 3) SELECTOR DE COLORES
         _buildColorSelector(),
       ],
+    );
+  }
+
+  // Modo de concentración - pantalla completa con solo la esfera
+  Widget _buildConcentrationMode() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Esfera centrada con animaciones
+          Center(
+            child: AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                final pulseScale = _isRepetitionActive ? _pulseAnimation.value : 1.0;
+
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Esfera con animaciones
+                    Transform.scale(
+                      scale: _isRepetitionActive ? pulseScale : 1.0,
+                      child: GoldenSphere(
+                        color: _getColorSeleccionado(),
+                        size: 300,
+                        isAnimated: _isRepetitionActive,
+                      ),
+                    ),
+                    // Código Grabovoi dentro de la esfera
+                    GestureDetector(
+                      onTap: _incrementRepetition,
+                      child: Text(
+                        widget.codigo,
+                        style: GoogleFonts.inter(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          // Botón para salir del modo de concentración
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 20,
+            right: 20,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isConcentrationMode = false;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 24),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
