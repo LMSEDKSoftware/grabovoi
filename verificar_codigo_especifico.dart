@@ -65,7 +65,7 @@ void main() async {
     print('\n4. Contando total de códigos...');
     final countResponse = await client
         .from('codigos_grabovoi')
-        .select('codigo', const FetchOptions(count: CountOption.exact));
+        .select('codigo');
     
     print('📊 Total de códigos en la base de datos: ${countResponse.length}');
     

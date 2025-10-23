@@ -4,6 +4,7 @@ import '../../services/biblioteca_supabase_service.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
 import '../../widgets/glow_background.dart';
+import '../../widgets/favorite_label_modal.dart';
 import '../codes/repetition_session_screen.dart';
 
 class StaticBibliotecaScreen extends StatefulWidget {
@@ -78,13 +79,16 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       if (mostrarFavoritos) {
         // Mostrar favoritos filtrados por etiqueta si hay una seleccionada
         if (etiquetaSeleccionada != null) {
-          visible = favoritosFiltrados.where((codigo) {
-            // Aquí podrías filtrar por etiqueta si tienes esa información en el modelo
-            return true; // Por ahora mostrar todos los favoritos
-          }).toList();
+          // Usar el método asíncrono para filtrar por etiqueta
+          _filtrarFavoritosPorEtiqueta(etiquetaSeleccionada!);
         } else {
-          // Mostrar todos los favoritos
-          visible = favoritosFiltrados;
+          // Mostrar todos los favoritos (botón "Todas" seleccionado)
+          if (favoritosFiltrados.isNotEmpty) {
+            visible = favoritosFiltrados;
+          } else {
+            // Fallback: recargar favoritos si están vacíos
+            _recargarFavoritosFallback();
+          }
         }
       } else {
         // Mostrar todos los códigos con filtros normales
@@ -101,6 +105,31 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         }).toList();
       }
     });
+  }
+
+  Future<void> _filtrarFavoritosPorEtiqueta(String etiqueta) async {
+    try {
+      final favoritos = await BibliotecaSupabaseService.getFavoritosPorEtiqueta(etiqueta);
+      setState(() {
+        visible = favoritos;
+      });
+    } catch (e) {
+      print('Error filtrando favoritos por etiqueta: $e');
+    }
+  }
+
+  Future<void> _recargarFavoritosFallback() async {
+    try {
+      print('DEBUG → Fallback: Recargando favoritos desde Supabase');
+      final favoritos = await BibliotecaSupabaseService.getFavoritos();
+      setState(() {
+        favoritosFiltrados = favoritos;
+        visible = favoritos;
+      });
+      print('DEBUG → Fallback: Favoritos recargados: ${favoritos.length}');
+    } catch (e) {
+      print('Error en fallback al recargar favoritos: $e');
+    }
   }
 
   Future<void> _cargarFavoritosPorEtiqueta(String etiqueta) async {
@@ -122,9 +151,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       // Cargar favoritos del usuario
       try {
         final favoritos = await BibliotecaSupabaseService.getFavoritos();
+        final etiquetas = await BibliotecaSupabaseService.getEtiquetasFavoritos();
         setState(() {
           mostrarFavoritos = true;
           favoritosFiltrados = favoritos;
+          etiquetasFavoritos = etiquetas;
           etiquetaSeleccionada = null;
         });
       } catch (e) {
@@ -269,60 +300,62 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Barra de búsqueda
-                  TextField(
-                    onChanged: (value) {
-                      query = value;
-                      _aplicarFiltros();
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Buscar código, intención o categoría...',
-                      hintStyle: const TextStyle(color: Colors.white54),
-                      prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                  // Barra de búsqueda (solo cuando NO están habilitados los favoritos)
+                  if (!mostrarFavoritos) ...[
+                    TextField(
+                      onChanged: (value) {
+                        query = value;
+                        _aplicarFiltros();
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Buscar código, intención o categoría...',
+                        hintStyle: const TextStyle(color: Colors.white54),
+                        prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.05),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
+                          borderSide: BorderSide(color: Color(0xFFFFD700)),
+                        ),
                       ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(14)),
-                        borderSide: BorderSide(color: Color(0xFFFFD700)),
-                      ),
+                      style: const TextStyle(color: Colors.white),
                     ),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  const SizedBox(height: 10),
-                  
-                  // Filtros de categoría
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: categorias.map((cat) {
-                        final selected = categoriaSeleccionada == cat;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: FilterChip(
-                            label: Text(cat),
-                            selected: selected,
-                            onSelected: (_) {
-                              setState(() => categoriaSeleccionada = cat);
-                              _aplicarFiltros();
-                            },
-                            selectedColor: const Color(0xFFFFD700),
-                            backgroundColor: Colors.white.withOpacity(0.08),
-                            labelStyle: TextStyle(
-                              color: selected ? const Color(0xFF0B132B) : Colors.white,
-                              fontWeight: FontWeight.w600,
+                    const SizedBox(height: 10),
+                    
+                    // Filtros de categoría
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: categorias.map((cat) {
+                          final selected = categoriaSeleccionada == cat;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(cat),
+                              selected: selected,
+                              onSelected: (_) {
+                                setState(() => categoriaSeleccionada = cat);
+                                _aplicarFiltros();
+                              },
+                              selectedColor: const Color(0xFFFFD700),
+                              backgroundColor: Colors.white.withOpacity(0.08),
+                              labelStyle: TextStyle(
+                                color: selected ? const Color(0xFF0B132B) : Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }).toList(),
+                      ),
                     ),
-                  ),
+                  ],
                   
                   // Filtro de etiquetas de favoritos (solo cuando se muestran favoritos)
-                  if (mostrarFavoritos && etiquetasFavoritos.isNotEmpty) ...[
+                  if (mostrarFavoritos) ...[
                     const SizedBox(height: 16),
                     Text(
                       'Filtrar por etiqueta:',
@@ -339,12 +372,25 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                         children: [
                           // Botón "Todas"
                           GestureDetector(
-                            onTap: () {
+                            onTap: () async {
                               setState(() {
                                 etiquetaSeleccionada = null;
-                                mostrarFavoritos = false;
                               });
-                              _aplicarFiltros();
+
+                              try {
+                                // Recarga los favoritos directamente desde Supabase
+                                final favoritos = await BibliotecaSupabaseService.getFavoritos();
+                                
+                                print('DEBUG → Favoritos cargados: ${favoritos.length}');
+                                print('DEBUG → Etiqueta seleccionada: $etiquetaSeleccionada');
+
+                                setState(() {
+                                  favoritosFiltrados = favoritos;
+                                  visible = favoritos;
+                                });
+                              } catch (e) {
+                                print('Error al recargar todos los favoritos: $e');
+                              }
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -535,48 +581,80 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              // Botón de favorito
+              // Botón de favorito con etiqueta
               FutureBuilder<bool>(
                 future: BibliotecaSupabaseService.esFavorito(codigo.codigo),
                 builder: (context, snapshot) {
                   final isFavorite = snapshot.data ?? false;
-                  return IconButton(
-                    onPressed: () async {
-                      try {
-                        // Siempre usar toggleFavorito que maneja tanto agregar como remover
-                        await BibliotecaSupabaseService.toggleFavorito(codigo.codigo);
-                        
-                        // Verificar el nuevo estado
-                        final nuevoEstado = await BibliotecaSupabaseService.esFavorito(codigo.codigo);
-                        
-                        setState(() {});
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(nuevoEstado 
-                              ? '❤️ ${codigo.nombre} agregado a favoritos'
-                              : '❌ ${codigo.nombre} removido de favoritos'
-                            ),
-                            backgroundColor: nuevoEstado ? Colors.green : Colors.red,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      } catch (e) {
-                        print('Error gestionando favorito: $e');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: ${e.toString()}'),
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    },
-                    icon: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: isFavorite ? Colors.red : Colors.white70,
-                      size: 20,
-                    ),
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () async {
+                          if (isFavorite) {
+                            // Si ya es favorito, removerlo directamente
+                            try {
+                              await BibliotecaSupabaseService.toggleFavorito(codigo.codigo);
+                              setState(() {});
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('❌ ${codigo.nombre} removido de favoritos'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            } catch (e) {
+                              print('Error removiendo favorito: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: ${e.toString()}'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          } else {
+                            // Si no es favorito, mostrar modal para etiquetar
+                            _mostrarModalEtiquetado(codigo);
+                          }
+                        },
+                        icon: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : Colors.white70,
+                          size: 20,
+                        ),
+                      ),
+                      // Mostrar etiqueta si es favorito
+                      if (isFavorite)
+                        FutureBuilder<String?>(
+                          future: BibliotecaSupabaseService.getEtiquetaFavorito(codigo.codigo),
+                          builder: (context, etiquetaSnapshot) {
+                            final etiqueta = etiquetaSnapshot.data;
+                            if (etiqueta != null && etiqueta.isNotEmpty) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFFFD700).withOpacity(0.5),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  etiqueta,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFFFD700),
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                    ],
                   );
                 },
               ),
@@ -781,6 +859,39 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _mostrarModalEtiquetado(CodigoGrabovoi codigo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => FavoriteLabelModal(
+        codigo: codigo.codigo,
+        nombre: codigo.nombre,
+        onSave: (etiqueta) async {
+          try {
+            await BibliotecaSupabaseService.agregarFavoritoConEtiqueta(codigo.codigo, etiqueta);
+            setState(() {});
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('❤️ ${codigo.nombre} agregado a favoritos con etiqueta: $etiqueta'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          } catch (e) {
+            print('Error agregando favorito con etiqueta: $e');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error: ${e.toString()}'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 

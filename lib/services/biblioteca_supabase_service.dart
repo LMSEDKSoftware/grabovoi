@@ -149,6 +149,25 @@ class BibliotecaSupabaseService {
     await _favoritesService.toggleFavorite(codigoId);
   }
 
+  static Future<void> agregarFavoritoConEtiqueta(String codigoId, String etiqueta) async {
+    if (!_authService.isLoggedIn) {
+      print('⚠️ Usuario no autenticado, no se puede agregar favoritos');
+      return;
+    }
+    
+    try {
+      await SupabaseService.agregarFavorito(
+        _authService.currentUser!.id,
+        codigoId,
+        etiqueta: etiqueta,
+      );
+      print('✅ Favorito agregado con etiqueta: $etiqueta');
+    } catch (e) {
+      print('Error agregando favorito con etiqueta: $e');
+      rethrow;
+    }
+  }
+
   static Future<bool> esFavorito(String codigoId) async {
     if (!_authService.isLoggedIn) return false;
     return await _favoritesService.isFavorite(codigoId);
@@ -315,6 +334,24 @@ class BibliotecaSupabaseService {
     } catch (e) {
       print('Error obteniendo favoritos por etiqueta: $e');
       return [];
+    }
+  }
+
+  static Future<String?> getEtiquetaFavorito(String codigoId) async {
+    if (!_authService.isLoggedIn) return null;
+    
+    try {
+      // Usar el servicio de favoritos para obtener la etiqueta
+      final favoritesWithDetails = await _favoritesService.getFavoritesWithDetails();
+      final favorite = favoritesWithDetails.firstWhere(
+        (item) => item['codigo_id'] == codigoId,
+        orElse: () => <String, dynamic>{},
+      );
+      
+      return favorite['etiqueta'] as String?;
+    } catch (e) {
+      print('Error obteniendo etiqueta del favorito: $e');
+      return null;
     }
   }
 }

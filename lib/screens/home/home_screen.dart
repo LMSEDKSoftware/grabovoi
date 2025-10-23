@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/illuminated_code_text.dart';
+import '../../widgets/welcome_modal.dart';
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
@@ -35,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _cargarDatosHome();
+    _checkWelcomeModal();
   }
 
   Future<void> _cargarDatosHome() async {
@@ -47,6 +50,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     } catch (e) {
       debugPrint('Error al cargar datos de home: $e');
+    }
+  }
+
+  Future<void> _checkWelcomeModal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final welcomeModalShown = prefs.getBool('welcome_modal_shown') ?? false;
+
+    // Verifica que no se haya mostrado antes y que el widget esté montado
+    if (!welcomeModalShown && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const WelcomeModal(),
+        );
+      });
     }
   }
 
