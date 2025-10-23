@@ -22,4 +22,12 @@ class SupabaseConfig {
       authFlowType: AuthFlowType.pkce,
     ),
   );
+
+  // Método de inicialización
+  static Future<void> initialize() async {
+    await Supabase.initialize(
+      url: useLocal ? localUrl : url,
+      anonKey: useLocal ? localAnonKey : anonKey,
+    );
+  }
 }

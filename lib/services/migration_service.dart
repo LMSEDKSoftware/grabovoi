@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'supabase_service.dart';
-import 'supabase_config.dart';
+import '../config/supabase_config.dart';
 
 class MigrationService {
   static Future<void> migrarDatosIniciales() async {
