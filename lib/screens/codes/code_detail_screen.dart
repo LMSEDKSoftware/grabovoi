@@ -82,6 +82,11 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     
     // Ocultar la barra de colores después de 3 segundos
     _hideColorBarAfterDelay();
+    
+    // Iniciar pilotaje automáticamente al entrar a la pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startPiloting();
+    });
   }
 
   @override
@@ -411,13 +416,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                   const SizedBox(height: 30),
                 ],
                 
-                // Botón de Acción
-                if (!_isPiloting && !_isPreloading)
-                  CustomButton(
-                    text: 'Pilotar Ahora',
-                    onPressed: _startPiloting,
-                    icon: Icons.play_arrow,
-                  ),
+                // Botón de Acción eliminado - el pilotaje se inicia automáticamente
                 
                 // Indicador de precarga
                 if (_isPreloading)
