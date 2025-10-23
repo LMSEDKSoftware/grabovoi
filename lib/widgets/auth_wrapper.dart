@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/auth_service_simple.dart';
 import '../services/user_progress_service.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/auth/auth_test_screen.dart';
 import '../screens/onboarding/user_assessment_screen.dart';
 import '../main.dart';
 

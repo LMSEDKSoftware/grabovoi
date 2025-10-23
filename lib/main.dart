@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation, SystemUiOverlayStyle;
 import 'package:google_fonts/google_fonts.dart';
-import 'services/supabase_config.dart';
+import 'config/supabase_config.dart';
 import 'services/migration_service.dart';
 import 'services/app_time_tracker.dart';
 import 'screens/onboarding/onboarding_screen.dart';
