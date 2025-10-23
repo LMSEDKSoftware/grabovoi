@@ -537,6 +537,18 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                 fontSize: CodeFormatter.calculateFontSize(widget.codigo),
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    offset: const Offset(2.0, 2.0),
+                                    blurRadius: 4.0,
+                                    color: Colors.black.withOpacity(0.8),
+                                  ),
+                                  Shadow(
+                                    offset: const Offset(-1.0, -1.0),
+                                    blurRadius: 2.0,
+                                    color: Colors.black.withOpacity(0.6),
+                                  ),
+                                ],
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -565,11 +577,72 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                   color: Colors.black.withOpacity(0.5),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 24),
+                child: const Icon(Icons.fullscreen, color: Colors.white, size: 24),
               ),
             ),
           ),
         ],
+      ),
+      // Usar el mismo menú inferior que la aplicación principal
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF0B132B),
+              Color(0xFF1C2541),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildNavItem(
+                  icon: Icons.home_filled,
+                  label: 'Inicio',
+                  index: 0,
+                ),
+                _buildNavItem(
+                  icon: Icons.menu_book,
+                  label: 'Biblioteca',
+                  index: 1,
+                ),
+                _buildNavItem(
+                  icon: Icons.auto_awesome,
+                  label: 'Cuántico',
+                  index: 2,
+                  isCenter: true,
+                ),
+                _buildNavItem(
+                  icon: Icons.emoji_events,
+                  label: 'Desafíos',
+                  index: 3,
+                ),
+                _buildNavItem(
+                  icon: Icons.show_chart,
+                  label: 'Evolución',
+                  index: 4,
+                ),
+                _buildNavItem(
+                  icon: Icons.person,
+                  label:    'Perfil',
+                  index: 5,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -581,91 +654,156 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     });
   }
 
+  // Método para construir los elementos de navegación (igual que en main.dart)
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+    bool isCenter = false,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        // Navegar a la pantalla correspondiente
+        switch (index) {
+          case 0: // Inicio
+            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+            break;
+          case 1: // Biblioteca
+            Navigator.of(context).pushNamed('/biblioteca');
+            break;
+          case 2: // Cuántico
+            Navigator.of(context).pushNamed('/pilotage');
+            break;
+          case 3: // Desafíos
+            Navigator.of(context).pushNamed('/desafios');
+            break;
+          case 4: // Evolución
+            Navigator.of(context).pushNamed('/evolucion');
+            break;
+          case 5: // Perfil
+            Navigator.of(context).pushNamed('/profile');
+            break;
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: Colors.white.withOpacity(0.5),
+              size: 22,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 9,
+                color: Colors.white.withOpacity(0.5),
+                fontWeight: FontWeight.normal,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Selector de colores (igual que en quantum_pilotage_screen)
   Widget _buildColorSelector() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Texto "Color:"
-          Text(
-            'Color:',
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: _getColorSeleccionado().withOpacity(0.5),
+            width: 1,
           ),
-          const SizedBox(width: 12),
-          
-          // Paleta de colores
-          ..._coloresDisponibles.entries.map((entry) {
-            final colorName = entry.key;
-            final color = entry.value;
-            final isSelected = _colorSeleccionado == colorName;
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Color:',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 8),
+            ..._coloresDisponibles.entries.map((entry) {
+              final isSelected = _colorSeleccionado == entry.key;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _colorSeleccionado = entry.key;
+                  });
+                },
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: entry.value,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.white : Colors.transparent,
+                      width: 2,
+                    ),
+                    boxShadow: isSelected ? [
+                      BoxShadow(
+                        color: entry.value.withOpacity(0.8),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ] : null,
+                  ),
+                  child: isSelected
+                      ? const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 14,
+                        )
+                      : null,
+                ),
+              );
+            }).toList(),
             
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _colorSeleccionado = colorName;
-                });
-              },
+            const SizedBox(width: 16),
+            
+            // Botón de modo concentración
+            GestureDetector(
+              onTap: _toggleConcentrationMode,
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: 30,
-                height: 30,
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color,
+                  color: _getColorSeleccionado().withOpacity(0.2),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white,
-                    width: isSelected ? 3 : 1,
+                    color: _getColorSeleccionado().withOpacity(0.5),
+                    width: 1,
                   ),
                 ),
-                child: isSelected
-                    ? const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 16,
-                      )
-                    : null,
-              ),
-            );
-          }).toList(),
-          
-          const SizedBox(width: 12),
-          
-          // Botón de concentración
-          GestureDetector(
-            onTap: _toggleConcentrationMode,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blueAccent.withOpacity(0.4),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.self_improvement,
-                color: Colors.white,
-                size: 28,
+                child: Icon(
+                  Icons.fullscreen,
+                  color: _getColorSeleccionado(),
+                  size: 20,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
