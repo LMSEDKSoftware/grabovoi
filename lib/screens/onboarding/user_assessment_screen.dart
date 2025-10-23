@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/golden_sphere.dart';
 import '../../services/user_progress_service.dart';
 import '../../services/auth_service_simple.dart';
 import '../../main.dart';
@@ -402,8 +401,7 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
                 ),
               ),
               
-              // Navegación
-              _buildNavigation(),
+              // Navegación removida según solicitud
             ],
           ),
         ),
@@ -497,9 +495,8 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
           children: [
             const SizedBox(height: 20),
             
-            // Esfera dorada
-            const Center(child: GoldenSphere(size: 120)),
-            const SizedBox(height: 40),
+            // Esfera dorada removida según solicitud
+            const SizedBox(height: 20),
             
             // Opciones
             ...page['options'].map<Widget>((option) => _buildOption(option, page['type'])),
@@ -524,7 +521,7 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
           onTap: () => _selectOption(option['value'], type),
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isSelected 
                   ? const Color(0xFFFFD700).withOpacity(0.2)
@@ -634,6 +631,18 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
         _toggleMultipleSelection(value);
       }
     });
+    
+    // Avanzar automáticamente a la siguiente pregunta
+    if (_currentPage < _pages.length - 1) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _nextPage();
+      });
+    } else {
+      // Si es la última pregunta, completar la evaluación
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _completeAssessment();
+      });
+    }
   }
 
   void _setSingleSelection(String value) {
