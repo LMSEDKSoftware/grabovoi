@@ -230,6 +230,11 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
 
   @override
   Widget build(BuildContext context) {
+    // Modo de concentración (pantalla completa)
+    if (_isConcentrationMode) {
+      return _buildConcentrationMode();
+    }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -269,7 +274,13 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 
                 // Esfera integrada (sin contenedor rectangular oscuro)
                 _buildQuantumDetailSphere(widget.codigo),
-                const SizedBox(height: 80), // Más espacio para el selector de colores
+                const SizedBox(height: 20),
+                
+                // Selector de colores fuera del Stack
+                Center(
+                  child: _buildColorSelector(),
+                ),
+                const SizedBox(height: 20),
                 
                 // Descripción
                 Center(
@@ -331,83 +342,9 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 ),
                 const SizedBox(height: 20),
                 
-                // Control de Timer si está pilotando
-                if (_isPiloting) ...[
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD700).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: const Color(0xFFFFD700), width: 2),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Tiempo Restante',
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${(_secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(_secondsRemaining % 60).toString().padLeft(2, '0')}',
-                          style: GoogleFonts.spaceMono(
-                            color: const Color(0xFFFFD700),
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Mantén tu atención en el código',
-                          style: GoogleFonts.inter(
-                            color: Colors.white54,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                ],
                 
                 // Botón de Acción eliminado - el pilotaje se inicia automáticamente
                 
-                // Indicador de precarga
-                if (_isPreloading)
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD700).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: const Color(0xFFFFD700), width: 2),
-                    ),
-                    child: Column(
-                      children: [
-                        const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Precargando Audio...',
-                          style: GoogleFonts.inter(
-                            color: const Color(0xFFFFD700),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Preparando música energizante',
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 
                 const SizedBox(height: 40),
                 
@@ -417,8 +354,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
             ),
           ),
           
-          // Indicador flotante de precarga
-          if (_isPreloading) const AudioPreloadIndicator(),
         ],
       ),
     );
@@ -441,86 +376,84 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
   
   // Método para construir el selector de colores (igual que en Sesión de Repetición)
   Widget _buildColorSelector() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white24),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Color:',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Color:',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(width: 8),
-            ..._coloresDisponibles.entries.map((entry) {
-              final colorName = entry.key;
-              final color = entry.value;
-              final isSelected = _colorSeleccionado == colorName;
+          ),
+          const SizedBox(width: 8),
+          ..._coloresDisponibles.entries.map((entry) {
+            final colorName = entry.key;
+            final color = entry.value;
+            final isSelected = _colorSeleccionado == colorName;
 
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _colorSeleccionado = colorName;
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: isSelected ? 2 : 1,
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _colorSeleccionado = colorName;
+                });
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 14,
+                      )
+                    : null,
+              ),
+            );
+          }).toList(),
+          const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isConcentrationMode = true;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _getColorSeleccionado().withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _getColorSeleccionado().withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.fullscreen,
+                      color: _getColorSeleccionado(),
+                      size: 20,
                     ),
                   ),
-                  child: isSelected
-                      ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 14,
-                        )
-                      : null,
                 ),
-              );
-            }).toList(),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: _toggleConcentrationMode,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blueAccent.withOpacity(0.4),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.fullscreen,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -562,12 +495,98 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
           },
         ),
 
-        // 3️⃣ Selector de colores en la parte inferior
-        Positioned(
-          bottom: -40, // Ajustado para evitar superposición
-          child: _buildColorSelector(),
-        ),
       ],
+    );
+  }
+
+  // Modo de concentración - CLONADO EXACTAMENTE del pilotaje cuántico
+  Widget _buildConcentrationMode() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Esfera centrada con animaciones
+          Center(
+            child: AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                final pulseScale = _isPiloting ? 
+                  _pulseAnimation.value * 1.3 : 
+                  _pulseAnimation.value;
+                
+                // Modo Esfera - Esfera dorada con código
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Esfera con código centrado
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Esfera con animaciones
+                        Transform.scale(
+                          scale: _isPiloting ? pulseScale : 1.0,
+                          child: GoldenSphere(
+                            size: 320, // Más grande para pantalla completa
+                            color: _getColorSeleccionado(),
+                            glowIntensity: _isPiloting ? 0.9 : 0.7,
+                            isAnimated: true,
+                          ),
+                        ),
+                        // Código centrado en la esfera
+                        AnimatedBuilder(
+                          animation: _pulseAnimation,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: _isPiloting ? pulseScale : 1.0,
+                              child: IlluminatedCodeText(
+                                code: CodeFormatter.formatCodeForDisplay(widget.codigo),
+                                fontSize: CodeFormatter.calculateFontSize(widget.codigo, baseSize: 40),
+                                color: _getColorSeleccionado(),
+                                letterSpacing: 6,
+                                isAnimated: false,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          
+          // Botón para salir del modo concentración
+          Positioned(
+            top: 50,
+            right: 20,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isConcentrationMode = false;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.fullscreen_exit,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+          
+        ],
+      ),
     );
   }
 }
