@@ -260,16 +260,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                     ),
                     // Botón ver detalle
                     IconButton(
-                      onPressed: () {
-                        // Aquí puedes agregar la navegación a una pantalla de detalles
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Función en desarrollo'),
-                            backgroundColor: Colors.blue,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
+                      onPressed: _mostrarNotaImportante,
                       icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
                     ),
                     // Botón compartir/descargar
@@ -363,47 +354,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 const StreamedMusicController(autoPlay: true, isActive: true),
                 
                 const SizedBox(height: 20),
-                
-                // Notas de la versión 1
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.medical_services, color: Colors.orange, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Nota Importante',
-                            style: GoogleFonts.inter(
-                              color: Colors.orange,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
-                        'Siempre consulta con profesionales de la salud para cualquier condición médica. '
-                        'Estos códigos son herramientas complementarias de bienestar.',
-                        style: GoogleFonts.inter(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -805,6 +755,66 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
           ],
         ),
       ),
+    );
+  }
+
+  // Método para mostrar la nota importante
+  void _mostrarNotaImportante() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF363636),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFF5A623), width: 2),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Color(0xFFF5A623), size: 28),
+              const SizedBox(width: 10),
+              Text(
+                'Nota Importante',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFF5A623),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
+            'Siempre consulta con profesionales de la salud para cualquier condición médica. '
+            'Estos códigos son herramientas complementarias de bienestar.',
+            style: GoogleFonts.inter(
+              color: const Color(0xFFCCCCCC),
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5A623),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Entendido',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

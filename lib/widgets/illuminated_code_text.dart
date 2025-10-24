@@ -33,6 +33,17 @@ class IlluminatedCodeText extends StatelessWidget {
         color: Colors.white,
         letterSpacing: letterSpacing,
         shadows: [
+          // Sombra oscura para profundidad (primera capa)
+          Shadow(
+            color: Colors.black.withOpacity(0.8),
+            blurRadius: 6.0,
+            offset: const Offset(2.0, 2.0),
+          ),
+          Shadow(
+            color: Colors.black.withOpacity(0.6),
+            blurRadius: 3.0,
+            offset: const Offset(-1.0, -1.0),
+          ),
           // Sombra principal del color vibracional
           Shadow(
             color: effectiveColor.withOpacity(1.0),
