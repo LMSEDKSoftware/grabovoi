@@ -1,0 +1,39 @@
+[
+  {
+    "nombre": "Desafío de Abundancia",
+    "duracion": 7,
+    "descripcion": "7 días de conexión con la energía de la prosperidad",
+    "codigos": ["318798", "520741", "71427321893"],
+    "practicas": [
+      "Día 1: Visualización de prosperidad con código 318798",
+      "Día 2: Afirmaciones de abundancia",
+      "Día 3: Gratitud por lo recibido",
+      "Día 4: Meditación con código 520741",
+      "Día 5: Visualización del futuro próspero",
+      "Día 6: Pilotaje consciente de abundancia",
+      "Día 7: Integración y celebración"
+    ]
+  },
+  {
+    "nombre": "Camino de Sanación",
+    "duracion": 14,
+    "descripcion": "14 días de restauración energética y física",
+    "codigos": ["1884321", "5432189", "8142543"],
+    "practicas": [
+      "Semana 1: Preparación y limpieza energética",
+      "Semana 2: Activación de procesos de sanación"
+    ]
+  },
+  {
+    "nombre": "Transformación Total",
+    "duracion": 21,
+    "descripcion": "21 días de evolución consciente",
+    "codigos": ["5197148", "1888948", "741"],
+    "practicas": [
+      "Fase 1: Despertar (días 1-7)",
+      "Fase 2: Integración (días 8-14)",
+      "Fase 3: Manifestación (días 15-21)"
+    ]
+  }
+]
+

@@ -98,3 +98,6 @@ coverage/
 
 # Flutter crash reports
 flutter_*.log
+# APK files
+*.apk
+@flutter-apk/

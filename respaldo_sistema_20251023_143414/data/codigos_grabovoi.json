@@ -1,0 +1,482 @@
+[
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Presencia del Creador",
+    "codigo": "1231115015",
+    "descripcion": "Presencia del Creador"
+  },
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Eliminar Resistencias",
+    "codigo": "548491698719",
+    "descripcion": "Eliminar resistencias inconscientes"
+  },
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Neutralizar Miedos",
+    "codigo": "489_712_819_48",
+    "descripcion": "Neutralizar miedos"
+  },
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Armonizar Presente",
+    "codigo": "71042",
+    "descripcion": "Armonizar el presente"
+  },
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Limpieza Emocional",
+    "codigo": "61_988_184_161",
+    "descripcion": "Limpieza de memorias emocionales"
+  },
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Luz Pura",
+    "codigo": "12370744",
+    "descripcion": "Iluminar con la luz pura del Creador"
+  },
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Resolver Problemas",
+    "codigo": "9788819719",
+    "descripcion": "Resolver problemas generales"
+  },
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Todo es Posible",
+    "codigo": "519_7148",
+    "descripcion": "Todo es posible"
+  },
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Visualización Perfecta",
+    "codigo": "918197185",
+    "descripcion": "Visualización del resultado perfecto"
+  },
+  {
+    "categoria": "Limpieza y Reconexión",
+    "nombre": "Macrosalvación",
+    "codigo": "319817318",
+    "descripcion": "Macrosalvación universal"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Norma Absoluta",
+    "codigo": "1884321",
+    "descripcion": "Condición física desconocida"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Cura Universal",
+    "codigo": "88888588888",
+    "descripcion": "Cura para todos"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Autoregeneración",
+    "codigo": "817992191",
+    "descripcion": "Autoregeneración"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Regeneración de Órganos",
+    "codigo": "419312819212",
+    "descripcion": "Regeneración de órganos"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Autocuración",
+    "codigo": "721348192",
+    "descripcion": "Autocuración"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Vida Eterna",
+    "codigo": "1489999",
+    "descripcion": "Vida biológica eterna"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Eliminar Dolor",
+    "codigo": "498712891319",
+    "descripcion": "Eliminar dolor"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Anestesia Energética",
+    "codigo": "59189171_481",
+    "descripcion": "Anestesia energética"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Solución Inmediata",
+    "codigo": "741",
+    "descripcion": "Solución inmediata"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Protección",
+    "codigo": "71931",
+    "descripcion": "Protección"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Reparación Profunda",
+    "codigo": "889_8",
+    "descripcion": "Reparación energética profunda"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Sistema Digestivo",
+    "codigo": "2194189",
+    "descripcion": "Sanación del sistema digestivo"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Recuperación Postoperatoria",
+    "codigo": "319764",
+    "descripcion": "Recuperación postoperatoria"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Regeneración Celular",
+    "codigo": "7194718189",
+    "descripcion": "Regeneración celular"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Transmutación Mental",
+    "codigo": "1888948",
+    "descripcion": "Transmutación de pensamientos negativos"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Purificación ADN",
+    "codigo": "548432198",
+    "descripcion": "Purificación del ADN"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Eliminación Tumores",
+    "codigo": "11179",
+    "descripcion": "Eliminación de tumores"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Cura Infecciones",
+    "codigo": "888_912_448_19",
+    "descripcion": "Cura para infecciones"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Sistema Inmune",
+    "codigo": "819_489_718_918",
+    "descripcion": "Fortalecimiento del sistema inmune"
+  },
+  {
+    "categoria": "Salud y Regeneración",
+    "nombre": "Corazón Saludable",
+    "codigo": "1487219",
+    "descripcion": "Salud perfecta del corazón"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Activar Abundancia",
+    "codigo": "318_798",
+    "descripcion": "Activar la abundancia"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Prosperidad Infinita",
+    "codigo": "71427321893",
+    "descripcion": "Prosperidad infinita"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Flujo de Riqueza",
+    "codigo": "718_918_719_81",
+    "descripcion": "Flujo constante de riqueza"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Eliminar Bloqueos",
+    "codigo": "4812412",
+    "descripcion": "Eliminar bloqueos financieros"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Multiplicar Ingresos",
+    "codigo": "814418719",
+    "descripcion": "Multiplicar ingresos"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Éxito Financiero",
+    "codigo": "741_889_719_8",
+    "descripcion": "Éxito financiero"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Atraer Oportunidades",
+    "codigo": "519_481",
+    "descripcion": "Atracción de oportunidades"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Ventas Exitosas",
+    "codigo": "318514517",
+    "descripcion": "Ventas exitosas"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Abundancia Laboral",
+    "codigo": "514_812_919_81",
+    "descripcion": "Abundancia laboral"
+  },
+  {
+    "categoria": "Abundancia y Prosperidad",
+    "nombre": "Caminos Económicos",
+    "codigo": "318798",
+    "descripcion": "Apertura de caminos económicos"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Protección General",
+    "codigo": "71931",
+    "descripcion": "Protección general"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Campo Vibracional",
+    "codigo": "9187948181",
+    "descripcion": "Campo de protección vibracional"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Escudo Energético",
+    "codigo": "719849817",
+    "descripcion": "Escudo contra energías negativas"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Protección Familiar",
+    "codigo": "888_991_418_19",
+    "descripcion": "Protección familiar"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Neutralizar Ataques",
+    "codigo": "917_198_719_81",
+    "descripcion": "Neutralizar ataques energéticos"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Luz Divina",
+    "codigo": "111_99_888",
+    "descripcion": "Luz de protección divina"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Protección Viajes",
+    "codigo": "914_718_219_81",
+    "descripcion": "Protección durante viajes"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Defensa Externa",
+    "codigo": "918_198_719_81",
+    "descripcion": "Defensa ante influencias externas"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Equilibrio Energético",
+    "codigo": "889_319_714_89",
+    "descripcion": "Restaurar equilibrio energético"
+  },
+  {
+    "categoria": "Protección Energética",
+    "nombre": "Purificar Espacios",
+    "codigo": "7189719",
+    "descripcion": "Purificar espacios"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Todo es Posible",
+    "codigo": "519_7148",
+    "descripcion": "Todo es posible (armonía relacional)"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Apertura al Amor",
+    "codigo": "814_418_719",
+    "descripcion": "Apertura al amor"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Sanación del Corazón",
+    "codigo": "918_794_818_1",
+    "descripcion": "Sanación del corazón"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Relaciones Exitosas",
+    "codigo": "518_491_617",
+    "descripcion": "Relaciones exitosas"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Amor Universal",
+    "codigo": "814418719",
+    "descripcion": "Amor universal"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Perdón y Reconciliación",
+    "codigo": "7199719",
+    "descripcion": "Perdón y reconciliación"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Amor Verdadero",
+    "codigo": "519606",
+    "descripcion": "Atracción del amor verdadero"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Unidad Familiar",
+    "codigo": "718_219_714_8",
+    "descripcion": "Unidad familiar"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Autoamor",
+    "codigo": "1487219",
+    "descripcion": "Autoamor y aceptación"
+  },
+  {
+    "categoria": "Amor y Relaciones",
+    "nombre": "Elevación Emocional",
+    "codigo": "918197185",
+    "descripcion": "Elevación vibracional emocional"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Punto de Poder",
+    "codigo": "71381921",
+    "descripcion": "Entrar en el punto de poder creador"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Anclaje Energético",
+    "codigo": "19712893",
+    "descripcion": "Anclaje energético"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Conexión Universal",
+    "codigo": "319817318",
+    "descripcion": "Conexión universal con el Creador"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Elevación del Alma",
+    "codigo": "918_794_818_1",
+    "descripcion": "Elevación de frecuencia del alma"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Despertar Espiritual",
+    "codigo": "719_849_819_81",
+    "descripcion": "Despertar espiritual"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Iluminación Interior",
+    "codigo": "888_991_481_89",
+    "descripcion": "Iluminación interior"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Manifestación Consciente",
+    "codigo": "519_7148",
+    "descripcion": "Manifestación consciente"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Equilibrio Total",
+    "codigo": "718_219_817_19",
+    "descripcion": "Equilibrio mente-cuerpo-alma"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Eliminar Interferencias",
+    "codigo": "489_716_819_48",
+    "descripcion": "Eliminación de interferencias mentales"
+  },
+  {
+    "categoria": "Conciencia Espiritual",
+    "nombre": "Sabiduría Interior",
+    "codigo": "713_819_21",
+    "descripcion": "Activar sabiduría interior"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Liberar Creencias",
+    "codigo": "591061718_489",
+    "descripcion": "Liberar creencias limitantes"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Liberar Traumas",
+    "codigo": "49851431918",
+    "descripcion": "Liberar traumas"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Eliminar Bloqueos",
+    "codigo": "12516176",
+    "descripcion": "Eliminar bloqueos"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Resolución Conflictos",
+    "codigo": "9788891719",
+    "descripcion": "Resolución total de conflictos"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Luz del Conocimiento",
+    "codigo": "193751891",
+    "descripcion": "Luz del conocimiento"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Normalizar Futuro",
+    "codigo": "7193718",
+    "descripcion": "Normalizar futuro"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Eliminar Ansiedad",
+    "codigo": "61881971",
+    "descripcion": "Eliminar ansiedad"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Eliminar Pensamientos Negativos",
+    "codigo": "1888948",
+    "descripcion": "Eliminar pensamientos negativos"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Paz Interior",
+    "codigo": "41781971981",
+    "descripcion": "Restablecer paz interior"
+  },
+  {
+    "categoria": "Liberación Emocional",
+    "nombre": "Tranquilidad Mental",
+    "codigo": "917_198_719_81",
+    "descripcion": "Tranquilidad mental"
+  }
+]
