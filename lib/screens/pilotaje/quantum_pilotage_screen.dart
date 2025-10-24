@@ -14,6 +14,7 @@ import '../../widgets/quantum_pilotage_modal.dart';
 import '../../utils/code_formatter.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
+import '../../repositories/codigos_repository.dart';
 import '../../config/openai_config.dart';
 import '../../config/supabase_config.dart';
 import '../../models/busqueda_profunda_model.dart';
@@ -224,7 +225,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
   Future<void> _loadCodigos() async {
     try {
-      final codigos = await SupabaseService.getCodigos();
+      final codigos = CodigosRepository().codigos;
       // Eliminar duplicados basándose en el código
       final codigosUnicos = <String, CodigoGrabovoi>{};
       for (final codigo in codigos) {
@@ -884,19 +885,11 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     if (_codigoSeleccionado.isEmpty) return 'Código sagrado para la manifestación y transformación energética.';
     
     try {
-      final codigos = await SupabaseService.getCodigos();
-      final codigoEncontrado = codigos.where((c) => c.codigo == _codigoSeleccionado).toList();
-      if (codigoEncontrado.isNotEmpty) {
-        return codigoEncontrado.first.descripcion.isNotEmpty 
-            ? codigoEncontrado.first.descripcion 
-            : 'Código sagrado para la manifestación y transformación energética.';
-      }
+      return CodigosRepository().getDescripcionByCode(_codigoSeleccionado);
     } catch (e) {
       print('Error al obtener descripción del código: $e');
+      return 'Código sagrado para la manifestación y transformación energética.';
     }
-    
-    // Descripción por defecto
-    return 'Código sagrado para la manifestación y transformación energética.';
   }
 
   // Función helper para obtener el título del código desde la base de datos
@@ -904,18 +897,11 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     if (_codigoSeleccionado.isEmpty) return 'Campo Energético';
     
     try {
-      final codigos = await SupabaseService.getCodigos();
-      final codigoEncontrado = codigos.where((c) => c.codigo == _codigoSeleccionado).toList();
-      if (codigoEncontrado.isNotEmpty) {
-        return codigoEncontrado.first.nombre.isNotEmpty 
-            ? codigoEncontrado.first.nombre
-            : 'Campo Energético';
-      }
+      return CodigosRepository().getTituloByCode(_codigoSeleccionado);
     } catch (e) {
       print('Error al obtener título del código: $e');
+      return 'Campo Energético';
     }
-    
-    return 'Campo Energético';
   }
 
   // Calcular tokens estimados (aproximación simple)

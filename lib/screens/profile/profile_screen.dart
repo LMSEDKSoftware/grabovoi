@@ -5,6 +5,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../services/auth_service_simple.dart';
 import '../../services/user_progress_service.dart';
+import '../../repositories/codigos_repository.dart';
 import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -194,6 +195,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                       isOutlined: true,
                       icon: Icons.settings,
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    CustomButton(
+                      text: 'Actualizar Códigos',
+                      onPressed: () async {
+                        try {
+                          await CodigosRepository().refreshCodigos();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✅ Códigos actualizados correctamente'),
+                                backgroundColor: Color(0xFFFFD700),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('❌ Error al actualizar: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      color: const Color(0xFFFFD700),
+                      icon: Icons.refresh,
                     ),
                     
                     const SizedBox(height: 16),

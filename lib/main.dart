@@ -14,6 +14,7 @@ import 'screens/pilotaje/quantum_pilotage_screen.dart';
 import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'repositories/codigos_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,9 @@ void main() async {
   
   // Inicializar rastreador de tiempo
   AppTimeTracker().startSession();
+  
+  // Inicializar códigos con caché local y actualización automática
+  await CodigosRepository().initCodigos();
   
   // Configurar orientación
   SystemChrome.setPreferredOrientations([
