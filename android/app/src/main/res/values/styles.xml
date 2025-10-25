@@ -68,4 +68,21 @@
         <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
     </style>
+    
+    <!-- Theme aplicado a la ventana de Android mientras el proceso se inicia -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+        <!-- Mostrar pantalla de carga en la actividad. Se elimina automáticamente cuando
+             el motor Flutter dibuja su primer frame -->
+        <item name="android:windowBackground">@drawable/launch_background</item>
+    </style>
+    
+    <!-- Theme aplicado a la ventana de Android tan pronto como el proceso ha comenzado.
+         Este tema determina el color de la ventana de Android mientras tu
+         UI de Flutter se inicializa, así como detrás de tu UI de Flutter mientras
+         está ejecutándose.
+
+         Este Theme solo se usa a partir de la V2 del embedding de Android de Flutter. -->
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
 </resources>

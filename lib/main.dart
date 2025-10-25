@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation, SystemUiOverlayStyle;
+import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation, SystemUiOverlayStyle, SystemUiMode;
 import 'package:google_fonts/google_fonts.dart';
 import 'config/supabase_config.dart';
 import 'services/migration_service.dart';
@@ -34,12 +34,10 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   
-  // Configurar barra de estado
-  SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
+  // Configurar pantalla completa inmersiva
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.immersiveSticky,
+    overlays: [],
   );
   
   runApp(const MyApp());
