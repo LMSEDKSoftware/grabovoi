@@ -123,18 +123,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 _buildNextStep(_datosHome['proximoPaso']),
                 const SizedBox(height: 30),
                 Center(
-                  child: CustomButton(
-                    text: 'Ver Desafíos', 
-                    onPressed: () {
-                      if (widget.onNavigateToTab != null) {
-                        widget.onNavigateToTab!(3); // Índice de DesafiosScreen
-                      }
-                    }, 
-                    isOutlined: true,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                Center(
                   child: Text(
                     'Tu energía se eleva con cada pilotaje consciente',
                     style: GoogleFonts.inter(
@@ -217,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           child: Column(
             children: [
-              Text('Código Recomendado', style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
+              Text('Tu código diario', style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
               const SizedBox(height: 12),
               IlluminatedCodeText(
                 code: codigo,

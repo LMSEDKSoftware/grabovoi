@@ -1067,8 +1067,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                    // Modal de pilotaje manual
                    if (_showManualPilotage) _buildManualPilotageModal(),
                    
-                   // Reproductor de audio cuando se complete el pilotaje
-                   if (_showAudioController) _buildAudioController(),
                  ],
                ),
              );
@@ -1413,6 +1411,14 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                             height: 1.4,
                           ),
                         ),
+                        // Reproductor de audio integrado
+                        if (_showAudioController) ...[
+                          const SizedBox(height: 16),
+                          StreamedMusicController(
+                            autoPlay: true,
+                            isActive: true,
+                          ),
+                        ],
                       ],
                     ),
                   );
@@ -2391,8 +2397,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       _nivelResonancia = 0.0;
     });
     
-    // Ocultar la barra de colores después de 3 segundos
-    _hideColorBarAfterDelay();
+    // Mantener la barra de colores siempre abierta
   }
 
   void _nextStep() {
@@ -3334,68 +3339,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     );
   }
 
-  Widget _buildAudioController() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1C2541).withOpacity(0.95),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-          border: Border.all(
-            color: const Color(0xFFFFD700).withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Indicador de tiempo de pilotaje
-              if (_isPilotageActive) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.timer,
-                      color: const Color(0xFFFFD700),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Tiempo de pilotaje: ${_formatDuration(_pilotageDuration)}',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFFFFD700),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-              StreamedMusicController(
-                autoPlay: true,
-                isActive: true,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   String _formatDuration(int seconds) {
     final minutes = seconds ~/ 60;

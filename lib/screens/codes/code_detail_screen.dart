@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
@@ -209,6 +210,97 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     }
   }
 
+  // Método para mostrar la nota importante (clonado de sesión de repeticiones)
+  void _mostrarNotaImportante() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF363636),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFF5A623), width: 2),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Color(0xFFF5A623), size: 28),
+              const SizedBox(width: 10),
+              Text(
+                'Nota Importante',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFF5A623),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
+            'Siempre consulta con profesionales de la salud para cualquier condición médica. '
+            'Estos códigos son herramientas complementarias de bienestar.',
+            style: GoogleFonts.inter(
+              color: const Color(0xFFCCCCCC),
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5A623),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Entendido',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _shareCode() async {
+    try {
+      // Buscar el código en la base de datos para obtener su información real
+      final codigos = await SupabaseService.getCodigos();
+      final codigoEncontrado = codigos.firstWhere(
+        (c) => c.codigo == widget.codigo,
+        orElse: () => CodigoGrabovoi(
+          id: '',
+          codigo: widget.codigo,
+          nombre: 'Código Sagrado',
+          descripcion: 'Código sagrado para la manifestación y transformación energética.',
+          categoria: 'General',
+          color: '#FFD700',
+        ),
+      );
+      
+      final textToShare = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
+${codigoEncontrado.descripcion}
+Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
+      
+      await Share.share(textToShare);
+    } catch (e) {
+      // Fallback si hay error
+      final textToShare = '''${widget.codigo} : Código Sagrado
+Código sagrado para la manifestación y transformación energética.
+Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
+      
+      await Share.share(textToShare);
+    }
+  }
+
 
   // Función helper para obtener la descripción del código desde la base de datos
   Future<String> _getCodeDescription(String codigo) async {
@@ -253,9 +345,23 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                     ),
                     const Spacer(),
+                    // Botón de información
+                    IconButton(
+                      onPressed: _mostrarNotaImportante,
+                      icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
+                      tooltip: 'Nota importante',
+                    ),
+                    // Botón de copiar
                     IconButton(
                       onPressed: _copyToClipboard,
                       icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
+                      tooltip: 'Copiar código',
+                    ),
+                    // Botón de compartir
+                    IconButton(
+                      onPressed: _shareCode,
+                      icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
+                      tooltip: 'Compartir código',
                     ),
                   ],
                 ),
