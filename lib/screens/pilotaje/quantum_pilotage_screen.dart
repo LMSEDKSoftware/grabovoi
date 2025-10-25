@@ -2700,49 +2700,54 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '¡Excelente trabajo! Has completado tu sesión de pilotaje cuántico.',
-              style: GoogleFonts.inter(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFFFD700).withOpacity(0.3),
-                  width: 1,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '¡Excelente trabajo! Has completado tu sesión de pilotaje cuántico.',
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontSize: 16,
                 ),
               ),
-              child: Column(
-                children: [
-                  Text(
-                    '💫 Es importante mantener la vibración',
-                    style: GoogleFonts.inter(
-                      color: const Color(0xFFFFD700),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.3),
+                    width: 1,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética.',
-                    style: GoogleFonts.inter(
-                      color: Colors.white70,
-                      fontSize: 14,
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '💫 Es importante mantener la vibración',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética.',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              // Sección de códigos sincrónicos
+              _buildSincronicosSection(),
+            ],
+          ),
         ),
         actions: [
           CustomButton(
@@ -3477,6 +3482,180 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         ],
       ),
     );
+  }
+
+  // Método para construir la sección de códigos sincrónicos
+  Widget _buildSincronicosSection() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getSincronicosForCurrentCode(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFFFFD700),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final codigosSincronicos = snapshot.data!;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFFFFD700).withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.sync_alt,
+                    color: Color(0xFFFFD700),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Se potencia con...',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFD700),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Estos códigos complementarios pueden potenciar el poder de tu código actual:',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: codigosSincronicos.map((codigo) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushNamed(
+                        context,
+                        '/code-detail',
+                        arguments: codigo['codigo'],
+                      );
+                    },
+                    child: Container(
+                      width: 160,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFFFD700).withOpacity(0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            codigo['codigo'] ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFFFD700),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            codigo['nombre'] ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              codigo['categoria'] ?? '',
+                              style: GoogleFonts.inter(
+                                fontSize: 8,
+                                color: const Color(0xFFFFD700),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Método para obtener códigos sincrónicos del código actual
+  Future<List<Map<String, dynamic>>> _getSincronicosForCurrentCode() async {
+    try {
+      // Obtener la categoría del código actual
+      final categoria = await _getCodeCategory(_codigoSeleccionado);
+      if (categoria.isEmpty) return [];
+      
+      // Obtener códigos sincrónicos
+      return await CodigosRepository().getSincronicosByCategoria(categoria);
+    } catch (e) {
+      print('⚠️ Error al obtener códigos sincrónicos: $e');
+      return [];
+    }
+  }
+
+  // Método helper para obtener la categoría del código
+  Future<String> _getCodeCategory(String codigo) async {
+    try {
+      final codigoData = await SupabaseService.client
+          .from('codigos_grabovoi')
+          .select('categoria')
+          .eq('codigo', codigo)
+          .single();
+      return codigoData['categoria'] ?? 'General';
+    } catch (e) {
+      print('⚠️ Error al obtener categoría del código: $e');
+      return 'General';
+    }
   }
 }
 

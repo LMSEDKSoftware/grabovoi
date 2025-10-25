@@ -15,6 +15,9 @@ String? _getCurrentUserId() {
 class SupabaseService {
   static final SupabaseClient _client = SupabaseConfig.client;
   static final SupabaseClient _serviceClient = SupabaseConfig.serviceClient;
+  
+  // Getter público para acceder al cliente
+  static SupabaseClient get client => _client;
 
   // ===== CÓDIGOS GRABOVOI =====
   

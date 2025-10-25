@@ -167,59 +167,53 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
             ),
           ],
         ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Column(
+            content: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '¡Excelente trabajo! Has completado tu sesión de campo energético.',
-                  style: GoogleFonts.inter(
-                    color: Colors.white70,
-                    fontSize: 16,
+              Text(
+                '¡Excelente trabajo! Has completado tu sesión de campo energético.',
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.3),
+                    width: 1,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFFFD700).withOpacity(0.3),
-                      width: 1,
+                child: Column(
+                  children: [
+                    Text(
+                      '💫 Es importante mantener la vibración',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        '💫 Es importante mantener la vibración',
-                        style: GoogleFonts.inter(
-                          color: const Color(0xFFFFD700),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética.',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 14,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética.',
-                        style: GoogleFonts.inter(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                // Sección de códigos sincrónicos
-                _buildSincronicosSection(),
-              ],
-            ),
-          ),
-        ),
+              ),
+              const SizedBox(height: 20),
+                  // Sección de códigos sincrónicos
+                  _buildSincronicosSection(),
+                ],
+              ),
         actions: [
           ElevatedButton(
             onPressed: () {
@@ -1059,70 +1053,68 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: codigosSincronicos.take(2).toList().asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final codigo = entry.value;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        Navigator.pushNamed(
-                          context,
-                          '/code-detail',
-                          arguments: codigo['codigo'],
-                        );
-                      },
-                      child: Container(
-                        margin: EdgeInsets.only(right: index == 0 ? 8 : 0),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFFFD700).withOpacity(0.5),
-                            width: 1,
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: codigosSincronicos.map((codigo) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushNamed(
+                        context,
+                        '/code-detail',
+                        arguments: codigo['codigo'],
+                      );
+                    },
+                    child: Container(
+                      width: 160,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFFFD700).withOpacity(0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            codigo['codigo'] ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFFFD700),
+                            ),
                           ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              codigo['codigo'] ?? '',
+                          const SizedBox(height: 4),
+                          Text(
+                            codigo['nombre'] ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              codigo['categoria'] ?? '',
                               style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 8,
                                 color: const Color(0xFFFFD700),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              codigo['nombre'] ?? '',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                color: Colors.white.withOpacity(0.9),
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFD700).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                codigo['categoria'] ?? '',
-                                style: GoogleFonts.inter(
-                                  fontSize: 8,
-                                  color: const Color(0xFFFFD700),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   );

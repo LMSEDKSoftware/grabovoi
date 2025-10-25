@@ -10,6 +10,11 @@
 .svn/
 migrate_working_dir/
 
+# Configuraciones de desarrollo con claves API
+lib/config/openai_config_dev.dart
+.env
+secrets.txt
+
 # IntelliJ related
 *.iml
 *.ipr
