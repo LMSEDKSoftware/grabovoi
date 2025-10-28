@@ -30,6 +30,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   String? etiquetaSeleccionada;
   bool mostrarFavoritos = false;
   List<CodigoGrabovoi> favoritosFiltrados = [];
+  DateTime? _lastLoadTime;
 
   @override
   void initState() {
@@ -40,6 +41,17 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       });
     });
     _load();
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recargar si han pasado más de 5 segundos desde la última carga
+    final now = DateTime.now();
+    if (_lastLoadTime == null || now.difference(_lastLoadTime!).inSeconds > 5) {
+      print('🔄 Recargando biblioteca (han pasado más de 5 segundos)');
+      _load();
+    }
   }
 
   @override
@@ -65,6 +77,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         categorias = ['Todos', ...cats];
         etiquetasFavoritos = etiquetas;
         loading = false;
+        _lastLoadTime = DateTime.now();
       });
     } catch (e) {
       setState(() {

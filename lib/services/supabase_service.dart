@@ -227,6 +227,22 @@ class SupabaseService {
     }
   }
 
+  // Obtener información completa de un código existente
+  static Future<CodigoGrabovoi?> getCodigoExistente(String codigo) async {
+    try {
+      final response = await _client
+          .from('codigos_grabovoi')
+          .select()
+          .eq('codigo', codigo)
+          .single();
+
+      return CodigoGrabovoi.fromJson(response);
+    } catch (e) {
+      print('❌ Error obteniendo código existente $codigo: $e');
+      return null;
+    }
+  }
+
   // ===== FAVORITOS =====
   
   static Future<List<CodigoGrabovoi>> getFavoritos(String userId) async {

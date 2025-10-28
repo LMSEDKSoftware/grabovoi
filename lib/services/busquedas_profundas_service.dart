@@ -43,6 +43,30 @@ class BusquedasProfundasService {
     }
   }
 
+  // Actualizar métricas de una búsqueda (duración, tokens, costo)
+  static Future<void> actualizarMetricasBusqueda(int id, int duracionMs, int tokensUsados, double costoEstimado) async {
+    try {
+      print('📊 Actualizando métricas para búsqueda ID: $id');
+      print('   Duración: ${duracionMs}ms');
+      print('   Tokens: $tokensUsados');
+      print('   Costo: \$${costoEstimado.toStringAsFixed(4)}');
+      
+      await _serviceClient
+          .from('busquedas_profundas')
+          .update({
+            'duracion_ms': duracionMs,
+            'tokens_usados': tokensUsados,
+            'costo_estimado': costoEstimado,
+          })
+          .eq('id', id);
+      
+      print('✅ Métricas actualizadas correctamente');
+    } catch (e) {
+      print('❌ Error al actualizar métricas: $e');
+      rethrow;
+    }
+  }
+
   // Obtener búsquedas de un usuario específico
   static Future<List<BusquedaProfunda>> getBusquedasPorUsuario(String usuarioId) async {
     try {

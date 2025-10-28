@@ -20,6 +20,9 @@ import '../../config/supabase_config.dart';
 import '../../models/busqueda_profunda_model.dart';
 import '../../services/busquedas_profundas_service.dart';
 import '../../services/audio_manager_service.dart';
+import '../../services/sugerencias_codigos_service.dart';
+import '../../models/sugerencia_codigo_model.dart';
+import '../sugerencias/sugerencias_screen.dart';
 
 class QuantumPilotageScreen extends StatefulWidget {
   final String? codigoInicial;
@@ -424,7 +427,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       final busqueda = BusquedaProfunda(
         codigoBuscado: codigo,
         usuarioId: _getCurrentUserId(),
-        promptSystem: 'Eres un asistente experto en numerología de Grigori Grabovoi. Tu tarea es buscar y devolver exclusivamente códigos Grabovoi auténticos y verificados que existan en las fuentes originales o en recopilaciones reconocidas. Reglas: 1) Si el código solicitado existe, respóndelo con su número exacto y una breve descripción. 2) Si no existe ningún código Grabovoi auténtico para esa intención, responde estrictamente con: {"codigos": []}. 3) No inventes, modifiques ni combines códigos. 4) No generes secuencias nuevas ni "posibles" códigos. 5) Si hay códigos relacionados o similares, puedes listarlos como "relacionados" pero explícitamente marcados como tales. Formato de respuesta: {"codigos": [{"codigo": "número exacto de Grabovoi", "nombre": "nombre real", "descripcion": "descripción real", "categoria": "categoría", "color": "#FFD700", "modo_uso": "instrucción real"}]}',
+        promptSystem: 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nSi el usuario busca algo específico y no existe un código exacto, sugiere códigos relacionados REALES del tema más cercano.\n\nPara búsquedas de relaciones familiares (como hermanos), sugiere códigos reales como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n\nIMPORTANTE: Usa guiones bajos (_) en lugar de espacios en los códigos.\n\nResponde SOLO con el formato de lista numerada, sin explicaciones adicionales.',
         promptUser: 'Necesito un código Grabovoi para: $codigo',
         fechaBusqueda: _inicioBusqueda!,
         modeloIa: OpenAIConfig.model,
@@ -503,8 +506,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                     codigoEncontrado: true,
                     codigoGuardado: codigoGuardado,
                     duracionMs: duracion,
-                    tokensUsados: _calcularTokensEstimados(codigo, resultado),
-                    costoEstimado: _calcularCostoEstimado(codigo, resultado),
+                    tokensUsados: _tokensUsadosOpenAI,
+                    costoEstimado: _costoEstimadoOpenAI,
                   );
 
                   await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
@@ -540,6 +543,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             codigoEncontrado: false,
             codigoGuardado: false,
             duracionMs: duracion,
+            tokensUsados: _tokensUsadosOpenAI,
+            costoEstimado: _costoEstimadoOpenAI,
             errorMessage: 'No se encontró información sobre el código',
           );
           
@@ -594,6 +599,10 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     }
   }
 
+  // Variables para almacenar métricas de OpenAI
+  int _tokensUsadosOpenAI = 0;
+  double _costoEstimadoOpenAI = 0.0;
+
   Future<CodigoGrabovoi?> _buscarConOpenAI(String codigo) async {
     try {
       print('🔍 Buscando código $codigo con OpenAI...');
@@ -610,7 +619,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           'messages': [
             {
               'role': 'system',
-              'content': 'Eres un asistente experto en numerología de Grigori Grabovoi. Tu tarea es buscar y devolver exclusivamente códigos Grabovoi auténticos y verificados que existan en las fuentes originales o en recopilaciones reconocidas. Reglas: 1) Si el código solicitado existe, respóndelo con su número exacto y una breve descripción. 2) Si no existe ningún código Grabovoi auténtico para esa intención, responde estrictamente con: {"codigos": []}. 3) No inventes, modifiques ni combines códigos. 4) No generes secuencias nuevas ni "posibles" códigos. 5) Si hay códigos relacionados o similares, puedes listarlos como "relacionados" pero explícitamente marcados como tales. 6) SIEMPRE devuelve MÚLTIPLES códigos cuando sea posible (2-4 códigos) para que el usuario pueda elegir. Formato de respuesta: {"codigos": [{"codigo": "número exacto de Grabovoi", "nombre": "nombre real", "descripcion": "descripción real", "categoria": "categoría", "color": "#FFD700", "modo_uso": "instrucción real"}]}'
+              'content': 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nSi el usuario busca algo específico y no existe un código exacto, sugiere códigos relacionados REALES del tema más cercano.\n\nPara búsquedas de relaciones familiares (como hermanos), sugiere códigos reales como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n\nIMPORTANTE: Usa guiones bajos (_) en lugar de espacios en los códigos.\n\nResponde SOLO con el formato de lista numerada, sin explicaciones adicionales.'
             },
             {
               'role': 'user',
@@ -626,14 +635,54 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         final data = jsonDecode(response.body);
         final content = data['choices'][0]['message']['content'];
         
+        // Extraer métricas de uso de OpenAI
+        if (data['usage'] != null) {
+          final usage = data['usage'];
+          _tokensUsadosOpenAI = (usage['total_tokens'] ?? 0) as int;
+          
+          // Calcular costo estimado (GPT-3.5-turbo: $0.0015 por 1K prompt tokens, $0.002 por 1K completion tokens)
+          final promptTokens = usage['prompt_tokens'] ?? 0;
+          final completionTokens = usage['completion_tokens'] ?? 0;
+          _costoEstimadoOpenAI = ((promptTokens / 1000) * 0.0015) + ((completionTokens / 1000) * 0.002);
+          
+          print('📊 Métricas de OpenAI:');
+          print('   Tokens totales: $_tokensUsadosOpenAI');
+          print('   Tokens prompt: $promptTokens');
+          print('   Tokens completion: $completionTokens');
+          print('   Costo estimado: \$${_costoEstimadoOpenAI.toStringAsFixed(4)}');
+        }
+        
         print('🤖 Respuesta de OpenAI: $content');
         
         if (content != 'null' && content.isNotEmpty && content.toLowerCase() != 'null') {
           try {
-            // Limpiar y reparar JSON si es necesario
             String cleanedContent = content.trim();
             
-            // Intentar reparar JSON malformado
+            // Verificar si es formato de lista numerada (nuevo formato)
+            if (cleanedContent.contains('1.') && cleanedContent.contains('—')) {
+              print('📋 Detectado formato de lista numerada');
+              final codigosEncontrados = await _parsearListaNumerada(cleanedContent);
+              
+              if (codigosEncontrados.isNotEmpty) {
+                print('✅ Códigos extraídos de lista: ${codigosEncontrados.length}');
+                
+                // Mostrar selección de códigos
+                setState(() {
+                  _codigosEncontrados = codigosEncontrados;
+                  _mostrarSeleccionCodigos = true;
+                  _showOptionsModal = false;
+                });
+                
+                return null; // No devolver código individual, mostrar selección
+              } else {
+                print('❌ No se pudieron extraer códigos de la lista');
+                _mostrarMensajeNoEncontrado();
+              }
+              return null;
+            }
+            
+            // Intentar parsear como JSON (formato anterior)
+            // Limpiar y reparar JSON si es necesario
             if (!cleanedContent.endsWith('}') && !cleanedContent.endsWith(']')) {
               print('🔧 Intentando reparar JSON malformado...');
               
@@ -667,36 +716,20 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               
               // Convertir cada código a CodigoGrabovoi
               final codigosEncontrados = <CodigoGrabovoi>[];
-              final codigosInventados = ['1234567', '123456789', '1485421', '123456', '654321', '111111', '222222', '333333', '444444', '555555', '666666', '777777', '888888', '999999', '000000'];
-              
-              // Códigos reales de Grabovoi para uñas (de la imagen)
-              final codigosRealesUnas = ['817254719', '89147198', '548714218', '1489999', '51961431961', '519614', '31961'];
               
               for (var codigoData in codigosList) {
                 // Validar que el código tenga los campos necesarios
                 if (codigoData['codigo'] != null && codigoData['codigo'].toString().isNotEmpty) {
                   final codigoNumero = codigoData['codigo'].toString().replaceAll(' ', '');
                   
-                  // REJECTAR códigos inventados
-                  if (codigosInventados.contains(codigoNumero)) {
-                    print('❌ CÓDIGO INVENTADO RECHAZADO: $codigoNumero');
+                  // VALIDAR que el código existe en la base de datos real
+                  final codigoExiste = await _validarCodigoEnBaseDatos(codigoNumero);
+                  if (!codigoExiste) {
+                    print('❌ CÓDIGO INVENTADO RECHAZADO: $codigoNumero - No existe en la base de datos');
                     continue;
                   }
                   
-                  // Permitir códigos reales de uñas
-                  if (codigosRealesUnas.contains(codigoNumero)) {
-                    print('✅ CÓDIGO REAL DE UÑAS ACEPTADO: $codigoNumero');
-                  }
-                  
-                  // Rechazar códigos con patrones obviamente inventados (excepto códigos reales)
-                  if (!codigosRealesUnas.contains(codigoNumero) && 
-                      (codigoNumero.length < 3 || 
-                       codigoNumero == codigoNumero[0] * codigoNumero.length || // 111, 222, etc.
-                       codigoNumero.contains('123456') ||
-                       codigoNumero.contains('654321'))) {
-                    print('❌ CÓDIGO CON PATRÓN INVENTADO RECHAZADO: $codigoNumero');
-                    continue;
-                  }
+                  print('✅ CÓDIGO VÁLIDO CONFIRMADO: $codigoNumero');
                   
                   final categoria = codigoData['categoria'] ?? 'Abundancia';
                   codigosEncontrados.add(CodigoGrabovoi(
@@ -723,6 +756,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 return null; // No devolver código individual, mostrar selección
               } else {
                 print('❌ No se encontraron códigos válidos en la respuesta');
+                // Mostrar mensaje de que no se encontraron códigos válidos
+                _mostrarMensajeNoEncontrado();
               }
             } else {
               print('❌ Formato de respuesta inesperado: $responseData');
@@ -733,7 +768,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             print('📄 Longitud del contenido: ${content.length} caracteres');
             
             // Intentar extraer códigos manualmente del texto
-            _extraerCodigosDelTexto(content);
+            await _extraerCodigosDelTexto(content);
+            return null;
           }
         }
       } else {
@@ -763,6 +799,283 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       }
       
       return null;
+    }
+  }
+
+  // Parsear lista numerada de códigos
+  Future<List<CodigoGrabovoi>> _parsearListaNumerada(String contenido) async {
+    final codigosEncontrados = <CodigoGrabovoi>[];
+    
+    try {
+      // Dividir por líneas y procesar cada una
+      final lineas = contenido.split('\n');
+      
+      for (String linea in lineas) {
+        linea = linea.trim();
+        
+        // Buscar patrón: "1. 91919481891 - Sanación de animales" o "1. 519_7148_21 — Armonía familiar"
+        final regex = RegExp(r'^\d+\.\s+([0-9_\s]+)\s*[-—]\s*(.+)$');
+        final match = regex.firstMatch(linea);
+        
+        if (match != null) {
+          final codigoConEspacios = match.group(1)!.trim();
+          final codigoConGuiones = codigoConEspacios.replaceAll(' ', '_');
+          final nombre = match.group(2)!.trim();
+          
+          print('🔍 Procesando línea: $linea');
+          print('📋 Código con espacios: $codigoConEspacios');
+          print('📋 Código con guiones: $codigoConGuiones');
+          print('📋 Nombre extraído: $nombre');
+          
+          // Validar código con lógica de sugerencias
+          final validacion = await _validarCodigoConSugerencia(
+            codigoConGuiones, 
+            nombre, 
+            'Código sugerido para relaciones familiares'
+          );
+          
+          if (validacion['existe'] == true) {
+            if (validacion['necesitaSugerencia'] == true) {
+              print('⚠️ Código existe pero con tema diferente - Creando sugerencia');
+              
+              // Crear sugerencia
+              await _crearSugerencia(
+                validacion['codigoExistente'] as CodigoGrabovoi,
+                validacion['temaSugerido'] as String,
+                validacion['descripcionSugerida'] as String,
+              );
+              
+              // Mostrar el código existente pero con indicación de sugerencia
+              codigosEncontrados.add(CodigoGrabovoi(
+                id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
+                codigo: codigoConGuiones,
+                nombre: nombre,
+                descripcion: 'Código sugerido para relaciones familiares (sugerencia creada)',
+                categoria: 'Relaciones familiares',
+                color: '#FFD700',
+              ));
+            } else {
+              print('✅ Código válido confirmado: $codigoConGuiones');
+              
+              codigosEncontrados.add(CodigoGrabovoi(
+                id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
+                codigo: codigoConGuiones,
+                nombre: nombre,
+                descripcion: 'Código sugerido para relaciones familiares',
+                categoria: 'Relaciones familiares',
+                color: '#FFD700',
+              ));
+            }
+          } else {
+            // CASO 3: Código NO existe - Agregarlo como opción nueva para el usuario
+            print('⚠️ Código NO existe en BD - Agregando como opción para el usuario: $codigoConGuiones');
+            
+            // Determinar la categoría correcta
+            final categoria = _determinarCategoria(nombre);
+            
+            codigosEncontrados.add(CodigoGrabovoi(
+              id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
+              codigo: codigoConGuiones,
+              nombre: nombre,
+              descripcion: nombre, // Usar el nombre como descripción
+              categoria: categoria, // Categoría determinada inteligentemente
+              color: '#32CD32', // Verde para indicar que es nuevo
+            ));
+          }
+        }
+      }
+      
+      print('📊 Total de códigos válidos extraídos: ${codigosEncontrados.length}');
+      return codigosEncontrados;
+    } catch (e) {
+      print('❌ Error parseando lista numerada: $e');
+      return [];
+    }
+  }
+
+  // Mostrar mensaje cuando no se encuentran códigos válidos
+  void _mostrarMensajeNoEncontrado() {
+    setState(() {
+      _showOptionsModal = false;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'No se encontraron códigos válidos para tu búsqueda. '
+          'Dado que no existe uno "oficial" para tu consulta específica, '
+          'puedes utilizar códigos de relaciones generales como:\n'
+          '• 619 734 218 — Armonización de relaciones\n'
+          '• 814 418 719 — Comprensión y perdón\n'
+          '• 714 319 — Amor y relaciones',
+          style: TextStyle(fontSize: 14),
+        ),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 8),
+        action: SnackBarAction(
+          label: 'Entendido',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
+  // Validar si un código existe en la base de datos real
+  Future<bool> _validarCodigoEnBaseDatos(String codigo) async {
+    try {
+      // Buscar en la lista de códigos cargados
+      final codigoExiste = _codigos.any((c) => c.codigo == codigo);
+      if (codigoExiste) {
+        print('✅ Código $codigo encontrado en la base de datos local');
+        return true;
+      }
+      
+      // Si no está en local, buscar en Supabase
+      final response = await SupabaseService.client
+          .from('codigos_grabovoi')
+          .select('codigo')
+          .eq('codigo', codigo)
+          .limit(1);
+      
+      final existe = response.isNotEmpty;
+      print('${existe ? "✅" : "❌"} Código $codigo ${existe ? "existe" : "NO existe"} en Supabase');
+      return existe;
+    } catch (e) {
+      print('❌ Error validando código $codigo: $e');
+      return false; // En caso de error, rechazar el código
+    }
+  }
+
+  // Validar código y detectar si necesita sugerencia
+  Future<Map<String, dynamic>> _validarCodigoConSugerencia(String codigo, String temaSugerido, String descripcionSugerida) async {
+    try {
+      print('🔍 Validando código con sugerencia: $codigo');
+      
+      // Verificar si el código existe
+      final codigoExiste = await _validarCodigoEnBaseDatos(codigo);
+      
+      if (!codigoExiste) {
+        print('❌ Código $codigo NO existe en la base de datos');
+        return {
+          'existe': false,
+          'necesitaSugerencia': false,
+          'codigoExistente': null,
+        };
+      }
+      
+      // Obtener información del código existente
+      final codigoExistente = await SupabaseService.getCodigoExistente(codigo);
+      
+      if (codigoExistente == null) {
+        print('❌ No se pudo obtener información del código existente');
+        return {
+          'existe': true,
+          'necesitaSugerencia': false,
+          'codigoExistente': null,
+        };
+      }
+      
+      // Comparar temas
+      final temaExistente = codigoExistente.nombre.toLowerCase();
+      final temaNuevo = temaSugerido.toLowerCase();
+      
+      print('🔍 Comparando temas:');
+      print('   Existente: "$temaExistente"');
+      print('   Sugerido: "$temaNuevo"');
+      
+      // Verificar si los temas son diferentes
+      final temasDiferentes = temaExistente != temaNuevo;
+      
+      if (temasDiferentes) {
+        print('⚠️ Temas diferentes detectados - Creando sugerencia');
+        return {
+          'existe': true,
+          'necesitaSugerencia': true,
+          'codigoExistente': codigoExistente,
+          'temaExistente': temaExistente,
+          'temaSugerido': temaSugerido,
+          'descripcionSugerida': descripcionSugerida,
+        };
+      } else {
+        print('✅ Temas coinciden - No se necesita sugerencia');
+        return {
+          'existe': true,
+          'necesitaSugerencia': false,
+          'codigoExistente': codigoExistente,
+        };
+      }
+    } catch (e) {
+      print('❌ Error validando código con sugerencia: $e');
+      return {
+        'existe': false,
+        'necesitaSugerencia': false,
+        'codigoExistente': null,
+      };
+    }
+  }
+
+  // Navegar a la pantalla de sugerencias
+  void _navegarASugerencias() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SugerenciasScreen(),
+      ),
+    );
+  }
+
+  // Crear sugerencia para código existente con tema diferente
+  Future<void> _crearSugerencia(CodigoGrabovoi codigoExistente, String temaSugerido, String descripcionSugerida) async {
+    try {
+      print('💾 Creando sugerencia para código: ${codigoExistente.codigo}');
+      
+      // Verificar si ya existe una sugerencia similar (con control de duplicados)
+      final existeSimilar = await SugerenciasCodigosService.existeSugerenciaSimilar(
+        _busquedaActualId ?? 0,
+        codigoExistente.codigo,
+        temaSugerido,
+        _getCurrentUserId(),
+      );
+      
+      if (existeSimilar) {
+        print('ℹ️ Ya existe una sugerencia similar para este código');
+        return;
+      }
+      
+      // Crear nueva sugerencia
+      final sugerencia = SugerenciaCodigo(
+        busquedaId: _busquedaActualId ?? 0,
+        codigoExistente: codigoExistente.codigo,
+        temaEnDb: codigoExistente.nombre,
+        temaSugerido: temaSugerido,
+        descripcionSugerida: descripcionSugerida,
+        usuarioId: _getCurrentUserId(),
+        fuente: 'IA',
+        estado: 'pendiente',
+        fechaSugerencia: DateTime.now(),
+      );
+      
+      final sugerenciaId = await SugerenciasCodigosService.crearSugerencia(sugerencia);
+      print('✅ Sugerencia creada con ID: $sugerenciaId');
+      
+      // Mostrar notificación al usuario
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✨ Se ha creado una sugerencia para el código ${codigoExistente.codigo}',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error creando sugerencia: $e');
     }
   }
 
@@ -1055,22 +1368,32 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               ),
             ),
           ),
-                   // Sistema de Steps Secuenciales como Overlay Flotante
-                   if (_showSequentialSteps) _buildSequentialStepCard(),
-                   
-                   // Modal de opciones cuando no se encuentra código
-                   if (_showOptionsModal) _buildOptionsModal(),
-                   
-                   // Modal de selección de códigos encontrados por IA
-                   if (_mostrarSeleccionCodigos) _buildSeleccionCodigosModal(),
-                   
-                   // Modal de pilotaje manual
-                   if (_showManualPilotage) _buildManualPilotageModal(),
-                   
-                 ],
-               ),
-             );
-           }
+                 // Sistema de Steps Secuenciales como Overlay Flotante
+                 if (_showSequentialSteps) _buildSequentialStepCard(),
+                 
+                 // Modal de opciones cuando no se encuentra código
+                 if (_showOptionsModal) _buildOptionsModal(),
+                 
+                 // Modal de selección de códigos encontrados por IA
+                 if (_mostrarSeleccionCodigos) _buildSeleccionCodigosModal(),
+                 
+                 // Modal de pilotaje manual
+                 if (_showManualPilotage) _buildManualPilotageModal(),
+                 
+                 // Botón flotante para sugerencias
+                 Positioned(
+                   bottom: 100,
+                   right: 20,
+                   child: FloatingActionButton(
+                     onPressed: _navegarASugerencias,
+                     backgroundColor: Colors.blue,
+                     child: const Icon(Icons.lightbulb_outline, color: Colors.white),
+                   ),
+                 ),
+               ],
+             ),
+           );
+         }
 
   Widget _buildDynamicHeader() {
     return Padding(
@@ -1445,27 +1768,29 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         ),
         const SizedBox(height: 12),
 
-        // Indicador de categoría movido aquí
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: _colorVibracional.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: _colorVibracional.withOpacity(0.5),
-              width: 1,
+        // Indicador de categoría movido aquí - Solo mostrar si hay código seleccionado
+        if (_codigoSeleccionado.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _colorVibracional.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _colorVibracional.withOpacity(0.5),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              'Categoría: $_categoriaActual',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: _colorVibracional,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          child: Text(
-            'Categoría: $_categoriaActual',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: _colorVibracional,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+        ],
         
         // Campo de búsqueda - Solo mostrar si no está reproduciéndose audio
         if (!_isAudioPlaying) ...[
@@ -3252,73 +3577,248 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     );
   }
 
-  void _extraerCodigosDelTexto(String content) {
+  Future<void> _extraerCodigosDelTexto(String content) async {
     print('🔍 Intentando extraer códigos del texto...');
     
     try {
-      // Buscar patrones de códigos en el texto
-      RegExp codigoRegex = RegExp(r'"codigo":\s*"([^"]+)"');
-      RegExp nombreRegex = RegExp(r'"nombre":\s*"([^"]+)"');
-      RegExp descripcionRegex = RegExp(r'"descripcion":\s*"([^"]+)"');
-      RegExp categoriaRegex = RegExp(r'"categoria":\s*"([^"]+)"');
+      final codigosEncontrados = <CodigoGrabovoi>[];
+      final lineas = content.split('\n');
       
-      List<Match> codigoMatches = codigoRegex.allMatches(content).toList();
-      List<Match> nombreMatches = nombreRegex.allMatches(content).toList();
-      List<Match> descripcionMatches = descripcionRegex.allMatches(content).toList();
-      List<Match> categoriaMatches = categoriaRegex.allMatches(content).toList();
-      
-      print('🔍 Códigos encontrados en texto: ${codigoMatches.length}');
-      print('🔍 Nombres encontrados en texto: ${nombreMatches.length}');
-      print('🔍 Descripciones encontradas en texto: ${descripcionMatches.length}');
-      print('🔍 Categorías encontradas en texto: ${categoriaMatches.length}');
-      
-      if (codigoMatches.isNotEmpty) {
-        final codigosEncontrados = <CodigoGrabovoi>[];
+      for (String linea in lineas) {
+        linea = linea.trim();
+        if (linea.isEmpty) continue;
         
-        for (int i = 0; i < codigoMatches.length; i++) {
-          String codigo = codigoMatches[i].group(1) ?? '';
-          String nombre = i < nombreMatches.length ? (nombreMatches[i].group(1) ?? 'Código encontrado por IA') : 'Código encontrado por IA';
-          String descripcion = i < descripcionMatches.length ? (descripcionMatches[i].group(1) ?? 'Código encontrado mediante búsqueda profunda con IA') : 'Código encontrado mediante búsqueda profunda con IA';
-          String categoria = i < categoriaMatches.length ? (categoriaMatches[i].group(1) ?? 'Abundancia') : 'Abundancia';
+        print('🔍 Procesando línea: $linea');
+        
+        // Buscar patrón numérico al inicio
+        final match = RegExp(r'^\d+\.\s+(.+)$').firstMatch(linea);
+        if (match == null) continue;
+        
+        final contenido = match.group(1)!.trim();
+        
+        // Buscar separador: guión normal o largo
+        Match? codeMatch;
+        
+        // Intentar con guión normal: "codigo - nombre"
+        codeMatch = RegExp(r'^([0-9_\s]+?)\s+-\s+(.+)$').firstMatch(contenido);
+        if (codeMatch == null) {
+          // Intentar con guión largo
+          codeMatch = RegExp(r'^([0-9_\s]+?)\s+—\s+(.+)$').firstMatch(contenido);
+        }
+        if (codeMatch == null) {
+          // Intentar sin espacios
+          codeMatch = RegExp(r'^([0-9_\s]+?)\s*[-—]\s*(.+)$').firstMatch(contenido);
+        }
+        
+        if (codeMatch != null) {
+          var codigoStr = codeMatch.group(1)!.trim();
+          final nombre = codeMatch.group(2)!.trim();
           
-          if (codigo.isNotEmpty) {
+          // Convertir espacios a guiones bajos
+          codigoStr = codigoStr.replaceAll(' ', '_').replaceAll('__', '_');
+          
+          print('📋 Código procesado: $codigoStr');
+          print('📋 Nombre extraído: $nombre');
+          
+          // Verificar si el código existe en la base de datos
+          final codigoExiste = await _validarCodigoEnBaseDatos(codigoStr);
+          
+          if (codigoExiste) {
+            // CASO 1: Código existe en BD con tema diferente
+            print('✅ Código existe en BD: $codigoStr');
+            
+            // Obtener información del código existente
+            final codigoExistente = await SupabaseService.getCodigoExistente(codigoStr);
+            
+            if (codigoExistente != null) {
+              // Comparar temas
+              final temaExistente = codigoExistente.nombre.toLowerCase();
+              final temaNuevo = nombre.toLowerCase();
+              
+              print('🔍 Comparando temas:');
+              print('   Existente: "$temaExistente"');
+              print('   Sugerido por IA: "$temaNuevo"');
+              
+              if (temaExistente != temaNuevo) {
+                print('⚠️ Código existe pero con tema diferente - Agregando a sugerencias');
+                
+                // Agregar código con marcador de que es una sugerencia
+                final categoria = _determinarCategoria(nombre);
+                codigosEncontrados.add(CodigoGrabovoi(
+                  id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
+                  codigo: codigoStr,
+                  nombre: nombre,
+                  descripcion: 'Código sugerido para $nombre (sugerencia creada)',
+                  categoria: categoria,
+                  color: '#FFD700',
+                ));
+              } else {
+                // Temas coinciden, usar la categoría original de la base de datos
+                codigosEncontrados.add(CodigoGrabovoi(
+                  id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
+                  codigo: codigoStr,
+                  nombre: nombre,
+                  descripcion: 'Código encontrado en la base de datos',
+                  categoria: codigoExistente.categoria, // Usar categoría original
+                  color: '#FFD700',
+                ));
+              }
+            }
+          } else {
+            // CASO 2: Código NO existe en BD - Agregarlo para que el usuario lo seleccione
+            print('⚠️ Código NO existe en BD pero es válido de IA: $codigoStr');
+            
+            // Determinar la categoría correcta para el código
+            final categoria = _determinarCategoria(nombre);
+            
             codigosEncontrados.add(CodigoGrabovoi(
-              id: DateTime.now().millisecondsSinceEpoch.toString() + '_${i}',
-              codigo: codigo,
+              id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
+              codigo: codigoStr,
               nombre: nombre,
-              descripcion: descripcion,
-              categoria: categoria,
-              color: _getCategoryColor(categoria).value.toRadixString(16).substring(2).toUpperCase(),
+              descripcion: nombre, // Usar el nombre como descripción
+              categoria: categoria, // Categoría determinada inteligentemente
+              color: '#32CD32', // Verde para indicar que es nuevo
             ));
           }
         }
-        
-        if (codigosEncontrados.isNotEmpty) {
-          print('✅ Códigos extraídos del texto: ${codigosEncontrados.length}');
-          
-          setState(() {
-            _codigosEncontrados = codigosEncontrados;
-            _mostrarSeleccionCodigos = true;
-            _showOptionsModal = false;
-          });
-        }
+      }
+      
+      print('📊 Total de códigos válidos extraídos: ${codigosEncontrados.length}');
+      
+      if (codigosEncontrados.isNotEmpty) {
+        print('✅ Mostrando ${codigosEncontrados.length} códigos al usuario');
+        setState(() {
+          _codigosEncontrados = codigosEncontrados;
+          _mostrarSeleccionCodigos = true;
+          _showOptionsModal = false;
+        });
+      } else {
+        print('❌ No se pudieron extraer códigos válidos');
+        _mostrarMensajeNoEncontrado();
       }
     } catch (e) {
       print('❌ Error extrayendo códigos del texto: $e');
     }
   }
 
+  // Determinar la categoría basándose en el tema del código
+  String _determinarCategoria(String tema) {
+    // Mapeo de palabras clave del tema a categorías existentes
+    final temaLower = tema.toLowerCase();
+    
+    // Lista de categorías comunes en el sistema
+    final categoriasExistentes = ['Sanación', 'Abundancia', 'Amor', 'Protección', 'Paz', 
+                                  'Relaciones', 'Espiritualidad', 'Curación', 'Armonía', 
+                                  'Prosperidad', 'Éxito', 'Vitalidad', 'Salud', 'Energía'];
+    
+    // Buscar coincidencias con las categorías existentes
+    for (var categoria in categoriasExistentes) {
+      final categoriaLower = categoria.toLowerCase();
+      if (temaLower.contains(categoriaLower) || categoriaLower.contains(temaLower.split(' ').first)) {
+        print('✅ Categoría encontrada: $categoria');
+        return categoria;
+      }
+    }
+    
+    // Si no hay coincidencias, usar la primera palabra del tema como categoría
+    final primeraPalabra = tema.split(' ').first;
+    final categoriaNueva = primeraPalabra.isEmpty ? 'IA' : primeraPalabra[0].toUpperCase() + primeraPalabra.substring(1);
+    
+    print('🆕 Nueva categoría creada: $categoriaNueva');
+    return categoriaNueva;
+  }
+
+  // Actualizar la lista de códigos después de guardar uno nuevo
+  Future<void> _actualizarListaCodigos() async {
+    try {
+      print('🔄 Actualizando lista de códigos después del guardado...');
+      
+      // Recargar códigos desde Supabase
+      final nuevosCodigos = await SupabaseService.getCodigos();
+      if (nuevosCodigos.isNotEmpty) {
+        setState(() {
+          _codigos = nuevosCodigos;
+        });
+        print('✅ Lista de códigos actualizada: ${nuevosCodigos.length} códigos');
+        
+        // También actualizar el repositorio para que esté disponible en otras pantallas
+        await CodigosRepository().refreshCodigos();
+        print('✅ Repositorio de códigos actualizado');
+      }
+    } catch (e) {
+      print('⚠️ Error al actualizar lista de códigos: $e');
+    }
+  }
+
   void _seleccionarCodigo(CodigoGrabovoi codigo) async {
     print('🎯 Código seleccionado: ${codigo.codigo} - ${codigo.nombre}');
     
-    // Guardar en base de datos
-    try {
-      final codigoId = await _guardarCodigoEnBaseDatos(codigo);
-      if (codigoId != null) {
-        print('✅ Código guardado con ID: $codigoId');
+    // Verificar si es un código nuevo o una sugerencia
+    final codigoExiste = await _validarCodigoEnBaseDatos(codigo.codigo);
+    
+    if (!codigoExiste) {
+      // CASO 2: Código NO existe - Agregarlo a la BD
+      print('💾 Agregando código nuevo a la BD: ${codigo.codigo}');
+      try {
+        final codigoId = await _guardarCodigoEnBaseDatos(codigo);
+        if (codigoId != null) {
+          print('✅ Código nuevo guardado con ID: $codigoId');
+          await _actualizarListaCodigos();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Código agregado y guardado: ${codigo.nombre}'),
+              backgroundColor: const Color(0xFF4CAF50),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        print('⚠️ Error al guardar código nuevo: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al guardar código: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
-    } catch (e) {
-      print('⚠️ Error al guardar código: $e');
+    } else {
+      // CASO 1: Código EXISTE - Verificar si es una sugerencia
+      print('🔍 Código existe en BD, verificando tema...');
+      
+      final codigoExistente = await SupabaseService.getCodigoExistente(codigo.codigo);
+      if (codigoExistente != null) {
+        final temaExistente = codigoExistente.nombre.toLowerCase();
+        final temaNuevo = codigo.nombre.toLowerCase();
+        
+        if (temaExistente != temaNuevo) {
+          // Crear sugerencia para aprobación
+          print('⚠️ Creando sugerencia para código con tema diferente');
+          
+          try {
+            await _crearSugerencia(codigoExistente, codigo.nombre, codigo.descripcion);
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✨ Sugerencia creada para: ${codigo.nombre}'),
+                backgroundColor: Colors.blue,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          } catch (e) {
+            print('⚠️ Error al crear sugerencia: $e');
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Código seleccionado: ${codigo.nombre}'),
+              backgroundColor: const Color(0xFF4CAF50),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     }
     
     // Actualizar estado
@@ -3326,22 +3826,12 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       _codigoSeleccionado = codigo.codigo;
       _categoriaActual = codigo.categoria;
       _colorVibracional = _getCategoryColor(codigo.categoria);
-      // Actualizar el color de categoría en el selector
       _coloresDisponibles['categoria'] = _colorVibracional;
       _mostrarSeleccionCodigos = false;
       _codigosEncontrados = [];
       _searchController.clear();
       _mostrarResultados = false;
     });
-    
-    // Mostrar mensaje de éxito
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('✅ Código seleccionado: ${codigo.nombre}'),
-        backgroundColor: const Color(0xFF4CAF50),
-        duration: const Duration(seconds: 3),
-      ),
-    );
   }
 
 
