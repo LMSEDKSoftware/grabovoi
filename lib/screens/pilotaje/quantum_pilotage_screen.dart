@@ -15,14 +15,12 @@ import '../../utils/code_formatter.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
-import '../../config/openai_config.dart';
 import '../../config/supabase_config.dart';
 import '../../models/busqueda_profunda_model.dart';
 import '../../services/busquedas_profundas_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/sugerencias_codigos_service.dart';
 import '../../models/sugerencia_codigo_model.dart';
-import '../sugerencias/sugerencias_screen.dart';
 
 class QuantumPilotageScreen extends StatefulWidget {
   final String? codigoInicial;
@@ -430,7 +428,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         promptSystem: 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nSi el usuario busca algo específico y no existe un código exacto, sugiere códigos relacionados REALES del tema más cercano.\n\nPara búsquedas de relaciones familiares (como hermanos), sugiere códigos reales como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n\nIMPORTANTE: Usa guiones bajos (_) en lugar de espacios en los códigos.\n\nResponde SOLO con el formato de lista numerada, sin explicaciones adicionales.',
         promptUser: 'Necesito un código Grabovoi para: $codigo',
         fechaBusqueda: _inicioBusqueda!,
-        modeloIa: OpenAIConfig.model,
+        modeloIa: 'gpt-3.5-turbo',
       );
       
       // Guardar búsqueda inicial
@@ -609,13 +607,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       
       // PRIMERO: Buscar con OpenAI (prioridad)
       final response = await http.post(
-        Uri.parse(OpenAIConfig.baseUrl),
+        Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${OpenAIConfig.apiKey}',
+          'Authorization': 'Bearer ${const String.fromEnvironment('OPENAI_API_KEY', defaultValue: '')}',
         },
         body: jsonEncode({
-          'model': OpenAIConfig.model,
+          'model': 'gpt-3.5-turbo',
           'messages': [
             {
               'role': 'system',
@@ -626,8 +624,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               'content': 'Necesito un código Grabovoi para: $codigo'
             }
           ],
-          'max_tokens': OpenAIConfig.maxTokens,
-          'temperature': OpenAIConfig.temperature,
+          'max_tokens': 500,
+          'temperature': 0.7,
         }),
       );
 
@@ -1017,15 +1015,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     }
   }
 
-  // Navegar a la pantalla de sugerencias
-  void _navegarASugerencias() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const SugerenciasScreen(),
-      ),
-    );
-  }
 
   // Crear sugerencia para código existente con tema diferente
   Future<void> _crearSugerencia(CodigoGrabovoi codigoExistente, String temaSugerido, String descripcionSugerida) async {
@@ -1380,27 +1369,16 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                  // Modal de pilotaje manual
                  if (_showManualPilotage) _buildManualPilotageModal(),
                  
-                 // Botón flotante para sugerencias
-                 Positioned(
-                   bottom: 100,
-                   right: 20,
-                   child: FloatingActionButton(
-                     onPressed: _navegarASugerencias,
-                     backgroundColor: Colors.blue,
-                     child: const Icon(Icons.lightbulb_outline, color: Colors.white),
-                   ),
-                 ),
                ],
              ),
            );
          }
 
   Widget _buildDynamicHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    // Estructura estándar: el padding externo ya lo aplica el contenedor padre.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
           // Título principal
           Text(
             'Pilotaje Consciente Cuántico',
@@ -1415,7 +1393,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 ),
               ],
             ),
-            textAlign: TextAlign.left,
           ),
           const SizedBox(height: 8),
           
@@ -1426,9 +1403,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               fontSize: 14,
               color: Colors.white70,
             ),
-            textAlign: TextAlign.left,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           
           // Botón para mostrar información sobre Pilotaje Cuántico
           SizedBox(
@@ -1439,7 +1415,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF9C27B0).withOpacity(0.2),
-                foregroundColor: const Color(0xFF9C27B0),
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25),
@@ -1450,10 +1426,19 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.help_outline,
-                    size: 18,
-                    color: Color(0xFF9C27B0),
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.help_outline,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -1461,7 +1446,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF9C27B0),
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -1470,8 +1455,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           ),
           const SizedBox(height: 8),
         ],
-      ),
-    );
+      );
   }
 
   // Método para obtener el color seleccionado

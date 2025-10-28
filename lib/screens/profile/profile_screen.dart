@@ -7,6 +7,7 @@ import '../../services/auth_service_simple.dart';
 import '../../services/user_progress_service.dart';
 import '../../repositories/codigos_repository.dart';
 import '../auth/login_screen.dart';
+import '../sugerencias/sugerencias_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -225,6 +226,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                       color: const Color(0xFFFFD700),
                       icon: Icons.refresh,
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    CustomButton(
+                      text: 'Mis Sugerencias',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SugerenciasScreen(),
+                          ),
+                        );
+                      },
+                      isOutlined: true,
+                      icon: Icons.lightbulb_outline,
                     ),
                     
                     const SizedBox(height: 16),
