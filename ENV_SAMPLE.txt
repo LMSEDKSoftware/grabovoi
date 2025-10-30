@@ -1,0 +1,7 @@
+OPENAI_API_KEY=sk-xxxx
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SB_SERVICE_ROLE_KEY=
+ENV=dev
+; Copia este archivo a .env en la raíz y rellena las claves.
+

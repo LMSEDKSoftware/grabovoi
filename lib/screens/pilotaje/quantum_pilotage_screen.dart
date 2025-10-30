@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import '../../config/env.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
@@ -610,7 +611,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${const String.fromEnvironment('OPENAI_API_KEY', defaultValue: '')}',
+          'Authorization': 'Bearer ${Env.openAiKey}',
         },
         body: jsonEncode({
           'model': 'gpt-3.5-turbo',
