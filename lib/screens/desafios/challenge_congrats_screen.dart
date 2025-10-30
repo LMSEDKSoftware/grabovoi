@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../widgets/glow_background.dart';
 
 class ChallengeCongratsScreen extends StatelessWidget {
@@ -70,11 +70,11 @@ class ChallengeCongratsScreen extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () async {
-                      final uri = Uri.parse(imageUrl);
-                      await launchUrl(uri, mode: LaunchMode.platformDefault);
+                      // Compartir el enlace público; permitirá reenviar o guardar a biblioteca según la app elegida
+                      await Share.share(imageUrl, subject: 'Certificado del reto: $title');
                     },
-                    icon: const Icon(Icons.download),
-                    label: Text('Descargar imagen', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                    icon: const Icon(Icons.ios_share),
+                    label: Text('Compartir o guardar certificado', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                   ),
                 ),
                 const SizedBox(height: 8),
