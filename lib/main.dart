@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation, Sys
 import 'package:google_fonts/google_fonts.dart';
 import 'config/supabase_config.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'services/migration_service.dart';
 import 'services/app_time_tracker.dart';
 import 'screens/onboarding/onboarding_screen.dart';
@@ -20,10 +21,12 @@ import 'repositories/codigos_repository.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Cargar variables de entorno locales (no versionadas)
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (_) {}
+  // Cargar variables de entorno locales solo en no-web
+  if (!kIsWeb) {
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (_) {}
+  }
 
   // Inicializar Supabase
   await SupabaseConfig.initialize();

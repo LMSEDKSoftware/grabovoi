@@ -5,6 +5,7 @@ import '../../widgets/custom_button.dart';
 import '../../models/challenge_model.dart';
 import '../../services/challenge_service.dart';
 import '../../services/challenge_progress_tracker.dart';
+import 'challenge_congrats_screen.dart';
 
 class ChallengeProgressScreen extends StatefulWidget {
   final Challenge challenge;
@@ -332,6 +333,10 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
 
 
   Widget _buildActionButtons() {
+    final actions = _getRequiredActionsForToday();
+    final allDone = actions.every((a) => _progressTracker.isActionCompleted(a, 0));
+    final isLastDay = _challenge.currentDay >= _challenge.durationDays;
+
     return Column(
       children: [
         CustomButton(
@@ -343,6 +348,24 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
           icon: Icons.play_arrow,
         ),
         const SizedBox(height: 12),
+        if (allDone && isLastDay) ...[
+          CustomButton(
+            text: 'Finalizar Reto y Obtener Certificado',
+            onPressed: () {
+              const publicUrl = 'https://whtiazgcxdnemrrgjjqf.supabase.co/storage/v1/object/public/rewards/challenges/iniciacion_energetica/certificado.png';
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ChallengeCongratsScreen(
+                    title: 'Desafío de Iniciación Energética',
+                    imageUrl: 'https://whtiazgcxdnemrrgjjqf.supabase.co/storage/v1/object/public/rewards/challenges/iniciacion_energetica/certificado.png',
+                  ),
+                ),
+              );
+            },
+            icon: Icons.emoji_events,
+          ),
+          const SizedBox(height: 12),
+        ],
         CustomButton(
           text: 'Ver Estadísticas',
           onPressed: () {

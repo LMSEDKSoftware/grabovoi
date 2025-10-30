@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth_service_simple.dart';
 import 'challenge_tracking_service.dart';
 import '../models/challenge_model.dart';
 
@@ -10,6 +12,8 @@ class ChallengeProgressTracker extends ChangeNotifier {
   ChallengeProgressTracker._internal();
 
   final ChallengeTrackingService _trackingService = ChallengeTrackingService();
+  final SupabaseClient _supabase = Supabase.instance.client;
+  final AuthServiceSimple _authService = AuthServiceSimple();
   
   // Mapas para rastrear el progreso diario
   Map<String, Map<String, bool>> _dailyProgress = {};
@@ -27,7 +31,10 @@ class ChallengeProgressTracker extends ChangeNotifier {
 
   // Inicializar el tracker
   Future<void> initialize() async {
-    await _loadProgressFromStorage();
+    final loadedFromSupabase = await _loadProgressFromSupabase();
+    if (!loadedFromSupabase) {
+      await _loadProgressFromStorage(); // caché de emergencia
+    }
     _startAppUsageTracking();
   }
 
@@ -261,6 +268,66 @@ class ChallengeProgressTracker extends ChangeNotifier {
       }
     } else {
       _dailyCounts[today] = {};
+    }
+  }
+
+  // Cargar progreso del día desde Supabase (fuente de verdad)
+  Future<bool> _loadProgressFromSupabase() async {
+    try {
+      if (!_authService.isLoggedIn) return false;
+
+      final todayKey = _getTodayKey();
+      final now = DateTime.now();
+      final start = DateTime(now.year, now.month, now.day).toUtc();
+      final end = start.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+
+      final actions = ['codigoRepetido', 'sesionPilotaje', 'meditacionCompletada', 'tiempoEnApp'];
+
+      final response = await _supabase
+          .from('user_actions')
+          .select()
+          .eq('user_id', _authService.currentUser!.id)
+          .inFilter('action_type', actions)
+          .gte('recorded_at', start.toIso8601String())
+          .lte('recorded_at', end.toIso8601String());
+
+      int codesRepeated = 0;
+      int codesPiloted = 0;
+      int meditationMinutes = 0;
+      int appUsageSeconds = 0;
+
+      for (final row in response as List) {
+        final String type = row['action_type'] as String? ?? '';
+        final Map<String, dynamic>? data = (row['action_data'] as Map?)?.cast<String, dynamic>();
+        switch (type) {
+          case 'codigoRepetido':
+            codesRepeated += 1;
+            break;
+          case 'sesionPilotaje':
+            codesPiloted += 1;
+            break;
+          case 'meditacionCompletada':
+            meditationMinutes += (data?['duration'] as num?)?.toInt() ?? 0;
+            break;
+          case 'tiempoEnApp':
+            final minutes = (data?['duration'] as num?)?.toInt() ?? 0;
+            appUsageSeconds += minutes * 60; // almacenamos en segundos
+            break;
+        }
+      }
+
+      _dailyCounts[todayKey] = {
+        if (codesRepeated > 0) 'codes_repeated': codesRepeated,
+        if (codesPiloted > 0) 'codes_piloted': codesPiloted,
+        if (meditationMinutes > 0) 'meditation_minutes': meditationMinutes,
+        if (appUsageSeconds > 0) 'app_usage_seconds': appUsageSeconds,
+      };
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('❌ Error cargando progreso diario desde Supabase: $e');
+      return false;
     }
   }
 
