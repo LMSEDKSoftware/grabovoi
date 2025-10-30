@@ -10,6 +10,7 @@ import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
 import '../codes/code_detail_screen.dart';
+import '../../services/biblioteca_supabase_service.dart';
 
 class PilotajeScreen extends StatefulWidget {
   final String? codigoInicial;
@@ -243,13 +244,23 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
                   // Botón de continuar
                   CustomButton(
                     text: 'Comenzar Pilotaje',
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.of(context).pop(); // Cerrar modal
                       setState(() {
                         _isMusicActive = true; // Activar música
                       });
                       // Ocultar la barra de colores después de 3 segundos
                       _hideColorBarAfterDelay();
+
+                      // Registrar pilotaje en usuario_progreso
+                      final codigoUsado = _codigoPersonalizado.isNotEmpty ? _codigoPersonalizado : '5197148';
+                      try {
+                        await BibliotecaSupabaseService.registrarPilotaje(
+                          codeId: codigoUsado,
+                          codeName: codigoUsado,
+                          durationMinutes: 2,
+                        );
+                      } catch (_) {}
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => CodeDetailScreen(

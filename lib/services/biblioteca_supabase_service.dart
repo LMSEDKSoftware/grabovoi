@@ -202,15 +202,36 @@ class BibliotecaSupabaseService {
     if (!_authService.isLoggedIn) return null;
     
     try {
-      // Obtener datos del usuario desde la tabla users
+      // Progreso desde la tabla usuario_progreso (fuente de verdad)
+      final progress = await _progressService.getUserProgress();
+      if (progress != null) {
+        return UsuarioProgreso(
+          id: progress['id'] ?? progress['user_id'],
+          userId: progress['user_id'],
+          diasConsecutivos: (progress['dias_consecutivos'] ?? 0) as int,
+          totalPilotajes: (progress['total_pilotajes'] ?? 0) as int,
+          nivelEnergetico: (progress['nivel_energetico'] ?? 1) as int,
+          ultimoPilotaje: progress['ultimo_pilotaje'] != null
+              ? DateTime.parse(progress['ultimo_pilotaje'])
+              : DateTime.now(),
+          createdAt: progress['created_at'] != null
+              ? DateTime.parse(progress['created_at'])
+              : DateTime.now(),
+          updatedAt: progress['updated_at'] != null
+              ? DateTime.parse(progress['updated_at'])
+              : DateTime.now(),
+        );
+      }
+
+      // Fallback: datos mínimos desde users si aún no hay fila en user_progress
       final user = await SupabaseService.getCurrentUser();
       if (user == null) return null;
-      
+
       return UsuarioProgreso(
         id: user['id'],
         userId: user['id'],
-        diasConsecutivos: 0, // Por ahora fijo, se puede calcular después
-        totalPilotajes: 0, // Por ahora fijo, se puede calcular después
+        diasConsecutivos: 0,
+        totalPilotajes: 0,
         nivelEnergetico: user['level'] ?? 1,
         ultimoPilotaje: DateTime.now(),
         createdAt: DateTime.parse(user['created_at']),
@@ -235,6 +256,26 @@ class BibliotecaSupabaseService {
     
     await _progressService.recordSession(
       sessionType: 'pilotage',
+      codeId: codeId,
+      codeName: codeName,
+      durationMinutes: durationMinutes,
+      category: category,
+    );
+  }
+
+  static Future<void> registrarRepeticion({
+    String? codeId,
+    String? codeName,
+    int durationMinutes = 0,
+    String? category,
+  }) async {
+    if (!_authService.isLoggedIn) {
+      print('⚠️ Usuario no autenticado, sesión no registrada');
+      return;
+    }
+
+    await _progressService.recordSession(
+      sessionType: 'repetition',
       codeId: codeId,
       codeName: codeName,
       durationMinutes: durationMinutes,

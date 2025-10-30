@@ -8,6 +8,7 @@ import '../../services/user_progress_service.dart';
 import '../../repositories/codigos_repository.dart';
 import '../auth/login_screen.dart';
 import '../sugerencias/sugerencias_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -63,235 +64,129 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GlowBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 40),
-                
-                // Esfera dorada
-                const GoldenSphere(
-                  size: 150,
-                  color: Color(0xFFFFD700),
-                  glowIntensity: 0.7,
-                  isAnimated: true,
-                ),
-                
-                const SizedBox(height: 32),
-                
-                // Información del usuario
-                if (_authService.isLoggedIn && _authService.currentUser != null) ...[
-                  Text(
-                    'Hola, ${_authService.currentUser!.name}',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFD700),
-                    ),
-                    textAlign: TextAlign.center,
+      body: SizedBox.expand(
+        child: GlowBackground(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 16),
+                  // Esfera dorada
+                  const GoldenSphere(
+                    size: 150,
+                    color: Color(0xFFFFD700),
+                    glowIntensity: 0.7,
+                    isAnimated: true,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _authService.currentUser!.email,
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-                
-                const SizedBox(height: 48),
-                
-                // Estadísticas del usuario
-                if (_userProgress != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.white.withOpacity(0.1),
-                          Colors.white.withOpacity(0.05),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFFFD700).withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Tu Progreso',
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFFFFD700),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildStatCard(
-                              'Sesiones',
-                              '${_userProgress!['total_sessions'] ?? 0}',
-                              Icons.play_circle_outline,
-                            ),
-                            _buildStatCard(
-                              'Días Consecutivos',
-                              '${_userProgress!['consecutive_days'] ?? 0}',
-                              Icons.calendar_today,
-                            ),
-                            _buildStatCard(
-                              'Nivel Energético',
-                              '${_userProgress!['energy_level'] ?? 50}',
-                              Icons.energy_savings_leaf,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
                   const SizedBox(height: 32),
-                ],
-                
-                // Botones de acción
-                Column(
-                  children: [
-                    CustomButton(
-                      text: 'Editar Perfil',
-                      onPressed: () {
-                        // TODO: Implementar edición de perfil
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Función próximamente disponible'),
-                            backgroundColor: Color(0xFFFFD700),
-                          ),
-                        );
-                      },
-                      isOutlined: true,
-                      icon: Icons.edit,
+                  // Información del usuario
+                  if (_authService.isLoggedIn && _authService.currentUser != null) ...[
+                    Text(
+                      'Hola, ${_authService.currentUser!.name}',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFFD700),
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    CustomButton(
-                      text: 'Configuración',
-                      onPressed: () {
-                        // TODO: Implementar configuración
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Función próximamente disponible'),
-                            backgroundColor: Color(0xFFFFD700),
-                          ),
-                        );
-                      },
-                      isOutlined: true,
-                      icon: Icons.settings,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    CustomButton(
-                      text: 'Actualizar Códigos',
-                      onPressed: () async {
-                        try {
-                          await CodigosRepository().refreshCodigos();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('✅ Códigos actualizados correctamente'),
-                                backgroundColor: Color(0xFFFFD700),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('❌ Error al actualizar: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      color: const Color(0xFFFFD700),
-                      icon: Icons.refresh,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    CustomButton(
-                      text: 'Mis Sugerencias',
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SugerenciasScreen(),
-                          ),
-                        );
-                      },
-                      isOutlined: true,
-                      icon: Icons.lightbulb_outline,
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    CustomButton(
-                      text: 'Cerrar Sesión',
-                      onPressed: _signOut,
-                      color: Colors.red,
-                      icon: Icons.logout,
+                    const SizedBox(height: 8),
+                    Text(
+                      _authService.currentUser!.email,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
-                ),
-                
-                const SizedBox(height: 32),
-                
-                // Información adicional
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Manifestación Numérica Grabovoi',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
+                  const SizedBox(height: 48),
+                  // Botones de acción
+                  CustomButton(
+                    text: 'Editar Perfil',
+                    onPressed: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const EditProfileScreen(),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Tu viaje de transformación personal',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.white70,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                      );
+                      if (mounted) {
+                        setState(() {});
+                        await _loadUserData();
+                      }
+                    },
+                    isOutlined: true,
+                    icon: Icons.edit,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  CustomButton(
+                    text: 'Configuración',
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Función próximamente disponible'),
+                          backgroundColor: Color(0xFFFFD700),
+                        ),
+                      );
+                    },
+                    isOutlined: true,
+                    icon: Icons.settings,
+                  ),
+                  const SizedBox(height: 16),
+                  CustomButton(
+                    text: 'Actualizar Códigos',
+                    onPressed: () async {
+                      try {
+                        await CodigosRepository().refreshCodigos();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✅ Códigos actualizados correctamente'),
+                              backgroundColor: Color(0xFFFFD700),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('❌ Error al actualizar: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    color: const Color(0xFFFFD700),
+                    icon: Icons.refresh,
+                  ),
+                  const SizedBox(height: 16),
+                  CustomButton(
+                    text: 'Mis Sugerencias',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SugerenciasScreen(),
+                        ),
+                      );
+                    },
+                    isOutlined: true,
+                    icon: Icons.lightbulb_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  CustomButton(
+                    text: 'Cerrar Sesión',
+                    onPressed: _signOut,
+                    color: Colors.red,
+                    icon: Icons.logout,
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           ),
         ),

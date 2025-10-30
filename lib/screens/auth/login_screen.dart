@@ -102,6 +102,382 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleForgotPassword() async {
+    // Mostrar diálogo para ingresar email
+    final emailController = TextEditingController();
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a2e),
+        title: Text(
+          'Recuperar Contraseña',
+          style: GoogleFonts.inter(
+            color: const Color(0xFFFFD700),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              style: GoogleFonts.inter(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'tu@email.com',
+                hintStyle: GoogleFonts.inter(color: Colors.white54),
+                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFFFFD700)),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.1),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.inter(
+                color: Colors.white54,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Enviar',
+              style: GoogleFonts.inter(
+                color: const Color(0xFF1a1a2e),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && emailController.text.isNotEmpty) {
+      final email = emailController.text.trim();
+      
+      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Por favor ingresa un email válido'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await _authService.resetPassword(email: email);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Código de verificación enviado. Revisa tu email.'),
+              backgroundColor: const Color(0xFFFFD700),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          
+          // Mostrar diálogo para ingresar token y nueva contraseña
+          await _showResetPasswordDialog(email);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_getErrorMessage(e.toString())),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _showResetPasswordDialog(String email) async {
+    final tokenController = TextEditingController();
+    final passwordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool obscurePassword = true;
+    bool obscureConfirmPassword = true;
+    bool isLoading = false;
+    
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1a1a2e),
+          title: Text(
+            'Restablecer Contraseña',
+            style: GoogleFonts.inter(
+              color: const Color(0xFFFFD700),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Ingresa el código que recibiste por email y tu nueva contraseña.',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Campo para el código/token
+                TextField(
+                  controller: tokenController,
+                  style: GoogleFonts.inter(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Código de verificación',
+                    labelStyle: GoogleFonts.inter(color: Colors.white70),
+                    prefixIcon: const Icon(Icons.vpn_key, color: Color(0xFFFFD700)),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Campo para nueva contraseña
+                TextField(
+                  controller: passwordController,
+                  obscureText: obscurePassword,
+                  style: GoogleFonts.inter(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Nueva contraseña',
+                    labelStyle: GoogleFonts.inter(color: Colors.white70),
+                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFFFD700)),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.white54,
+                      ),
+                      onPressed: () {
+                        setDialogState(() {
+                          obscurePassword = !obscurePassword;
+                        });
+                      },
+                    ),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Campo para confirmar contraseña
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: obscureConfirmPassword,
+                  style: GoogleFonts.inter(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Confirmar contraseña',
+                    labelStyle: GoogleFonts.inter(color: Colors.white70),
+                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFFFD700)),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.white54,
+                      ),
+                      onPressed: () {
+                        setDialogState(() {
+                          obscureConfirmPassword = !obscureConfirmPassword;
+                        });
+                      },
+                    ),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.inter(
+                  color: isLoading ? Colors.white30 : Colors.white54,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: isLoading ? null : () async {
+                if (tokenController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Por favor ingresa el código de verificación'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                if (passwordController.text.length < 6) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('La contraseña debe tener al menos 6 caracteres'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                if (passwordController.text != confirmPasswordController.text) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Las contraseñas no coinciden'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                setDialogState(() {
+                  isLoading = true;
+                });
+                
+                try {
+                  await _authService.verifyOTPAndResetPassword(
+                    email: email,
+                    token: tokenController.text,
+                    newPassword: passwordController.text,
+                  );
+                  
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('¡Contraseña actualizada exitosamente!'),
+                        backgroundColor: Color(0xFF4CAF50),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(_getErrorMessage(e.toString())),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (context.mounted) {
+                    setDialogState(() {
+                      isLoading = false;
+                    });
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD700),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF1a1a2e),
+                      ),
+                    )
+                  : Text(
+                      'Restablecer',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF1a1a2e),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -309,15 +685,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        // TODO: Implementar recuperación de contraseña
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Función de recuperación de contraseña próximamente'),
-                            backgroundColor: Color(0xFFFFD700),
-                          ),
-                        );
-                      },
+                      onPressed: _isLoading ? null : _handleForgotPassword,
                       child: Text(
                         '¿Olvidaste tu contraseña?',
                         style: GoogleFonts.inter(

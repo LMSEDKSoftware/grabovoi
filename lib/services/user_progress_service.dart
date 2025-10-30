@@ -14,16 +14,16 @@ class UserProgressService {
 
   // ===== PROGRESO DEL USUARIO =====
 
-  /// Obtener progreso del usuario actual
+  /// Obtener progreso del usuario actual (tabla: usuario_progreso)
   Future<Map<String, dynamic>?> getUserProgress() async {
     if (!_authService.isLoggedIn) return null;
 
     try {
       final response = await _supabase
-          .from('user_progress')
+          .from('usuario_progreso')
           .select()
           .eq('user_id', _authService.currentUser!.id)
-          .single();
+          .maybeSingle();
 
       return response;
     } catch (e) {
@@ -32,19 +32,12 @@ class UserProgressService {
     }
   }
 
-  /// Actualizar progreso del usuario
+  /// Actualizar progreso del usuario (tabla: usuario_progreso)
   Future<void> updateUserProgress({
-    int? totalSessions,
-    int? consecutiveDays,
-    DateTime? lastSessionDate,
-    int? totalPilotageTime,
-    int? totalMeditationTime,
-    List<String>? favoriteCategories,
+    int? diasConsecutivos,
+    int? totalPilotajes,
+    DateTime? ultimoPilotaje,
     int? energyLevel,
-    int? currentStreak,
-    int? longestStreak,
-    List<String>? achievements,
-    Map<String, dynamic>? preferences,
   }) async {
     if (!_authService.isLoggedIn) return;
 
@@ -53,20 +46,13 @@ class UserProgressService {
         'updated_at': DateTime.now().toIso8601String(),
       };
 
-      if (totalSessions != null) data['total_sessions'] = totalSessions;
-      if (consecutiveDays != null) data['consecutive_days'] = consecutiveDays;
-      if (lastSessionDate != null) data['last_session_date'] = lastSessionDate.toIso8601String();
-      if (totalPilotageTime != null) data['total_pilotage_time'] = totalPilotageTime;
-      if (totalMeditationTime != null) data['total_meditation_time'] = totalMeditationTime;
-      if (favoriteCategories != null) data['favorite_categories'] = favoriteCategories;
-      if (energyLevel != null) data['energy_level'] = energyLevel;
-      if (currentStreak != null) data['current_streak'] = currentStreak;
-      if (longestStreak != null) data['longest_streak'] = longestStreak;
-      if (achievements != null) data['achievements'] = achievements;
-      if (preferences != null) data['preferences'] = preferences;
+      if (diasConsecutivos != null) data['dias_consecutivos'] = diasConsecutivos;
+      if (totalPilotajes != null) data['total_pilotajes'] = totalPilotajes;
+      if (ultimoPilotaje != null) data['ultimo_pilotaje'] = ultimoPilotaje.toIso8601String();
+      if (energyLevel != null) data['nivel_energetico'] = energyLevel;
 
       await _supabase
-          .from('user_progress')
+          .from('usuario_progreso')
           .update(data)
           .eq('user_id', _authService.currentUser!.id);
 
@@ -76,7 +62,7 @@ class UserProgressService {
     }
   }
 
-  /// Registrar una nueva sesión
+  /// Registrar una nueva sesión y actualizar usuario_progreso (mínimo viable)
   Future<void> recordSession({
     required String sessionType,
     String? codeId,
@@ -91,45 +77,83 @@ class UserProgressService {
     if (!_authService.isLoggedIn) return;
 
     try {
-      // Registrar sesión
-      await _supabase.from('user_sessions').insert({
-        'user_id': _authService.currentUser!.id,
-        'session_type': sessionType,
-        'code_id': codeId,
-        'code_name': codeName,
-        'duration_minutes': durationMinutes,
-        'category': category,
-        'energy_before': energyBefore,
-        'energy_after': energyAfter,
-        'notes': notes,
-        'session_data': sessionData ?? {},
-      });
-
-      // Actualizar progreso
+      // Obtener progreso actual
       final progress = await getUserProgress();
-      if (progress != null) {
-        final newTotalSessions = (progress['total_sessions'] ?? 0) + 1;
-        final newTotalPilotageTime = progress['total_pilotage_time'] ?? 0;
-        final newTotalMeditationTime = progress['total_meditation_time'] ?? 0;
+      final now = DateTime.now();
+
+      if (progress == null) {
+        // Crear fila inicial en usuario_progreso
+        final nivelInicial = _calcularNivelEnergetico(1, 1);
+        await _supabase.from('usuario_progreso').insert({
+          'user_id': _authService.currentUser!.id,
+          'dias_consecutivos': 1,
+          'total_pilotajes': 1,
+          'nivel_energetico': nivelInicial,
+          'ultimo_pilotaje': now.toIso8601String(),
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
+        });
+        print('✅ Progreso inicial creado');
+      } else {
+        // Calcular días consecutivos por fecha local (ignorando horas)
+        final ultimo = progress['ultimo_pilotaje'] != null
+            ? DateTime.parse(progress['ultimo_pilotaje']).toLocal()
+            : now.subtract(const Duration(days: 2));
+        final today = DateTime(now.year, now.month, now.day);
+        final lastDay = DateTime(ultimo.year, ultimo.month, ultimo.day);
+        final diffDays = today.difference(lastDay).inDays;
+        final nuevosDias = diffDays == 1
+            ? (progress['dias_consecutivos'] ?? 0) + 1
+            : (diffDays == 0 ? (progress['dias_consecutivos'] ?? 0) : 1);
+        final nuevosTotales = (progress['total_pilotajes'] ?? 0) + 1;
+
+        // Recalcular nivel energético (1-10) en base a días y totales
+        int diasConsecutivosCorr = nuevosDias;
+        // Fallback correctivo: si por un cálculo previo en UTC no subió la racha
+        // y hoy ya se registró actividad, ajustar a 2 si el created_at fue un día distinto
+        try {
+          if (diffDays == 0 && (progress['dias_consecutivos'] ?? 0) == 1) {
+            final createdAt = progress['created_at'] != null
+                ? DateTime.parse(progress['created_at']).toLocal()
+                : now;
+            final createdDay = DateTime(createdAt.year, createdAt.month, createdAt.day);
+            if (createdDay.isBefore(today)) {
+              diasConsecutivosCorr = 2;
+            }
+          }
+        } catch (_) {}
+
+        final nivel = _calcularNivelEnergetico(diasConsecutivosCorr, nuevosTotales);
 
         await updateUserProgress(
-          totalSessions: newTotalSessions,
-          totalPilotageTime: sessionType == 'pilotage' 
-              ? newTotalPilotageTime + durationMinutes 
-              : newTotalPilotageTime,
-          totalMeditationTime: sessionType == 'meditation' 
-              ? newTotalMeditationTime + durationMinutes 
-              : newTotalMeditationTime,
-          lastSessionDate: DateTime.now(),
+          diasConsecutivos: diasConsecutivosCorr,
+          totalPilotajes: nuevosTotales,
+          ultimoPilotaje: now,
+          energyLevel: nivel,
         );
       }
 
-      // Actualizar historial de códigos si aplica
-      if (codeId != null) {
-        await _updateCodeHistory(codeId, codeName ?? '', durationMinutes);
+      // Registrar sesión en user_actions (ya existente en tu proyecto)
+      try {
+        final String actionType = _mapSessionTypeToAction(sessionType);
+        await _supabase.from('user_actions').insert({
+          'user_id': _authService.currentUser!.id,
+          'challenge_id': null,
+          'action_type': actionType,
+          'action_data': {
+            'codeId': codeId,
+            'codeName': codeName,
+            'duration': durationMinutes,
+            'metadata': sessionData ?? {},
+            'timestamp': now.toIso8601String(),
+          },
+          'recorded_at': now.toIso8601String(),
+        });
+      } catch (e) {
+        print('Error registrando user_actions: $e');
       }
 
-      print('✅ Sesión registrada: $sessionType');
+      print('✅ Sesión registrada y progreso actualizado');
     } catch (e) {
       print('Error registrando sesión: $e');
     }
@@ -198,23 +222,50 @@ class UserProgressService {
     if (!_authService.isLoggedIn) return [];
 
     try {
+      // Filtrar sólo acciones de sesión con duración
+      final actionTypes = ['sesionPilotaje', 'codigoRepetido', 'meditacionCompletada'];
       var query = _supabase
-          .from('user_sessions')
+          .from('user_actions')
           .select()
-          .eq('user_id', _authService.currentUser!.id);
-
-      if (sessionType != null) {
-        query = query.eq('session_type', sessionType);
-      }
-
-      final response = await query
-          .order('created_at', ascending: false)
+          .eq('user_id', _authService.currentUser!.id)
+          .inFilter('action_type', actionTypes)
+          .order('recorded_at', ascending: false)
           .limit(limit);
-      
-      return List<Map<String, dynamic>>.from(response);
+
+      final response = await query;
+      final List data = List<Map<String, dynamic>>.from(response);
+
+      // Normalizar a estructura con duration_minutes
+      final normalized = data.map<Map<String, dynamic>>((row) {
+        final ad = row['action_data'] as Map<String, dynamic>?;
+        final dur = (ad?['duration'] as num?)?.toInt() ?? 0;
+        return {
+          'id': row['id'],
+          'action_type': row['action_type'],
+          'duration_minutes': dur,
+          'code_id': ad?['codeId'],
+          'code_name': ad?['codeName'],
+          'created_at': row['recorded_at'],
+        };
+      }).toList();
+
+      return normalized;
     } catch (e) {
-      print('Error obteniendo historial de sesiones: $e');
+      print('Error obteniendo historial de sesiones (user_actions): $e');
       return [];
+    }
+  }
+
+  String _mapSessionTypeToAction(String sessionType) {
+    switch (sessionType) {
+      case 'pilotage':
+        return 'sesionPilotaje';
+      case 'repetition':
+        return 'codigoRepetido';
+      case 'meditation':
+        return 'meditacionCompletada';
+      default:
+        return 'tiempoEnApp';
     }
   }
 
@@ -258,17 +309,23 @@ class UserProgressService {
     }
   }
 
-  /// Calcular nivel del usuario basado en experiencia
-  Future<int> calculateUserLevel() async {
-    final progress = await getUserProgress();
-    if (progress == null) return 1;
+  /// Calcular nivel energético (1-10) basado en días y totales
+  int _calcularNivelEnergetico(int diasConsecutivos, int totalPilotajes) {
+    int nivel = 1;
+    if (diasConsecutivos >= 21) nivel += 4;
+    else if (diasConsecutivos >= 14) nivel += 3;
+    else if (diasConsecutivos >= 7) nivel += 2;
+    else if (diasConsecutivos >= 3) nivel += 1;
 
-    final totalSessions = progress['total_sessions'] ?? 0;
-    final totalTime = (progress['total_pilotage_time'] ?? 0) + (progress['total_meditation_time'] ?? 0);
-    
-    // Fórmula simple: cada 10 sesiones o 100 minutos = 1 nivel
-    final level = ((totalSessions / 10) + (totalTime / 100)).floor() + 1;
-    return level.clamp(1, 100); // Máximo nivel 100
+    if (totalPilotajes >= 100) nivel += 3;
+    else if (totalPilotajes >= 50) nivel += 2;
+    else if (totalPilotajes >= 20) nivel += 1;
+    else if (totalPilotajes >= 5) nivel += 1;
+
+    if (diasConsecutivos > 0 || totalPilotajes > 0) {
+      nivel = nivel.clamp(3, 10);
+    }
+    return nivel.clamp(1, 10);
   }
 
   /// Guardar evaluación inicial del usuario

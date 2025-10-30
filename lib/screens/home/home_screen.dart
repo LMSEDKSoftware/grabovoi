@@ -184,12 +184,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     return Center(
       child: GestureDetector(
-        onTap: () {
-          Navigator.of(context).push(
+        onTap: () async {
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CodeDetailScreen(codigo: codigo),
             ),
           );
+          // Al volver de la sesión/código, refrescar nivel y datos
+          if (mounted) {
+            await _cargarDatosHome();
+          }
         },
         child: Container(
           padding: const EdgeInsets.all(24),

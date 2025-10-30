@@ -231,4 +231,101 @@ class AuthServiceSimple {
       return false;
     }
   }
+
+  // Recuperar contraseña usando OTP (Edge Function)
+  Future<void> resetPassword({required String email}) async {
+    try {
+      print('📧 Solicitando OTP a send-otp para: $email');
+      final res = await _supabase.functions.invoke('send-otp', body: {
+        'email': email,
+      });
+      dynamic data = res.data;
+      if (data is String) {
+        try {
+          data = jsonDecode(data);
+        } catch (_) {}
+      }
+      if (data == null || (data is Map && data['ok'] != true)) {
+        throw Exception('No se pudo generar el OTP');
+      }
+      // En desarrollo puede venir dev_otp
+      if (data is Map && data['dev_otp'] != null) {
+        print('🔧 OTP (dev): ${data['dev_otp']}');
+      }
+      print('✅ OTP solicitado correctamente');
+    } catch (e) {
+      print('❌ Error solicitando OTP: $e');
+      rethrow;
+    }
+  }
+
+  // Verificar OTP (Edge Function) y actualizar contraseña desde el servidor
+  Future<void> verifyOTPAndResetPassword({
+    required String email,
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      print('🔐 Verificando OTP (verify-otp) para: $email');
+      final res = await _supabase.functions.invoke('verify-otp', body: {
+        'email': email,
+        'otp_code': token,
+        'new_password': newPassword,
+      });
+      dynamic data = res.data;
+      if (data is String) {
+        try {
+          data = jsonDecode(data);
+        } catch (_) {}
+      }
+      if (data == null || (data is Map && data['ok'] != true)) {
+        final err = (data is Map ? (data['error'] ?? 'Verificación OTP fallida') : 'Verificación OTP fallida');
+        throw Exception(err);
+      }
+      print('✅ Contraseña actualizada exitosamente (server)');
+      await _supabase.auth.signOut();
+    } catch (e) {
+      print('❌ Error verificando OTP o actualizando contraseña (server): $e');
+      rethrow;
+    }
+  }
+
+  // Actualizar perfil (nombre, avatar, zona horaria) en auth.users (metadata) y tabla users
+  Future<void> updateProfile({
+    String? name,
+    String? avatarUrl,
+    String? timezone,
+  }) async {
+    if (_supabase.auth.currentUser == null) {
+      throw Exception('No autenticado');
+    }
+    final userId = _supabase.auth.currentUser!.id;
+    try {
+      // Actualizar metadata en auth
+      final Map<String, dynamic> metadata = {
+        if (name != null) 'name': name,
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
+        if (timezone != null) 'timezone': timezone,
+      };
+      if (metadata.isNotEmpty) {
+        await _supabase.auth.updateUser(UserAttributes(data: metadata));
+      }
+
+      // Actualizar tabla users si existe
+      final updateMap = <String, dynamic>{};
+      if (name != null) updateMap['name'] = name;
+      if (updateMap.isNotEmpty) {
+        await _supabase.from('users').update(updateMap).eq('id', userId);
+      }
+
+      // Refrescar cache local
+      _currentUser = _currentUser?.copyWith(
+        name: name ?? _currentUser!.name,
+      );
+      if (_currentUser != null) await _saveUserToLocal(_currentUser!);
+    } catch (e) {
+      print('❌ Error actualizando perfil: $e');
+      rethrow;
+    }
+  }
 }

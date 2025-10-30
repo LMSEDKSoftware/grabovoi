@@ -15,7 +15,7 @@ class EvolucionScreen extends StatefulWidget {
   State<EvolucionScreen> createState() => _EvolucionScreenState();
 }
 
-class _EvolucionScreenState extends State<EvolucionScreen> {
+class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingObserver {
   final UserProgressService _progressService = UserProgressService();
   final AuthServiceSimple _authService = AuthServiceSimple();
   final ChallengeService _challengeService = ChallengeService();
@@ -28,7 +28,22 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Hook: refrescar cuando la app vuelve al primer plano o cuando se reentra a la sección
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadUserData();
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -46,9 +61,13 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
     }
 
     try {
-      // Cargar progreso del usuario
+      // Cargar progreso del usuario y sesiones
       final progress = await _progressService.getUserProgress();
-      final statistics = await _progressService.getUserStatistics();
+      final sessionHistory = await _progressService.getSessionHistory(limit: 500);
+      final totalMinutes = sessionHistory.fold<int>(0, (acc, s) => acc + ((s['duration_minutes'] as int?) ?? 0));
+      final lastSessionMinutes = sessionHistory.isNotEmpty
+          ? ((sessionHistory.first['duration_minutes'] as int?) ?? 0)
+          : 0;
       
       // Cargar desafíos
       await _challengeService.initializeChallenges();
@@ -57,7 +76,15 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
       final completedChallenges = userChallenges.where((c) => c.status == ChallengeStatus.completado).toList();
 
       setState(() {
-        userProgress = progress;
+        userProgress = {
+          ...?progress,
+          // Mapear claves esperadas por la UI
+          'nivel': progress?['nivel_energetico'] ?? 1,
+          'dias_consecutivos': progress?['dias_consecutivos'] ?? 0,
+          'total_pilotajes': progress?['total_pilotajes'] ?? 0,
+          'total_minutes': totalMinutes,
+          'last_session_minutes': lastSessionMinutes,
+        };
         activeChallenge = activeChallenges.isNotEmpty ? {
           'id': activeChallenges.first.id,
           'title': activeChallenges.first.title,
@@ -164,8 +191,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
   }
 
   Widget _buildEnergyLevelCard() {
-    final nivel = userProgress?['nivel'] ?? 1;
-    final frase = userProgress?['fraseMotivacional'] ?? '';
+    final nivel = userProgress?['nivel'] ?? userProgress?['nivel_energetico'] ?? 1;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -220,22 +246,15 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            frase,
-            style: GoogleFonts.inter(
-              color: Colors.white70,
-              fontSize: 14,
-              fontStyle: FontStyle.italic,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          const SizedBox(height: 4),
         ],
       ),
     );
   }
 
   Widget _buildProgressCard() {
+    final dias = (userProgress?['dias_consecutivos'] ?? 0).toString();
+    final total = (userProgress?['total_pilotajes'] ?? 0).toString();
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -255,8 +274,8 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildProgressRow('Días Consecutivos', '12', Icons.calendar_today),
-          _buildProgressRow('Total Pilotajes', '45', Icons.play_circle),
+          _buildProgressRow('Días Consecutivos', dias, Icons.calendar_today),
+          _buildProgressRow('Total Pilotajes', total, Icons.play_circle),
           _buildProgressRow('Desafíos Completados', '${completedChallenges.length}', Icons.emoji_events),
           _buildProgressRow('Códigos Explorados', '8', Icons.explore),
         ],
@@ -385,6 +404,16 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
   }
 
   Widget _buildStatsCard() {
+    final totalSesiones = (userProgress?['total_pilotajes'] ?? 0).toString();
+    final racha = (userProgress?['dias_consecutivos'] ?? 0).toString();
+    final totalMinutes = (userProgress?['total_minutes'] ?? 0) as int;
+    final lastMinutes = (userProgress?['last_session_minutes'] ?? 0) as int;
+    final horas = (totalMinutes ~/ 60);
+    final mins = (totalMinutes % 60);
+    final tiempoStr = horas > 0 ? '${horas}h ${mins}m' : '${mins}m';
+    final tiempoSesionStr = lastMinutes >= 60
+        ? '${lastMinutes ~/ 60}h ${lastMinutes % 60}m'
+        : '${lastMinutes}m';
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -407,9 +436,10 @@ class _EvolucionScreenState extends State<EvolucionScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem('Tiempo Total', '2h 30m', Icons.timer),
-              _buildStatItem('Sesiones', '45', Icons.play_arrow),
-              _buildStatItem('Racha', '12 días', Icons.local_fire_department),
+              _buildStatItem('Tiempo sesión', tiempoSesionStr, Icons.timelapse),
+              _buildStatItem('Tiempo total', tiempoStr, Icons.timer),
+              _buildStatItem('Sesiones', totalSesiones, Icons.play_arrow),
+              _buildStatItem('Racha', '$racha días', Icons.local_fire_department),
             ],
           ),
         ],

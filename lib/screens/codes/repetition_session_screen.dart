@@ -17,6 +17,8 @@ import '../../services/challenge_progress_tracker.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
+import '../../services/biblioteca_supabase_service.dart';
+import '../../services/audio_manager_service.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -103,7 +105,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     super.dispose();
   }
 
-  void _startRepetition() {
+  Future<void> _startRepetition() async {
     setState(() {
       _isRepetitionActive = true;
       _secondsRemaining = 120; // 2 minutos
@@ -119,6 +121,17 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     // Registrar en el sistema de progreso
     final progressTracker = ChallengeProgressTracker();
     progressTracker.trackCodeRepeated();
+
+    // Actualizar progreso global (usuario_progreso)
+    try {
+      await BibliotecaSupabaseService.registrarRepeticion(
+        codeId: widget.codigo,
+        codeName: widget.nombre ?? widget.codigo,
+        durationMinutes: 2,
+      );
+    } catch (e) {
+      print('Error registrando repetición en usuario_progreso: $e');
+    }
     
     // Ocultar la barra de colores después de 3 segundos
     _hideColorBarAfterDelay();
@@ -139,7 +152,10 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
           _isRepetitionActive = false;
         });
         
-        // Mostrar mensaje de finalización
+        // Detener audio y mostrar mensaje de finalización
+        try {
+          AudioManagerService().stop();
+        } catch (_) {}
         _mostrarMensajeFinalizacion();
       }
     });

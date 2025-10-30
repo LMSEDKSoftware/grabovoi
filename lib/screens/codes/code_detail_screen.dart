@@ -12,6 +12,7 @@ import '../../services/audio_preload_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/challenge_tracking_service.dart';
 import '../../services/challenge_progress_tracker.dart';
+import '../../services/biblioteca_supabase_service.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
@@ -109,6 +110,17 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     // Registrar en el nuevo sistema de progreso
     final progressTracker = ChallengeProgressTracker();
     progressTracker.trackCodePiloted();
+
+    // Actualizar progreso global (usuario_progreso)
+    try {
+      await BibliotecaSupabaseService.registrarPilotaje(
+        codeId: widget.codigo,
+        codeName: widget.codigo,
+        durationMinutes: 5,
+      );
+    } catch (e) {
+      print('Error registrando pilotaje en usuario_progreso: $e');
+    }
     
     _startCountdown();
   }
