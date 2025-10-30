@@ -119,39 +119,85 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Logo y título
                   Column(
                     children: [
-                      // Esfera dorada en movimiento (reemplaza el círculo amarillo)
-                      const GoldenSphere(
-                        size: 150,
-                        color: Color(0xFFFFD700),
-                        glowIntensity: 0.7,
-                        isAnimated: true,
+                      // Esfera con letrero superpuesto
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Esfera dorada en movimiento
+                          const GoldenSphere(
+                            size: 180,
+                            color: Color(0xFFFFD700),
+                            glowIntensity: 0.9,
+                            isAnimated: true,
+                          ),
+                          // Letrero superpuesto sobre la esfera
+                          Positioned(
+                            bottom: -50,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 20,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1a1a2e).withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.grey.withOpacity(0.4),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Título principal
+                                  Text(
+                                    'Manifestación Numérica Grabovoi',
+                                    style: GoogleFonts.playfairDisplay(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFFFD700),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  // Subtítulo
+                                  Text(
+                                    'Tu viaje de transformación personal',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: Colors.white70,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 24),
+                      
+                      const SizedBox(height: 80),
+                      
+                      // Texto "Bienvenid@ de Vuelta" más grande y destacado
                       Text(
                         'Bienvenid@ de Vuelta',
                         style: GoogleFonts.playfairDisplay(
-                          fontSize: 32,
+                          fontSize: 40,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFFFFD700),
+                          letterSpacing: 1,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
+                      
+                      const SizedBox(height: 16),
+                      
                       Text(
                         'Continúa tu viaje de transformación',
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           color: Colors.white70,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'El viaje de mil millas comienza con un solo paso',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.white54,
-                          fontStyle: FontStyle.italic,
                         ),
                         textAlign: TextAlign.center,
                       ),

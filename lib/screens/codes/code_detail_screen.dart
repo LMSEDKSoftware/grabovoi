@@ -11,6 +11,7 @@ import '../../widgets/illuminated_code_text.dart';
 import '../../services/audio_preload_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/challenge_tracking_service.dart';
+import '../../services/challenge_progress_tracker.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
@@ -105,6 +106,10 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       const Duration(minutes: 5),
     );
     
+    // Registrar en el nuevo sistema de progreso
+    final progressTracker = ChallengeProgressTracker();
+    progressTracker.trackCodePiloted();
+    
     _startCountdown();
   }
 
@@ -133,6 +138,10 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
           widget.codigo,
           widget.codigo,
         );
+        
+        // Registrar en el nuevo sistema de progreso
+        final progressTracker = ChallengeProgressTracker();
+        progressTracker.trackCodeRepeated();
         
         _showCompletionDialog();
       }

@@ -4,6 +4,7 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../models/challenge_model.dart';
 import '../../services/challenge_service.dart';
+import '../../services/challenge_progress_tracker.dart';
 
 class ChallengeProgressScreen extends StatefulWidget {
   final Challenge challenge;
@@ -17,18 +18,52 @@ class ChallengeProgressScreen extends StatefulWidget {
 class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
   late Challenge _challenge;
   bool _isLoading = true;
+  final ChallengeProgressTracker _progressTracker = ChallengeProgressTracker();
 
   @override
   void initState() {
     super.initState();
     _challenge = widget.challenge;
     _loadChallengeProgress();
+    
+    // Escuchar cambios en el tracker
+    _progressTracker.addListener(_onTrackerChanged);
+  }
+  
+  void _onTrackerChanged() {
+    if (mounted) {
+      setState(() {
+        print('🔄 Tracker cambió - actualizando UI');
+      });
+    }
+  }
+  
+  @override
+  void dispose() {
+    _progressTracker.removeListener(_onTrackerChanged);
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refrescar el estado cuando el usuario regrese a esta pantalla
+    setState(() {});
   }
 
   Future<void> _loadChallengeProgress() async {
     setState(() {
-      _isLoading = false;
+      _isLoading = true;
     });
+    try {
+      await _progressTracker.initialize();
+    } catch (e) {
+      print('Error inicializando el rastreador de progreso: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -239,6 +274,12 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
   }
 
   Widget _buildActionItem(String action) {
+    final isCompleted = _progressTracker.isActionCompleted(action, 0);
+    final currentProgress = _progressTracker.getActionProgress(action);
+    final requiredAmount = _progressTracker.getActionRequirement(action);
+    
+    print('🔍 Acción: $action - Completada: $isCompleted - Progreso: $currentProgress/$requiredAmount');
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -256,17 +297,32 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              action,
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 14,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  action,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                ),
+                if (requiredAmount > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '$currentProgress / $requiredAmount',
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           Icon(
-            Icons.check_circle,
-            color: Colors.green.withOpacity(0.7),
+            isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: isCompleted ? Colors.green : Colors.white.withOpacity(0.5),
             size: 20,
           ),
         ],
@@ -280,8 +336,9 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
       children: [
         CustomButton(
           text: 'Continuar Desafío',
-          onPressed: () {
-            Navigator.of(context).pop();
+          onPressed: () async {
+            // Navegar a la página principal para que el usuario pueda realizar acciones
+            Navigator.of(context).popUntil((route) => route.isFirst);
           },
           icon: Icons.play_arrow,
         ),
@@ -290,6 +347,12 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
           text: 'Ver Estadísticas',
           onPressed: () {
             // TODO: Implementar pantalla de estadísticas
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Las estadísticas estarán disponibles pronto'),
+                duration: Duration(seconds: 2),
+              ),
+            );
           },
           isOutlined: true,
           icon: Icons.analytics,

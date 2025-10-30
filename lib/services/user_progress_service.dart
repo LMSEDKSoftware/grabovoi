@@ -174,20 +174,19 @@ class UserProgressService {
   }
 
   /// Obtener estadísticas del usuario
-  Future<Map<String, dynamic>?> getUserStatistics() async {
-    if (!_authService.isLoggedIn) return null;
+  Future<List<Map<String, dynamic>>> getUserStatistics() async {
+    if (!_authService.isLoggedIn) return [];
 
     try {
       final response = await _supabase
           .from('user_actions')
           .select()
-          .eq('user_id', _authService.currentUser!.id)
-          .single();
+          .eq('user_id', _authService.currentUser!.id);
 
-      return response;
+      return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       print('Error obteniendo estadísticas: $e');
-      return null;
+      return [];
     }
   }
 

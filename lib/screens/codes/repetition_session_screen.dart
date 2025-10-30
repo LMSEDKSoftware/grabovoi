@@ -13,6 +13,7 @@ import '../../widgets/streamed_music_controller.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../utils/code_formatter.dart';
 import '../../services/challenge_tracking_service.dart';
+import '../../services/challenge_progress_tracker.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
@@ -107,6 +108,18 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       _isRepetitionActive = true;
       _secondsRemaining = 120; // 2 minutos
     });
+    
+    // Registrar repetición de código INMEDIATAMENTE al iniciar
+    final trackingService = ChallengeTrackingService();
+    trackingService.recordCodeRepetition(
+      widget.codigo,
+      widget.nombre ?? widget.codigo,
+    );
+    
+    // Registrar en el sistema de progreso
+    final progressTracker = ChallengeProgressTracker();
+    progressTracker.trackCodeRepeated();
+    
     // Ocultar la barra de colores después de 3 segundos
     _hideColorBarAfterDelay();
     // Iniciar el temporizador de 2 minutos
@@ -125,6 +138,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         setState(() {
           _isRepetitionActive = false;
         });
+        
+        // Mostrar mensaje de finalización
         _mostrarMensajeFinalizacion();
       }
     });
@@ -345,7 +360,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 const SizedBox(height: 20),
                 
                 // Control de Música para sesión de repetición
-                const StreamedMusicController(autoPlay: true, isActive: true),
+                StreamedMusicController(autoPlay: _isRepetitionActive, isActive: true),
                 
                 const SizedBox(height: 20),
               ],
