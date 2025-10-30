@@ -116,95 +116,82 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const SizedBox(height: 40),
                   
-                  // Logo y título
+                  // Logo y título con diseño mejorado
                   Column(
                     children: [
-                      // Esfera con letrero superpuesto
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Esfera dorada en movimiento
-                          const GoldenSphere(
-                            size: 180,
-                            color: Color(0xFFFFD700),
-                            glowIntensity: 0.9,
-                            isAnimated: true,
+                      // Esfera dorada 180px con glow 0.9
+                      const GoldenSphere(
+                        size: 180,
+                        color: Color(0xFFFFD700),
+                        glowIntensity: 0.9,
+                        isAnimated: true,
+                      ),
+                      // Letrero semitransparente con el título (superpuesto)
+                      Transform.translate(
+                        offset: const Offset(0, -130),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
                           ),
-                          // Letrero superpuesto sobre la esfera
-                          Positioned(
-                            bottom: -50,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 20,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1a1a2e).withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.grey.withOpacity(0.4),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Título principal
-                                  Text(
-                                    'Manifestación Numérica Grabovoi',
-                                    style: GoogleFonts.playfairDisplay(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFFFFD700),
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 6),
-                                  // Subtítulo
-                                  Text(
-                                    'Tu viaje de transformación personal',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      color: Colors.white70,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1a1a2e).withOpacity(0.75),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.3),
+                              width: 1,
                             ),
                           ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 80),
-                      
-                      // Texto "Bienvenid@ de Vuelta" más grande y destacado
-                      Text(
-                        'Bienvenid@ de Vuelta',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
-                          letterSpacing: 1,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Título principal
+                              Text(
+                                'Manifestación Numérica Grabovoi',
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFFFD700),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 6),
+                              // Subtítulo
+                              Text(
+                                'Tu viaje de transformación personal',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: Colors.white70,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      Text(
-                        'Continúa tu viaje de transformación',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          color: Colors.white70,
+                      Transform.translate(
+                        offset: const Offset(0, -70),
+                        child: Column(
+                          children: [
+                            // "Bienvenid@ de Vuelta" en dorado, 40px
+                            Text(
+                              'Bienvenid@ de Vuelta',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                                letterSpacing: 1,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                   
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 24),
                   
                   // Formulario de login
                   Column(
