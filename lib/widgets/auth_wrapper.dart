@@ -87,7 +87,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   /// Verificar si la evaluación está completa y válida
   bool _isAssessmentComplete(Map<String, dynamic> assessment) {
-    // Verificar que todos los campos requeridos estén presentes
+    // Verificar primero el flag is_complete (prioritario)
+    if (assessment['is_complete'] == true) {
+      print('✅ Evaluación marcada como completa');
+      return true;
+    }
+    
+    // Si no tiene el flag, verificar que todos los campos requeridos estén presentes
     final requiredFields = [
       'knowledge_level',
       'goals',

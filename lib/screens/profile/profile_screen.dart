@@ -105,84 +105,94 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                   const SizedBox(height: 48),
                   // Botones de acción
-                  CustomButton(
-                    text: 'Editar Perfil',
-                    onPressed: () async {
-                      await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const EditProfileScreen(),
-                        ),
-                      );
-                      if (mounted) {
-                        setState(() {});
-                        await _loadUserData();
-                      }
-                    },
-                    isOutlined: true,
-                    icon: Icons.edit,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomButton(
-                    text: 'Configuración',
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Función próximamente disponible'),
-                          backgroundColor: Color(0xFFFFD700),
-                        ),
-                      );
-                    },
-                    isOutlined: true,
-                    icon: Icons.settings,
-                  ),
-                  const SizedBox(height: 16),
-                  CustomButton(
-                    text: 'Actualizar Códigos',
-                    onPressed: () async {
-                      try {
-                        await CodigosRepository().refreshCodigos();
+                  Center(
+                    child: CustomButton(
+                      text: 'Editar Perfil',
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfileScreen(),
+                          ),
+                        );
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Códigos actualizados correctamente'),
-                              backgroundColor: Color(0xFFFFD700),
-                            ),
-                          );
+                          setState(() {});
+                          await _loadUserData();
                         }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('❌ Error al actualizar: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    color: const Color(0xFFFFD700),
-                    icon: Icons.refresh,
+                      },
+                      isOutlined: true,
+                      icon: Icons.edit,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  CustomButton(
-                    text: 'Mis Sugerencias',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SugerenciasScreen(),
-                        ),
-                      );
-                    },
-                    isOutlined: true,
-                    icon: Icons.lightbulb_outline,
+                  Center(
+                    child: CustomButton(
+                      text: 'Configuración',
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Función próximamente disponible'),
+                            backgroundColor: Color(0xFFFFD700),
+                          ),
+                        );
+                      },
+                      isOutlined: true,
+                      icon: Icons.settings,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  CustomButton(
-                    text: 'Cerrar Sesión',
-                    onPressed: _signOut,
-                    color: Colors.red,
-                    icon: Icons.logout,
+                  Center(
+                    child: CustomButton(
+                      text: 'Actualizar Códigos',
+                      onPressed: () async {
+                        try {
+                          await CodigosRepository().refreshCodigos();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✅ Códigos actualizados correctamente'),
+                                backgroundColor: Color(0xFFFFD700),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('❌ Error al actualizar: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      color: const Color(0xFFFFD700),
+                      icon: Icons.refresh,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: CustomButton(
+                      text: 'Mis Sugerencias',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SugerenciasScreen(),
+                          ),
+                        );
+                      },
+                      isOutlined: true,
+                      icon: Icons.lightbulb_outline,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: CustomButton(
+                      text: 'Cerrar Sesión',
+                      onPressed: _signOut,
+                      color: Colors.red,
+                      icon: Icons.logout,
+                    ),
                   ),
                   const SizedBox(height: 32),
                 ],

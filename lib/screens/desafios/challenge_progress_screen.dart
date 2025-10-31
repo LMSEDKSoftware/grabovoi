@@ -6,6 +6,8 @@ import '../../models/challenge_model.dart';
 import '../../services/challenge_service.dart';
 import '../../services/challenge_progress_tracker.dart';
 import 'challenge_congrats_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/auth_service_simple.dart';
 
 class ChallengeProgressScreen extends StatefulWidget {
   final Challenge challenge;
@@ -337,19 +339,33 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
     final allDone = actions.every((a) => _progressTracker.isActionCompleted(a, 0));
     final isLastDay = _challenge.currentDay >= _challenge.durationDays;
 
+    final showFinalize = allDone && isLastDay;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        CustomButton(
-          text: 'Continuar Desafío',
-          onPressed: () async {
-            // Navegar a la página principal para que el usuario pueda realizar acciones
-            Navigator.of(context).popUntil((route) => route.isFirst);
-          },
-          icon: Icons.play_arrow,
-        ),
-        const SizedBox(height: 12),
-        if (allDone && isLastDay) ...[
-          CustomButton(
+        if (!showFinalize) ...[
+          Align(
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 320,
+              child: CustomButton(
+                text: 'Continuar Desafío',
+                onPressed: () async {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                icon: Icons.play_arrow,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (showFinalize) ...[
+          Align(
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 360,
+              child: CustomButton(
             text: 'Finalizar Reto y Obtener Certificado',
             onPressed: () {
               const publicUrl = 'https://whtiazgcxdnemrrgjjqf.supabase.co/storage/v1/object/public/rewards/challenges/iniciacion_energetica/certificado.png';
@@ -363,24 +379,230 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
               );
             },
             icon: Icons.emoji_events,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
         ],
-        CustomButton(
-          text: 'Ver Estadísticas',
-          onPressed: () {
-            // TODO: Implementar pantalla de estadísticas
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Las estadísticas estarán disponibles pronto'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
-          isOutlined: true,
-          icon: Icons.analytics,
+        Align(
+          alignment: Alignment.center,
+          child: SizedBox(
+            width: 320,
+            child: CustomButton(
+              text: 'Ver Estadísticas',
+              onPressed: _showStatistics,
+              isOutlined: true,
+              icon: Icons.analytics,
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  Future<void> _showStatistics() async {
+    final supabase = Supabase.instance.client;
+    final auth = AuthServiceSimple();
+    if (!auth.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inicia sesión para ver estadísticas')),
+      );
+      return;
+    }
+
+    final start = (_challenge.startDate ?? DateTime.now().subtract(Duration(days: _challenge.durationDays))).toUtc();
+    final end = (_challenge.endDate ?? DateTime.now()).toUtc();
+
+    final response = await supabase
+        .from('user_actions')
+        .select('action_type, action_data, recorded_at')
+        .eq('user_id', auth.currentUser!.id)
+        .gte('recorded_at', start.toIso8601String())
+        .lte('recorded_at', end.toIso8601String());
+
+    final Map<String, Map<String, int>> perDay = {};
+    int totalRepeated = 0, totalPiloted = 0, totalQuantum = 0, totalMeditation = 0, totalSeconds = 0;
+
+    for (final row in response as List) {
+      final date = DateTime.parse(row['recorded_at']).toLocal();
+      final dayKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final type = row['action_type'] as String? ?? '';
+      final data = (row['action_data'] as Map?)?.cast<String, dynamic>();
+      perDay.putIfAbsent(dayKey, () => {'repetidos': 0, 'pilotajes': 0, 'pilotajes_cuanticos': 0, 'meditacion_min': 0});
+      switch (type) {
+        case 'codigoRepetido':
+          perDay[dayKey]!['repetidos'] = (perDay[dayKey]!['repetidos'] ?? 0) + 1;
+          totalRepeated++;
+          break;
+        case 'sesionPilotaje':
+          perDay[dayKey]!['pilotajes'] = (perDay[dayKey]!['pilotajes'] ?? 0) + 1;
+          totalPiloted++;
+          break;
+        case 'pilotajeCuantico':
+          perDay[dayKey]!['pilotajes_cuanticos'] = (perDay[dayKey]!['pilotajes_cuanticos'] ?? 0) + 1;
+          totalQuantum++;
+          break;
+        case 'meditacionCompletada':
+          final m = (data?['duration'] as num?)?.toInt() ?? 0;
+          perDay[dayKey]!['meditacion_min'] = (perDay[dayKey]!['meditacion_min'] ?? 0) + m;
+          totalMeditation += m;
+          break;
+        case 'tiempoEnApp':
+          final minutes = (data?['duration'] as num?)?.toInt() ?? 0;
+          totalSeconds += minutes * 60;
+          break;
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0B132B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        final days = perDay.keys.toList()..sort();
+        final accent = const Color(0xFFFFD700);
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.insights, color: Color(0xFFFFD700)),
+                    const SizedBox(width: 8),
+                    Text('Resumen del reto', style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                // Tarjetas de totales
+                Row(
+                  children: [
+                    _StatChip(icon: Icons.repeat, label: 'Repeticiones', value: '$totalRepeated', color: accent),
+                    const SizedBox(width: 10),
+                    _StatChip(icon: Icons.rocket_launch, label: 'Pilotajes', value: '$totalPiloted', color: accent),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _StatChip(icon: Icons.auto_awesome, label: 'Pil. cuánticos', value: '$totalQuantum', color: accent),
+                    const SizedBox(width: 10),
+                    _StatChip(icon: Icons.self_improvement, label: 'Minutos de práctica', value: '${totalMeditation}m', color: accent),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Text('Detalle por día', style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
+                const SizedBox(height: 8),
+                ...days.map((d) {
+                  final m = perDay[d]!;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(d, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 6,
+                                children: [
+                                  _MiniStat(icon: Icons.repeat, text: '${m['repetidos']} rep'),
+                                  _MiniStat(icon: Icons.rocket_launch, text: '${m['pilotajes']} pil'),
+                                  _MiniStat(icon: Icons.auto_awesome, text: '${m['pilotajes_cuanticos']} pilQ'),
+                                  _MiniStat(icon: Icons.self_improvement, text: '${m['meditacion_min']} min'),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+}
+
+class _StatChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatChip({required this.icon, required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [color.withOpacity(0.18), color.withOpacity(0.06)]),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.35)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(value, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700)),
+                  Text(label, style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _MiniStat({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: const Color(0xFFFFD700), size: 14),
+          const SizedBox(width: 6),
+          Text(text, style: GoogleFonts.inter(color: Colors.white, fontSize: 12)),
+        ],
+      ),
     );
   }
 }

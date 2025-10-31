@@ -332,6 +332,9 @@ class UserProgressService {
   Future<void> saveUserAssessment(Map<String, dynamic> assessmentData) async {
     if (!_authService.isLoggedIn) return;
 
+    // SIEMPRE guardar en SharedPreferences como respaldo para evitar mostrar evaluación de nuevo
+    await _saveAssessmentLocally(assessmentData);
+
     try {
       // Guardar en la tabla de evaluaciones
       await _supabase.from('user_assessments').insert({
@@ -361,11 +364,9 @@ class UserProgressService {
         'updated_at': DateTime.now().toIso8601String(),
       });
 
-      print('✅ Evaluación del usuario guardada');
+      print('✅ Evaluación del usuario guardada en Supabase');
     } catch (e) {
-      print('Error guardando evaluación: $e');
-      // Si falla la base de datos, guardar localmente
-      await _saveAssessmentLocally(assessmentData);
+      print('⚠️ Error guardando evaluación en Supabase (pero guardada localmente): $e');
     }
   }
 
@@ -416,7 +417,7 @@ class UserProgressService {
     }
   }
 
-  /// Obtener evaluación del usuario - SIMPLIFICADO
+  /// Obtener evaluación del usuario - SIMPLIFICADO con fallback a SharedPreferences
   Future<Map<String, dynamic>?> getUserAssessment() async {
     if (!_authService.isLoggedIn) {
       print('❌ Usuario no autenticado');
@@ -425,8 +426,8 @@ class UserProgressService {
 
     print('🔍 Buscando evaluación para usuario: ${_authService.currentUser!.id}');
 
+    // Primero intentar en Supabase
     try {
-      // Buscar en la tabla de evaluaciones
       final response = await _supabase
           .from('user_assessments')
           .select()
@@ -435,17 +436,35 @@ class UserProgressService {
           .limit(1)
           .maybeSingle();
 
-      if (response != null) {
-        print('✅ Evaluación encontrada en base de datos');
-        return response['assessment_data'];
-      } else {
-        print('❌ No se encontró evaluación en base de datos');
-        return null;
+      if (response != null && response['assessment_data'] != null) {
+        print('✅ Evaluación encontrada en Supabase');
+        final assessmentData = response['assessment_data'] as Map<String, dynamic>;
+        // Asegurarse de que tiene el flag is_complete
+        assessmentData['is_complete'] = true;
+        return assessmentData;
       }
     } catch (e) {
-      print('❌ Error obteniendo evaluación: $e');
-      return null;
+      print('⚠️ Error obteniendo evaluación de Supabase: $e');
+      // Continuar con fallback a SharedPreferences
     }
+
+    // Fallback: buscar en SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final assessmentJson = prefs.getString('user_assessment');
+      if (assessmentJson != null) {
+        final assessmentData = jsonDecode(assessmentJson) as Map<String, dynamic>;
+        // Asegurarse de que tiene el flag is_complete
+        assessmentData['is_complete'] = true;
+        print('✅ Evaluación encontrada en SharedPreferences (fallback)');
+        return assessmentData;
+      }
+    } catch (e) {
+      print('⚠️ Error obteniendo evaluación de SharedPreferences: $e');
+    }
+
+    print('❌ No se encontró evaluación ni en Supabase ni localmente');
+    return null;
   }
 
   /// Verificar si la evaluación está completa

@@ -474,7 +474,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
 
         // 4) SELECTOR DE COLORES en la parte inferior
         Positioned(
-          bottom: -40, // Ajustado para evitar superposición
+          bottom: 0, // Dentro del área del Stack para asegurar hit tests correctos
           child: _buildColorSelector(),
         ),
       ],
