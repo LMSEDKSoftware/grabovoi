@@ -121,12 +121,12 @@ class SupabaseService {
       print('🔗 Ejecutando query en Supabase...');
       print('📋 Tabla: codigos_grabovoi');
       print('🔍 Select: * (todos los campos)');
-      print('📊 Order: nombre');
+      print('📊 Order: nombre (ascending: true)');
       
       final response = await _client
           .from('codigos_grabovoi')
           .select()
-          .order('nombre');
+          .order('nombre', ascending: true);
 
       print('📡 Respuesta recibida de Supabase');
       print('📊 Cantidad de registros: ${response.length}');
@@ -187,7 +187,7 @@ class SupabaseService {
           .from('codigos_grabovoi')
           .select()
           .eq('categoria', categoria)
-          .order('nombre');
+          .order('nombre', ascending: true);
 
       return (response as List)
           .map((json) => CodigoGrabovoi.fromJson(json))
@@ -203,7 +203,7 @@ class SupabaseService {
           .from('codigos_grabovoi')
           .select()
           .or('nombre.ilike.%$query%,descripcion.ilike.%$query%,codigo.ilike.%$query%')
-          .order('nombre');
+          .order('nombre', ascending: true);
 
       return (response as List)
           .map((json) => CodigoGrabovoi.fromJson(json))

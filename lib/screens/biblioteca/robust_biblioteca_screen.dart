@@ -106,7 +106,7 @@ class _RobustBibliotecaScreenState extends State<RobustBibliotecaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Biblioteca Sagrada (${visible.length} códigos)'),
+        title: Text('Biblioteca Cuántica (${visible.length} códigos)'),
         actions: [
           IconButton(
             icon: const Icon(Icons.bug_report),

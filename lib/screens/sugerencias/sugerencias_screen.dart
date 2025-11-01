@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/sugerencia_codigo_model.dart';
@@ -16,6 +17,7 @@ class _SugerenciasScreenState extends State<SugerenciasScreen> {
   List<SugerenciaCodigo> _sugerencias = [];
   bool _isLoading = true;
   String _filtroEstado = 'todos';
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -26,25 +28,45 @@ class _SugerenciasScreenState extends State<SugerenciasScreen> {
   Future<void> _cargarSugerencias() async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
       final usuarioId = SupabaseConfig.client.auth.currentUser?.id;
       if (usuarioId == null) {
         print('❌ Usuario no autenticado');
+        setState(() {
+          _sugerencias = [];
+          _isLoading = false;
+          _errorMessage = 'Usuario no autenticado. Por favor, inicia sesión.';
+        });
         return;
       }
 
-      final sugerencias = await SugerenciasCodigosService.getSugerenciasPorUsuario(usuarioId);
+      // Agregar timeout de 15 segundos para evitar que se quede colgado
+      final sugerencias = await SugerenciasCodigosService
+          .getSugerenciasPorUsuario(usuarioId)
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              print('⏱️ Timeout al cargar sugerencias');
+              throw TimeoutException('La carga de sugerencias tardó demasiado');
+            },
+          );
       
       setState(() {
         _sugerencias = sugerencias;
         _isLoading = false;
+        _errorMessage = null;
       });
     } catch (e) {
       print('❌ Error cargando sugerencias: $e');
       setState(() {
+        _sugerencias = [];
         _isLoading = false;
+        _errorMessage = e.toString().contains('Timeout') 
+            ? 'La conexión tardó demasiado. Verifica tu conexión a internet.'
+            : 'Error al cargar sugerencias. Intenta nuevamente.';
       });
     }
   }
@@ -110,9 +132,58 @@ class _SugerenciasScreenState extends State<SugerenciasScreen> {
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
               ),
             )
-          : _sugerencias.isEmpty
-              ? _buildEmptyState()
-              : _buildSugerenciasList(),
+          : _errorMessage != null
+              ? _buildErrorState()
+              : _sugerencias.isEmpty
+                  ? _buildEmptyState()
+                  : _buildSugerenciasList(),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error al cargar sugerencias',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'Ocurrió un error desconocido',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: Colors.grey[400],
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _cargarSugerencias,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

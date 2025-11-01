@@ -32,7 +32,7 @@ class _QuantumPilotageModalState extends State<QuantumPilotageModal> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'El Pilotaje Cuántico es una técnica avanzada que combina la numerología sagrada de Grigori Grabovoi con principios de física cuántica para manifestar cambios profundos en tu realidad.',
+              'El Pilotaje Cuántico es una técnica avanzada que combina la numerología cuántica de Grigori Grabovoi con principios de física cuántica para manifestar cambios profundos en tu realidad.',
               style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 14,

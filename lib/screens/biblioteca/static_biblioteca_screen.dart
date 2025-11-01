@@ -206,7 +206,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 children: [
                   // Título de la sección
                   Text(
-                    'Biblioteca Sagrada',
+                    'Biblioteca Cuántica',
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,

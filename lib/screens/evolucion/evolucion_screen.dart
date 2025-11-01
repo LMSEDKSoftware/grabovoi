@@ -194,16 +194,6 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
 
                 // Estadísticas
                 _buildStatsCard(),
-                const SizedBox(height: 20),
-
-                      // Acciones
-                      CustomButton(
-                        text: 'Ver Reporte Detallado',
-                        onPressed: () {
-                          _showDetailedReport();
-                        },
-                        icon: Icons.analytics,
-                      ),
                     ],
                   ),
                 ),

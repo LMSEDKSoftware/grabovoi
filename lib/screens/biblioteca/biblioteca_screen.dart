@@ -924,7 +924,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Biblioteca Sagrada',
+                      'Biblioteca Cuántica',
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
