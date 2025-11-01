@@ -318,8 +318,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                     child: _buildIntegratedSphere(widget.codigo),
                   ),
                 ),
-
-                const SizedBox(height: 80), // Más espacio para el selector de colores
                 
                 // Descripción del código
                 Center(
@@ -439,45 +437,45 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoCrudo);
     final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo);
 
-    return Stack(
-      alignment: Alignment.center,
-      clipBehavior: Clip.none,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // 1) ESFERA DORADA — solo visual, sin 'code'
-        Transform.scale(
-          scale: _isRepetitionActive ? _pulseAnimation.value : 1.0,
-          child: GoldenSphere(
-            size: 260,
-            color: _getColorSeleccionado(),
-            glowIntensity: _isRepetitionActive ? 0.8 : 0.6,
-            isAnimated: true,
-          ),
-        ),
-
-        // 2) CÓDIGO ILUMINADO SUPERPUESTO
-        AnimatedBuilder(
-          animation: _pulseAnimation,
-          builder: (context, child) {
-            return Transform.scale(
+        Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            // 1) ESFERA DORADA — solo visual, sin 'code'
+            Transform.scale(
               scale: _isRepetitionActive ? _pulseAnimation.value : 1.0,
-              child: IlluminatedCodeText(
-                code: codigoFormateado,
-                fontSize: fontSize,
+              child: GoldenSphere(
+                size: 260,
                 color: _getColorSeleccionado(),
-                letterSpacing: 4,
-                isAnimated: false,
+                glowIntensity: _isRepetitionActive ? 0.8 : 0.6,
+                isAnimated: true,
               ),
-            );
-          },
-        ),
+            ),
 
-        // 3) CONTADOR DE TIEMPO (oculto - solo funciona en segundo plano)
-
-        // 4) SELECTOR DE COLORES en la parte inferior
-        Positioned(
-          bottom: -50, // Bajado para que no interfiera con el código
-          child: _buildColorSelector(),
+            // 2) CÓDIGO ILUMINADO SUPERPUESTO
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _isRepetitionActive ? _pulseAnimation.value : 1.0,
+                  child: IlluminatedCodeText(
+                    code: codigoFormateado,
+                    fontSize: fontSize,
+                    color: _getColorSeleccionado(),
+                    letterSpacing: 4,
+                    isAnimated: false,
+                  ),
+                );
+              },
+            ),
+          ],
         ),
+        const SizedBox(height: 20),
+        // SELECTOR DE COLORES fuera del Stack
+        _buildColorSelector(),
       ],
     );
   }
