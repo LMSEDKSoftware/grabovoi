@@ -21,6 +21,7 @@ import '../../models/busqueda_profunda_model.dart';
 import '../../services/busquedas_profundas_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/sugerencias_codigos_service.dart';
+import '../../services/pilotage_state_service.dart';
 import '../../models/sugerencia_codigo_model.dart';
 
 class QuantumPilotageScreen extends StatefulWidget {
@@ -2717,6 +2718,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       _pilotageDuration = 0;
     });
 
+    // Notificar al servicio global
+    PilotageStateService().setQuantumPilotageActive(true);
+
     // Iniciar temporizador de 2 minutos
     _pilotageTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
@@ -2815,6 +2819,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       _isColorBarExpanded = true; // Restaurar la barra de colores
     });
     
+    // Notificar al servicio global
+    PilotageStateService().setQuantumPilotageActive(false);
+    
     // Detener el audio usando el AudioManagerService
     final audioManager = AudioManagerService();
     audioManager.stop();
@@ -2835,6 +2842,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       _showAudioController = false;
       _isColorBarExpanded = true; // Restaurar la barra de colores
     });
+    
+    // Notificar al servicio global
+    PilotageStateService().setQuantumPilotageActive(false);
     
     // Detener el audio usando el AudioManagerService
     final audioManager = AudioManagerService();

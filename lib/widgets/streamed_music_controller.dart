@@ -6,14 +6,14 @@ import '../services/audio_manager_service.dart';
 
 class StreamedMusicController extends StatefulWidget {
   final bool autoPlay;
-  final bool isActive; // Nuevo parámetro para controlar si está activo
+  final bool isActive;
   const StreamedMusicController({super.key, this.autoPlay = false, this.isActive = false});
 
   @override
   State<StreamedMusicController> createState() => _StreamedMusicControllerState();
 }
 
-class _StreamedMusicControllerState extends State<StreamedMusicController> {
+class _StreamedMusicControllerState extends State<StreamedMusicController> with SingleTickerProviderStateMixin {
   final List<Map<String, String>> _tracks = const [
     {'title': 'Frecuencia 432Hz - Armonía Universal', 'file': 'assets/audios/432hz_harmony.mp3'},
     {'title': 'Códigos Solfeggio 528Hz - Amor', 'file': 'assets/audios/528hz_love.mp3'},
@@ -33,13 +33,19 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
   bool _isPlaying = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+  bool _hasShownVolumeMessage = false;
+  AnimationController? _animationController;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
     _wireListeners();
-    // Solo cargar y reproducir si está activo y autoPlay está habilitado
     if (widget.isActive && widget.autoPlay) {
+      _showVolumeMessageOnFirstPlay();
       _loadAndMaybePlay(_index);
     }
   }
@@ -47,8 +53,8 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
   @override
   void didUpdateWidget(StreamedMusicController oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Si el widget se activa, iniciar reproducción
     if (widget.isActive && !oldWidget.isActive) {
+      _showVolumeMessageOnFirstPlay();
       _loadAndMaybePlay(_index);
     }
   }
@@ -77,6 +83,96 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
     });
   }
 
+  void _showVolumeMessageOnFirstPlay() {
+    if (!_hasShownVolumeMessage && mounted) {
+      _hasShownVolumeMessage = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _animationController != null) {
+          final fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+            CurvedAnimation(parent: _animationController!, curve: Curves.easeOut),
+          );
+          
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            barrierColor: Colors.black.withOpacity(0.5),
+            builder: (context) => FadeTransition(
+              opacity: fadeAnimation,
+              child: Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 40),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1a1a2e).withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withOpacity(0.5),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFD700).withOpacity(0.3),
+                        blurRadius: 30,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD700).withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.volume_up,
+                          color: Color(0xFFFFD700),
+                          size: 40,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '🔊 Ajusta el volumen',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'para una mejor experiencia',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+          
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted && _animationController != null) {
+              _animationController!.forward().then((_) {
+                if (mounted) {
+                  Navigator.of(context).pop();
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  }
+
   Future<void> _loadAndMaybePlay(int i) async {
     if (!mounted) return;
     
@@ -86,7 +182,6 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
 
     final file = _tracks[i]['file']!;
     
-    // Usar el servicio global de audio
     await _audioManager.playTrack(file, autoPlay: widget.isActive && widget.autoPlay);
     
     if (!mounted) return;
@@ -110,11 +205,6 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
     return '$twoDigitMinutes:$twoDigitSeconds';
   }
 
-  String _fmt(Duration d) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(d.inMinutes.remainder(60))}:${two(d.inSeconds.remainder(60))} s';
-    }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -132,13 +222,11 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Botón anterior
           IconButton(
             onPressed: _isBuffering ? null : _prev,
             icon: Icon(Icons.skip_previous, color: const Color(0xFFFFD700), size: 28),
           ),
           
-          // Tiempo transcurrido
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -163,7 +251,6 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
             ),
           ),
           
-          // Botón siguiente
           IconButton(
             onPressed: _isBuffering ? null : _next,
             icon: Icon(Icons.skip_next, color: const Color(0xFFFFD700), size: 28),
@@ -175,6 +262,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
 
   @override
   void dispose() {
+    _animationController?.dispose();
     _isPlayingSub?.cancel();
     _positionSub?.cancel();
     _durationSub?.cancel();
@@ -182,4 +270,3 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> {
     super.dispose();
   }
 }
-

@@ -6,6 +6,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'services/migration_service.dart';
 import 'services/app_time_tracker.dart';
+import 'services/pilotage_state_service.dart';
+import 'services/audio_service.dart';
+import 'services/audio_manager_service.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/onboarding/user_assessment_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -130,16 +133,121 @@ class _MainNavigationState extends State<MainNavigation> {
     });
   }
 
+  void _stopActivePilotage() {
+    final audioService = AudioService();
+    audioService.stopMusic();
+    
+    final audioManagerService = AudioManagerService();
+    audioManagerService.stop();
+    
+    // Resetear estado del pilotaje
+    final pilotageService = PilotageStateService();
+    pilotageService.resetAllPilotageStates();
+  }
+
+  Future<bool?> _showPilotageActiveDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C2541),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.music_off, color: Color(0xFFFFD700), size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'Pilotaje Activo',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '¿Estás seguro de que deseas abandonar el pilotaje cuántico y detener la música?',
+            style: GoogleFonts.inter(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // Cancelar - no cambiar de tab
+              },
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // Detener el pilotaje antes de cambiar de tab
+                _stopActivePilotage();
+                Navigator.of(context).pop(true); // Confirmar - cambiar de tab
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Sí, Abandonar',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GlowBackground(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: _screens,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        
+        // Verificar si hay pilotaje activo
+        final pilotageService = PilotageStateService();
+        if (pilotageService.isAnyPilotageActive) {
+          final result = await _showPilotageActiveDialog();
+          if (result == true) {
+            // Usuario confirmó, permitir pop
+            if (context.mounted) {
+              Navigator.of(context).pop();
+            }
+          }
+        } else {
+          // No hay pilotaje activo, permitir pop
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
+        body: GlowBackground(
+          child: IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
         ),
-      ),
-      bottomNavigationBar: Container(
+        bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
@@ -204,6 +312,7 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -216,7 +325,19 @@ class _MainNavigationState extends State<MainNavigation> {
     final isSelected = _currentIndex == index;
     
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        // Interceptar cambio de tab si hay pilotaje activo
+        if (_currentIndex == 2 && index != 2) {
+          final pilotageService = PilotageStateService();
+          if (pilotageService.isAnyPilotageActive) {
+            final result = await _showPilotageActiveDialog();
+            if (result == false) {
+              // Usuario canceló, no cambiar de tab
+              return;
+            }
+          }
+        }
+        
         setState(() {
           _currentIndex = index;
         });

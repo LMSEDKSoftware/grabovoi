@@ -12,6 +12,7 @@ import '../../services/audio_preload_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/challenge_tracking_service.dart';
 import '../../services/challenge_progress_tracker.dart';
+import '../../services/pilotage_state_service.dart';
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
@@ -44,8 +45,8 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   final Map<String, Color> _coloresDisponibles = {
     'dorado': const Color(0xFFFFD700),
     'plateado': const Color(0xFFC0C0C0),
-    'azul_celestial': const Color(0xFF87CEEB),
-    'categoria': const Color(0xFFFFD700), // Se actualizará dinámicamente
+    'azul': const Color(0xFF87CEEB),
+    'blanco': const Color(0xFFFFFFFF),
   };
   
   // Variables para el modo concentración
@@ -99,6 +100,9 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       _secondsRemaining = 120; // 2 minutos
     });
     
+    // Notificar al servicio global
+    PilotageStateService().setPilotageActive(true);
+    
     // Registrar acción de pilotaje para desafíos
     final trackingService = ChallengeTrackingService();
     await trackingService.recordPilotageSession(
@@ -140,6 +144,9 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         setState(() {
           _isPiloting = false;
         });
+        
+        // Notificar al servicio global
+        PilotageStateService().setPilotageActive(false);
         
         // Detener el audio
         AudioManagerService().stop();
@@ -435,6 +442,191 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     }
   }
 
+  void _stopActivePilotage() {
+    setState(() {
+      _isPiloting = false;
+    });
+    
+    // Notificar al servicio global
+    PilotageStateService().setPilotageActive(false);
+    
+    // Detener el audio
+    AudioManagerService().stop();
+  }
+
+  Future<void> _handleBackNavigation() async {
+    // Verificar si hay pilotaje activo
+    if (_isPiloting) {
+      final result = await _showPilotageActiveDialog();
+      if (result == true) {
+        // Usuario confirmó, mostrar mensaje de cancelación primero
+        if (context.mounted) {
+          _mostrarMensajeCancelacion();
+        }
+      }
+    } else {
+      // No hay pilotaje activo, permitir pop
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  Future<bool?> _showPilotageActiveDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C2541),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.music_off, color: Color(0xFFFFD700), size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'Pilotaje Activo',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '¿Estás seguro de que deseas abandonar el Campo Energético y detener la música?',
+            style: GoogleFonts.inter(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // Cancelar
+              },
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _stopActivePilotage();
+                Navigator.of(context).pop(true); // Confirmar
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Sí, Abandonar',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _mostrarMensajeCancelacion() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFFF6B6B), width: 2),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.pause_circle,
+              color: const Color(0xFFFF6B6B),
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Campo Energético Cancelado',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Has cancelado la sesión de Campo Energético.',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF6B6B).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFFF6B6B).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '⚠️ Sesión interrumpida',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFFF6B6B),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Para obtener mejores resultados, se recomienda completar la sesión completa de 2 minutos.',
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          CustomButton(
+            text: 'Entendido',
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            color: const Color(0xFFFF6B6B),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Modo de concentración (pantalla completa)
@@ -442,8 +634,14 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
       return _buildConcentrationMode();
     }
 
-    return Scaffold(
-      body: Stack(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        await _handleBackNavigation();
+      },
+      child: Scaffold(
+        body: Stack(
         children: [
           GlowBackground(
             child: SafeArea(
@@ -456,7 +654,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 Row(
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: _handleBackNavigation,
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                     ),
                     const Spacer(),
@@ -577,14 +775,12 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
           
         ],
       ),
+      ),
     );
   }
   
   
   Color _getColorSeleccionado() {
-    if (_colorSeleccionado == 'categoria') {
-      return _coloresDisponibles['categoria']!;
-    }
     return _coloresDisponibles[_colorSeleccionado]!;
   }
   

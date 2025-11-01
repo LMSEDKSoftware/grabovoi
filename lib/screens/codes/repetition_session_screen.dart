@@ -11,6 +11,7 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/streamed_music_controller.dart';
 import '../../widgets/illuminated_code_text.dart';
+import '../../widgets/custom_button.dart';
 import '../../utils/code_formatter.dart';
 import '../../services/challenge_tracking_service.dart';
 import '../../services/challenge_progress_tracker.dart';
@@ -19,6 +20,7 @@ import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/audio_manager_service.dart';
+import '../../services/pilotage_state_service.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -47,8 +49,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   final Map<String, Color> _coloresDisponibles = {
     'dorado': const Color(0xFFFFD700),
     'plateado': const Color(0xFFC0C0C0),
-    'azul_celestial': const Color(0xFF87CEEB),
-    'categoria': const Color(0xFFFFD700), // Se actualizará dinámicamente
+    'azul': const Color(0xFF87CEEB),
+    'blanco': const Color(0xFFFFFFFF),
   };
   
   // Variables para la animación de la barra de colores
@@ -111,6 +113,9 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       _secondsRemaining = 120; // 2 minutos
     });
     
+    // Notificar al servicio global
+    PilotageStateService().setRepetitionActive(true);
+    
     // Registrar repetición de código INMEDIATAMENTE al iniciar
     final trackingService = ChallengeTrackingService();
     trackingService.recordCodeRepetition(
@@ -151,6 +156,9 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         setState(() {
           _isRepetitionActive = false;
         });
+        
+        // Notificar al servicio global
+        PilotageStateService().setRepetitionActive(false);
         
         // Detener audio y mostrar mensaje de finalización
         try {
@@ -217,6 +225,190 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     }
   }
 
+  void _stopActiveRepetition() {
+    setState(() {
+      _isRepetitionActive = false;
+    });
+    
+    // Notificar al servicio global
+    PilotageStateService().setRepetitionActive(false);
+    
+    // Detener el audio
+    AudioManagerService().stop();
+  }
+
+  Future<void> _handleBackNavigation() async {
+    // Verificar si hay repetición activa
+    if (_isRepetitionActive) {
+      final result = await _showRepetitionActiveDialog();
+      if (result == true) {
+        // Usuario confirmó, mostrar mensaje de cancelación primero
+        if (context.mounted) {
+          _mostrarMensajeCancelacion();
+        }
+      }
+    } else {
+      // No hay repetición activa, permitir pop
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  Future<bool?> _showRepetitionActiveDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1C2541),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.music_off, color: Color(0xFFFFD700), size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'Repetición Activa',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '¿Estás seguro de que deseas abandonar la sesión de repetición y detener la música?',
+            style: GoogleFonts.inter(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // Cancelar
+              },
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _stopActiveRepetition();
+                Navigator.of(context).pop(true); // Confirmar
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Sí, Abandonar',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _mostrarMensajeCancelacion() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFFF6B6B), width: 2),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.pause_circle,
+              color: const Color(0xFFFF6B6B),
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Repetición Cancelada',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Has cancelado la sesión de repetición.',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF6B6B).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFFF6B6B).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '⚠️ Sesión interrumpida',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFFF6B6B),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Para obtener mejores resultados, se recomienda completar la sesión completa de 2 minutos.',
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          CustomButton(
+            text: 'Entendido',
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            color: const Color(0xFFFF6B6B),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,81 +417,87 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       return _buildConcentrationMode();
     }
 
-    return Scaffold(
-      body: GlowBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                    const Spacer(),
-                    // Botón copiar en la parte superior derecha
-                    IconButton(
-                      onPressed: () async {
-                        try {
-                          // Buscar el código en la base de datos para obtener su información real
-                          final codigos = await SupabaseService.getCodigos();
-                          final codigoEncontrado = codigos.firstWhere(
-                            (c) => c.codigo == widget.codigo,
-                            orElse: () => CodigoGrabovoi(
-                              id: '',
-                              codigo: widget.codigo,
-                              nombre: 'Código Sagrado',
-                              descripcion: 'Código sagrado para la manifestación y transformación energética.',
-                              categoria: 'General',
-                              color: '#FFD700',
-                            ),
-                          );
-                          
-                          final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        await _handleBackNavigation();
+      },
+      child: Scaffold(
+        body: GlowBackground(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: _handleBackNavigation,
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      ),
+                      const Spacer(),
+                      // Botón copiar en la parte superior derecha
+                      IconButton(
+                        onPressed: () async {
+                          try {
+                            // Buscar el código en la base de datos para obtener su información real
+                            final codigos = await SupabaseService.getCodigos();
+                            final codigoEncontrado = codigos.firstWhere(
+                              (c) => c.codigo == widget.codigo,
+                              orElse: () => CodigoGrabovoi(
+                                id: '',
+                                codigo: widget.codigo,
+                                nombre: 'Código Sagrado',
+                                descripcion: 'Código sagrado para la manifestación y transformación energética.',
+                                categoria: 'General',
+                                color: '#FFD700',
+                              ),
+                            );
+                            
+                            final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
 ${codigoEncontrado.descripcion}
 Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
-                          
-                          Clipboard.setData(ClipboardData(text: textToCopy));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Código ${widget.codigo} copiado con descripción'),
-                              backgroundColor: const Color(0xFFFFD700),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        } catch (e) {
-                          // Fallback si hay error
-                          final textToCopy = '''${widget.codigo} : Código Sagrado
+                            
+                            Clipboard.setData(ClipboardData(text: textToCopy));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Código ${widget.codigo} copiado con descripción'),
+                                backgroundColor: const Color(0xFFFFD700),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          } catch (e) {
+                            // Fallback si hay error
+                            final textToCopy = '''${widget.codigo} : Código Sagrado
 Código sagrado para la manifestación y transformación energética.
 Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
-                          
-                          Clipboard.setData(ClipboardData(text: textToCopy));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Código ${widget.codigo} copiado'),
-                              backgroundColor: const Color(0xFFFFD700),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
-                    ),
-                    // Botón ver detalle
-                    IconButton(
-                      onPressed: _mostrarNotaImportante,
-                      icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
-                    ),
-                    // Botón compartir/descargar
-                    IconButton(
-                      onPressed: _shareImage,
-                      icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
-                    ),
-                  ],
-                ),
+                            
+                            Clipboard.setData(ClipboardData(text: textToCopy));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Código ${widget.codigo} copiado'),
+                                backgroundColor: const Color(0xFFFFD700),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
+                      ),
+                      // Botón ver detalle
+                      IconButton(
+                        onPressed: _mostrarNotaImportante,
+                        icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
+                      ),
+                      // Botón compartir/descargar
+                      IconButton(
+                        onPressed: _shareImage,
+                        icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 10),
                 Text(
                   'Sesión de Repetición',
@@ -380,9 +578,10 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
               ],
             ),
           ),
+          ),
         ),
+        bottomNavigationBar: _buildBottomNavigationBar(),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
   
@@ -425,9 +624,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
   }
   
   Color _getColorSeleccionado() {
-    if (_colorSeleccionado == 'categoria') {
-      return _coloresDisponibles['categoria']!;
-    }
     return _coloresDisponibles[_colorSeleccionado]!;
   }
   
