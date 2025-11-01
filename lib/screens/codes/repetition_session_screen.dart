@@ -190,7 +190,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         final file = File('${dir.path}/grabovoi_${widget.codigo}.png');
         await file.writeAsBytes(pngBytes);
 
-        await Share.shareXFiles([XFile(file.path)], text: '${widget.nombre}\n\n${widget.codigo}\n\nManifestación Numérica Grabovoi');
+        await Share.shareXFiles([XFile(file.path)], text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -343,12 +343,15 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
               size: 28,
             ),
             const SizedBox(width: 12),
-            Text(
-              'Repetición Cancelada',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'Repetición Cancelada',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.visible,
               ),
             ),
           ],
@@ -509,11 +512,24 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 ),
                 const SizedBox(height: 20),
 
-                // Vista a capturar - Solo esfera como en pilotaje
+                // Vista a capturar - Esfera con app name, título y descripción
                 Center(
                   child: Screenshot(
                     controller: _screenshotController,
-                    child: _buildIntegratedSphere(widget.codigo),
+                    child: FutureBuilder<Map<String, String>>(
+                      future: Future.wait([
+                        _getCodigoTitulo(),
+                        _getCodigoDescription(),
+                      ]).then((results) => {
+                        'titulo': results[0],
+                        'descripcion': results[1],
+                      }),
+                      builder: (context, snapshot) {
+                        final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
+                        final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                        return _buildShareableImage(widget.codigo, titulo, descripcion);
+                      },
+                    ),
                   ),
                 ),
                 
@@ -627,6 +643,105 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     return _coloresDisponibles[_colorSeleccionado]!;
   }
   
+
+  // ---- WIDGET PARA COMPARTIR (con app name, esfera, título y descripción) ----
+  Widget _buildShareableImage(String codigoCrudo, String titulo, String descripcion) {
+    final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoCrudo);
+    final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo);
+
+    return Container(
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 1) NOMBRE DE LA APP - Arriba
+          Text(
+            'ManiGrab - Manifestaciones Cuánticas Grabovoi',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFFFD700),
+              shadows: [
+                Shadow(
+                  color: const Color(0xFFFFD700).withOpacity(0.5),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 40),
+          
+          // 2) ESFERA CON CÓDIGO - Centro
+          Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // Esfera dorada (sin animación para captura)
+              GoldenSphere(
+                size: 260,
+                color: _getColorSeleccionado(),
+                glowIntensity: 0.8,
+                isAnimated: false,
+              ),
+              // Código iluminado superpuesto (sin animación)
+              IlluminatedCodeText(
+                code: codigoFormateado,
+                fontSize: fontSize,
+                color: _getColorSeleccionado(),
+                letterSpacing: 4,
+                isAnimated: false,
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+          
+          // 3) TÍTULO Y DESCRIPCIÓN - Abajo
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  titulo,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD700),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  descripcion,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // ---- MÉTODO DE ESFERA INTEGRADA (igual que en Cuántico) ----
   Widget _buildIntegratedSphere(String codigoCrudo) {

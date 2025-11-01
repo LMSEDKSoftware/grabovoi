@@ -2875,12 +2875,15 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               size: 28,
             ),
             const SizedBox(width: 12),
-            Text(
-              'Pilotaje Cancelado',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'Pilotaje Cancelado',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.visible,
               ),
             ),
           ],
