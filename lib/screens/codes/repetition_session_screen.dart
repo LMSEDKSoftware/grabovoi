@@ -384,6 +384,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
           ),
         ),
       ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
   
@@ -474,7 +475,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
 
         // 4) SELECTOR DE COLORES en la parte inferior
         Positioned(
-          bottom: 0, // Dentro del área del Stack para asegurar hit tests correctos
+          bottom: -50, // Bajado para que no interfiera con el código
           child: _buildColorSelector(),
         ),
       ],
@@ -635,6 +636,70 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     setState(() {
       _isConcentrationMode = !_isConcentrationMode;
     });
+  }
+
+  // Método para construir la barra de navegación inferior
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF0B132B),
+            Color(0xFF1C2541),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(
+                icon: Icons.home_filled,
+                label: 'Inicio',
+                index: 0,
+              ),
+              _buildNavItem(
+                icon: Icons.menu_book,
+                label: 'Biblioteca',
+                index: 1,
+              ),
+              _buildNavItem(
+                icon: Icons.auto_awesome,
+                label: 'Cuántico',
+                index: 2,
+                isCenter: true,
+              ),
+              _buildNavItem(
+                icon: Icons.emoji_events,
+                label: 'Desafíos',
+                index: 3,
+              ),
+              _buildNavItem(
+                icon: Icons.show_chart,
+                label: 'Evolución',
+                index: 4,
+              ),
+              _buildNavItem(
+                icon: Icons.person,
+                label: 'Perfil',
+                index: 5,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // Método para construir los elementos de navegación (igual que en main.dart)

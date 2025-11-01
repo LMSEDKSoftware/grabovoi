@@ -3,6 +3,7 @@ import 'supabase_service.dart';
 import 'auth_service_simple.dart';
 import 'user_favorites_service.dart';
 import 'user_progress_service.dart';
+import 'daily_code_service.dart';
 
 class BibliotecaSupabaseService {
   static final AuthServiceSimple _authService = AuthServiceSimple();
@@ -298,12 +299,10 @@ class BibliotecaSupabaseService {
   static Future<Map<String, dynamic>> getDatosParaHome() async {
     try {
       final progreso = await getProgresoUsuario();
-      final codigos = await getTodosLosCodigos();
       
-      // Código recomendado (primero de la lista o aleatorio)
-      final codigoRecomendado = codigos.isNotEmpty 
-          ? codigos.first.codigo 
-          : '5197148';
+      // Obtener el código del día actual desde daily_code_assignments
+      // Todos los usuarios verán el mismo código cada día
+      final codigoRecomendado = await DailyCodeService.getTodayCode();
 
       // Si el usuario no está autenticado, usar datos por defecto
       if (!_authService.isLoggedIn) {
@@ -322,10 +321,11 @@ class BibliotecaSupabaseService {
         'proximoPaso': _determinarProximoPaso(progreso?.diasConsecutivos ?? 0, progreso?.totalPilotajes ?? 0),
       };
     } catch (e) {
+      print('❌ Error en getDatosParaHome: $e');
       // Fallback en caso de error
       return {
         'nivel': 1,
-        'codigoRecomendado': '5197148',
+        'codigoRecomendado': '812_719_819_14', // Vitalidad como fallback
         'fraseMotivacional': '🌙 El viaje de mil millas comienza con un solo paso.',
         'proximoPaso': 'Realiza tu primer pilotaje consciente hoy',
       };

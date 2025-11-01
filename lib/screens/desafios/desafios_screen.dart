@@ -88,33 +88,8 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                         ],
                         
                         // Desafíos Disponibles
-                        Text(
-                          'Desafíos Disponibles',
-                          style: GoogleFonts.inter(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                         ..._availableChallenges.map((challenge) => _buildChallengeCard(challenge)).toList(),
                         
-                        const SizedBox(height: 30),
-                        
-                        // Botón de Desafío Aleatorio
-                        CustomButton(
-                          text: 'Desafío Aleatorio',
-                          onPressed: () {
-                            if (_availableChallenges.isNotEmpty) {
-                              final randomChallenge = _availableChallenges[
-                                (DateTime.now().millisecondsSinceEpoch % _availableChallenges.length)
-                              ];
-                              _showChallengeDialog(randomChallenge);
-                            }
-                          },
-                          isOutlined: true,
-                          icon: Icons.shuffle,
-                        ),
                         const SizedBox(height: 40),
                       ],
                     ),

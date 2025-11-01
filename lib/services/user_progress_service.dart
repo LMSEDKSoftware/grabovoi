@@ -77,86 +77,171 @@ class UserProgressService {
     if (!_authService.isLoggedIn) return;
 
     try {
-      // Obtener progreso actual
-      final progress = await getUserProgress();
       final now = DateTime.now();
 
-      if (progress == null) {
-        // Crear fila inicial en usuario_progreso
-        final nivelInicial = _calcularNivelEnergetico(1, 1);
-        await _supabase.from('usuario_progreso').insert({
-          'user_id': _authService.currentUser!.id,
-          'dias_consecutivos': 1,
-          'total_pilotajes': 1,
-          'nivel_energetico': nivelInicial,
-          'ultimo_pilotaje': now.toIso8601String(),
-          'created_at': now.toIso8601String(),
-          'updated_at': now.toIso8601String(),
-        });
-        print('✅ Progreso inicial creado');
-      } else {
-        // Calcular días consecutivos por fecha local (ignorando horas)
+      // Registrar sesión en user_actions PRIMERO
+      final String actionType = _mapSessionTypeToAction(sessionType);
+      await _supabase.from('user_actions').insert({
+        'user_id': _authService.currentUser!.id,
+        'challenge_id': null,
+        'action_type': actionType,
+        'action_data': {
+          'codeId': codeId,
+          'codeName': codeName,
+          'duration': durationMinutes,
+          'metadata': sessionData ?? {},
+          'timestamp': now.toIso8601String(),
+        },
+        'recorded_at': now.toIso8601String(),
+      });
+
+      // Ahora obtener estadísticas COMPLETAS desde user_actions y recalcular
+      final estadisticas = await _obtenerEstadisticasCompletas();
+      
+      // Obtener progreso actual para días consecutivos
+      final progress = await getUserProgress();
+      int diasConsecutivos = 1;
+      
+      if (progress != null) {
         final ultimo = progress['ultimo_pilotaje'] != null
             ? DateTime.parse(progress['ultimo_pilotaje']).toLocal()
             : now.subtract(const Duration(days: 2));
         final today = DateTime(now.year, now.month, now.day);
         final lastDay = DateTime(ultimo.year, ultimo.month, ultimo.day);
         final diffDays = today.difference(lastDay).inDays;
-        final nuevosDias = diffDays == 1
+        diasConsecutivos = diffDays == 1
             ? (progress['dias_consecutivos'] ?? 0) + 1
             : (diffDays == 0 ? (progress['dias_consecutivos'] ?? 0) : 1);
-        final nuevosTotales = (progress['total_pilotajes'] ?? 0) + 1;
-
-        // Recalcular nivel energético (1-10) en base a días y totales
-        int diasConsecutivosCorr = nuevosDias;
-        // Fallback correctivo: si por un cálculo previo en UTC no subió la racha
-        // y hoy ya se registró actividad, ajustar a 2 si el created_at fue un día distinto
+            
+        // Fallback correctivo
         try {
-          if (diffDays == 0 && (progress['dias_consecutivos'] ?? 0) == 1) {
-            final createdAt = progress['created_at'] != null
-                ? DateTime.parse(progress['created_at']).toLocal()
-                : now;
+          if (diffDays == 0 && diasConsecutivos == 1 && progress['created_at'] != null) {
+            final createdAt = DateTime.parse(progress['created_at']).toLocal();
             final createdDay = DateTime(createdAt.year, createdAt.month, createdAt.day);
             if (createdDay.isBefore(today)) {
-              diasConsecutivosCorr = 2;
+              diasConsecutivos = 2;
             }
           }
         } catch (_) {}
+      }
 
-        final nivel = _calcularNivelEnergetico(diasConsecutivosCorr, nuevosTotales);
+      // Calcular nivel energético desde estadísticas completas
+      final nivel = _calcularNivelEnergeticoDesdeAcciones(
+        diasConsecutivos: diasConsecutivos,
+        totalRepeticiones: estadisticas['total_repeticiones'] ?? 0,
+        totalPilotajes: estadisticas['total_pilotajes'] ?? 0,
+        totalMeditaciones: estadisticas['total_meditaciones'] ?? 0,
+        totalMinutos: estadisticas['total_minutos'] ?? 0,
+      );
 
+      // Actualizar usuario_progreso con el nivel recalculado
+      if (progress == null) {
+        await _supabase.from('usuario_progreso').insert({
+          'user_id': _authService.currentUser!.id,
+          'dias_consecutivos': diasConsecutivos,
+          'total_pilotajes': estadisticas['total_pilotajes'] ?? 0,
+          'nivel_energetico': nivel,
+          'ultimo_pilotaje': now.toIso8601String(),
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
+        });
+        print('✅ Progreso inicial creado');
+      } else {
         await updateUserProgress(
-          diasConsecutivos: diasConsecutivosCorr,
-          totalPilotajes: nuevosTotales,
+          diasConsecutivos: diasConsecutivos,
+          totalPilotajes: estadisticas['total_pilotajes'] ?? 0,
           ultimoPilotaje: now,
           energyLevel: nivel,
         );
       }
 
-      // Registrar sesión en user_actions (ya existente en tu proyecto)
-      try {
-        final String actionType = _mapSessionTypeToAction(sessionType);
-        await _supabase.from('user_actions').insert({
-          'user_id': _authService.currentUser!.id,
-          'challenge_id': null,
-          'action_type': actionType,
-          'action_data': {
-            'codeId': codeId,
-            'codeName': codeName,
-            'duration': durationMinutes,
-            'metadata': sessionData ?? {},
-            'timestamp': now.toIso8601String(),
-          },
-          'recorded_at': now.toIso8601String(),
-        });
-      } catch (e) {
-        print('Error registrando user_actions: $e');
-      }
-
-      print('✅ Sesión registrada y progreso actualizado');
+      print('✅ Sesión registrada y progreso actualizado. Nivel: $nivel');
     } catch (e) {
       print('Error registrando sesión: $e');
     }
+  }
+  
+  /// Obtener estadísticas completas desde user_actions
+  Future<Map<String, int>> _obtenerEstadisticasCompletas() async {
+    try {
+      final response = await _supabase
+          .from('user_actions')
+          .select('action_type, action_data')
+          .eq('user_id', _authService.currentUser!.id);
+
+      int totalRepeticiones = 0;
+      int totalPilotajes = 0;
+      int totalMeditaciones = 0;
+      int totalMinutos = 0;
+
+      for (final row in response as List) {
+        final String type = row['action_type'] as String? ?? '';
+        final Map<String, dynamic>? data = (row['action_data'] as Map?)?.cast<String, dynamic>();
+        
+        switch (type) {
+          case 'codigoRepetido':
+            totalRepeticiones++;
+            break;
+          case 'sesionPilotaje':
+            totalPilotajes++;
+            break;
+          case 'meditacionCompletada':
+            totalMeditaciones++;
+            totalMinutos += (data?['duration'] as num?)?.toInt() ?? 0;
+            break;
+        }
+      }
+
+      return {
+        'total_repeticiones': totalRepeticiones,
+        'total_pilotajes': totalPilotajes,
+        'total_meditaciones': totalMeditaciones,
+        'total_minutos': totalMinutos,
+      };
+    } catch (e) {
+      print('Error obteniendo estadísticas: $e');
+      return {};
+    }
+  }
+  
+  /// Calcular nivel energético desde estadísticas completas de acciones
+  int _calcularNivelEnergeticoDesdeAcciones({
+    required int diasConsecutivos,
+    required int totalRepeticiones,
+    required int totalPilotajes,
+    required int totalMeditaciones,
+    required int totalMinutos,
+  }) {
+    int nivel = 1;
+    
+    // Por días consecutivos (base de uso continuo)
+    if (diasConsecutivos >= 21) nivel += 4;
+    else if (diasConsecutivos >= 14) nivel += 3;
+    else if (diasConsecutivos >= 7) nivel += 2;
+    else if (diasConsecutivos >= 3) nivel += 1;
+    
+    // Por total de pilotajes (práctica profunda)
+    if (totalPilotajes >= 100) nivel += 3;
+    else if (totalPilotajes >= 50) nivel += 2;
+    else if (totalPilotajes >= 20) nivel += 1;
+    else if (totalPilotajes >= 5) nivel += 1;
+    
+    // Por total de repeticiones (disciplina y constancia)
+    if (totalRepeticiones >= 200) nivel += 2;
+    else if (totalRepeticiones >= 100) nivel += 1;
+    else if (totalRepeticiones >= 50) nivel += 1;
+    
+    // Por minutos de práctica (tiempo invertido)
+    if (totalMinutos >= 300) nivel += 2; // 5 horas
+    else if (totalMinutos >= 180) nivel += 1; // 3 horas
+    else if (totalMinutos >= 60) nivel += 1; // 1 hora
+
+    // Nivel mínimo de 3 para usuarios activos, máximo 10
+    if (diasConsecutivos > 0 || totalPilotajes > 0 || totalRepeticiones > 0) {
+      nivel = nivel.clamp(3, 10);
+    }
+    
+    return nivel.clamp(1, 10);
   }
 
   /// Actualizar historial de códigos

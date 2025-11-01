@@ -8,6 +8,7 @@ import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/welcome_modal.dart';
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/supabase_service.dart';
+import '../../services/daily_code_service.dart';
 import '../../models/supabase_models.dart';
 import '../../utils/code_formatter.dart';
 import '../pilotaje/pilotaje_screen.dart';
@@ -440,6 +441,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Función helper para obtener la descripción del código desde la base de datos
   Future<String> _getCodigoDescription(String codigo) async {
     try {
+      // Obtener información del código del día desde DailyCodeService
+      // Esto ya busca en daily_codes y codigos_grabovoi
+      final todayInfo = await DailyCodeService.getTodayCodeInfo();
+      if (todayInfo != null && todayInfo['codigo'] == codigo) {
+        return todayInfo['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+      }
+      
+      // Si el código del día no coincide, buscar directamente en codigos_grabovoi
       return CodigosRepository().getDescripcionByCode(codigo);
     } catch (e) {
       return 'Código sagrado para la manifestación y transformación energética.';
@@ -449,9 +458,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Función helper para obtener el título del código desde la base de datos
   Future<String> _getCodigoTitulo(String codigo) async {
     try {
+      // Obtener información del código del día desde DailyCodeService
+      // Esto ya busca en daily_codes y codigos_grabovoi
+      final todayInfo = await DailyCodeService.getTodayCodeInfo();
+      if (todayInfo != null && todayInfo['codigo'] == codigo) {
+        return todayInfo['nombre'] ?? 'Código Diario';
+      }
+      
+      // Si el código del día no coincide, buscar directamente en codigos_grabovoi
       return CodigosRepository().getTituloByCode(codigo);
     } catch (e) {
-      return 'Campo Energético';
+      return 'Código Diario';
     }
   }
   

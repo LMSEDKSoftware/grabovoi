@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
@@ -6,6 +7,7 @@ import '../../services/ai_service.dart';
 import '../../services/challenge_service.dart';
 import '../../services/user_progress_service.dart';
 import '../../services/auth_service_simple.dart';
+import '../../services/app_time_tracker.dart';
 import '../../models/challenge_model.dart';
 
 class EvolucionScreen extends StatefulWidget {
@@ -19,23 +21,48 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   final UserProgressService _progressService = UserProgressService();
   final AuthServiceSimple _authService = AuthServiceSimple();
   final ChallengeService _challengeService = ChallengeService();
+  final AppTimeTracker _appTimeTracker = AppTimeTracker();
   
   Map<String, dynamic>? userProgress;
   Map<String, dynamic>? activeChallenge;
   List<Map<String, dynamic>> completedChallenges = [];
   bool isLoading = true;
+  Timer? _sessionTimeUpdateTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _appTimeTracker.addListener(_updateSessionTime);
+    _startSessionTimeTimer();
     _loadUserData();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _appTimeTracker.removeListener(_updateSessionTime);
+    _sessionTimeUpdateTimer?.cancel();
     super.dispose();
+  }
+
+  void _startSessionTimeTimer() {
+    // Actualizar el tiempo de sesión cada segundo para mostrar el tiempo en tiempo real
+    _sessionTimeUpdateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          // Solo actualizar para forzar rebuild y mostrar el tiempo actualizado
+        });
+      }
+    });
+  }
+
+  void _updateSessionTime() {
+    if (mounted) {
+      setState(() {
+        // Forzar rebuild para actualizar el tiempo de sesión
+      });
+    }
   }
 
   // Hook: refrescar cuando la app vuelve al primer plano o cuando se reentra a la sección
@@ -65,9 +92,6 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
       final progress = await _progressService.getUserProgress();
       final sessionHistory = await _progressService.getSessionHistory(limit: 500);
       final totalMinutes = sessionHistory.fold<int>(0, (acc, s) => acc + ((s['duration_minutes'] as int?) ?? 0));
-      final lastSessionMinutes = sessionHistory.isNotEmpty
-          ? ((sessionHistory.first['duration_minutes'] as int?) ?? 0)
-          : 0;
       
       // Cargar desafíos
       await _challengeService.initializeChallenges();
@@ -83,7 +107,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
           'dias_consecutivos': progress?['dias_consecutivos'] ?? 0,
           'total_pilotajes': progress?['total_pilotajes'] ?? 0,
           'total_minutes': totalMinutes,
-          'last_session_minutes': lastSessionMinutes,
+          // last_session_minutes ya no se usa, se obtiene directamente de AppTimeTracker
         };
         activeChallenge = activeChallenges.isNotEmpty ? {
           'id': activeChallenges.first.id,
@@ -407,13 +431,20 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
     final totalSesiones = (userProgress?['total_pilotajes'] ?? 0).toString();
     final racha = (userProgress?['dias_consecutivos'] ?? 0).toString();
     final totalMinutes = (userProgress?['total_minutes'] ?? 0) as int;
-    final lastMinutes = (userProgress?['last_session_minutes'] ?? 0) as int;
+    
+    // Usar el tiempo de la sesión actual desde AppTimeTracker
+    final currentSessionDuration = _appTimeTracker.getCurrentSessionTime();
+    final currentSessionMinutes = currentSessionDuration.inMinutes;
+    final currentSessionHours = currentSessionDuration.inHours;
+    
     final horas = (totalMinutes ~/ 60);
     final mins = (totalMinutes % 60);
     final tiempoStr = horas > 0 ? '${horas}h ${mins}m' : '${mins}m';
-    final tiempoSesionStr = lastMinutes >= 60
-        ? '${lastMinutes ~/ 60}h ${lastMinutes % 60}m'
-        : '${lastMinutes}m';
+    
+    // Formatear tiempo de sesión actual
+    final tiempoSesionStr = currentSessionHours > 0
+        ? '${currentSessionHours}h ${currentSessionMinutes % 60}m'
+        : '${currentSessionMinutes}m';
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
