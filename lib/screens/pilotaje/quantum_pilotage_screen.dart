@@ -2949,18 +2949,10 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       _isColorBarExpanded = true;
     });
     _colorBarController.reverse();
-    
-    // Ocultar la barra después de 3 segundos si el pilotaje está activo
-    if (_isPilotageActive) {
-      _hideColorBarAfterDelay();
-    }
   }
   
   void _onColorChanged() {
-    // Cuando se cambia el color, reiniciar el timer de ocultación
-    if (_isPilotageActive) {
-      _hideColorBarAfterDelay();
-    }
+    // Ya no ocultamos la barra automáticamente durante el pilotaje
   }
 
   void _mostrarMensajeFinalizacion() {
