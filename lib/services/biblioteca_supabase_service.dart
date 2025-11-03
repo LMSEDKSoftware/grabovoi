@@ -4,6 +4,8 @@ import 'auth_service_simple.dart';
 import 'user_favorites_service.dart';
 import 'user_progress_service.dart';
 import 'daily_code_service.dart';
+import 'notification_scheduler.dart';
+import 'rewards_service.dart';
 
 class BibliotecaSupabaseService {
   static final AuthServiceSimple _authService = AuthServiceSimple();
@@ -262,6 +264,9 @@ class BibliotecaSupabaseService {
       durationMinutes: durationMinutes,
       category: category,
     );
+    
+    // Notificar al scheduler de notificaciones
+    await NotificationScheduler().onPilotageCompleted();
   }
 
   static Future<void> registrarRepeticion({
@@ -282,6 +287,27 @@ class BibliotecaSupabaseService {
       durationMinutes: durationMinutes,
       category: category,
     );
+    
+    // Notificar al scheduler de notificaciones
+    await NotificationScheduler().onRepetitionCompleted();
+    
+    // Recompensar por completar repetición (misma lógica que pilotaje)
+    try {
+      final rewardsService = RewardsService();
+      await rewardsService.recompensarPorPilotaje();
+      await rewardsService.addToHistory(
+        'cristales',
+        'Cristales de energía ganados por completar repetición',
+        cantidad: RewardsService.cristalesPorDia,
+      );
+      await rewardsService.addToHistory(
+        'luz_cuantica',
+        'Luz cuántica ganada por completar repetición',
+        cantidad: RewardsService.luzCuanticaPorPilotaje.toInt(),
+      );
+    } catch (e) {
+      print('⚠️ Error otorgando recompensas: $e');
+    }
   }
 
   // ===== AUDIOS =====

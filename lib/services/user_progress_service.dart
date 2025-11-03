@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_model.dart' as app_models;
 import 'auth_service_simple.dart';
+import 'rewards_service.dart';
 
 class UserProgressService {
   static final UserProgressService _instance = UserProgressService._internal();
@@ -156,6 +157,14 @@ class UserProgressService {
       }
 
       print('✅ Sesión registrada y progreso actualizado. Nivel: $nivel');
+      
+      // Verificar y otorgar recompensas por racha
+      try {
+        final rewardsService = RewardsService();
+        await rewardsService.verificarRecompensasPorRacha(diasConsecutivos);
+      } catch (e) {
+        print('⚠️ Error verificando recompensas por racha: $e');
+      }
     } catch (e) {
       print('Error registrando sesión: $e');
     }

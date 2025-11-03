@@ -55,7 +55,7 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
     },
     {
       'title': 'Objetivos Personales',
-      'subtitle': '¿Qué te gustaría lograr con los códigos de Grabovoi? (Puedes seleccionar varios)',
+      'subtitle': '¿Qué te gustaría lograr con los códigos de Grabovoi?',
       'type': 'multiple_choice',
       'options': [
         {
@@ -160,7 +160,7 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
     },
     {
       'title': 'Preferencias de Práctica',
-      'subtitle': '¿Qué elementos te gustaría incluir en tu práctica? (Puedes seleccionar varios)',
+      'subtitle': '¿Qué elementos te gustaría incluir en tu práctica?',
       'type': 'multiple_choice',
       'options': [
         {

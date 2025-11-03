@@ -6,4 +6,5 @@
     <color name="browser_actions_title_color">#FF000000</color>
     <color name="browser_actions_divider_color">#FFCCCCCC</color>
     <color name="browser_actions_text_color">#FF000000</color>
+	<color name="ic_launcher_background">#FFD700</color>
 </resources>

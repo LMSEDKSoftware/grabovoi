@@ -203,7 +203,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
     return '$twoDigitMinutes:$twoDigitSeconds';
-  }
+    }
 
   @override
   Widget build(BuildContext context) {

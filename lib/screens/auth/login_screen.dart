@@ -6,6 +6,7 @@ import '../../widgets/golden_sphere.dart';
 import '../../services/auth_service_simple.dart';
 import 'register_screen.dart';
 import '../../main.dart';
+import '../../widgets/auth_wrapper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -46,8 +47,11 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
+        // Navegar de vuelta a AuthWrapper para que detecte el login exitoso
+        // y muestre la pantalla correcta (MainNavigation o UserAssessmentScreen)
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthWrapper()),
+          (route) => false, // Eliminar todas las rutas anteriores
         );
       }
     } catch (e) {
@@ -73,8 +77,11 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.signInWithGoogle();
       
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
+        // Navegar de vuelta a AuthWrapper para que detecte el login exitoso
+        // y muestre la pantalla correcta (MainNavigation o UserAssessmentScreen)
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthWrapper()),
+          (route) => false, // Eliminar todas las rutas anteriores
         );
       }
     } catch (e) {
@@ -484,31 +491,31 @@ class _LoginScreenState extends State<LoginScreen> {
       body: GlowBackground(
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
                   
                   // Logo y título con diseño mejorado
                   Column(
                     children: [
                       // Esfera dorada 180px con glow 0.9
                       const GoldenSphere(
-                        size: 180,
+                        size: 150,
                         color: Color(0xFFFFD700),
                         glowIntensity: 0.9,
                         isAnimated: true,
                       ),
                       // Letrero semitransparente con el título (superpuesto)
                       Transform.translate(
-                        offset: const Offset(0, -130),
+                        offset: const Offset(0, -150),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
+                            horizontal: 28,
+                            vertical: 12,
                           ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF1a1a2e).withOpacity(0.75),
@@ -523,20 +530,32 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               // Título principal
                               Text(
-                                'Manifestación Numérica Grabovoi',
+                                'ManiGrab',
                                 style: GoogleFonts.playfairDisplay(
-                                  fontSize: 20,
+                                  fontSize: 28,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFFFFD700),
+                                  letterSpacing: 0.5,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 6),
-                              // Subtítulo
+                              // Subtítulo (marca)
+                              Text(
+                                'Manifestaciones Cuánticas Grabovoi',
+                                style: GoogleFonts.inter(
+                                  fontSize: 15,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 2),
+                              // Lema
                               Text(
                                 'Tu viaje de transformación personal',
                                 style: GoogleFonts.inter(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   color: Colors.white70,
                                   fontStyle: FontStyle.italic,
                                 ),
@@ -547,14 +566,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       Transform.translate(
-                        offset: const Offset(0, -70),
+                        offset: const Offset(0, -100),
                         child: Column(
                           children: [
                             // "Bienvenid@ de Vuelta" en dorado, 40px
                             Text(
                               'Bienvenid@ de Vuelta',
                               style: GoogleFonts.playfairDisplay(
-                                fontSize: 40,
+                                fontSize: 36,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFFFFD700),
                                 letterSpacing: 1,
@@ -567,7 +586,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   
                   // Formulario de login
                   Column(

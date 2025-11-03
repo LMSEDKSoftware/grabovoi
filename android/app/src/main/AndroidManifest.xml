@@ -3,8 +3,23 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
+    <!-- Permisos para acceso a fotos/galería -->
+    <!-- Android 13+ (API 33+) - Permisos granulares para fotos -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Android 12 y anteriores - Permiso de almacenamiento -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
+                     android:maxSdkVersion="32" />
+    <!-- Para escribir temporalmente (solo si es necesario) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="32"
+                     android:requestLegacyExternalStorage="true" />
+    
+    <!-- Permisos de notificaciones -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    
     <application
-        android:label="Manifestación Numérica Grabovoi"
+        android:label="MANIGRAB"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"

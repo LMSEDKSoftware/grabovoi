@@ -113,6 +113,21 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       _secondsRemaining = 120; // 2 minutos
     });
     
+    // Iniciar audio cuando la repetición comience
+    try {
+      final audioManager = AudioManagerService();
+      final tracks = [
+        'assets/audios/432hz_harmony.mp3',
+        'assets/audios/528hz_love.mp3',
+        'assets/audios/binaural_manifestation.mp3',
+        'assets/audios/crystal_bowls.mp3',
+        'assets/audios/forest_meditation.mp3',
+      ];
+      await audioManager.playTrack(tracks[0], autoPlay: true);
+    } catch (e) {
+      print('Error iniciando audio: $e');
+    }
+    
     // Notificar al servicio global
     PilotageStateService().setRepetitionActive(true);
     
@@ -181,16 +196,41 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
 
   Future<void> _shareImage() async {
     try {
+      // Esperar a que el widget se renderice completamente
+      await WidgetsBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Forzar rebuild para asegurar que el widget oculto esté renderizado
+      if (mounted) {
+        setState(() {});
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+      
+      // Capturar la imagen del widget oculto
       final Uint8List? pngBytes = await _screenshotController.capture(pixelRatio: 2.0);
-      if (pngBytes == null) return;
+      
+      if (pngBytes == null || pngBytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No se pudo generar la imagen. Intenta nuevamente.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       // Solo para móvil, web no soporta compartir imágenes
       if (!kIsWeb) {
         final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/grabovoi_${widget.codigo}.png');
+        final file = File('${dir.path}/grabovoi_${widget.codigo.replaceAll(RegExp(r'[^\w\s-]'), '_')}.png');
         await file.writeAsBytes(pngBytes);
 
-        await Share.shareXFiles([XFile(file.path)], text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi');
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -201,9 +241,15 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al compartir: $e')),
-      );
+      print('Error al compartir imagen: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -427,176 +473,205 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         await _handleBackNavigation();
       },
       child: Scaffold(
-        body: GlowBackground(
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
+        body: Stack(
+          children: [
+            GlowBackground(
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      IconButton(
+                      Row(
+                        children: [
+                          IconButton(
                         onPressed: _handleBackNavigation,
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      ),
-                      const Spacer(),
-                      // Botón copiar en la parte superior derecha
-                      IconButton(
-                        onPressed: () async {
-                          try {
-                            // Buscar el código en la base de datos para obtener su información real
-                            final codigos = await SupabaseService.getCodigos();
-                            final codigoEncontrado = codigos.firstWhere(
-                              (c) => c.codigo == widget.codigo,
-                              orElse: () => CodigoGrabovoi(
-                                id: '',
-                                codigo: widget.codigo,
-                                nombre: 'Código Sagrado',
-                                descripcion: 'Código sagrado para la manifestación y transformación energética.',
-                                categoria: 'General',
-                                color: '#FFD700',
-                              ),
-                            );
-                            
-                            final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
+                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          ),
+                          const Spacer(),
+                          // Botón copiar en la parte superior derecha
+                          IconButton(
+                            onPressed: () async {
+                              try {
+                                // Buscar el código en la base de datos para obtener su información real
+                                final codigos = await SupabaseService.getCodigos();
+                                final codigoEncontrado = codigos.firstWhere(
+                                  (c) => c.codigo == widget.codigo,
+                                  orElse: () => CodigoGrabovoi(
+                                    id: '',
+                                    codigo: widget.codigo,
+                                    nombre: 'Código Sagrado',
+                                    descripcion: 'Código sagrado para la manifestación y transformación energética.',
+                                    categoria: 'General',
+                                    color: '#FFD700',
+                                  ),
+                                );
+                                
+                                final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
 ${codigoEncontrado.descripcion}
-Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
-                            
-                            Clipboard.setData(ClipboardData(text: textToCopy));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Código ${widget.codigo} copiado con descripción'),
-                                backgroundColor: const Color(0xFFFFD700),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          } catch (e) {
-                            // Fallback si hay error
-                            final textToCopy = '''${widget.codigo} : Código Sagrado
+Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+                                
+                                Clipboard.setData(ClipboardData(text: textToCopy));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Código ${widget.codigo} copiado con descripción'),
+                                    backgroundColor: const Color(0xFFFFD700),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              } catch (e) {
+                                // Fallback si hay error
+                                final textToCopy = '''${widget.codigo} : Código Sagrado
 Código sagrado para la manifestación y transformación energética.
 Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
+                                
+                                Clipboard.setData(ClipboardData(text: textToCopy));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Código ${widget.codigo} copiado'),
+                                    backgroundColor: const Color(0xFFFFD700),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
+                          ),
+                          // Botón ver detalle
+                          IconButton(
+                            onPressed: _mostrarNotaImportante,
+                            icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
+                          ),
+                          // Botón compartir/descargar
+                          IconButton(
+                            onPressed: _shareImage,
+                            icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Sesión de Repetición',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Esfera normal en pantalla
+                      Center(
+                        child: _buildIntegratedSphere(widget.codigo),
+                      ),
+                      
+                      // Descripción del código
+                      Center(
+                        child: FutureBuilder<Map<String, String>>(
+                          future: Future.wait([
+                            _getCodigoTitulo(),
+                            _getCodigoDescription(),
+                          ]).then((results) => {
+                            'titulo': results[0],
+                            'descripcion': results[1],
+                          }),
+                          builder: (context, snapshot) {
+                            final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
+                            final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
                             
-                            Clipboard.setData(ClipboardData(text: textToCopy));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Código ${widget.codigo} copiado'),
-                                backgroundColor: const Color(0xFFFFD700),
-                                behavior: SnackBarBehavior.floating,
+                            return Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: const Color(0xFFFFD700).withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    titulo,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFFFD700),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    descripcion,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      color: Colors.white.withOpacity(0.9),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
-                          }
-                        },
-                        icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
+                          },
+                        ),
                       ),
-                      // Botón ver detalle
-                      IconButton(
-                        onPressed: _mostrarNotaImportante,
-                        icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
-                      ),
-                      // Botón compartir/descargar
-                      IconButton(
-                        onPressed: _shareImage,
-                        icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
-                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Control de Música para sesión de repetición
+                      StreamedMusicController(autoPlay: _isRepetitionActive, isActive: true),
+                      
+                      const SizedBox(height: 20),
                     ],
                   ),
-                const SizedBox(height: 10),
-                Text(
-                  'Sesión de Repetición',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
-                  ),
                 ),
-                const SizedBox(height: 20),
-
-                // Vista a capturar - Esfera con app name, título y descripción
-                Center(
+              ),
+            ),
+            // Widget para capturar (completamente fuera de la vista pero renderizado)
+            Positioned(
+              left: -1000,
+              top: -1000,
+              child: IgnorePointer(
+                ignoring: true,
+                child: SizedBox(
+                  width: 800,
+                  height: 800,
                   child: Screenshot(
                     controller: _screenshotController,
-                    child: FutureBuilder<Map<String, String>>(
-                      future: Future.wait([
-                        _getCodigoTitulo(),
-                        _getCodigoDescription(),
-                      ]).then((results) => {
-                        'titulo': results[0],
-                        'descripcion': results[1],
-                      }),
-                      builder: (context, snapshot) {
-                        final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                        final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
-                        return _buildShareableImage(widget.codigo, titulo, descripcion);
+                    child: Builder(
+                      builder: (context) {
+                        // Obtener datos del código de forma síncrona para evitar problemas de async
+                        return FutureBuilder<Map<String, String>>(
+                          future: Future.wait([
+                            _getCodigoTitulo(),
+                            _getCodigoDescription(),
+                          ]).then((results) => {
+                            'titulo': results[0],
+                            'descripcion': results[1],
+                          }),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return Container(
+                                width: 800,
+                                height: 800,
+                                color: Colors.black,
+                                child: const Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            final titulo = snapshot.data!['titulo'] ?? 'Campo Energético';
+                            final descripcion = snapshot.data!['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                            return _buildShareableImage(widget.codigo, titulo, descripcion);
+                          },
+                        );
                       },
                     ),
                   ),
                 ),
-                
-                // Descripción del código
-                Center(
-                  child: FutureBuilder<Map<String, String>>(
-                    future: Future.wait([
-                      _getCodigoTitulo(),
-                      _getCodigoDescription(),
-                    ]).then((results) => {
-                      'titulo': results[0],
-                      'descripcion': results[1],
-                    }),
-                    builder: (context, snapshot) {
-                      final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                      final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
-                      
-                      return Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: const Color(0xFFFFD700).withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              titulo,
-                              style: GoogleFonts.inter(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFFD700),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              descripcion,
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.9),
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Control de Música para sesión de repetición
-                StreamedMusicController(autoPlay: _isRepetitionActive, isActive: true),
-                
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
-          ),
-          ),
-        ),
-        bottomNavigationBar: _buildBottomNavigationBar(),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
       ),
     );
   }
@@ -650,7 +725,9 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo);
 
     return Container(
-      padding: const EdgeInsets.all(40),
+      width: 800,
+      height: 800,
+      padding: const EdgeInsets.all(30),
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(20),
@@ -665,7 +742,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
             'ManiGrab - Manifestaciones Cuánticas Grabovoi',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: const Color(0xFFFFD700),
               shadows: [
@@ -676,7 +753,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
               ],
             ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 25),
           
           // 2) ESFERA CON CÓDIGO - Centro
           Stack(
@@ -685,7 +762,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
             children: [
               // Esfera dorada (sin animación para captura)
               GoldenSphere(
-                size: 260,
+                size: 280,
                 color: _getColorSeleccionado(),
                 glowIntensity: 0.8,
                 isAnimated: false,
@@ -700,12 +777,12 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
               ),
             ],
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 25),
           
           // 3) TÍTULO Y DESCRIPCIÓN - Abajo
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.3),
               borderRadius: BorderRadius.circular(16),
@@ -715,25 +792,30 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
               ),
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   titulo,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFFFFD700),
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Text(
                   descripcion,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: 12,
                     color: Colors.white.withOpacity(0.9),
-                    height: 1.4,
+                    height: 1.3,
                   ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

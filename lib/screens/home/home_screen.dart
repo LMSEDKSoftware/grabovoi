@@ -17,6 +17,9 @@ import '../desafios/desafios_screen.dart';
 import '../codes/code_detail_screen.dart';
 import '../../main.dart';
 import '../../repositories/codigos_repository.dart';
+import '../../widgets/rewards_display.dart';
+import '../../widgets/energy_stats_tab.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -44,7 +47,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _cargarDatosHome();
     _cargarNombreUsuario();
+    _checkOnboarding();
     _checkWelcomeModal();
+  }
+
+  Future<void> _checkOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    final shown = prefs.getBool('onboarding_shown') ?? false;
+    if (!shown && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
+        await prefs.setBool('onboarding_shown', true);
+      });
+    }
   }
 
   Future<void> _cargarNombreUsuario() async {
@@ -96,45 +114,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return Scaffold(
       body: GlowBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Portal Energético',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
-                    shadows: [
-                      Shadow(
-                        color: const Color(0xFFFFD700).withOpacity(0.5),
-                        blurRadius: 20,
+        child: Stack(
+          children: [
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Portal Energético',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFFD700),
+                        shadows: [
+                          Shadow(
+                            color: const Color(0xFFFFD700).withOpacity(0.5),
+                            blurRadius: 20,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _datosHome['fraseMotivacional'],
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 40),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _datosHome['fraseMotivacional'],
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
                 // Esfera con nombre del usuario sobre ella
                 Center(
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       GoldenSphere(
-                        size: 180,
-                        color: const Color(0xFFFFD700), // Color dorado fijo
-                        glowIntensity: 0.7,
-                        isAnimated: true,
+                    size: 180,
+                    color: const Color(0xFFFFD700), // Color dorado fijo
+                    glowIntensity: 0.7,
+                    isAnimated: true,
                       ),
                       // Nombre del usuario sobre la esfera con estilo de código
                       Column(
@@ -228,9 +248,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 _buildCodeOfDay(context, _datosHome['codigoRecomendado']),
                 const SizedBox(height: 20),
                 _buildNextStep(_datosHome['proximoPaso']),
-              ],
+                  ],
+                ),
+              ),
             ),
-          ),
+            // Solapa flotante de estadísticas de energía (esquina superior derecha)
+            const EnergyStatsTab(),
+          ],
         ),
       ),
     );
@@ -238,51 +262,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildEnergyCard(String title, String value, IconData icon) {
     return Center(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
+          ),
         child: Column(
           children: [
             Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: const Color(0xFFFFD700), size: 28),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
-                    const SizedBox(height: 4),
+                child: Icon(icon, color: const Color(0xFFFFD700), size: 28),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
+                  const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(value, style: GoogleFonts.inter(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => _mostrarModalNivelEnergetico(),
-                          child: Icon(
-                            Icons.help_outline,
-                            color: const Color(0xFFFFD700),
-                            size: 20,
+                  Text(value, style: GoogleFonts.inter(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 10),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFFFFD700),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
                           ),
+                          onPressed: _mostrarModalNivelEnergetico,
+                          child: const Text('¿Cómo funciona?'),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
+          ),
             const SizedBox(height: 12),
             Text(
               'Tu energía se eleva con cada pilotaje consciente',
@@ -541,124 +566,124 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        margin: const EdgeInsets.all(20),
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            margin: const EdgeInsets.all(20),
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1C2541),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C2541),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-          ],
-        ),
         child: Stack(
           children: [
             SingleChildScrollView(
                         controller: _scrollController,
                         padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Icono y título
-                            Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFD700).withOpacity(0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.bolt, color: Color(0xFFFFD700), size: 28),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  'Nivel Energético',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFFFD700),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                            const SizedBox(height: 24),
-                            
-                            // Explicación
-                            Text(
-                            'Es un sistema de puntuación que representa el estado energético/vibracional del usuario, basado en su evaluación inicial y actividades en la app.',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              color: Colors.white,
-                              height: 1.5,
-                            ),
-                          ),
-                            const SizedBox(height: 20),
-                            
-                            // Información adicional
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: const Color(0xFFFFD700).withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                Text(
-                                  '¿Cómo funciona?',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFFFD700),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                _buildInfoItem('• Es parte de la escala de niveles en el formulario que se llenó al inicio'),
-                                const SizedBox(height: 8),
-                                _buildInfoItem('• Se actualiza con el uso de la app'),
-                                const SizedBox(height: 8),
-                                _buildInfoItem('• Completar desafíos aumenta el nivel'),
-                                const SizedBox(height: 8),
-                                _buildInfoItem('• Practicar códigos regularmente mejora el nivel'),
-                              ],
-                            ),
-                          ),
-                            const SizedBox(height: 20),
-                            
-                            // Mensaje final
-                            Text(
-                              '"El sistema está diseñado para crecer contigo mientras usas la app y practicas los códigos de Grabovoi."',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: Colors.white70,
-                                fontStyle: FontStyle.italic,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            
-                            // Botón de cerrar
-                            CustomButton(
-                              text: 'Entendido',
+              children: [
+                // Icono y título
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD700).withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.bolt, color: Color(0xFFFFD700), size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Nivel Energético',
+                        style: GoogleFonts.inter(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                
+                // Explicación
+                Text(
+                  'Es un sistema de puntuación que representa el estado energético/vibracional del usuario, basado en su evaluación inicial y actividades en la app.',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: Colors.white,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Información adicional
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '¿Cómo funciona?',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoItem('• Es parte de la escala de niveles en el formulario que se llenó al inicio'),
+                      const SizedBox(height: 8),
+                      _buildInfoItem('• Se actualiza con el uso de la app'),
+                      const SizedBox(height: 8),
+                      _buildInfoItem('• Completar desafíos aumenta el nivel'),
+                      const SizedBox(height: 8),
+                      _buildInfoItem('• Practicar códigos regularmente mejora el nivel'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Mensaje final
+                Text(
+                  '"El sistema está diseñado para crecer contigo mientras usas la app y practicas los códigos de Grabovoi."',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white70,
+                    fontStyle: FontStyle.italic,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Botón de cerrar
+                CustomButton(
+                  text: 'Entendido',
                               onPressed: () {
                                 Navigator.of(context).pop();
                               },
-                              icon: Icons.check,
-                            ),
+                  icon: Icons.check,
+                ),
                             const SizedBox(height: 8),
                           ],
                         ),
@@ -679,11 +704,11 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                                 Colors.transparent,
                                 const Color(0xFF1C2541).withOpacity(0.9),
                                 const Color(0xFF1C2541),
-                              ],
-                            ),
-                          ),
+              ],
+            ),
+          ),
                           child: Column(
-                            children: [
+      children: [
                               Icon(
                                 Icons.keyboard_arrow_up,
                                 color: const Color(0xFFFFD700).withOpacity(0.7),
@@ -691,16 +716,16 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                               ),
                               Text(
                                 'Desliza hacia arriba',
-                                style: GoogleFonts.inter(
+            style: GoogleFonts.inter(
                                   color: const Color(0xFFFFD700).withOpacity(0.7),
                                   fontSize: 12,
                                 ),
                               ),
                             ],
-                          ),
-                        ),
-                      ),
-          ],
+            ),
+          ),
+        ),
+      ],
         ),
       ),
     );

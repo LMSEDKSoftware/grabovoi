@@ -1,9 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../config/env.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glow_background.dart';
@@ -35,6 +41,7 @@ class QuantumPilotageScreen extends StatefulWidget {
 
 class _QuantumPilotageScreenState extends State<QuantumPilotageScreen> 
     with TickerProviderStateMixin {
+  final ScreenshotController _screenshotController = ScreenshotController();
   
   // Controladores de animación
   late AnimationController _breathingController;
@@ -400,15 +407,53 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       print('❌ Error al guardar en la base de datos: $e');
       print('🔍 Tipo de error: ${e.runtimeType}');
       
-      // El código se mantiene en la sesión actual aunque no se guarde en la BD
+      // Determinar el tipo de error y mostrar mensaje apropiado
+      String mensajeError = 'No se pudo guardar el código.';
+      if (e.toString().contains('401') || e.toString().contains('No API key')) {
+        mensajeError = 'Error de autenticación: Verifica la configuración de la aplicación.';
+      } else if (e.toString().contains('duplicate') || e.toString().contains('unique')) {
+        mensajeError = 'El código ya existe en la base de datos.';
+      } else if (e.toString().contains('permission') || e.toString().contains('RLS')) {
+        mensajeError = 'No tienes permisos para guardar códigos. Contacta al administrador.';
+      } else {
+        mensajeError = 'Error al guardar: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e.toString()}';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '⚠️ Código encontrado pero no se pudo guardar permanentemente. Error: ${e.toString()}',
-            style: GoogleFonts.inter(color: Colors.white),
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Error al guardar código',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      mensajeError,
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          backgroundColor: Colors.orange,
+          backgroundColor: Colors.red.shade700,
           duration: const Duration(seconds: 5),
+          behavior: SnackBarBehavior.floating,
         ),
       );
       
@@ -416,7 +461,67 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     }
   }
 
+  // Verificar conexión a internet
+  Future<bool> _verificarConexionInternet() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://www.google.com'),
+      ).timeout(const Duration(seconds: 5));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ Sin conexión a internet: $e');
+      return false;
+    }
+  }
+
   Future<void> _busquedaProfunda(String codigo) async {
+    // Verificar conexión a internet antes de iniciar
+    final tieneInternet = await _verificarConexionInternet();
+    
+    if (!tieneInternet) {
+      print('⚠️ No hay conexión a internet, no se puede usar IA');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.wifi_off, color: Colors.white, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Sin conexión a internet',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'La búsqueda con IA requiere conexión. Verifica tu conexión e intenta nuevamente.',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 5),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+    
     try {
       print('🚀 Iniciando búsqueda profunda para código: $codigo');
       
@@ -475,6 +580,10 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           ? DateTime.now().difference(_inicioBusqueda!).inMilliseconds 
           : 0;
       
+      // Verificar si se mostraron códigos en el modal de selección DESPUÉS de la búsqueda
+      // (porque _buscarConOpenAI puede haber actualizado estos estados)
+      final hayCodigosParaSeleccionar = _mostrarSeleccionCodigos && _codigosEncontrados.isNotEmpty;
+      
       if (resultado != null) {
         print('✅ Código encontrado: ${resultado.nombre}');
         
@@ -484,6 +593,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         try {
           codigoId = await _guardarCodigoEnBaseDatos(resultado);
           codigoGuardado = codigoId != null;
+          // NO mostrar mensaje aquí porque _guardarCodigoEnBaseDatos ya lo muestra
         } catch (e) {
           print('⚠️ Error al guardar código: $e');
         }
@@ -525,16 +635,40 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           _searchController.clear();
           _mostrarResultados = false;
         });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('¡Código encontrado! ${resultado.nombre}'),
-            backgroundColor: const Color(0xFF4CAF50),
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        // NO mostrar mensaje aquí porque _guardarCodigoEnBaseDatos ya lo muestra
       } else {
-        print('❌ Código no encontrado: $codigo');
+        print('❌ Código no encontrado directamente: $codigo');
+        
+        // Verificar si se mostraron códigos en el modal de selección (códigos encontrados por IA)
+        // Si es así, NO mostrar error porque el usuario puede seleccionar de la lista
+        if (hayCodigosParaSeleccionar) {
+          print('ℹ️ Se mostraron códigos en modal de selección (${_codigosEncontrados.length} códigos), esperando selección del usuario');
+          
+          // Actualizar registro de búsqueda indicando que se encontraron códigos (pendiente selección)
+          if (_busquedaActualId != null) {
+            try {
+              final busquedaActualizada = busqueda.copyWith(
+                respuestaIa: '{"codigos_encontrados": ${_codigosEncontrados.length}, "estado": "pendiente_seleccion"}',
+                codigoEncontrado: true, // Se encontraron códigos, aunque pendiente de selección
+                codigoGuardado: false, // Aún no se guardó porque está pendiente de selección
+                duracionMs: duracion,
+                tokensUsados: _tokensUsadosOpenAI,
+                costoEstimado: _costoEstimadoOpenAI,
+              );
+              
+              await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
+              print('📝 Búsqueda actualizada: códigos encontrados, pendiente selección');
+            } catch (e) {
+              print('⚠️ Error al actualizar búsqueda: $e');
+            }
+          }
+          
+          // No mostrar error, el usuario puede seleccionar de la lista
+          return;
+        }
+        
+        // Solo mostrar error si realmente no se encontró nada
+        print('❌ No se encontraron códigos para: $codigo');
         
         // Actualizar registro de búsqueda con resultado fallido
         if (_busquedaActualId != null) {
@@ -604,6 +738,53 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   double _costoEstimadoOpenAI = 0.0;
 
   Future<CodigoGrabovoi?> _buscarConOpenAI(String codigo) async {
+    // Verificar conexión antes de llamar a OpenAI
+    final tieneInternet = await _verificarConexionInternet();
+    
+    if (!tieneInternet) {
+      print('❌ Sin conexión a internet, no se puede usar OpenAI');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.wifi_off, color: Colors.white, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Sin conexión a internet',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'No se puede conectar con la IA. Verifica tu conexión.',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 5),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return null;
+    }
+    
     try {
       print('🔍 Buscando código $codigo con OpenAI...');
       
@@ -731,11 +912,16 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   
                   print('✅ CÓDIGO VÁLIDO CONFIRMADO: $codigoNumero');
                   
-                  final categoria = codigoData['categoria'] ?? 'Abundancia';
+                  final categoriaRaw = codigoData['categoria']?.toString() ?? '';
+                  final nombreCodigo = codigoData['nombre']?.toString() ?? 'Código encontrado por IA';
+                  // Validar y corregir categoría: si es "codigo" o vacía, usar _determinarCategoria
+                  final categoria = (categoriaRaw.isEmpty || categoriaRaw.toLowerCase() == 'codigo') 
+                      ? _determinarCategoria(nombreCodigo) 
+                      : categoriaRaw;
                   codigosEncontrados.add(CodigoGrabovoi(
                     id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
                     codigo: codigoNumero,
-                    nombre: codigoData['nombre']?.toString() ?? 'Código encontrado por IA',
+                    nombre: nombreCodigo,
                     descripcion: codigoData['descripcion']?.toString() ?? 'Código encontrado mediante búsqueda profunda con IA',
                     categoria: categoria,
                     color: codigoData['color']?.toString() ?? _getCategoryColor(categoria).value.toRadixString(16).substring(2).toUpperCase(),
@@ -789,6 +975,54 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       return null;
     } catch (e) {
       print('❌ Error en búsqueda con OpenAI: $e');
+      
+      // Mostrar mensaje amigable al usuario si hay error de conexión
+      if (mounted) {
+        final esErrorConexion = e.toString().contains('SocketException') || 
+                               e.toString().contains('TimeoutException') ||
+                               e.toString().contains('Failed host lookup') ||
+                               e.toString().contains('Network is unreachable');
+        
+        if (esErrorConexion) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.wifi_off, color: Colors.white, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Error de conexión',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'No se pudo conectar con la IA. Verifica tu conexión a internet.',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red.shade700,
+              duration: const Duration(seconds: 5),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
       
       // En caso de error, intentar búsqueda local como respaldo
       print('🔄 Error en OpenAI, buscando en base local como respaldo...');
@@ -1186,13 +1420,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
   // Función helper para obtener la descripción del código desde la base de datos
   Future<String> _getCodigoDescription() async {
-    if (_codigoSeleccionado.isEmpty) return 'Código sagrado para la manifestación y transformación energética.';
+    if (_codigoSeleccionado.isEmpty) return 'Código Grabovoi para la manifestación y transformación energética.';
     
     try {
       return CodigosRepository().getDescripcionByCode(_codigoSeleccionado);
     } catch (e) {
       print('Error al obtener descripción del código: $e');
-      return 'Código sagrado para la manifestación y transformación energética.';
+      return 'Código Grabovoi para la manifestación y transformación energética.';
     }
   }
 
@@ -1371,6 +1605,22 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                  // Modal de pilotaje manual
                  if (_showManualPilotage) _buildManualPilotageModal(),
                  
+                 // Widget para capturar (completamente fuera de la vista pero renderizado)
+                 Positioned(
+                   left: -1000,
+                   top: -1000,
+                   child: IgnorePointer(
+                     ignoring: true,
+                     child: SizedBox(
+                       width: 800,
+                       height: 800,
+                       child: Screenshot(
+                         controller: _screenshotController,
+                         child: _buildShareableResonanceImage(),
+                       ),
+                     ),
+                   ),
+                 ),
                ],
              ),
            );
@@ -1383,7 +1633,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       children: [
           // Título principal
           Text(
-            'Pilotaje Consciente Cuántico',
+            'Pilotaje Cuántico Consciente',
             style: GoogleFonts.playfairDisplay(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -1668,7 +1918,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 }),
                 builder: (context, snapshot) {
                   final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                  final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                  final descripcion = snapshot.data?['descripcion'] ?? 'Código Grabovoi para la manifestación y transformación energética.';
                   
                   return Container(
                     width: double.infinity,
@@ -2615,11 +2865,14 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           const SizedBox(height: 12),
           
           // Compartir momento
-          _buildBonusFeature(
-            'Compartir Resonancia',
-            'Genera una imagen de tu momento de resonancia',
-            Icons.share,
-            Colors.blue,
+          GestureDetector(
+            onTap: _shareResonance,
+            child: _buildBonusFeature(
+              'Compartir Resonancia',
+              'Genera una imagen de tu momento de resonancia',
+              Icons.share,
+              Colors.blue,
+            ),
           ),
           
           const SizedBox(height: 12),
@@ -2677,6 +2930,174 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       ],
     );
   }
+  
+  Future<void> _shareResonance() async {
+    try {
+      // Esperar a que el widget se renderice completamente
+      await WidgetsBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Forzar rebuild para asegurar que el widget oculto esté renderizado
+      if (mounted) {
+        setState(() {});
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+      
+      // Capturar la imagen del widget oculto
+      final Uint8List? pngBytes = await _screenshotController.capture(pixelRatio: 2.0);
+      
+      if (pngBytes == null || pngBytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No se pudo generar la imagen. Intenta nuevamente.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Solo para móvil, web no soporta compartir imágenes
+      if (!kIsWeb) {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/resonancia_quantica.png');
+        await file.writeAsBytes(pngBytes);
+
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Función de compartir no disponible en web'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error al compartir imagen: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  Widget _buildShareableResonanceImage() {
+    final String codigoFormateado = _codigoSeleccionado.isNotEmpty 
+        ? CodeFormatter.formatCodeForDisplay(_codigoSeleccionado)
+        : CodeFormatter.formatCodeForDisplay('5207418'); // Código por defecto
+    final double fontSize = CodeFormatter.calculateFontSize(_codigoSeleccionado.isNotEmpty 
+        ? _codigoSeleccionado 
+        : '5207418');
+
+    return Container(
+      width: 800,
+      height: 800,
+      padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 1) NOMBRE DE LA APP - Arriba
+          Text(
+            'ManiGrab - Manifestaciones Cuánticas Grabovoi',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFFFD700),
+              shadows: [
+                Shadow(
+                  color: const Color(0xFFFFD700).withOpacity(0.5),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 25),
+          
+          // 2) ESFERA CON CÓDIGO - Centro
+          Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // Esfera dorada (sin animación para captura)
+              GoldenSphere(
+                size: 280,
+                color: _colorVibracional,
+                glowIntensity: 0.8,
+                isAnimated: false,
+              ),
+              // Código iluminado superpuesto (sin animación)
+              IlluminatedCodeText(
+                code: codigoFormateado,
+                fontSize: fontSize,
+                color: _colorVibracional,
+                letterSpacing: 4,
+                isAnimated: false,
+              ),
+            ],
+          ),
+          const SizedBox(height: 25),
+          
+          // 3) TÍTULO Y DESCRIPCIÓN - Abajo
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Pilotaje Cuántico',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD700),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Resonancia: ${(_nivelResonancia * 100).toInt()}%',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.9),
+                    height: 1.3,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _startQuantumPilotage() {
     setState(() {
@@ -2717,6 +3138,21 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       _isAudioPlaying = true;
       _pilotageDuration = 0;
     });
+
+    // Iniciar audio cuando el pilotaje comience
+    try {
+      final audioManager = AudioManagerService();
+      final tracks = [
+        'assets/audios/432hz_harmony.mp3',
+        'assets/audios/528hz_love.mp3',
+        'assets/audios/binaural_manifestation.mp3',
+        'assets/audios/crystal_bowls.mp3',
+        'assets/audios/forest_meditation.mp3',
+      ];
+      audioManager.playTrack(tracks[0], autoPlay: true);
+    } catch (e) {
+      print('Error iniciando audio: $e');
+    }
 
     // Notificar al servicio global
     PilotageStateService().setQuantumPilotageActive(true);
@@ -3674,29 +4110,111 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
   // Determinar la categoría basándose en el tema del código
   String _determinarCategoria(String tema) {
-    // Mapeo de palabras clave del tema a categorías existentes
+    if (tema.isEmpty || tema.toLowerCase() == 'codigo') {
+      return 'Abundancia'; // Categoría por defecto válida
+    }
+    
     final temaLower = tema.toLowerCase();
     
-    // Lista de categorías comunes en el sistema
-    final categoriasExistentes = ['Sanación', 'Abundancia', 'Amor', 'Protección', 'Paz', 
-                                  'Relaciones', 'Espiritualidad', 'Curación', 'Armonía', 
-                                  'Prosperidad', 'Éxito', 'Vitalidad', 'Salud', 'Energía'];
+    // Mapeo extenso de palabras clave a categorías existentes
+    final mapeoCategorias = {
+      // Salud y Sanación
+      'salud': 'Salud',
+      'sanacion': 'Salud',
+      'sanar': 'Salud',
+      'cura': 'Salud',
+      'curación': 'Salud',
+      'enfermedad': 'Salud',
+      'dolor': 'Salud',
+      'medicina': 'Salud',
+      'vitalidad': 'Salud',
+      'bienestar': 'Salud',
+      
+      // Abundancia y Prosperidad
+      'abundancia': 'Abundancia',
+      'prosperidad': 'Abundancia',
+      'dinero': 'Abundancia',
+      'riqueza': 'Abundancia',
+      'finanzas': 'Abundancia',
+      'trabajo': 'Abundancia',
+      'empleo': 'Abundancia',
+      'negocio': 'Abundancia',
+      'exito': 'Abundancia',
+      'éxito': 'Abundancia',
+      
+      // Amor y Relaciones
+      'amor': 'Amor',
+      'relacion': 'Amor',
+      'pareja': 'Amor',
+      'matrimonio': 'Amor',
+      'romance': 'Amor',
+      'familia': 'Amor',
+      'humano': 'Amor',
+      'humanos': 'Amor',
+      'persona': 'Amor',
+      'personas': 'Amor',
+      
+      // Armonía y Paz
+      'armonia': 'Armonía',
+      'armonía': 'Armonía',
+      'paz': 'Paz',
+      'tranquilidad': 'Paz',
+      'equilibrio': 'Armonía',
+      'balance': 'Armonía',
+      
+      // Protección
+      'proteccion': 'Protección',
+      'protección': 'Protección',
+      'seguridad': 'Protección',
+      'defensa': 'Protección',
+      
+      // Espiritualidad
+      'espiritualidad': 'Espiritualidad',
+      'espiritual': 'Espiritualidad',
+      'divino': 'Espiritualidad',
+      'sagrado': 'Espiritualidad',
+      'desarrollo': 'Espiritualidad',
+      'crecimiento': 'Espiritualidad',
+      
+      // Relaciones generales
+      'relaciones': 'Relaciones',
+      'social': 'Relaciones',
+      'comunicacion': 'Relaciones',
+      'comunicación': 'Relaciones',
+    };
     
-    // Buscar coincidencias con las categorías existentes
-    for (var categoria in categoriasExistentes) {
-      final categoriaLower = categoria.toLowerCase();
-      if (temaLower.contains(categoriaLower) || categoriaLower.contains(temaLower.split(' ').first)) {
-        print('✅ Categoría encontrada: $categoria');
-        return categoria;
+    // Buscar coincidencias exactas primero
+    for (var entrada in mapeoCategorias.entries) {
+      if (temaLower.contains(entrada.key)) {
+        print('✅ Categoría encontrada por palabra clave "${entrada.key}": ${entrada.value}');
+        return entrada.value;
       }
     }
     
-    // Si no hay coincidencias, usar la primera palabra del tema como categoría
-    final primeraPalabra = tema.split(' ').first;
-    final categoriaNueva = primeraPalabra.isEmpty ? 'IA' : primeraPalabra[0].toUpperCase() + primeraPalabra.substring(1);
+    // Si no hay coincidencias, extraer palabra clave principal y buscar categoría similar
+    final palabras = tema.split(' ').where((p) => p.length > 3).toList();
+    for (var palabra in palabras) {
+      final palabraLower = palabra.toLowerCase();
+      for (var entrada in mapeoCategorias.entries) {
+        if (palabraLower.contains(entrada.key) || entrada.key.contains(palabraLower)) {
+          print('✅ Categoría encontrada por palabra "${palabra}": ${entrada.value}');
+          return entrada.value;
+        }
+      }
+    }
     
-    print('🆕 Nueva categoría creada: $categoriaNueva');
-    return categoriaNueva;
+    // Si aún no hay coincidencias, crear una categoría relacionada (capitalizada)
+    final palabrasSignificativas = palabras.isNotEmpty ? palabras : [tema];
+    final primeraPalabra = palabrasSignificativas.first;
+    if (primeraPalabra.length > 3 && primeraPalabra.toLowerCase() != 'codigo') {
+      final categoriaNueva = primeraPalabra[0].toUpperCase() + primeraPalabra.substring(1).toLowerCase();
+      print('🆕 Nueva categoría creada: $categoriaNueva');
+      return categoriaNueva;
+    }
+    
+    // Fallback a categoría por defecto válida
+    print('⚠️ No se pudo determinar categoría, usando "Abundancia" por defecto');
+    return 'Abundancia';
   }
 
   // Actualizar la lista de códigos después de guardar uno nuevo
@@ -3735,14 +4253,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         if (codigoId != null) {
           print('✅ Código nuevo guardado con ID: $codigoId');
           await _actualizarListaCodigos();
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ Código agregado y guardado: ${codigo.nombre}'),
-              backgroundColor: const Color(0xFF4CAF50),
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          // NO mostrar mensaje aquí porque _guardarCodigoEnBaseDatos ya lo muestra
         }
       } catch (e) {
         print('⚠️ Error al guardar código nuevo: $e');

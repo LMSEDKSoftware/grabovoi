@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/supabase_models.dart';
 import '../config/supabase_config.dart';
 
@@ -446,6 +449,57 @@ class SupabaseService {
     }
   }
 
+  // ===== AVATARES =====
+  
+  /// Sube un avatar al bucket 'images' y retorna la URL pública
+  static Future<String> uploadAvatar(String userId, XFile imageFile) async {
+    try {
+      final fileName = 'avatar_$userId.jpg';
+      
+      // Crear un archivo temporal y convertir XFile a File
+      final file = File(imageFile.path);
+      
+      // Subir al bucket 'images'
+      await _client.storage
+          .from('images')
+          .upload(fileName, file, fileOptions: FileOptions(
+            upsert: true, // Sobrescribir si existe
+            contentType: 'image/jpeg',
+          ));
+      
+      // Obtener URL pública
+      final url = _client.storage
+          .from('images')
+          .getPublicUrl(fileName);
+      
+      print('✅ Avatar subido exitosamente: $url');
+      return url;
+    } catch (e) {
+      print('❌ Error subiendo avatar: $e');
+      throw Exception('Error al subir avatar: $e');
+    }
+  }
+  
+  /// Obtiene la URL pública del avatar de un usuario
+  static String? getAvatarUrl(String? avatarFileName) {
+    if (avatarFileName == null || avatarFileName.isEmpty) return null;
+    
+    try {
+      // Si ya es una URL completa, retornarla
+      if (avatarFileName.startsWith('http')) {
+        return avatarFileName;
+      }
+      
+      // Si es solo el nombre del archivo, construir la URL
+      return _client.storage
+          .from('images')
+          .getPublicUrl(avatarFileName);
+    } catch (e) {
+      print('⚠️ Error obteniendo URL del avatar: $e');
+      return null;
+    }
+  }
+
   // ===== PROGRESO DE USUARIO =====
   
   static Future<UsuarioProgreso?> getProgresoUsuario(String userId) async {
@@ -568,6 +622,29 @@ class SupabaseService {
 
   static Future<CodigoGrabovoi> crearCodigo(CodigoGrabovoi codigo) async {
     try {
+      // Verificar que serviceRoleKey esté configurada
+      if (SupabaseConfig.serviceRoleKey.isEmpty) {
+        print('⚠️ ServiceRoleKey no configurada, intentando con cliente normal');
+        // Intentar con cliente normal (puede fallar si RLS no permite)
+        final response = await _client
+            .from('codigos_grabovoi')
+            .insert({
+              'codigo': codigo.codigo,
+              'nombre': codigo.nombre,
+              'descripcion': codigo.descripcion,
+              'categoria': codigo.categoria,
+              'color': codigo.color,
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .select()
+            .single();
+        
+        return CodigoGrabovoi.fromJson(response);
+      }
+      
+      // Usar serviceClient (bypass RLS)
+      print('💾 Creando código con serviceClient (bypass RLS): ${codigo.codigo}');
       final response = await _serviceClient
           .from('codigos_grabovoi')
           .insert({
@@ -582,9 +659,68 @@ class SupabaseService {
           .select()
           .single();
 
+      print('✅ Código creado exitosamente: ${codigo.codigo}');
       return CodigoGrabovoi.fromJson(response);
     } catch (e) {
+      print('❌ Error al crear código: $e');
+      
+      // Si el error es 401 (No API key), intentar con cliente normal como fallback
+      if (e.toString().contains('401') || e.toString().contains('No API key')) {
+        print('🔄 Error 401 detectado, intentando con cliente normal...');
+        try {
+          final response = await _client
+              .from('codigos_grabovoi')
+              .insert({
+                'codigo': codigo.codigo,
+                'nombre': codigo.nombre,
+                'descripcion': codigo.descripcion,
+                'categoria': codigo.categoria,
+                'color': codigo.color,
+                'created_at': DateTime.now().toIso8601String(),
+                'updated_at': DateTime.now().toIso8601String(),
+              })
+              .select()
+              .single();
+          
+          print('✅ Código creado con cliente normal (fallback): ${codigo.codigo}');
+          return CodigoGrabovoi.fromJson(response);
+        } catch (fallbackError) {
+          print('❌ Fallback también falló: $fallbackError');
+          throw Exception('Error al crear código: No se pudo insertar. Verifica los permisos y la configuración de la API key. Error original: $e');
+        }
+      }
+      
       throw Exception('Error al crear código: $e');
+    }
+  }
+
+  /// Actualizar un código existente (solo para administradores)
+  static Future<void> actualizarCodigo(
+    String codigoId, {
+    String? nombre,
+    String? descripcion,
+    String? categoria,
+  }) async {
+    try {
+      print('🔄 Actualizando código: $codigoId');
+      
+      final updateData = <String, dynamic>{
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      
+      if (nombre != null) updateData['nombre'] = nombre;
+      if (descripcion != null) updateData['descripcion'] = descripcion;
+      if (categoria != null) updateData['categoria'] = categoria;
+      
+      await _serviceClient
+          .from('codigos_grabovoi')
+          .update(updateData)
+          .eq('codigo', codigoId);
+      
+      print('✅ Código actualizado: $codigoId');
+    } catch (e) {
+      print('❌ Error actualizando código: $e');
+      throw Exception('Error al actualizar código: $e');
     }
   }
 

@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -28,17 +30,20 @@ class ChallengeCongratsScreen extends StatefulWidget {
 
 class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
+  final GlobalKey _shareableImageKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GlowBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+      body: Stack(
+        children: [
+          GlowBackground(
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
                 Row(
                   children: [
                     IconButton(
@@ -80,21 +85,6 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Widget para capturar (oculto, fuera de la vista)
-                Offstage(
-                  child: Screenshot(
-                    controller: _screenshotController,
-                    child: FutureBuilder<String>(
-                      future: Future.value(widget.description ?? 
-                          'Has completado con éxito este desafío de manifestación cuántica usando los códigos de Grigori Grabovoi.'),
-                      builder: (context, snapshot) {
-                        final descripcion = snapshot.data ?? 
-                            'Has completado con éxito este desafío de manifestación cuántica usando los códigos de Grigori Grabovoi.';
-                        return _buildShareableImage(descripcion);
-                      },
-                    ),
-                  ),
-                ),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -110,20 +100,65 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          // Widget para capturar (completamente fuera de la vista pero renderizado)
+          Positioned(
+            left: -1000,
+            top: -1000,
+            child: IgnorePointer(
+              ignoring: true,
+              child: SizedBox(
+                width: 800,
+                height: 1200,
+                child: Screenshot(
+                  controller: _screenshotController,
+                  key: _shareableImageKey,
+                  child: Builder(
+                    builder: (context) {
+                      final descripcion = widget.description ?? 
+                          'Has completado con éxito este desafío de manifestación cuántica usando los códigos de Grigori Grabovoi.';
+                      return _buildShareableImage(descripcion);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> _shareImage() async {
     try {
-      // Capturar la imagen del widget que está en el árbol
+      // Esperar a que el widget se renderice completamente
+      await WidgetsBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      // Forzar rebuild del widget de imagen compartible para asegurar que esté renderizado
+      if (mounted) {
+        setState(() {});
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      
+      // Capturar la imagen del widget
       final pngBytes = await _screenshotController.capture(pixelRatio: 2.0);
       
-      if (pngBytes == null) return;
+      if (pngBytes == null || pngBytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No se pudo generar la imagen. Intenta nuevamente.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       // Solo para móvil, web no soporta compartir imágenes
       if (!kIsWeb) {
@@ -162,8 +197,8 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
 
     return Container(
       width: 800, // Ancho fijo para la imagen
-      height: 1200, // Alto fijo para la imagen
-      padding: const EdgeInsets.all(60),
+      height: 800, // Alto fijo para la imagen (1:1)
+      padding: const EdgeInsets.all(30),
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(20),
@@ -177,7 +212,7 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
             'ManiGrab - Manifestaciones Cuánticas Grabovoi',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 24,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: const Color(0xFFFFD700),
               shadows: [
@@ -188,7 +223,7 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 60),
+          const SizedBox(height: 25),
           
           // 2) ESFERA CON CÓDIGO - Centro
           Stack(
@@ -197,7 +232,7 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
             children: [
               // Esfera dorada
               GoldenSphere(
-                size: 320,
+                size: 280,
                 color: const Color(0xFFFFD700),
                 glowIntensity: 0.8,
                 isAnimated: false,
@@ -212,12 +247,12 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 60),
+          const SizedBox(height: 25),
           
           // 3) TÍTULO Y DESCRIPCIÓN DEL RETO - Abajo
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(30),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.3),
               borderRadius: BorderRadius.circular(16),
@@ -227,25 +262,30 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
               ),
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   widget.title,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    fontSize: 22,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFFFFD700),
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Text(
                   descripcion,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    fontSize: 16,
+                    fontSize: 12,
                     color: Colors.white.withOpacity(0.9),
-                    height: 1.4,
+                    height: 1.3,
                   ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

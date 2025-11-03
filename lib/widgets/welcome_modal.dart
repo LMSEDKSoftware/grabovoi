@@ -132,91 +132,91 @@ class _WelcomeModalState extends State<WelcomeModal> {
       children: [
         SingleChildScrollView(
           controller: _scrollController,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Título
-              Center(
-                child: Text(
-                  '🌀 Bienvenido a la Frecuencia Grabovoi',
-                  style: GoogleFonts.playfairDisplay(
-                    color: const Color(0xFFFFD700),
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 20),
-              
-              // Texto principal
-              Text(
-                'Los Códigos Numéricos de Grigori Grabovoi son secuencias que vibran en frecuencias específicas, capaces de armonizar tu cuerpo, tu mente y tu realidad.\n\nCada número actúa como una llave energética que abre caminos hacia la Norma: ese estado perfecto en el que todo vuelve al equilibrio natural del Creador.',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 20),
-              
-              // Separador
-              Container(
-                height: 1,
-                color: const Color(0xFFFFD700).withOpacity(0.3),
-              ),
-              const SizedBox(height: 20),
-              
-              // Cómo utilizarlos
-              Text(
-                '✨ Cómo utilizarlos',
-                style: GoogleFonts.inter(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Título
+            Center(
+              child: Text(
+                '🌀 Bienvenido a la Frecuencia Grabovoi',
+                style: GoogleFonts.playfairDisplay(
                   color: const Color(0xFFFFD700),
-                  fontSize: 18,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
-              
+            ),
+            const SizedBox(height: 20),
+            
+            // Texto principal
+            Text(
+              'Los Códigos Numéricos de Grigori Grabovoi son secuencias que vibran en frecuencias específicas, capaces de armonizar tu cuerpo, tu mente y tu realidad.\n\nCada número actúa como una llave energética que abre caminos hacia la Norma: ese estado perfecto en el que todo vuelve al equilibrio natural del Creador.',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Separador
+            Container(
+              height: 1,
+              color: const Color(0xFFFFD700).withOpacity(0.3),
+            ),
+            const SizedBox(height: 20),
+            
+            // Cómo utilizarlos
+            Text(
+              '✨ Cómo utilizarlos',
+              style: GoogleFonts.inter(
+                color: const Color(0xFFFFD700),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
               _buildInstruction('1.', 'Conéctate con tu intención', 'Antes de repetir el código, ten claro qué deseas armonizar o manifestar.'),
-              const SizedBox(height: 8),
+            const SizedBox(height: 8),
               _buildInstruction('2.', 'Pronuncia número por número', 'Ejemplo: "uno… cuatro… siete" en lugar de "ciento cuarenta y siete".\nSi el código tiene espacios, haz una pequeña pausa consciente entre ellos.'),
-              const SizedBox(height: 8),
+            const SizedBox(height: 8),
               _buildInstruction('3.', 'Visualiza una esfera de luz', 'Imagina la secuencia flotando dentro de una esfera blanca o dorada. Con esta app puedes materializar esos números y esa esfera de manera más fácil, usando la visualización interactiva que te ofrece la pantalla.'),
-              const SizedBox(height: 8),
+            const SizedBox(height: 8),
               _buildInstruction('4.', 'Siente, no cuentes', 'Una sola repetición con total presencia puede ser más poderosa que cien hechas sin atención.\nLa activación ocurre por resonancia, no por cantidad.'),
-              const SizedBox(height: 8),
+            const SizedBox(height: 8),
               _buildInstruction('5.', 'Agradece', 'Cierra el proceso sintiendo gratitud, como si la armonía ya se hubiera manifestado.'),
-              
-              const SizedBox(height: 20),
-              
-              // Separador
-              Container(
-                height: 1,
-                color: const Color(0xFFFFD700).withOpacity(0.3),
+            
+            const SizedBox(height: 20),
+            
+            // Separador
+            Container(
+              height: 1,
+              color: const Color(0xFFFFD700).withOpacity(0.3),
+            ),
+            const SizedBox(height: 20),
+            
+            // Recuerda
+            Text(
+              '🕊️ Recuerda:',
+              style: GoogleFonts.inter(
+                color: const Color(0xFFFFD700),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 20),
-              
-              // Recuerda
-              Text(
-                '🕊️ Recuerda:',
-                style: GoogleFonts.inter(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Los números son vibraciones vivas.\nTu enfoque, intención y conciencia son los que activan su poder creador.',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.4,
+                fontStyle: FontStyle.italic,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Los números son vibraciones vivas.\nTu enfoque, intención y conciencia son los que activan su poder creador.',
-                style: GoogleFonts.inter(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  height: 1.4,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+            ),
               
               const SizedBox(height: 20),
               
@@ -253,43 +253,43 @@ class _WelcomeModalState extends State<WelcomeModal> {
                   ],
                 ),
               ),
-              
-              const SizedBox(height: 20),
-              
-              // Separador
-              Container(
-                height: 1,
-                color: const Color(0xFFFFD700).withOpacity(0.3),
-              ),
-              const SizedBox(height: 16),
-              
-              // Checkbox para no mostrar de nuevo
-              Row(
-                children: [
-                  Checkbox(
-                    value: _dontShowAgain,
-                    onChanged: (value) {
-                      setState(() {
-                        _dontShowAgain = value ?? false;
-                      });
-                    },
-                    activeColor: const Color(0xFFFFD700),
-                    checkColor: Colors.black,
-                  ),
-                  Expanded(
-                    child: Text(
-                      'No volver a mostrar este mensaje',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
+            
+            const SizedBox(height: 20),
+            
+            // Separador
+            Container(
+              height: 1,
+              color: const Color(0xFFFFD700).withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            
+            // Checkbox para no mostrar de nuevo
+            Row(
+              children: [
+                Checkbox(
+                  value: _dontShowAgain,
+                  onChanged: (value) {
+                    setState(() {
+                      _dontShowAgain = value ?? false;
+                    });
+                  },
+                  activeColor: const Color(0xFFFFD700),
+                  checkColor: Colors.black,
+                ),
+                Expanded(
+                  child: Text(
+                    'No volver a mostrar este mensaje',
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 13,
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
+      ),
         // Indicador de scroll flotante
         if (_showScrollIndicator)
           Positioned(
@@ -321,12 +321,12 @@ class _WelcomeModalState extends State<WelcomeModal> {
                     style: GoogleFonts.inter(
                       color: const Color(0xFFFFD700).withOpacity(0.7),
                       fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+          ),
+        ),
+      ],
             ),
           ),
+        ),
       ],
     );
   }

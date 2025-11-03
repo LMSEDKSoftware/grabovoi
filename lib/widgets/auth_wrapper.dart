@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service_simple.dart';
 import '../services/user_progress_service.dart';
 import '../screens/auth/login_screen.dart';
+import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/onboarding/user_assessment_screen.dart';
 import '../main.dart';
 
@@ -23,6 +24,20 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void initState() {
     super.initState();
     _checkAuthStatus();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Solo verificar una vez después del primer mount para actualizar el estado
+    // después de navegaciones desde login
+    if (!_isLoading && !_isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _checkAuthStatus();
+        }
+      });
+    }
   }
 
   Future<void> _checkAuthStatus() async {
@@ -72,18 +87,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Forzar rebuild cuando cambien las dependencias
-    if (!_isLoading) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {});
-        }
-      });
-    }
-  }
 
   /// Verificar si la evaluación está completa y válida
   bool _isAssessmentComplete(Map<String, dynamic> assessment) {
@@ -170,8 +173,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
       print('✅ Usuario autenticado con evaluación completa - Mostrando MainNavigation');
       return const MainNavigation();
     } else {
-      print('❌ Mostrando LoginScreen - Usuario no autenticado');
-      return const LoginScreen();
+      // Mostrar onboarding comercial antes del login cada vez que esté desautenticado
+      print('❌ Mostrando Onboarding antes de Login - Usuario no autenticado');
+      return const OnboardingScreen();
     }
   }
 }

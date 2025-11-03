@@ -9,6 +9,7 @@ import 'services/app_time_tracker.dart';
 import 'services/pilotage_state_service.dart';
 import 'services/audio_service.dart';
 import 'services/audio_manager_service.dart';
+import 'services/notification_scheduler.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/onboarding/user_assessment_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -40,6 +41,15 @@ void main() async {
   // Inicializar códigos con caché local y actualización automática
   await CodigosRepository().initCodigos();
   
+  // Inicializar notificaciones (solo en no-web)
+  if (!kIsWeb) {
+    try {
+      await NotificationScheduler().initialize();
+    } catch (e) {
+      print('⚠️ Error inicializando NotificationScheduler: $e');
+    }
+  }
+  
   // Configurar orientación
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -61,7 +71,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Manifestación Numérica Grabovoi',
+      title: 'ManiGrab - Manifestaciones Cuánticas Grabovoi',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

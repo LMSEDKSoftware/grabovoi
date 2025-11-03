@@ -1,6 +1,6 @@
 {
-    "name": "grabovoi_build",
-    "short_name": "grabovoi_build",
+    "name": "MANIGRAB",
+    "short_name": "MANIGRAB",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0B132B",

@@ -1,6 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
@@ -31,6 +36,7 @@ class CodeDetailScreen extends StatefulWidget {
 
 class _CodeDetailScreenState extends State<CodeDetailScreen> 
     with TickerProviderStateMixin {
+  final ScreenshotController _screenshotController = ScreenshotController();
   late AnimationController _pulseController;
   late AnimationController _rotationController;
   late Animation<double> _pulseAnimation;
@@ -99,6 +105,21 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       _isPiloting = true;
       _secondsRemaining = 120; // 2 minutos
     });
+    
+    // Iniciar audio cuando el pilotaje comience
+    try {
+      final audioManager = AudioManagerService();
+      final tracks = [
+        'assets/audios/432hz_harmony.mp3',
+        'assets/audios/528hz_love.mp3',
+        'assets/audios/binaural_manifestation.mp3',
+        'assets/audios/crystal_bowls.mp3',
+        'assets/audios/forest_meditation.mp3',
+      ];
+      await audioManager.playTrack(tracks[0], autoPlay: true);
+    } catch (e) {
+      print('Error iniciando audio: $e');
+    }
     
     // Notificar al servicio global
     PilotageStateService().setPilotageActive(true);
@@ -290,7 +311,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       
       final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
 ${codigoEncontrado.descripcion}
-Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
+Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
       
       Clipboard.setData(ClipboardData(text: textToCopy));
       ScaffoldMessenger.of(context).showSnackBar(
@@ -377,35 +398,188 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     );
   }
 
-  void _shareCode() async {
+  Future<void> _shareCode() async {
     try {
-      // Buscar el código en la base de datos para obtener su información real
-      final codigos = await SupabaseService.getCodigos();
-      final codigoEncontrado = codigos.firstWhere(
-        (c) => c.codigo == widget.codigo,
-        orElse: () => CodigoGrabovoi(
-          id: '',
-          codigo: widget.codigo,
-          nombre: 'Código Sagrado',
-          descripcion: 'Código sagrado para la manifestación y transformación energética.',
-          categoria: 'General',
-          color: '#FFD700',
-        ),
-      );
+      // Esperar a que el widget se renderice completamente
+      await WidgetsBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 300));
       
-      final textToShare = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
-${codigoEncontrado.descripcion}
-Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
+      // Forzar rebuild para asegurar que el widget oculto esté renderizado
+      if (mounted) {
+        setState(() {});
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
       
-      await Share.share(textToShare);
+      // Capturar la imagen del widget oculto
+      final Uint8List? pngBytes = await _screenshotController.capture(pixelRatio: 2.0);
+      
+      if (pngBytes == null || pngBytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No se pudo generar la imagen. Intenta nuevamente.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Solo para móvil, web no soporta compartir imágenes
+      if (!kIsWeb) {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/grabovoi_${widget.codigo.replaceAll(RegExp(r'[^\w\s-]'), '_')}.png');
+        await file.writeAsBytes(pngBytes);
+
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Función de compartir no disponible en web'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
-      // Fallback si hay error
-      final textToShare = '''${widget.codigo} : Código Sagrado
-Código sagrado para la manifestación y transformación energética.
-Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
-      
-      await Share.share(textToShare);
+      print('Error al compartir imagen: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
+  }
+  
+  Future<String> _getCodigoTitulo() async {
+    try {
+      return CodigosRepository().getTituloByCode(widget.codigo);
+    } catch (e) {
+      return 'Campo Energético';
+    }
+  }
+
+  Future<String> _getCodigoDescription() async {
+    try {
+      return CodigosRepository().getDescripcionByCode(widget.codigo);
+    } catch (e) {
+      return 'Código sagrado para la manifestación y transformación energética.';
+    }
+  }
+  
+  Widget _buildShareableImage(String codigoCrudo, String titulo, String descripcion) {
+    final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoCrudo);
+    final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo);
+
+    return Container(
+      width: 800,
+      height: 800,
+      padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 1) NOMBRE DE LA APP - Arriba
+          Text(
+            'ManiGrab - Manifestaciones Cuánticas Grabovoi',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFFFD700),
+              shadows: [
+                Shadow(
+                  color: const Color(0xFFFFD700).withOpacity(0.5),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 25),
+          
+          // 2) ESFERA CON CÓDIGO - Centro
+          Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // Esfera dorada (sin animación para captura)
+              GoldenSphere(
+                size: 280,
+                color: _getColorSeleccionado(),
+                glowIntensity: 0.8,
+                isAnimated: false,
+              ),
+              // Código iluminado superpuesto (sin animación)
+              IlluminatedCodeText(
+                code: codigoFormateado,
+                fontSize: fontSize,
+                color: _getColorSeleccionado(),
+                letterSpacing: 4,
+                isAnimated: false,
+              ),
+            ],
+          ),
+          const SizedBox(height: 25),
+          
+          // 3) TÍTULO Y DESCRIPCIÓN - Abajo
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  titulo,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD700),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  descripcion,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.9),
+                    height: 1.3,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Color _getColorSeleccionado() {
+    return _coloresDisponibles[_colorSeleccionado]!;
   }
 
 
@@ -775,16 +949,51 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
               ),
             ),
           ),
-          
+          // Widget para capturar (completamente fuera de la vista pero renderizado)
+          Positioned(
+            left: -1000,
+            top: -1000,
+            child: IgnorePointer(
+              ignoring: true,
+              child: SizedBox(
+                width: 800,
+                height: 800,
+                child: Screenshot(
+                  controller: _screenshotController,
+                  child: Builder(
+                    builder: (context) {
+                      return FutureBuilder<Map<String, String>>(
+                        future: Future.wait([
+                          _getCodigoTitulo(),
+                          _getCodigoDescription(),
+                        ]).then((results) => {
+                          'titulo': results[0],
+                          'descripcion': results[1],
+                        }),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return Container(
+                              width: 800,
+                              height: 800,
+                              color: Colors.black,
+                              child: const Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          final titulo = snapshot.data!['titulo'] ?? 'Campo Energético';
+                          final descripcion = snapshot.data!['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                          return _buildShareableImage(widget.codigo, titulo, descripcion);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
       ),
     );
-  }
-  
-  
-  Color _getColorSeleccionado() {
-    return _coloresDisponibles[_colorSeleccionado]!;
   }
   
   // Método para alternar el modo concentración

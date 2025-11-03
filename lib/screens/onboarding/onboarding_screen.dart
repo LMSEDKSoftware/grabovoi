@@ -3,8 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
-import '../../services/onboarding_service.dart';
-import 'welcome_screen.dart';
+import '../auth/login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -19,22 +18,58 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingSlide> _slides = [
     OnboardingSlide(
-      title: 'Bienvenido al Portal Energético',
-      description: 'Descubre el poder transformador de los códigos numéricos de Grabovoi para manifestar tus deseos más profundos.',
+      title: 'Portal Energético',
+      description: 'Explora un espacio diseñado para elevar tu vibración y manifestar desde la Norma del Creador.',
       icon: Icons.auto_awesome,
       color: const Color(0xFFFFD700),
     ),
     OnboardingSlide(
-      title: 'Pilotaje Consciente',
-      description: 'Aprende a pilotar códigos de manera consciente y meditativa para activar su energía transformadora.',
+      title: 'Pilotaje Cuántico Consciente',
+      description: 'Inicia pilotajes con códigos Grabovoi. Visualiza la esfera dorada y repite el código con intención.',
       icon: Icons.self_improvement,
       color: const Color(0xFF4CAF50),
     ),
     OnboardingSlide(
-      title: 'Tu Evolución Espiritual',
-      description: 'Sigue tu progreso, completa desafíos y evoluciona en tu camino de manifestación numérica.',
-      icon: Icons.trending_up,
-      color: const Color(0xFF9C27B0),
+      title: 'Sesión de Repetición',
+      description: 'Programa repeticiones automáticas del código con audio. Puedes cancelar con confirmación en cualquier momento.',
+      icon: Icons.access_time,
+      color: const Color(0xFF26A69A),
+    ),
+    OnboardingSlide(
+      title: 'Biblioteca Cuántica + IA',
+      description: 'Busca códigos por tema o número. Si no existe y la IA lo encuentra, se inserta automáticamente. Si difiere descripción, se crea sugerencia para admin.',
+      icon: Icons.search,
+      color: const Color(0xFF42A5F5),
+    ),
+    OnboardingSlide(
+      title: 'Imágenes para Compartir 1:1',
+      description: 'Comparte imágenes cuadradas con: nombre de la app, esfera con código y título + descripción (sin alterar la UI).',
+      icon: Icons.share,
+      color: const Color(0xFF7E57C2),
+    ),
+    OnboardingSlide(
+      title: 'Notificaciones Inteligentes',
+      description: 'Recordatorios con prioridad (rachas, rutinas, resúmenes). Anti-spam y registro de historial en Perfil → Notificaciones.',
+      icon: Icons.notifications_active,
+      color: const Color(0xFFFF7043),
+    ),
+    OnboardingSlide(
+      title: 'Recompensas Cuánticas',
+      description: 'Cristales de energía, Luz cuántica, Restauradores de armonía, Mantras y Códigos Premium. Todo se actualiza con tu práctica diaria.',
+      icon: Icons.diamond,
+      color: const Color(0xFFFFD54F),
+    ),
+    OnboardingSlide(
+      title: 'Avatar y Permisos',
+      description: 'Sube tu avatar (permiso de fotos). Si el permiso está denegado, la app te guía para habilitarlo en Configuración.',
+      icon: Icons.verified_user,
+      color: const Color(0xFF26C6DA),
+    ),
+    OnboardingSlide(
+      title: 'Aprobación de Sugerencias (Admin)',
+      description: 'Los administradores pueden aprobar o rechazar sugerencias de códigos alternos desde Perfil → Aprobar Sugerencias.',
+      icon: Icons.admin_panel_settings,
+      color: const Color(0xFF8D6E63),
     ),
   ];
 
@@ -51,28 +86,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      _goToWelcome();
+      _goToLogin();
     }
   }
 
-  void _goToWelcome() {
+  void _goToLogin() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => const WelcomeScreen(),
+        builder: (context) => const LoginScreen(),
       ),
     );
   }
 
   void _skipOnboarding() {
-    // Marcar como saltado para esta sesión
-    OnboardingService.markOnboardingSkipped();
-    
-    // Ir a la pantalla de bienvenida
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const WelcomeScreen(),
-      ),
-    );
+    _goToLogin();
   }
 
   @override

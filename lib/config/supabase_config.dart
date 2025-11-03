@@ -13,13 +13,22 @@ class SupabaseConfig {
 
   // Clientes de Supabase
   static SupabaseClient get client => Supabase.instance.client;
-  static SupabaseClient get serviceClient => SupabaseClient(
-        url,
-        serviceRoleKey,
-        authOptions: const FlutterAuthClientOptions(
-          authFlowType: AuthFlowType.pkce,
-        ),
-      );
+  static SupabaseClient get serviceClient {
+    // Verificar que serviceRoleKey esté configurada
+    if (serviceRoleKey.isEmpty) {
+      print('⚠️ ADVERTENCIA: SB_SERVICE_ROLE_KEY no está configurada. Usando cliente normal.');
+      // Retornar cliente normal si no hay serviceRoleKey
+      return Supabase.instance.client;
+    }
+    
+    return SupabaseClient(
+      url,
+      serviceRoleKey,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+      ),
+    );
+  }
 
   static Future<void> initialize() async {
     await Supabase.initialize(

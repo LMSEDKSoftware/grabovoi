@@ -314,6 +314,7 @@ class AuthServiceSimple {
       // Actualizar tabla users si existe
       final updateMap = <String, dynamic>{};
       if (name != null) updateMap['name'] = name;
+      if (avatarUrl != null) updateMap['avatar'] = avatarUrl;
       if (updateMap.isNotEmpty) {
         await _supabase.from('users').update(updateMap).eq('id', userId);
       }
@@ -321,6 +322,7 @@ class AuthServiceSimple {
       // Refrescar cache local
       _currentUser = _currentUser?.copyWith(
         name: name ?? _currentUser!.name,
+        avatar: avatarUrl ?? _currentUser!.avatar,
       );
       if (_currentUser != null) await _saveUserToLocal(_currentUser!);
     } catch (e) {
