@@ -490,10 +490,28 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                   ),
                 ],
               ),
-              CustomButton(
-                text: puedeUsar ? 'Iniciar' : 'Bloqueado',
-                onPressed: puedeUsar ? () => _usarMeditacionEspecial(meditacion) : null,
-                color: puedeUsar ? Colors.green : Colors.grey,
+              GestureDetector(
+                onTap: puedeUsar ? () => _usarMeditacionEspecial(meditacion) : null,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: puedeUsar 
+                        ? const Color(0xFFFFD700).withOpacity(0.2)
+                        : Colors.grey.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: puedeUsar 
+                          ? const Color(0xFFFFD700).withOpacity(0.5)
+                          : Colors.grey.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    puedeUsar ? Icons.lock_open : Icons.lock,
+                    color: puedeUsar ? const Color(0xFFFFD700) : Colors.grey,
+                    size: 24,
+                  ),
+                ),
               ),
             ],
           ),

@@ -76,6 +76,9 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
+  web:
+    generate: true
+    image_path: assets/icons/app_icon.png
   image_path: assets/icons/app_icon.png
   adaptive_icon_background: "#FFD700"
   adaptive_icon_foreground: assets/icons/app_icon.png

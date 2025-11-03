@@ -224,39 +224,17 @@ class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProvid
         mainAxisSize: MainAxisSize.min,
         children: [
           // Ícono de cristal (💎)
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD700).withOpacity(0.15),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFFFFD700).withOpacity(0.4),
-                width: 1.5,
-              ),
-            ),
-            child: const Icon(
-              Icons.diamond,
-              color: Color(0xFFFFD700),
-              size: 20,
-            ),
+          const Icon(
+            Icons.diamond,
+            color: Color(0xFFFFD700),
+            size: 20,
           ),
           const SizedBox(height: 8),
           // Ícono de luz cuántica (✨)
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD700).withOpacity(0.15),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFFFFD700).withOpacity(0.4),
-                width: 1.5,
-              ),
-            ),
-            child: const Icon(
-              Icons.auto_awesome,
-              color: Color(0xFFFFD700),
-              size: 20,
-            ),
+          const Icon(
+            Icons.auto_awesome,
+            color: Color(0xFFFFD700),
+            size: 20,
           ),
         ],
       ),

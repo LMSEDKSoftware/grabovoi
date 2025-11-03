@@ -184,46 +184,51 @@ class _RewardsDisplayState extends State<RewardsDisplay> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD700).withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
                   'Cristales de Energía',
                   style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  '${_rewards!.cristalesEnergia}',
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
-                  ),
+              ),
+              Text(
+                '${_rewards!.cristalesEnergia}',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Text(
-            '${_rewards!.cristalesEnergia ~/ RewardsService.cristalesParaCodigoPremium} disponibles para códigos premium',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: Colors.white54,
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 44), // Alineado con el texto (icono + spacing)
+            child: Text(
+              '${_rewards!.cristalesEnergia ~/ RewardsService.cristalesParaCodigoPremium} disponibles para códigos premium',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: Colors.white54,
+              ),
             ),
-            textAlign: TextAlign.right,
           ),
         ],
       ),

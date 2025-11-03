@@ -1326,12 +1326,15 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
               size: 28,
             ),
             const SizedBox(width: 12),
-            Text(
-              'Repeticiones Completadas',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'Repetición Completada',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
