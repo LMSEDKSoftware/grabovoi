@@ -60,7 +60,7 @@ class _WelcomeModalState extends State<WelcomeModal> {
                 await prefs.setBool('welcome_modal_shown', true);
               }
               if (mounted) {
-                Navigator.of(context, rootNavigator: true).pop();
+                Navigator.of(context).pop();
               }
             },
             style: ElevatedButton.styleFrom(
@@ -296,40 +296,37 @@ class _WelcomeModalState extends State<WelcomeModal> {
             bottom: 0,
             left: 0,
             right: 0,
-            child: IgnorePointer(
-              ignoring: true,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      const Color(0xFF1C2541).withOpacity(0.9),
-                      const Color(0xFF1C2541),
-                    ],
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.keyboard_arrow_up,
-                      color: const Color(0xFFFFD700).withOpacity(0.7),
-                      size: 32,
-                    ),
-                    Text(
-                      'Desliza hacia arriba',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFFFFD700).withOpacity(0.7),
-                        fontSize: 12,
-                      ),
-                    ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF1C2541).withOpacity(0.9),
+                    const Color(0xFF1C2541),
                   ],
                 ),
               ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.keyboard_arrow_up,
+                    color: const Color(0xFFFFD700).withOpacity(0.7),
+                    size: 32,
+                  ),
+                  Text(
+                    'Desliza hacia arriba',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFFFD700).withOpacity(0.7),
+                      fontSize: 12,
+          ),
+        ),
+      ],
             ),
           ),
+        ),
       ],
     );
   }

@@ -257,16 +257,23 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           icon: Icons.help_outline,
                           onPressed: () async {
                             await ShowcaseTourService.resetTour();
+                            // Navegar a Home y iniciar el tour
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('✅ Paseo de bienvenida reiniciado'),
-                                  backgroundColor: Colors.green,
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                              // Navegar al Home para reiniciar el tour
-                              Navigator.of(context).pop(); // Cerrar ProfileScreen
+                              // Encontrar el MainNavigation y cambiar a Home
+                              final navigator = Navigator.of(context);
+                              navigator.pop(); // Cerrar ProfileScreen
+                              // Esperar y luego iniciar tour en Home
+                              Future.delayed(const Duration(milliseconds: 500), () {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('✅ Paseo reiniciado. El tour comenzará automáticamente en Inicio'),
+                                      backgroundColor: Colors.green,
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              });
                             }
                           },
                         ),

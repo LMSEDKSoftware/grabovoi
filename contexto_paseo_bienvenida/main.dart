@@ -111,7 +111,6 @@ class MyApp extends StatelessWidget {
         builder: (context, child) {
           return ShowCaseWidget(
             enableAutoScroll: true,
-            autoPlay: false,
             onFinish: () async {
               await ShowcaseTourService.markTourAsCompleted();
               // Notificar que el tour terminó para mostrar el modal de bienvenida

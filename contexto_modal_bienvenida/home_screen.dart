@@ -58,13 +58,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _cargarNombreUsuario();
     _checkOnboarding();
     _startTourIfNeeded();
-    // Cuando termine el build inicial, verifica si debe mostrar el modal
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final tourCompleted = await ShowcaseTourService.isTourCompleted();
-      if (tourCompleted && mounted) {
-        await _checkWelcomeModalAfterTour();
-      }
-    });
+    // El modal se mostrará después del tour si está completado
+    _checkWelcomeModalAfterTour();
   }
   
   Future<void> _startTourIfNeeded() async {
@@ -103,6 +98,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
         });
       });
+    } else {
+      // Si el tour ya está completado, mostrar el modal directamente
+      _checkWelcomeModalAfterTour();
     }
   }
   
@@ -156,38 +154,53 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  bool _modalCheckInProgress = false;
   bool _hasCheckedModalThisSession = false;
   
   /// Verifica y muestra el modal de bienvenida solo después de que el tour esté completado
   Future<void> _checkWelcomeModalAfterTour() async {
-    if (_hasCheckedModalThisSession) return;
-
+    // Evitar múltiples verificaciones simultáneas o repetidas en la misma sesión
+    if (_modalCheckInProgress || _hasCheckedModalThisSession) return;
+    
     final prefs = await SharedPreferences.getInstance();
     final welcomeModalShown = prefs.getBool('welcome_modal_shown') ?? false;
     final tourCompleted = await ShowcaseTourService.isTourCompleted();
 
-    // Mostrar solo si: el tour ya se completó y el modal nunca se mostró
+    // Solo mostrar el modal si:
+    // 1. No se ha mostrado antes
+    // 2. El tour ya está completado
     if (!welcomeModalShown && tourCompleted && mounted) {
+      _modalCheckInProgress = true;
       _hasCheckedModalThisSession = true;
-
-      // Pequeño delay para esperar animaciones del tour
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      if (!mounted) return;
-
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const WelcomeModal(),
-      );
-
-      // Marcar como mostrado (solo una vez)
-      await prefs.setBool('welcome_modal_shown', true);
+      // Esperar un poco para que el tour termine completamente y se cierre
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) {
+          _modalCheckInProgress = false;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const WelcomeModal(),
+          );
+        }
+      });
+    } else if (welcomeModalShown || !tourCompleted) {
+      // Si ya se mostró o el tour no está completado, marcar como verificado
+      _hasCheckedModalThisSession = true;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Verificar si el tour se completó y mostrar el modal si es necesario
+    // Solo verificar una vez por sesión para evitar múltiples verificaciones
+    if (!_hasCheckedModalThisSession) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final tourCompleted = await ShowcaseTourService.isTourCompleted();
+        if (tourCompleted) {
+          await _checkWelcomeModalAfterTour();
+        }
+      });
+    }
 
     return Scaffold(
         body: GlowBackground(
