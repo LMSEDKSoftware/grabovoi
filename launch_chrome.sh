@@ -4,7 +4,8 @@
 # Autor: Auto
 # Fecha: $(date)
 
-set -e  # Salir si hay errores
+# NO usar set -e aquí porque queremos manejar errores manualmente
+set +e  # No salir automáticamente si hay errores
 
 echo "🚀 Iniciando proceso de lanzamiento de Flutter + Chrome..."
 
@@ -72,20 +73,51 @@ main() {
     # Limpiar procesos anteriores
     cleanup
     
-    # Variables de entorno (lee desde .env o variables de entorno del sistema)
-    # ⚠️ IMPORTANTE: Configura estas variables en un archivo .env (no se sube a git)
-    # o exporta las variables de entorno antes de ejecutar este script
+    # ============================================
+    # CARGAR VARIABLES DE ENTORNO DEL .env
+    # ============================================
+    echo -e "${YELLOW}📋 Cargando variables de entorno desde .env...${NC}"
     
-    # Intentar cargar desde .env si existe
-    if [ -f "${PROJECT_DIR}/.env" ]; then
-        export $(cat "${PROJECT_DIR}/.env" | grep -v '^#' | xargs)
+    ENV_FILE="${PROJECT_DIR}/.env"
+    
+    if [ ! -f "${ENV_FILE}" ]; then
+        echo -e "${RED}❌ ERROR: No se encontró el archivo .env en ${ENV_FILE}${NC}"
+        exit 1
     fi
     
-    # Usar variables de entorno del sistema (ya exportadas o desde .env)
-    export OPENAI_API_KEY="${OPENAI_API_KEY:-}"
-    export SUPABASE_URL="${SUPABASE_URL:-}"
-    export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
-    export SB_SERVICE_ROLE_KEY="${SB_SERVICE_ROLE_KEY:-}"
+    # Cargar variables de forma segura línea por línea
+    set -a  # Automáticamente exportar todas las variables
+    source "${ENV_FILE}" 2>/dev/null || {
+        # Si source falla, usar método alternativo línea por línea
+        while IFS='=' read -r key value; do
+            # Ignorar líneas vacías y comentarios
+            [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+            # Eliminar espacios en blanco al inicio y final
+            key=$(echo "$key" | xargs)
+            value=$(echo "$value" | xargs)
+            # Exportar la variable
+            export "${key}=${value}"
+        done < "${ENV_FILE}"
+    }
+    set +a  # Desactivar exportación automática
+    
+    # Verificar que las variables críticas estén cargadas
+    if [ -z "${OPENAI_API_KEY}" ] || [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ] || [ -z "${SB_SERVICE_ROLE_KEY}" ]; then
+        echo -e "${RED}❌ ERROR: Variables de entorno no cargadas correctamente${NC}"
+        echo -e "${YELLOW}Verificando variables...${NC}"
+        echo "OPENAI_API_KEY: ${OPENAI_API_KEY:0:20}..." 
+        echo "SUPABASE_URL: ${SUPABASE_URL}"
+        echo "SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:0:20}..."
+        echo "SB_SERVICE_ROLE_KEY: ${SB_SERVICE_ROLE_KEY:0:20}..."
+        exit 1
+    fi
+    
+    echo -e "${GREEN}✅ Variables de entorno cargadas correctamente${NC}"
+    echo -e "${GREEN}   OPENAI_API_KEY: ${OPENAI_API_KEY:0:20}...${NC}"
+    echo -e "${GREEN}   SUPABASE_URL: ${SUPABASE_URL}${NC}"
+    echo -e "${GREEN}   SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:0:20}...${NC}"
+    echo -e "${GREEN}   SB_SERVICE_ROLE_KEY: ${SB_SERVICE_ROLE_KEY:0:20}...${NC}"
+    echo ""
     
     echo -e "${GREEN}📦 Compilando e iniciando servidor Flutter...${NC}"
     

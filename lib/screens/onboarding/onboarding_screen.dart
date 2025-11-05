@@ -18,58 +18,67 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingSlide> _slides = [
     OnboardingSlide(
-      title: 'Portal Energético',
-      description: 'Explora un espacio diseñado para elevar tu vibración y manifestar desde la Norma del Creador.',
+      title: 'Tu esfera de pilotaje',
+      description: 'No solo es un circulo, es una antena cuantica de proposito.\n\nAquí, el enfoque se convierte en dirección.\n\nEl número en vibración.',
+      mentalShift: 'No estás enfocando la mente. Estás alineando tu campo.',
       icon: Icons.auto_awesome,
       color: const Color(0xFFFFD700),
     ),
     OnboardingSlide(
-      title: 'Pilotaje Cuántico Consciente',
-      description: 'Inicia pilotajes con códigos Grabovoi. Visualiza la esfera dorada y repite el código con intención.',
-      icon: Icons.self_improvement,
-      color: const Color(0xFF4CAF50),
-    ),
-    OnboardingSlide(
-      title: 'Sesión de Repetición',
-      description: 'Programa repeticiones automáticas del código con audio. Puedes cancelar con confirmación en cualquier momento.',
-      icon: Icons.access_time,
-      color: const Color(0xFF26A69A),
-    ),
-    OnboardingSlide(
-      title: 'Biblioteca Cuántica + IA',
-      description: 'Busca códigos por tema o número. Si no existe y la IA lo encuentra, se inserta automáticamente. Si difiere descripción, se crea sugerencia para admin.',
+      title: 'Biblioteca Viva',
+      description: 'Cada número es una llave.\n\nLa app no busca códigos, despierta rutas. Puedes explorar con intención o dejar que la Inteligencia Cuántica Vibracional sugiera lo que tu alma ya sabe que necesita.',
+      mentalShift: 'No estás navegando una base de datos. Estás explorando el lenguaje de tu destino.',
       icon: Icons.search,
       color: const Color(0xFF42A5F5),
     ),
     OnboardingSlide(
-      title: 'Imágenes para Compartir 1:1',
-      description: 'Comparte imágenes cuadradas con: nombre de la app, esfera con código y título + descripción (sin alterar la UI).',
-      icon: Icons.share,
-      color: const Color(0xFF7E57C2),
+      title: 'Sesión de Repetición',
+      description: 'La constancia es un llamado.\n\nAquí no solo repites un número: lo vibras.',
+      mentalShift: 'No estás haciendo un ritual. Estás habitando tu nueva frecuencia.',
+      icon: Icons.access_time,
+      color: const Color(0xFF26A69A),
     ),
     OnboardingSlide(
-      title: 'Notificaciones Inteligentes',
-      description: 'Recordatorios con prioridad (rachas, rutinas, resúmenes). Anti-spam y registro de historial en Perfil → Notificaciones.',
+      title: 'Pilotaje Consciente',
+      description: 'Manifestar no es desear. Es conducir.\n\nEl pilotaje no guía al universo. Te guía a ti.\n\nEs el momento en que la app deja de ser app… y se convierte en brújula energética.',
+      mentalShift: 'No estás esperando un milagro. Estás activando tu rol de creador.',
+      icon: Icons.self_improvement,
+      color: const Color(0xFF4CAF50),
+    ),
+    OnboardingSlide(
+      title: 'Portal Energético',
+      description: 'Sí, tu frecuencia tiene forma.\n\nCada pilotaje sube tu nivel. Cada sesión suma luz.\n\nVisualiza tu energía con 💎 y ✨ porque lo que no se ve, aquí… se revela.',
+      mentalShift: 'No estás acumulando puntos. Estás calibrando tu campo.',
+      icon: Icons.show_chart,
+      color: const Color(0xFF9C27B0),
+    ),
+    OnboardingSlide(
+      title: 'Notificaciones',
+      description: 'No es spam. Es sincronía.\n\nLas notificaciones son mensajes diseñados para llegar en el momento exacto.\n\nNada es casual. Todo es código.',
+      mentalShift: 'No son alertas. Son llamados vibracionales.',
       icon: Icons.notifications_active,
       color: const Color(0xFFFF7043),
     ),
     OnboardingSlide(
-      title: 'Recompensas Cuánticas',
-      description: 'Cristales de energía, Luz cuántica, Restauradores de armonía, Mantras y Códigos Premium. Todo se actualiza con tu práctica diaria.',
+      title: 'Recompensas de Luz',
+      description: 'Cada sesión te devuelve energía.\n\nCristales, luz cuántica, restauradores… no son premios.\n\nSon anclas que confirman que estás en expansión.',
+      mentalShift: 'No estás gamificando tu progreso. Estás recibiendo evidencia energética.',
       icon: Icons.diamond,
       color: const Color(0xFFFFD54F),
     ),
     OnboardingSlide(
-      title: 'Avatar y Permisos',
-      description: 'Sube tu avatar (permiso de fotos). Si el permiso está denegado, la app te guía para habilitarlo en Configuración.',
-      icon: Icons.verified_user,
-      color: const Color(0xFF26C6DA),
+      title: 'Comparte tu Vibración',
+      description: 'Una imagen que lleva intención',
+      mentalShift: 'No estas mandando una imagen. Estas irradiando una activación',
+      icon: Icons.share,
+      color: const Color(0xFF7E57C2),
     ),
     OnboardingSlide(
-      title: 'Aprobación de Sugerencias (Admin)',
-      description: 'Los administradores pueden aprobar o rechazar sugerencias de códigos alternos desde Perfil → Aprobar Sugerencias.',
-      icon: Icons.admin_panel_settings,
-      color: const Color(0xFF8D6E63),
+      title: 'Inteligencia Cuantica Vibracional',
+      description: 'El sistema reconoce si tu código existe, vibra o necesita otro camino.\n\nLa Inteligencia Cuántica Vibracional no reemplaza tu intención, la respalda.',
+      mentalShift: 'No es un sistema que aprueba o rechaza. Es un oráculo digital que confirma tu frecuencia.',
+      icon: Icons.verified,
+      color: const Color(0xFF00BCD4),
     ),
   ];
 
@@ -213,7 +222,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildSlide(OnboardingSlide slide) {
-    return Padding(
+    return SingleChildScrollView(
+      child: Padding(
       padding: const EdgeInsets.all(40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -253,6 +263,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           // Título
           Text(
             slide.title,
+            textAlign: TextAlign.center,
             style: GoogleFonts.playfairDisplay(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -271,13 +282,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           // Descripción
           Text(
             slide.description,
+            textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 16,
               color: Colors.white70,
-              height: 1.5,
+              height: 1.6,
+            ),
+          ),
+          
+          const SizedBox(height: 30),
+          
+          // Mental Shift
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: slide.color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: slide.color.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.lightbulb_outline,
+                  color: slide.color,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '💡 ${slide.mentalShift}',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      color: slide.color,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -286,12 +336,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 class OnboardingSlide {
   final String title;
   final String description;
+  final String mentalShift;
   final IconData icon;
   final Color color;
 
   OnboardingSlide({
     required this.title,
     required this.description,
+    required this.mentalShift,
     required this.icon,
     required this.color,
   });
