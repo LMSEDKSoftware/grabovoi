@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +18,7 @@ import '../../widgets/golden_sphere.dart';
 import '../../widgets/streamed_music_controller.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/quantum_pilotage_modal.dart';
+import '../../widgets/sequencia_activada_modal.dart';
 import '../../utils/code_formatter.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
@@ -308,7 +309,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     });
   }
 
-  void _confirmarBusqueda() {
+  void _confirmarBusqueda() async {
     if (_queryBusqueda.isNotEmpty) {
       print('🔍 Confirmando búsqueda para: $_queryBusqueda');
       
@@ -326,8 +327,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         return;
       }
       
-      // 2. SEGUNDO: Buscar coincidencias similares/parciales
-      final coincidenciasSimilares = _codigos.where((codigo) {
+      // 2. SEGUNDO: Buscar coincidencias similares/parciales (incluyendo títulos relacionados)
+      // Primero buscar en la lista local
+      var coincidenciasSimilares = _codigos.where((codigo) {
         final query = _queryBusqueda.toLowerCase();
         return codigo.codigo.toLowerCase().contains(query) ||
                codigo.nombre.toLowerCase().contains(query) ||
@@ -341,6 +343,19 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                (query.contains('sanacion') && codigo.categoria.toLowerCase().contains('salud')) ||
                (query.contains('prosperidad') && codigo.categoria.toLowerCase().contains('abundancia'));
       }).toList();
+      
+      // Si no hay resultados locales, buscar en títulos relacionados
+      if (coincidenciasSimilares.isEmpty) {
+        try {
+          final codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(_queryBusqueda);
+          if (codigosPorTitulo.isNotEmpty) {
+            print('🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
+            coincidenciasSimilares = codigosPorTitulo;
+          }
+        } catch (e) {
+          print('⚠️ Error buscando en títulos relacionados: $e');
+        }
+      }
       
       if (coincidenciasSimilares.isNotEmpty) {
         print('🔍 Coincidencias similares encontradas: ${coincidenciasSimilares.length} códigos');
@@ -463,14 +478,24 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
   // Verificar conexión a internet
   Future<bool> _verificarConexionInternet() async {
+    // En web, asumir que hay conexión (estamos en un navegador)
+    // La verificación real se hará cuando intentemos usar la API
+    if (kIsWeb) {
+      return true;
+    }
+    
+    // Para mobile, intentar verificar con un endpoint más confiable
     try {
-      final response = await http.get(
-        Uri.parse('https://www.google.com'),
-      ).timeout(const Duration(seconds: 5));
-      return response.statusCode == 200;
+      // Intentar conectar a Supabase (nuestro propio servicio)
+      final response = await http.head(
+        Uri.parse('https://whtiazgcxdnemrrgjjqf.supabase.co'),
+      ).timeout(const Duration(seconds: 3));
+      return response.statusCode >= 200 && response.statusCode < 500;
     } catch (e) {
-      print('❌ Sin conexión a internet: $e');
-      return false;
+      print('⚠️ Verificación de conexión: $e');
+      // En caso de error, asumir que hay conexión y dejar que la llamada real falle si no hay
+      // Esto evita falsos negativos
+      return true;
     }
   }
 
@@ -532,8 +557,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       final busqueda = BusquedaProfunda(
         codigoBuscado: codigo,
         usuarioId: _getCurrentUserId(),
-        promptSystem: 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nSi el usuario busca algo específico y no existe un código exacto, sugiere códigos relacionados REALES del tema más cercano.\n\nPara búsquedas de relaciones familiares (como hermanos), sugiere códigos reales como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n\nIMPORTANTE: Usa guiones bajos (_) en lugar de espacios en los códigos.\n\nResponde SOLO con el formato de lista numerada, sin explicaciones adicionales.',
-        promptUser: 'Necesito un código Grabovoi para: $codigo',
+        promptSystem: 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nDebes responder SIEMPRE con exactamente 3 opciones de códigos relacionados con la búsqueda del usuario.\n\nSi el usuario busca algo específico y no existe un código exacto, sugiere códigos relacionados REALES del tema más cercano.\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Responde SOLO en formato JSON con la siguiente estructura EXACTA:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    },\n    {\n      "codigo": "619_734_218",\n      "nombre": "Armonización de relaciones",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    },\n    {\n      "codigo": "714_319",\n      "nombre": "Amor y relaciones",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    }\n  ]\n}\n3. SIEMPRE devuelve exactamente 3 códigos en el arreglo.\n4. La descripción debe ser una frase completa y descriptiva que explique qué hace el código.',
+        promptUser: 'Necesito exactamente 3 códigos Grabovoi relacionados con: $codigo. Para cada código, proporciona: código, nombre, una descripción detallada que explique su propósito específico, y categoría.',
         fechaBusqueda: _inicioBusqueda!,
         modeloIa: 'gpt-3.5-turbo',
       );
@@ -800,11 +825,11 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           'messages': [
             {
               'role': 'system',
-              'content': 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nSi el usuario busca algo específico y no existe un código exacto, sugiere códigos relacionados REALES del tema más cercano.\n\nPara búsquedas de relaciones familiares (como hermanos), sugiere códigos reales como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n\nIMPORTANTE: Usa guiones bajos (_) en lugar de espacios en los códigos.\n\nResponde SOLO con el formato de lista numerada, sin explicaciones adicionales.'
+              'content': 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nDebes responder SIEMPRE con exactamente 3 opciones de códigos relacionados con la búsqueda del usuario.\n\nSi el usuario busca algo específico y no existe un código exacto, sugiere códigos relacionados REALES del tema más cercano.\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Responde SOLO en formato JSON con la siguiente estructura EXACTA:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    },\n    {\n      "codigo": "619_734_218",\n      "nombre": "Armonización de relaciones",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    },\n    {\n      "codigo": "714_319",\n      "nombre": "Amor y relaciones",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    }\n  ]\n}\n3. SIEMPRE devuelve exactamente 3 códigos en el arreglo.\n4. La descripción debe ser una frase completa y descriptiva que explique qué hace el código.'
             },
             {
               'role': 'user',
-              'content': 'Necesito un código Grabovoi para: $codigo'
+              'content': 'Necesito exactamente 3 códigos Grabovoi relacionados con: $codigo. Para cada código, proporciona: código, nombre, una descripción detallada que explique su propósito específico, y categoría.'
             }
           ],
           'max_tokens': 500,
@@ -895,10 +920,17 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               final codigosList = responseData['codigos'] as List;
               print('🔍 Códigos encontrados: ${codigosList.length}');
               
+              // Asegurar que tenemos exactamente 3 opciones (o al menos 3)
+              // Si hay más de 3, tomar solo los primeros 3
+              // Si hay menos de 3, mostrar los disponibles
+              final codigosListLimitados = codigosList.length > 3 
+                  ? codigosList.take(3).toList() 
+                  : codigosList;
+              
               // Convertir cada código a CodigoGrabovoi
               final codigosEncontrados = <CodigoGrabovoi>[];
               
-              for (var codigoData in codigosList) {
+              for (var codigoData in codigosListLimitados) {
                 // Validar que el código tenga los campos necesarios
                 if (codigoData['codigo'] != null && codigoData['codigo'].toString().isNotEmpty) {
                   final codigoNumero = codigoData['codigo'].toString().replaceAll(' ', '');
@@ -932,7 +964,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               if (codigosEncontrados.isNotEmpty) {
                 print('✅ Códigos válidos procesados: ${codigosEncontrados.length}');
                 
-                // Mostrar selección de códigos
+                // Mostrar selección de códigos (siempre mostrar las opciones disponibles)
                 setState(() {
                   _codigosEncontrados = codigosEncontrados;
                   _mostrarSeleccionCodigos = true;
@@ -1107,11 +1139,14 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             // Determinar la categoría correcta
             final categoria = _determinarCategoria(nombre);
             
+            // Generar descripción real basada en el nombre
+            final descripcionReal = _generarDescripcionDesdeNombre(nombre);
+            
             codigosEncontrados.add(CodigoGrabovoi(
               id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
               codigo: codigoConGuiones,
               nombre: nombre,
-              descripcion: nombre, // Usar el nombre como descripción
+              descripcion: descripcionReal, // Usar descripción real generada
               categoria: categoria, // Categoría determinada inteligentemente
               color: '#32CD32', // Verde para indicar que es nuevo
             ));
@@ -2023,11 +2058,29 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               hintText: 'Escribe para buscar...',
               hintStyle: const TextStyle(color: Colors.white54),
               prefixIcon: const Icon(Icons.search, color: Colors.white54),
-              suffixIcon: _queryBusqueda.isNotEmpty && _codigosFiltrados.isEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.search, color: Color(0xFFFFD700)),
-                      onPressed: _confirmarBusqueda,
-                      tooltip: 'Buscar código completo',
+              suffixIcon: _queryBusqueda.isNotEmpty
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_codigosFiltrados.isEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.search, color: Color(0xFFFFD700)),
+                            onPressed: _confirmarBusqueda,
+                            tooltip: 'Buscar código completo',
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.white54),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                              _queryBusqueda = '';
+                              _mostrarResultados = false;
+                              _codigosFiltrados = _codigos;
+                            });
+                          },
+                          tooltip: 'Limpiar búsqueda',
+                        ),
+                      ],
                     )
                   : null,
               filled: true,
@@ -3408,88 +3461,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFFFD700), width: 2),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: const Color(0xFFFFD700),
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Pilotaje Completado',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '¡Excelente trabajo! Has completado tu sesión de pilotaje cuántico.',
-                style: GoogleFonts.inter(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFFFD700).withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      '💫 Es importante mantener la vibración',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFFFFD700),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética.',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Sección de códigos sincrónicos
-              _buildSincronicosSection(),
-            ],
-          ),
-        ),
-        actions: [
-          CustomButton(
-            text: 'Continuar',
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            color: const Color(0xFFFFD700),
-          ),
-        ],
+      barrierColor: Colors.black.withOpacity(0.9),
+      builder: (context) => SequenciaActivadaModal(
+        onContinue: () {
+          Navigator.of(context).pop();
+        },
+        buildSincronicosSection: _buildSincronicosSection,
+        mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de pilotaje cuántico.',
       ),
     );
   }
@@ -4217,6 +4195,38 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     return 'Abundancia';
   }
 
+  // Genera una descripción basada en el nombre del código
+  String _generarDescripcionDesdeNombre(String nombre) {
+    if (nombre.isEmpty) {
+      return 'Código de manifestación numérica para transformación positiva.';
+    }
+    
+    // Generar descripciones basadas en el nombre
+    final nombreLower = nombre.toLowerCase();
+    
+    // Mapeo de palabras clave a descripciones
+    if (nombreLower.contains('armonía') || nombreLower.contains('armonia')) {
+      return 'Restaura el equilibrio y la armonía en las relaciones y situaciones.';
+    } else if (nombreLower.contains('amor') || nombreLower.contains('relacion')) {
+      return 'Fortalece las conexiones afectivas y mejora las relaciones interpersonales.';
+    } else if (nombreLower.contains('abundancia') || nombreLower.contains('prosperidad')) {
+      return 'Abre caminos hacia la abundancia y prosperidad en todos los aspectos de la vida.';
+    } else if (nombreLower.contains('salud') || nombreLower.contains('cura') || nombreLower.contains('sanación')) {
+      return 'Acelera los procesos de sanación y restauración del bienestar físico y emocional.';
+    } else if (nombreLower.contains('protección') || nombreLower.contains('seguridad')) {
+      return 'Proporciona protección y seguridad en situaciones desafiantes.';
+    } else if (nombreLower.contains('hermandad') || nombreLower.contains('familia')) {
+      return 'Fomenta la unidad, comprensión y armonía en las relaciones familiares y grupales.';
+    } else if (nombreLower.contains('trabajo') || nombreLower.contains('profesional')) {
+      return 'Abre caminos de reconocimiento y crecimiento profesional.';
+    } else if (nombreLower.contains('dinero') || nombreLower.contains('finanza')) {
+      return 'Atrae estabilidad financiera y oportunidades de prosperidad económica.';
+    } else {
+      // Descripción genérica pero útil basada en el nombre
+      return 'Código de manifestación para ${nombre.toLowerCase()}. Activa procesos de transformación positiva relacionados con este propósito.';
+    }
+  }
+
   // Actualizar la lista de códigos después de guardar uno nuevo
   Future<void> _actualizarListaCodigos() async {
     try {
@@ -4239,8 +4249,49 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     }
   }
 
+  // Método helper para actualizar respuesta_ia en busquedas_profundas
+  Future<void> _actualizarRespuestaIaSeleccionada(CodigoGrabovoi codigo, bool codigoGuardado) async {
+    if (_busquedaActualId == null) return;
+    
+    try {
+      // Crear el JSON con el formato requerido
+      final respuestaSeleccionada = jsonEncode({
+        'nombre': codigo.nombre,
+        'descripcion': codigo.descripcion,
+        'categoria': codigo.categoria,
+      });
+      
+      // Obtener la búsqueda actual de la base de datos
+      final busquedas = await BusquedasProfundasService.getBusquedasPorUsuario(_getCurrentUserId() ?? '');
+      final busquedaActual = busquedas.firstWhere(
+        (b) => b.id == _busquedaActualId,
+        orElse: () => BusquedaProfunda(
+          codigoBuscado: codigo.codigo,
+          usuarioId: _getCurrentUserId(),
+          promptSystem: '',
+          promptUser: '',
+          fechaBusqueda: DateTime.now(),
+        ),
+      );
+      
+      final busquedaActualizada = busquedaActual.copyWith(
+        respuestaIa: respuestaSeleccionada,
+        codigoEncontrado: true,
+        codigoGuardado: codigoGuardado,
+      );
+      
+      await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
+      print('✅ Respuesta seleccionada guardada en busquedas_profundas: $respuestaSeleccionada');
+    } catch (e) {
+      print('⚠️ Error al guardar respuesta seleccionada: $e');
+    }
+  }
+
   void _seleccionarCodigo(CodigoGrabovoi codigo) async {
     print('🎯 Código seleccionado: ${codigo.codigo} - ${codigo.nombre}');
+    
+    // Guardar la respuesta seleccionada en la tabla busquedas_profundas (inicialmente no guardado)
+    await _actualizarRespuestaIaSeleccionada(codigo, false);
     
     // Verificar si es un código nuevo o una sugerencia
     final codigoExiste = await _validarCodigoEnBaseDatos(codigo.codigo);
@@ -4252,6 +4303,10 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         final codigoId = await _guardarCodigoEnBaseDatos(codigo);
         if (codigoId != null) {
           print('✅ Código nuevo guardado con ID: $codigoId');
+          
+          // Actualizar codigo_guardado en busquedas_profundas
+          await _actualizarRespuestaIaSeleccionada(codigo, true);
+          
           await _actualizarListaCodigos();
           // NO mostrar mensaje aquí porque _guardarCodigoEnBaseDatos ya lo muestra
         }
@@ -4268,6 +4323,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     } else {
       // CASO 1: Código EXISTE - Verificar si es una sugerencia
       print('🔍 Código existe en BD, verificando tema...');
+      
+      // Actualizar codigo_guardado en busquedas_profundas (el código ya existe, así que está guardado)
+      await _actualizarRespuestaIaSeleccionada(codigo, true);
       
       final codigoExistente = await SupabaseService.getCodigoExistente(codigo.codigo);
       if (codigoExistente != null) {
@@ -4499,31 +4557,14 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.sync_alt,
-                    color: Color(0xFFFFD700),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Se potencia con...',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFD700),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
               Text(
-                'Estos códigos complementarios pueden potenciar el poder de tu código actual:',
+                'Combínalo con los siguientes códigos para amplificar la resonancia',
                 style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.white70,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -4531,13 +4572,24 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 runSpacing: 8,
                 children: codigosSincronicos.map((codigo) {
                   return GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      Navigator.pushNamed(
-                        context,
-                        '/code-detail',
-                        arguments: codigo['codigo'],
-                      );
+                    onTap: () async {
+                      // Copiar código al portapapeles
+                      final codigoTexto = codigo['codigo'] ?? '';
+                      await Clipboard.setData(ClipboardData(text: codigoTexto));
+                      
+                      // Mostrar confirmación
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '✅ Código copiado: $codigoTexto',
+                              style: GoogleFonts.inter(color: Colors.white),
+                            ),
+                            backgroundColor: const Color(0xFFFFD700),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
                     },
                     child: Container(
                       width: 160,

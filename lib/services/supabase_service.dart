@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/supabase_models.dart';
+import '../models/codigo_titulo_relacionado_model.dart';
 import '../config/supabase_config.dart';
 
 // Función helper para obtener el usuario actual
@@ -233,16 +234,211 @@ class SupabaseService {
   // Obtener información completa de un código existente
   static Future<CodigoGrabovoi?> getCodigoExistente(String codigo) async {
     try {
+      // Obtener el primer registro con este código (para compatibilidad)
       final response = await _client
           .from('codigos_grabovoi')
           .select()
           .eq('codigo', codigo)
-          .single();
+          .limit(1);
 
-      return CodigoGrabovoi.fromJson(response);
+      if (response.isEmpty) {
+        return null;
+      }
+
+      return CodigoGrabovoi.fromJson(response[0]);
     } catch (e) {
       print('❌ Error obteniendo código existente $codigo: $e');
       return null;
+    }
+  }
+
+  // Obtener todos los registros con el mismo código (múltiples títulos)
+  // NOTA: Este método ya no se usa, ahora usamos getTitulosRelacionados()
+  // Se mantiene por compatibilidad pero devuelve solo el código principal
+  static Future<List<CodigoGrabovoi>> getTodosLosTitulosCodigo(String codigo) async {
+    try {
+      final response = await _client
+          .from('codigos_grabovoi')
+          .select()
+          .eq('codigo', codigo)
+          .limit(1); // Solo el primero porque el código es UNIQUE
+
+      return (response as List)
+          .map((json) => CodigoGrabovoi.fromJson(json))
+          .toList();
+    } catch (e) {
+      print('❌ Error obteniendo código $codigo: $e');
+      return [];
+    }
+  }
+  
+  // Obtener código principal y todos sus títulos relacionados
+  static Future<Map<String, dynamic>> getCodigoConTitulosRelacionados(String codigo) async {
+    try {
+      // Obtener código principal
+      final codigoPrincipal = await getCodigoExistente(codigo);
+      
+      // Obtener títulos relacionados
+      final titulosRelacionados = await getTitulosRelacionados(codigo);
+      
+      return {
+        'codigoPrincipal': codigoPrincipal,
+        'titulosRelacionados': titulosRelacionados,
+      };
+    } catch (e) {
+      print('❌ Error obteniendo código con títulos relacionados: $e');
+      return {
+        'codigoPrincipal': null,
+        'titulosRelacionados': <Map<String, dynamic>>[],
+      };
+    }
+  }
+
+  // Verificar si un código existe (puede tener múltiples registros)
+  static Future<bool> codigoExisteConTitulo(String codigo, String titulo) async {
+    try {
+      final response = await _client
+          .from('codigos_grabovoi')
+          .select('codigo')
+          .eq('codigo', codigo)
+          .eq('nombre', titulo)
+          .limit(1);
+      
+      return response.isNotEmpty;
+    } catch (e) {
+      print('❌ Error verificando existencia del código con título: $e');
+      return false;
+    }
+  }
+
+  // ===== TÍTULOS RELACIONADOS =====
+  
+  // Agregar un título relacionado a un código
+  static Future<String> agregarTituloRelacionado({
+    required String codigoExistente,
+    required String titulo,
+    String? descripcion,
+    String? categoria,
+    String fuente = 'sugerencia_aprobada',
+    int? sugerenciaId,
+    String? usuarioId,
+  }) async {
+    try {
+      print('💾 Agregando título relacionado: $titulo para código $codigoExistente');
+      
+      final response = await _serviceClient
+          .from('codigos_titulos_relacionados')
+          .insert({
+            'codigo_existente': codigoExistente,
+            'titulo': titulo,
+            'descripcion': descripcion,
+            'categoria': categoria,
+            'fuente': fuente,
+            'sugerencia_id': sugerenciaId,
+            'usuario_id': usuarioId,
+          })
+          .select('id')
+          .single();
+      
+      final id = response['id'] as String;
+      print('✅ Título relacionado agregado con ID: $id');
+      return id;
+    } catch (e) {
+      print('❌ Error al agregar título relacionado: $e');
+      rethrow;
+    }
+  }
+
+  // Obtener todos los títulos relacionados de un código
+  static Future<List<Map<String, dynamic>>> getTitulosRelacionados(String codigo) async {
+    try {
+      print('🔍 [GET_TITULOS_RELACIONADOS] Buscando títulos relacionados para código: $codigo');
+      final response = await _client
+          .from('codigos_titulos_relacionados')
+          .select()
+          .eq('codigo_existente', codigo)
+          .order('created_at', ascending: true);
+
+      final resultado = (response as List).cast<Map<String, dynamic>>();
+      print('✅ [GET_TITULOS_RELACIONADOS] Encontrados ${resultado.length} títulos relacionados para código $codigo');
+      if (resultado.isNotEmpty) {
+        print('📋 [GET_TITULOS_RELACIONADOS] Títulos: ${resultado.map((t) => t['titulo']).toList()}');
+      }
+      return resultado;
+    } catch (e) {
+      print('❌ Error obteniendo títulos relacionados: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      return [];
+    }
+  }
+
+  // Buscar códigos por título (incluyendo títulos relacionados)
+  static Future<List<CodigoGrabovoi>> buscarCodigosPorTitulo(String terminoBusqueda) async {
+    try {
+      print('🔍 [BUSCAR_CODIGOS_POR_TITULO] Buscando: "$terminoBusqueda"');
+      final terminoLower = terminoBusqueda.toLowerCase();
+      final terminoPattern = '%$terminoLower%';
+      
+      // Buscar en codigos_grabovoi
+      final responseCodigos = await _client
+          .from('codigos_grabovoi')
+          .select()
+          .or('nombre.ilike.$terminoPattern,descripcion.ilike.$terminoPattern')
+          .limit(100);
+
+      print('🔍 [BUSCAR_CODIGOS_POR_TITULO] Códigos encontrados en tabla principal: ${responseCodigos.length}');
+
+      // Buscar en títulos relacionados
+      final responseTitulos = await _client
+          .from('codigos_titulos_relacionados')
+          .select('codigo_existente, titulo, descripcion')
+          .or('titulo.ilike.$terminoPattern,descripcion.ilike.$terminoPattern')
+          .limit(100);
+
+      print('🔍 [BUSCAR_CODIGOS_POR_TITULO] Títulos relacionados encontrados: ${responseTitulos.length}');
+      if (responseTitulos.isNotEmpty) {
+        print('🔍 [BUSCAR_CODIGOS_POR_TITULO] Títulos relacionados: ${responseTitulos.map((t) => t['titulo']).toList()}');
+      }
+
+      // Obtener códigos únicos de ambos resultados
+      final codigosEncontrados = <String>{};
+      
+      // Agregar códigos de la búsqueda principal
+      for (var codigo in responseCodigos) {
+        codigosEncontrados.add(codigo['codigo'] as String);
+      }
+      
+      // Agregar códigos de títulos relacionados
+      for (var titulo in responseTitulos) {
+        codigosEncontrados.add(titulo['codigo_existente'] as String);
+      }
+
+      print('🔍 [BUSCAR_CODIGOS_POR_TITULO] Códigos únicos encontrados: ${codigosEncontrados.length}');
+      print('🔍 [BUSCAR_CODIGOS_POR_TITULO] Códigos: ${codigosEncontrados.toList()}');
+
+      // Obtener los códigos completos
+      if (codigosEncontrados.isEmpty) {
+        print('⚠️ [BUSCAR_CODIGOS_POR_TITULO] No se encontraron códigos');
+        return [];
+      }
+
+      final codigosList = codigosEncontrados.toList();
+      final response = await _client
+          .from('codigos_grabovoi')
+          .select()
+          .inFilter('codigo', codigosList)
+          .order('nombre', ascending: true);
+
+      final resultado = (response as List)
+          .map((json) => CodigoGrabovoi.fromJson(json))
+          .toList();
+
+      print('✅ [BUSCAR_CODIGOS_POR_TITULO] Resultado final: ${resultado.length} códigos');
+      return resultado;
+    } catch (e) {
+      print('❌ Error buscando códigos por título: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      return [];
     }
   }
 

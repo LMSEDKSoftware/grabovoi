@@ -18,9 +18,7 @@ import 'edit_profile_screen.dart';
 import 'notifications_settings_screen.dart';
 import 'notification_history_screen.dart';
 import '../../services/admin_service.dart';
-import '../../services/showcase_tour_service.dart';
 import '../../screens/home/home_screen.dart';
-import 'package:showcaseview/showcaseview.dart';
 import '../admin/approve_suggestions_screen.dart';
 import '../rewards/premium_store_screen.dart';
 import '../rewards/mantras_screen.dart';
@@ -252,24 +250,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                               );
                             },
                           ),
-                        _buildCompactButton(
-                          text: 'Ver Paseo de Bienvenida',
-                          icon: Icons.help_outline,
-                          onPressed: () async {
-                            await ShowcaseTourService.resetTour();
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('✅ Paseo de bienvenida reiniciado'),
-                                  backgroundColor: Colors.green,
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                              // Navegar al Home para reiniciar el tour
-                              Navigator.of(context).pop(); // Cerrar ProfileScreen
-                            }
-                          },
-                        ),
                       ],
                     ),
                     const SizedBox(height: 20),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
@@ -48,6 +50,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   bool _mostrarResultados = false;
   String? _codigoNoEncontrado;
   bool _showOptionsModal = false;
+  bool _buscandoConIA = false;
+  String? _codigoBuscando;
+  bool _mostrarConfirmacionGuardado = false;
+  String? _codigoGuardadoNombre;
   int? _busquedaActualId;
   DateTime? _inicioBusqueda;
   List<CodigoGrabovoi> _codigosEncontrados = [];
@@ -187,45 +193,89 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   }
 
   // Filtrar códigos mientras el usuario escribe
-  void _filtrarCodigos(String query) {
+  void _filtrarCodigos(String query) async {
     setState(() {
       _queryBusqueda = query;
-      if (query.isEmpty) {
-        _mostrarResultados = false;
-        _aplicarFiltros();
-      } else {
-        // Primero buscar coincidencias exactas
-        final coincidenciasExactas = _codigos.where((codigo) {
-          return codigo.codigo.toLowerCase() == query.toLowerCase();
-        }).toList();
-        
-        // Si hay coincidencias exactas, mostrarlas
-        if (coincidenciasExactas.isNotEmpty) {
-          visible = coincidenciasExactas;
-          _mostrarResultados = true;
-        } else {
-          // Si no hay coincidencias exactas, buscar coincidencias parciales
-          visible = _codigos.where((codigo) {
-            return codigo.codigo.toLowerCase().contains(query.toLowerCase()) ||
-                   codigo.nombre.toLowerCase().contains(query.toLowerCase()) ||
-                   codigo.categoria.toLowerCase().contains(query.toLowerCase()) ||
-                   codigo.descripcion.toLowerCase().contains(query.toLowerCase());
-          }).toList();
-          _mostrarResultados = true;
-        }
-        
-        // Si hay resultados, aplicar filtros de categoría también
-        if (visible.isNotEmpty && categoriaSeleccionada != 'Todos') {
-          visible = visible.where((codigo) {
-            return codigo.categoria == categoriaSeleccionada;
-          }).toList();
-        }
-      }
     });
+    
+    if (query.isEmpty) {
+      setState(() {
+        _mostrarResultados = false;
+      });
+      _aplicarFiltros();
+      return;
+    }
+    
+    final queryLower = query.toLowerCase().trim();
+    
+    // 1. Buscar coincidencias exactas en lista local
+    final coincidenciasExactas = _codigos.where((codigo) {
+      return codigo.codigo.toLowerCase() == queryLower;
+    }).toList();
+    
+    // 2. Buscar coincidencias parciales en lista local
+    var coincidenciasLocales = _codigos.where((codigo) {
+      return codigo.codigo.toLowerCase().contains(queryLower) ||
+             codigo.nombre.toLowerCase().contains(queryLower) ||
+             codigo.categoria.toLowerCase().contains(queryLower) ||
+             codigo.descripcion.toLowerCase().contains(queryLower);
+    }).toList();
+    
+    // 3. Si no hay resultados locales, buscar en títulos relacionados (búsqueda asíncrona)
+    List<CodigoGrabovoi> codigosPorTitulo = [];
+    if (coincidenciasExactas.isEmpty && coincidenciasLocales.isEmpty) {
+      try {
+        codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(queryLower);
+        if (codigosPorTitulo.isNotEmpty) {
+          print('🔍 [FILTRAR] Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
+        }
+      } catch (e) {
+        print('⚠️ Error buscando en títulos relacionados durante filtrado: $e');
+      }
+    }
+    
+    // 4. Combinar resultados (eliminar duplicados)
+    final todosLosResultados = <String, CodigoGrabovoi>{};
+    
+    // Agregar coincidencias exactas primero
+    for (var codigo in coincidenciasExactas) {
+      todosLosResultados[codigo.codigo] = codigo;
+    }
+    
+    // Agregar coincidencias locales
+    for (var codigo in coincidenciasLocales) {
+      if (!todosLosResultados.containsKey(codigo.codigo)) {
+        todosLosResultados[codigo.codigo] = codigo;
+      }
+    }
+    
+    // Agregar códigos encontrados por títulos relacionados
+    for (var codigo in codigosPorTitulo) {
+      if (!todosLosResultados.containsKey(codigo.codigo)) {
+        todosLosResultados[codigo.codigo] = codigo;
+      }
+    }
+    
+    final resultadoFinal = todosLosResultados.values.toList();
+    
+    // Aplicar filtros de categoría si hay resultados
+    var resultadoFiltrado = resultadoFinal;
+    if (resultadoFiltrado.isNotEmpty && categoriaSeleccionada != 'Todos') {
+      resultadoFiltrado = resultadoFiltrado.where((codigo) {
+        return codigo.categoria == categoriaSeleccionada;
+      }).toList();
+    }
+    
+    if (mounted) {
+      setState(() {
+        visible = resultadoFiltrado;
+        _mostrarResultados = true;
+      });
+    }
   }
 
   // Confirmar búsqueda (cuando el usuario presiona Enter o busca explícitamente)
-  void _confirmarBusqueda() {
+  void _confirmarBusqueda() async {
     if (_queryBusqueda.isEmpty) {
       _aplicarFiltros();
       return;
@@ -233,22 +283,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     
     print('🔍 Confirmando búsqueda para: $_queryBusqueda');
     
-    // 1. PRIMERO: Buscar coincidencias exactas
+    // 1. PRIMERO: Buscar coincidencias exactas en lista local
     final coincidenciasExactas = _codigos.where((codigo) {
       return codigo.codigo.toLowerCase() == _queryBusqueda.toLowerCase();
     }).toList();
     
-    if (coincidenciasExactas.isNotEmpty) {
-      print('✅ Coincidencias exactas encontradas: ${coincidenciasExactas.length} códigos');
-      setState(() {
-        visible = coincidenciasExactas;
-        _mostrarResultados = true;
-      });
-      return;
-    }
-    
-    // 2. SEGUNDO: Buscar coincidencias similares/parciales
-    final coincidenciasSimilares = _codigos.where((codigo) {
+    // 2. SEGUNDO: Buscar coincidencias similares/parciales en lista local
+    var coincidenciasSimilares = _codigos.where((codigo) {
       final query = _queryBusqueda.toLowerCase();
       return codigo.codigo.toLowerCase().contains(query) ||
              codigo.nombre.toLowerCase().contains(query) ||
@@ -263,17 +304,52 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
              (query.contains('prosperidad') && codigo.categoria.toLowerCase().contains('abundancia'));
     }).toList();
     
-    if (coincidenciasSimilares.isNotEmpty) {
-      print('🔍 Coincidencias similares encontradas: ${coincidenciasSimilares.length} códigos');
+    // 3. TERCERO: SIEMPRE buscar en títulos relacionados (tanto si hay resultados locales como si no)
+    List<CodigoGrabovoi> codigosPorTitulo = [];
+    try {
+      codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(_queryBusqueda);
+      if (codigosPorTitulo.isNotEmpty) {
+        print('🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
+      }
+    } catch (e) {
+      print('⚠️ Error buscando en títulos relacionados: $e');
+    }
+    
+    // 4. Combinar todos los resultados (eliminar duplicados por código)
+    final todosLosResultados = <String, CodigoGrabovoi>{};
+    
+    // Agregar coincidencias exactas primero (tienen prioridad)
+    for (var codigo in coincidenciasExactas) {
+      todosLosResultados[codigo.codigo] = codigo;
+    }
+    
+    // Agregar coincidencias similares locales
+    for (var codigo in coincidenciasSimilares) {
+      if (!todosLosResultados.containsKey(codigo.codigo)) {
+        todosLosResultados[codigo.codigo] = codigo;
+      }
+    }
+    
+    // Agregar códigos encontrados por títulos relacionados
+    for (var codigo in codigosPorTitulo) {
+      if (!todosLosResultados.containsKey(codigo.codigo)) {
+        todosLosResultados[codigo.codigo] = codigo;
+      }
+    }
+    
+    final resultadoFinal = todosLosResultados.values.toList();
+    
+    if (resultadoFinal.isNotEmpty) {
+      print('✅ Resultados encontrados: ${resultadoFinal.length} códigos (${coincidenciasExactas.length} exactos, ${coincidenciasSimilares.length} locales, ${codigosPorTitulo.length} por títulos relacionados)');
       setState(() {
-        visible = coincidenciasSimilares;
+        visible = resultadoFinal;
         _mostrarResultados = true;
       });
       return;
     }
     
-    // 3. TERCERO: Si no hay coincidencias exactas ni similares, mostrar modal de búsqueda profunda
-    print('❌ No se encontraron coincidencias exactas ni similares para: $_queryBusqueda');
+    // 5. Si no hay resultados, mostrar modal de búsqueda profunda
+    print('❌ No se encontraron coincidencias para: $_queryBusqueda');
     setState(() {
       _codigoNoEncontrado = _queryBusqueda;
       _showOptionsModal = true;
@@ -379,16 +455,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       
       print('✅ Código guardado exitosamente en la base de datos con ID: ${codigoCreado.id}');
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '✅ Código guardado permanentemente: ${codigo.nombre}',
-            style: GoogleFonts.inter(color: Colors.white),
-          ),
-          backgroundColor: const Color(0xFF4CAF50),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      // Mostrar modal de confirmación elegante
+      if (mounted) {
+        setState(() {
+          _mostrarConfirmacionGuardado = true;
+          _codigoGuardadoNombre = codigo.nombre;
+        });
+      }
       
       // Recargar la lista de códigos
       await _load();
@@ -451,14 +524,24 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
 
   // Verificar conexión a internet
   Future<bool> _verificarConexionInternet() async {
+    // En web, asumir que hay conexión (estamos en un navegador)
+    // La verificación real se hará cuando intentemos usar la API
+    if (kIsWeb) {
+      return true;
+    }
+    
+    // Para mobile, intentar verificar con un endpoint más confiable
     try {
-      final response = await http.get(
-        Uri.parse('https://www.google.com'),
-      ).timeout(const Duration(seconds: 5));
-      return response.statusCode == 200;
+      // Intentar conectar a Supabase (nuestro propio servicio)
+      final response = await http.head(
+        Uri.parse('https://whtiazgcxdnemrrgjjqf.supabase.co'),
+      ).timeout(const Duration(seconds: 3));
+      return response.statusCode >= 200 && response.statusCode < 500;
     } catch (e) {
-      print('❌ Sin conexión a internet: $e');
-      return false;
+      print('⚠️ Verificación de conexión: $e');
+      // En caso de error, asumir que hay conexión y dejar que la llamada real falle si no hay
+      // Esto evita falsos negativos
+      return true;
     }
   }
 
@@ -518,8 +601,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       final busqueda = BusquedaProfunda(
         codigoBuscado: codigo,
         usuarioId: _getCurrentUserId(),
-        promptSystem: 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados relacionados con la búsqueda del usuario.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nPara búsquedas relacionadas con HUMANOS, PERSONAS, RELACIONES o INTERACCIONES HUMANAS, sugiere códigos reales específicos como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n- 888_412_12848 — Desarrollo de relaciones\n- 520_741_8 — Relaciones armoniosas\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Si el usuario busca algo específico, sugiere AL MENOS 3-5 códigos relacionados REALES del tema más cercano.\n3. Los códigos deben estar DIRECTAMENTE relacionados con la búsqueda del usuario.\n4. Responde SOLO con el formato de lista numerada (1., 2., 3., etc.) seguido del código y su nombre separados por guión largo (—), sin explicaciones adicionales.',
-        promptUser: 'Necesito códigos Grabovoi relacionados con: $codigo. Sugiere al menos 3-5 códigos REALES directamente relacionados con este tema.',
+        promptSystem: 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados relacionados con la búsqueda del usuario.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nPara búsquedas relacionadas con HUMANOS, PERSONAS, RELACIONES o INTERACCIONES HUMANAS, sugiere códigos reales específicos como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n- 888_412_12848 — Desarrollo de relaciones\n- 520_741_8 — Relaciones armoniosas\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Si el usuario busca algo específico, sugiere AL MENOS 3-5 códigos relacionados REALES del tema más cercano.\n3. Los códigos deben estar DIRECTAMENTE relacionados con la búsqueda del usuario.\n4. Responde SOLO en formato JSON con la siguiente estructura:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    }\n  ]\n}\n5. La descripción debe ser una frase completa y descriptiva que explique qué hace el código, no solo el tema de búsqueda.',
+        promptUser: 'Necesito códigos Grabovoi relacionados con: $codigo. Sugiere al menos 3-5 códigos REALES directamente relacionados con este tema. Para cada código, proporciona: código, nombre, una descripción detallada que explique su propósito específico, y categoría.',
         fechaBusqueda: _inicioBusqueda!,
         modeloIa: 'gpt-3.5-turbo',
       );
@@ -532,31 +615,21 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         _busquedaActualId = null;
       }
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Buscando código con IA...',
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-            ],
-          ),
-          backgroundColor: const Color(0xFFFFD700),
-          duration: const Duration(seconds: 8),
-        ),
-      );
+      // Mostrar overlay elegante de búsqueda
+      setState(() {
+        _buscandoConIA = true;
+        _codigoBuscando = codigo;
+      });
 
       final resultado = await _buscarConOpenAI(codigo);
+      
+      // Ocultar overlay cuando termine
+      if (mounted) {
+        setState(() {
+          _buscandoConIA = false;
+          _codigoBuscando = null;
+        });
+      }
       
       final duracion = _inicioBusqueda != null 
           ? DateTime.now().difference(_inicioBusqueda!).inMilliseconds 
@@ -593,6 +666,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       }
     } catch (e) {
       print('❌ Error en búsqueda profunda: $e');
+      // Ocultar overlay si hay error
+      if (mounted) {
+        setState(() {
+          _buscandoConIA = false;
+          _codigoBuscando = null;
+        });
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -612,7 +692,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     
     if (!tieneInternet) {
       print('❌ Sin conexión a internet, no se puede usar OpenAI');
+      // Ocultar overlay si no hay conexión
       if (mounted) {
+        setState(() {
+          _buscandoConIA = false;
+          _codigoBuscando = null;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -668,14 +753,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           'messages': [
             {
               'role': 'system',
-              'content': 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados relacionados con la búsqueda del usuario.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nPara búsquedas relacionadas con HUMANOS, PERSONAS, RELACIONES o INTERACCIONES HUMANAS, sugiere códigos reales específicos como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n- 888_412_12848 — Desarrollo de relaciones\n- 520_741_8 — Relaciones armoniosas\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Si el usuario busca algo específico, sugiere AL MENOS 3-5 códigos relacionados REALES del tema más cercano.\n3. Los códigos deben estar DIRECTAMENTE relacionados con la búsqueda del usuario.\n4. Responde SOLO con el formato de lista numerada (1., 2., 3., etc.) seguido del código y su nombre separados por guión largo (—), sin explicaciones adicionales.\n\nEjemplo de formato:\n1. 519_7148_21 — Armonía familiar\n2. 619_734_218 — Armonización de relaciones\n3. 814_418_719 — Comprensión y perdón'
+              'content': 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados relacionados con la búsqueda del usuario.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nPara búsquedas relacionadas con HUMANOS, PERSONAS, RELACIONES o INTERACCIONES HUMANAS, sugiere códigos reales específicos como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n- 888_412_12848 — Desarrollo de relaciones\n- 520_741_8 — Relaciones armoniosas\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Si el usuario busca algo específico, sugiere AL MENOS 3-5 códigos relacionados REALES del tema más cercano.\n3. Los códigos deben estar DIRECTAMENTE relacionados con la búsqueda del usuario.\n4. Responde SOLO en formato JSON con la siguiente estructura:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    }\n  ]\n}\n5. La descripción debe ser una frase completa y descriptiva que explique qué hace el código, no solo el tema de búsqueda.'
             },
             {
               'role': 'user',
-              'content': 'Necesito códigos Grabovoi relacionados con: $codigo. Sugiere al menos 3-5 códigos REALES directamente relacionados con este tema.'
+              'content': 'Necesito códigos Grabovoi relacionados con: $codigo. Sugiere al menos 3-5 códigos REALES directamente relacionados con este tema. Para cada código, proporciona: código, nombre, una descripción detallada que explique su propósito específico, y categoría.'
             }
           ],
-          'max_tokens': 500,
+          'max_tokens': 1000,
           'temperature': 0.7,
         }),
       );
@@ -744,7 +829,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   // Esto permite mostrar opciones relacionadas al usuario
                   final codigoExiste = await _validarCodigoEnBaseDatos(codigoNumero);
                   final nombre = codigoData['nombre']?.toString() ?? 'Código relacionado';
-                  final descripcion = codigoData['descripcion']?.toString() ?? 'Código sugerido por IA relacionado con tu búsqueda';
+                  // Usar la descripción real de la IA, o generar una basada en el nombre
+                  String descripcionReal = codigoData['descripcion']?.toString() ?? '';
+                  if (descripcionReal.isEmpty || descripcionReal.contains('Código sugerido por IA')) {
+                    // Si no hay descripción o es genérica, generar una basada en el nombre
+                    descripcionReal = _generarDescripcionDesdeNombre(nombre);
+                  }
                   final categoriaRaw = codigoData['categoria']?.toString() ?? '';
                   // Validar y corregir categoría: si es "codigo" o vacía, usar _determinarCategoria
                   final categoria = (categoriaRaw.isEmpty || categoriaRaw.toLowerCase() == 'codigo') 
@@ -752,26 +842,31 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                       : categoriaRaw;
                   
                   if (codigoExiste) {
-                    // Si existe en BD, usamos los datos reales
+                    // Si existe en BD, priorizar la descripción de la IA si es mejor
                     final codigoExistente = await SupabaseService.getCodigoExistente(codigoNumero);
                     if (codigoExistente != null) {
+                      // Usar descripción de IA si existe y es más específica, sino usar la de BD
+                      final descripcionFinal = descripcionReal.isNotEmpty && descripcionReal.length > 20
+                          ? descripcionReal
+                          : codigoExistente.descripcion;
+                      
                       codigosEncontrados.add(CodigoGrabovoi(
                         id: codigoExistente.id,
                         codigo: codigoNumero,
                         nombre: nombre.isNotEmpty ? nombre : codigoExistente.nombre,
-                        descripcion: descripcion.isNotEmpty ? descripcion : codigoExistente.descripcion,
+                        descripcion: descripcionFinal, // Usar descripción real
                         categoria: categoria,
                         color: codigoExistente.color,
                       ));
                     }
                   } else {
-                    // Si no existe, lo mostramos como sugerencia relacionada
+                    // Si no existe, lo mostramos como sugerencia relacionada con descripción real
                     print('⚠️ Código $codigoNumero sugerido por IA (no en BD), mostrando como opción relacionada');
                     codigosEncontrados.add(CodigoGrabovoi(
                       id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
                       codigo: codigoNumero,
                       nombre: nombre,
-                      descripcion: descripcion.isNotEmpty ? descripcion : 'Código sugerido por IA relacionado con: $_queryBusqueda',
+                      descripcion: descripcionReal, // Usar descripción real de la IA
                       categoria: categoria,
                       color: '#FFD700',
                     ));
@@ -892,13 +987,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         final codigoId = await _guardarCodigoEnBaseDatos(codigo);
         if (codigoId != null) {
           print('✅ Código nuevo guardado con ID: $codigoId');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ Código agregado y guardado: ${codigo.nombre}'),
-              backgroundColor: const Color(0xFF4CAF50),
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          // El modal de confirmación ya se muestra en _guardarCodigoEnBaseDatos
         }
       } catch (e) {
         print('⚠️ Error al guardar código nuevo: $e');
@@ -1043,26 +1132,34 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           final codigoExiste = await _validarCodigoEnBaseDatos(codigoStr);
           final categoria = _determinarCategoria(nombre);
           
+          // Generar descripción real basada en el nombre
+          final descripcionReal = _generarDescripcionDesdeNombre(nombre);
+          
           if (codigoExiste) {
             final codigoExistente = await SupabaseService.getCodigoExistente(codigoStr);
             if (codigoExistente != null) {
+              // Usar descripción generada si es más específica que la de BD
+              final descripcionFinal = descripcionReal.length > 20 && !codigoExistente.descripcion.contains('Código sugerido')
+                  ? descripcionReal
+                  : codigoExistente.descripcion;
+              
               codigosEncontrados.add(CodigoGrabovoi(
                 id: codigoExistente.id,
                 codigo: codigoStr,
                 nombre: nombre.isNotEmpty ? nombre : codigoExistente.nombre,
-                descripcion: nombre.isNotEmpty ? nombre : codigoExistente.descripcion,
+                descripcion: descripcionFinal, // Usar descripción real
                 categoria: categoria.isNotEmpty ? categoria : codigoExistente.categoria,
                 color: codigoExistente.color,
               ));
             }
           } else {
-            // Si el código no existe, aún lo mostramos como sugerencia relacionada
+            // Si el código no existe, aún lo mostramos como sugerencia relacionada con descripción real
             print('⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
             codigosEncontrados.add(CodigoGrabovoi(
               id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
               codigo: codigoStr,
               nombre: nombre,
-              descripcion: 'Código sugerido por IA relacionado con: $_queryBusqueda',
+              descripcion: descripcionReal, // Usar descripción real generada
               categoria: categoria.isNotEmpty ? categoria : 'Abundancia',
               color: '#FFD700',
             ));
@@ -1110,26 +1207,34 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           final codigoExiste = await _validarCodigoEnBaseDatos(codigoStr);
           final categoria = _determinarCategoria(nombre);
           
+          // Generar descripción real basada en el nombre
+          final descripcionReal = _generarDescripcionDesdeNombre(nombre);
+          
           if (codigoExiste) {
             final codigoExistente = await SupabaseService.getCodigoExistente(codigoStr);
             if (codigoExistente != null) {
+              // Usar descripción generada si es más específica que la de BD
+              final descripcionFinal = descripcionReal.length > 20 && !codigoExistente.descripcion.contains('Código sugerido')
+                  ? descripcionReal
+                  : codigoExistente.descripcion;
+              
               codigosEncontrados.add(CodigoGrabovoi(
                 id: codigoExistente.id,
                 codigo: codigoStr,
                 nombre: nombre.isNotEmpty ? nombre : codigoExistente.nombre,
-                descripcion: nombre.isNotEmpty ? nombre : codigoExistente.descripcion,
+                descripcion: descripcionFinal, // Usar descripción real
                 categoria: categoria.isNotEmpty ? categoria : codigoExistente.categoria,
                 color: codigoExistente.color,
               ));
             }
           } else {
-            // Si el código no existe, aún lo mostramos como sugerencia relacionada
+            // Si el código no existe, aún lo mostramos como sugerencia relacionada con descripción real
             print('⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
             codigosEncontrados.add(CodigoGrabovoi(
               id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
               codigo: codigoStr,
               nombre: nombre,
-              descripcion: 'Código sugerido por IA relacionado con: $_queryBusqueda',
+              descripcion: descripcionReal, // Usar descripción real generada
               categoria: categoria.isNotEmpty ? categoria : 'Abundancia',
               color: '#FFD700',
             ));
@@ -1151,6 +1256,38 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     } catch (e) {
       print('❌ Error extrayendo códigos del texto: $e');
       _mostrarMensajeNoEncontrado();
+    }
+  }
+
+  // Genera una descripción basada en el nombre del código
+  String _generarDescripcionDesdeNombre(String nombre) {
+    if (nombre.isEmpty) {
+      return 'Código de manifestación numérica para transformación positiva.';
+    }
+    
+    // Generar descripciones basadas en el nombre
+    final nombreLower = nombre.toLowerCase();
+    
+    // Mapeo de palabras clave a descripciones
+    if (nombreLower.contains('armonía') || nombreLower.contains('armonia')) {
+      return 'Restaura el equilibrio y la armonía en las relaciones y situaciones.';
+    } else if (nombreLower.contains('amor') || nombreLower.contains('relacion')) {
+      return 'Fortalece las conexiones afectivas y mejora las relaciones interpersonales.';
+    } else if (nombreLower.contains('abundancia') || nombreLower.contains('prosperidad')) {
+      return 'Abre caminos hacia la abundancia y prosperidad en todos los aspectos de la vida.';
+    } else if (nombreLower.contains('salud') || nombreLower.contains('cura') || nombreLower.contains('sanación')) {
+      return 'Acelera los procesos de sanación y restauración del bienestar físico y emocional.';
+    } else if (nombreLower.contains('protección') || nombreLower.contains('seguridad')) {
+      return 'Proporciona protección y seguridad en situaciones desafiantes.';
+    } else if (nombreLower.contains('hermandad') || nombreLower.contains('familia')) {
+      return 'Fomenta la unidad, comprensión y armonía en las relaciones familiares y grupales.';
+    } else if (nombreLower.contains('trabajo') || nombreLower.contains('profesional')) {
+      return 'Abre caminos de reconocimiento y crecimiento profesional.';
+    } else if (nombreLower.contains('dinero') || nombreLower.contains('finanza')) {
+      return 'Atrae estabilidad financiera y oportunidades de prosperidad económica.';
+    } else {
+      // Descripción genérica pero útil basada en el nombre
+      return 'Código de manifestación para ${nombre.toLowerCase()}. Activa procesos de transformación positiva relacionados con este propósito.';
     }
   }
 
@@ -1454,11 +1591,30 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                         hintText: 'Buscar código, intención o categoría...',
                         hintStyle: const TextStyle(color: Colors.white54),
                         prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                        suffixIcon: query.isNotEmpty && visible.isEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.search, color: Color(0xFFFFD700)),
-                                onPressed: _confirmarBusqueda,
-                                tooltip: 'Buscar código completo',
+                        suffixIcon: query.isNotEmpty
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (visible.isEmpty)
+                                    IconButton(
+                                      icon: const Icon(Icons.search, color: Color(0xFFFFD700)),
+                                      onPressed: _confirmarBusqueda,
+                                      tooltip: 'Buscar código completo',
+                                    ),
+                                  IconButton(
+                                    icon: const Icon(Icons.clear, color: Colors.white54),
+                                    onPressed: () {
+                                      setState(() {
+                                        _searchController.clear();
+                                        query = '';
+                                        _queryBusqueda = '';
+                                        _mostrarResultados = false;
+                                        _aplicarFiltros();
+                                      });
+                                    },
+                                    tooltip: 'Limpiar búsqueda',
+                                  ),
+                                ],
                               )
                             : null,
                         filled: true,
@@ -1615,6 +1771,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           // Modales de búsqueda profunda
           if (_showOptionsModal) _buildOptionsModal(),
           if (_mostrarSeleccionCodigos) _buildSeleccionCodigosModal(),
+          if (_buscandoConIA) _buildBuscandoConIAModal(),
+          if (_mostrarConfirmacionGuardado) _buildConfirmacionGuardadoModal(),
         ],
       ),
     );
@@ -1690,6 +1848,169 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                     });
                   },
                   child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBuscandoConIAModal() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.8),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C2541),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de IA con animación
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Buscando con Inteligencia Artificial',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Analizando códigos relacionados con "${_codigoBuscando ?? 'tu búsqueda'}"',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Esto puede tomar unos segundos...',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.white54,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfirmacionGuardadoModal() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.8),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C2541),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFF4CAF50).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de éxito
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF4CAF50),
+                    size: 48,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Código Guardado',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _codigoGuardadoNombre ?? 'Código guardado exitosamente',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: Colors.white70,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'El código ha sido agregado permanentemente a la biblioteca',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.white54,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _mostrarConfirmacionGuardado = false;
+                        _codigoGuardadoNombre = null;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4CAF50),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Entendido',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1801,13 +2122,15 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 8),
+                                  // Descripción real del código
                                   Text(
                                     codigo.descripcion,
                                     style: GoogleFonts.inter(
-                                      color: Colors.white70,
+                                      color: Colors.white,
                                       fontSize: 14,
+                                      fontWeight: FontWeight.w500,
                                     ),
-                                    maxLines: 2,
+                                    maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 8),
@@ -1825,6 +2148,16 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                           color: _getCategoryColor(codigo.categoria),
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      // Información de búsqueda como texto pequeño
+                                      Text(
+                                        'Sugerido por IA',
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white54,
+                                          fontSize: 10,
+                                          fontStyle: FontStyle.italic,
                                         ),
                                       ),
                                     ],
@@ -1909,6 +2242,42 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     }
     
     if (visible.isEmpty) {
+      // Si hay una búsqueda activa, mostrar el mismo mensaje que en Pilotaje Cuántico
+      if (_queryBusqueda.isNotEmpty) {
+        return Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.search_off, size: 64, color: Colors.grey),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.orange.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    'No se encontraron resultados para "$_queryBusqueda". Presiona Enter o el botón de búsqueda para confirmar.',
+                    style: GoogleFonts.inter(
+                      color: Colors.orange,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      
+      // Si no hay búsqueda activa, mostrar mensaje genérico
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1931,7 +2300,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         itemCount: visible.length,
         itemBuilder: (context, index) {
           final codigo = visible[index];
-          return _buildCodigoCard(codigo);
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: _buildCodigoCard(codigo),
+            ),
+          );
         },
       ),
     );
@@ -2080,15 +2454,41 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           ),
           const SizedBox(height: 8),
           
-          // Código
-          Text(
-            codigo.codigo,
-            style: GoogleFonts.spaceMono(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFFD700),
-              letterSpacing: 2,
-            ),
+          // Código con icono de copiar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  codigo.codigo,
+                  style: GoogleFonts.spaceMono(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD700),
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.copy,
+                  color: Color(0xFFFFD700),
+                  size: 20,
+                ),
+                tooltip: 'Copiar código',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: codigo.codigo));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Código ${codigo.codigo} copiado al portapapeles'),
+                      duration: const Duration(seconds: 2),
+                      backgroundColor: const Color(0xFFFFD700).withOpacity(0.9),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           
@@ -2103,6 +2503,100 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
+          
+          // Títulos relacionados
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: SupabaseService.getTitulosRelacionados(codigo.codigo),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox.shrink();
+              }
+              
+              final titulosRelacionados = snapshot.data ?? [];
+              
+              if (titulosRelacionados.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFFFD700).withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: Color(0xFFFFD700),
+                              size: 14,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'También relacionado con:',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ...titulosRelacionados.map((tituloRel) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '• ${tituloRel['titulo']?.toString() ?? ''}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (tituloRel['descripcion'] != null && 
+                                    (tituloRel['descripcion'] as String).isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 12),
+                                    child: Text(
+                                      tituloRel['descripcion']?.toString() ?? '',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        color: Colors.white.withOpacity(0.7),
+                                        height: 1.2,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          
           const SizedBox(height: 16),
           
           // Botón de acción

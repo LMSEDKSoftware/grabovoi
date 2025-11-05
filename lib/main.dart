@@ -21,8 +21,6 @@ import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'repositories/codigos_repository.dart';
-import 'package:showcaseview/showcaseview.dart';
-import 'services/showcase_tour_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,19 +106,6 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        builder: (context, child) {
-          return ShowCaseWidget(
-            enableAutoScroll: true,
-            autoPlay: false,
-            onFinish: () async {
-              await ShowcaseTourService.markTourAsCompleted();
-              // Notificar que el tour terminó para mostrar el modal de bienvenida
-              // Esto se hace a través de un callback que HomeScreen puede escuchar
-              // Por ahora, el modal se mostrará en el próximo build de HomeScreen
-            },
-            builder: (context) => child ?? const SizedBox(),
-          );
-        },
         home: const AuthWrapper(),
     );
   }
@@ -142,8 +127,8 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _screens = [
-      HomeScreen(onNavigateToTab: _changeTab),
-      StaticBibliotecaScreen(onNavigateToTab: _changeTab),
+      const HomeScreen(),
+      const StaticBibliotecaScreen(),
       // const PilotajeScreen(), // Oculto según solicitud
       const QuantumPilotageScreen(),
       const DesafiosScreen(),

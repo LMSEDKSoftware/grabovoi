@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -21,6 +22,7 @@ import '../../repositories/codigos_repository.dart';
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/pilotage_state_service.dart';
+import '../../widgets/sequencia_activada_modal.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -567,17 +569,20 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                       
                       // Descripción del código
                       Center(
-                        child: FutureBuilder<Map<String, String>>(
+                        child: FutureBuilder<Map<String, dynamic>>(
                           future: Future.wait([
                             _getCodigoTitulo(),
                             _getCodigoDescription(),
+                            SupabaseService.getTitulosRelacionados(widget.codigo),
                           ]).then((results) => {
-                            'titulo': results[0],
-                            'descripcion': results[1],
+                            'titulo': results[0] as String,
+                            'descripcion': results[1] as String,
+                            'titulosRelacionados': results[2] as List<Map<String, dynamic>>,
                           }),
                           builder: (context, snapshot) {
                             final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
                             final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                            final titulosRelacionados = snapshot.data?['titulosRelacionados'] as List<Map<String, dynamic>>? ?? [];
                             
                             return Container(
                               width: double.infinity,
@@ -592,7 +597,9 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                 ),
                               ),
                               child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Título principal
                                   Text(
                                     titulo,
                                     style: GoogleFonts.inter(
@@ -602,6 +609,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                     ),
                                   ),
                                   const SizedBox(height: 12),
+                                  // Descripción principal
                                   Text(
                                     descripcion,
                                     style: GoogleFonts.inter(
@@ -610,6 +618,80 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                       height: 1.4,
                                     ),
                                   ),
+                                  // Mostrar títulos relacionados si existen
+                                  if (titulosRelacionados.isNotEmpty) ...[
+                                    const SizedBox(height: 16),
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFD700).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: const Color(0xFFFFD700).withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.info_outline,
+                                                color: Color(0xFFFFD700),
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'También relacionado con:',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: const Color(0xFFFFD700),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          ...titulosRelacionados.map((tituloRel) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(bottom: 8),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '• ${tituloRel['titulo']?.toString() ?? ''}',
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  if (tituloRel['descripcion'] != null && 
+                                                      (tituloRel['descripcion'] as String).isNotEmpty) ...[
+                                                    const SizedBox(height: 4),
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(left: 12),
+                                                      child: Text(
+                                                        tituloRel['descripcion']?.toString() ?? '',
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: 11,
+                                                          color: Colors.white.withOpacity(0.7),
+                                                          height: 1.3,
+                                                        ),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             );
@@ -1312,102 +1394,13 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFFFD700), width: 2),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: const Color(0xFFFFD700),
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Repetición Completada',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '¡Excelente trabajo! Has completado tu sesión de repeticiones.',
-                style: GoogleFonts.inter(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFFFD700).withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      '💫 Es importante mantener la vibración',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFFFFD700),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética.',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Sección de códigos sincrónicos
-              _buildSincronicosSection(),
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFD700),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text(
-              'Continuar',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+      barrierColor: Colors.black.withOpacity(0.9),
+      builder: (context) => SequenciaActivadaModal(
+        onContinue: () {
+          Navigator.of(context).pop();
+        },
+        buildSincronicosSection: _buildSincronicosSection,
+        mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de repeticiones.',
       ),
     );
   }
@@ -1455,31 +1448,14 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.sync_alt,
-                    color: Color(0xFFFFD700),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Se potencia con...',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFD700),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
               Text(
-                'Estos códigos complementarios pueden potenciar el poder de tu código actual:',
+                'Combínalo con los siguientes códigos para amplificar la resonancia',
                 style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.white70,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -1487,13 +1463,24 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 runSpacing: 8,
                 children: codigosSincronicos.map((codigo) {
                   return GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      Navigator.pushNamed(
-                        context,
-                        '/code-detail',
-                        arguments: codigo['codigo'],
-                      );
+                    onTap: () async {
+                      // Copiar código al portapapeles
+                      final codigoTexto = codigo['codigo'] ?? '';
+                      await Clipboard.setData(ClipboardData(text: codigoTexto));
+                      
+                      // Mostrar confirmación
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '✅ Código copiado: $codigoTexto',
+                              style: GoogleFonts.inter(color: Colors.white),
+                            ),
+                            backgroundColor: const Color(0xFFFFD700),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
                     },
                     child: Container(
                       width: 160,

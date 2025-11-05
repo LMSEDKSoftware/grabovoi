@@ -51,6 +51,7 @@ dependencies:
   image_picker: ^1.0.7
   permission_handler: ^11.2.0
   cached_network_image: ^3.3.1
+  showcaseview: ^3.0.0
 
 dev_dependencies:
   flutter_test:

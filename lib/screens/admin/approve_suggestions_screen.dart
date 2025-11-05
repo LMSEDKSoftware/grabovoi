@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../models/sugerencia_codigo_model.dart';
+import '../../models/supabase_models.dart';
 import '../../services/sugerencias_codigos_service.dart';
 import '../../services/admin_service.dart';
 import '../../services/supabase_service.dart';
@@ -74,11 +75,21 @@ class _ApproveSuggestionsScreenState extends State<ApproveSuggestionsScreen> {
 
   Future<void> _aprobarSugerencia(SugerenciaCodigo sugerencia) async {
     try {
-      // Actualizar el código existente con el nuevo tema/descripción
-      await SupabaseService.actualizarCodigo(
-        sugerencia.codigoExistente,
-        nombre: sugerencia.temaSugerido,
-        descripcion: sugerencia.descripcionSugerida ?? '',
+      // Obtener el código existente para copiar la categoría
+      final codigoExistente = await SupabaseService.getCodigoExistente(sugerencia.codigoExistente);
+      
+      // Obtener el usuario actual
+      final usuarioId = SupabaseService.client.auth.currentUser?.id;
+      
+      // Insertar el título relacionado en la nueva tabla (sin modificar codigos_grabovoi)
+      await SupabaseService.agregarTituloRelacionado(
+        codigoExistente: sugerencia.codigoExistente,
+        titulo: sugerencia.temaSugerido,
+        descripcion: sugerencia.descripcionSugerida,
+        categoria: codigoExistente?.categoria,
+        fuente: 'sugerencia_aprobada',
+        sugerenciaId: sugerencia.id,
+        usuarioId: usuarioId,
       );
 
       // Marcar sugerencia como aprobada

@@ -20,8 +20,6 @@ import '../../repositories/codigos_repository.dart';
 import '../../widgets/rewards_display.dart';
 import '../../widgets/energy_stats_tab.dart';
 import '../onboarding/onboarding_screen.dart';
-import 'package:showcaseview/showcaseview.dart';
-import '../../services/showcase_tour_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -42,13 +40,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _userName = '';
   final AuthServiceSimple _authService = AuthServiceSimple();
   
-  // GlobalKeys para el tour
-  final GlobalKey _one = GlobalKey();
-  final GlobalKey _two = GlobalKey();
-  final GlobalKey _three = GlobalKey();
-  final GlobalKey _four = GlobalKey();
-  final GlobalKey _five = GlobalKey();
-  
   // La esfera de inicio es solo decorativa, sin funcionalidades interactivas
 
   @override
@@ -57,73 +48,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _cargarDatosHome();
     _cargarNombreUsuario();
     _checkOnboarding();
-    _startTourIfNeeded();
-    // Cuando termine el build inicial, verifica si debe mostrar el modal
+    // Verificar si debe mostrar el modal de bienvenida
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final tourCompleted = await ShowcaseTourService.isTourCompleted();
-      if (tourCompleted && mounted) {
-        await _checkWelcomeModalAfterTour();
+      if (mounted) {
+        await _checkWelcomeModal();
       }
     });
   }
   
-  Future<void> _startTourIfNeeded() async {
-    final isCompleted = await ShowcaseTourService.isTourCompleted();
-    if (!isCompleted) {
-      // Resetear el flag para permitir verificación después del tour
-      _hasCheckedModalThisSession = false;
-      // Esperar a que el widget tree esté completamente construido
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(const Duration(milliseconds: 1800), () {
-          if (!mounted) return;
-          
-          final showCase = ShowCaseWidget.of(context);
-          
-          if (showCase != null) {
-            try {
-              showCase.startShowCase([_one, _two, _three, _four, _five]);
-              // Verificar periódicamente si el tour se completó para mostrar el modal
-              _listenForTourCompletion();
-            } catch (e, s) {
-              debugPrint('⚠️ Error iniciando tour: $e\n$s');
-            }
-          } else {
-            debugPrint('⚠️ ShowCaseWidget no disponible aún, reintentando...');
-            Future.delayed(const Duration(milliseconds: 800), () {
-              if (!mounted) return;
-              
-              final retry = ShowCaseWidget.of(context);
-              if (retry != null) {
-                retry.startShowCase([_one, _two, _three, _four, _five]);
-                _listenForTourCompletion();
-              } else {
-                debugPrint('❌ Falló nuevamente al iniciar Showcase.');
-              }
-            });
-          }
-        });
-      });
-    }
-  }
-  
-  /// Escucha cuando el tour se complete para mostrar el modal
-  Future<void> _listenForTourCompletion() async {
-    // Verificar cada 2 segundos si el tour se completó
-    for (int i = 0; i < 30; i++) { // Verificar por hasta 60 segundos
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) break;
-      
-      final tourCompleted = await ShowcaseTourService.isTourCompleted();
-      if (tourCompleted) {
-        // Tour completado, mostrar el modal
-        _hasCheckedModalThisSession = false; // Resetear para permitir mostrar modal
-        await _checkWelcomeModalAfterTour();
-        break;
-      }
-    }
-  }
-  
-
   Future<void> _checkOnboarding() async {
     // El onboarding ya se maneja en AuthWrapper, no es necesario verificar aquí
     // Esta función se mantiene por compatibilidad pero no hace nada
@@ -158,19 +90,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   bool _hasCheckedModalThisSession = false;
   
-  /// Verifica y muestra el modal de bienvenida solo después de que el tour esté completado
-  Future<void> _checkWelcomeModalAfterTour() async {
+  /// Verifica y muestra el modal de bienvenida
+  Future<void> _checkWelcomeModal() async {
     if (_hasCheckedModalThisSession) return;
 
     final prefs = await SharedPreferences.getInstance();
     final welcomeModalShown = prefs.getBool('welcome_modal_shown') ?? false;
-    final tourCompleted = await ShowcaseTourService.isTourCompleted();
 
-    // Mostrar solo si: el tour ya se completó y el modal nunca se mostró
-    if (!welcomeModalShown && tourCompleted && mounted) {
+    // Mostrar solo si el modal nunca se mostró
+    if (!welcomeModalShown && mounted) {
       _hasCheckedModalThisSession = true;
 
-      // Pequeño delay para esperar animaciones del tour
+      // Pequeño delay para esperar que la UI esté lista
       await Future.delayed(const Duration(milliseconds: 800));
 
       if (!mounted) return;
@@ -199,14 +130,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Showcase(
-                      key: _one,
-                      title: '👋 ¡Bienvenido a MANIGRAB!',
-                      description: 'Esta es tu pantalla de Inicio. Aquí encontrarás tu nivel energético, el código del día y tu próximo paso recomendado.',
-                      targetShapeBorder: const CircleBorder(),
-                      child: Text(
-                        'Portal Energético',
-                        style: GoogleFonts.playfairDisplay(
+                    Text(
+                      'Portal Energético',
+                      style: GoogleFonts.playfairDisplay(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFFFFD700),
@@ -216,7 +142,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             blurRadius: 20,
                           ),
                         ],
-                      ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -326,55 +251,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 30),
-                Showcase(
-                  key: _two,
-                  title: '💎 Tu Nivel Energético',
-                  description: 'Aquí puedes ver tu nivel de energía actual. Mantén tu energía alta realizando actividades diarias y usando los códigos.',
-                  child: _buildEnergyCard('Tu Nivel Energético hoy', '${_datosHome['nivel']}/10', Icons.bolt),
-                ),
+                _buildEnergyCard('Tu Nivel Energético hoy', '${_datosHome['nivel']}/10', Icons.bolt),
                 const SizedBox(height: 20),
-                Showcase(
-                  key: _three,
-                  title: '📜 Código del Día',
-                  description: 'Cada día recibirás un código recomendado especialmente para ti. Este código está alineado con tu energía actual.',
-                  child: _buildCodeOfDay(context, _datosHome['codigoRecomendado']),
-                ),
+                _buildCodeOfDay(context, _datosHome['codigoRecomendado']),
                 const SizedBox(height: 20),
-                Showcase(
-                  key: _four,
-                  title: '✨ Próximo Paso',
-                  description: 'Sigue esta recomendación para continuar tu viaje de manifestación. Cada paso te acerca más a tus objetivos.',
-                  child: _buildNextStep(_datosHome['proximoPaso']),
-                ),
+                _buildNextStep(_datosHome['proximoPaso']),
                   ],
                 ),
               ),
             ),
             // Solapa flotante de estadísticas de energía (esquina superior derecha)
-            // ✅ Solapa fija + Showcase funcional
-            Stack(
-              children: [
-                // Widget invisible para que Showcase pueda encontrarlo
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Showcase(
-                    key: _five,
-                    title: '📊 Estadísticas de Energía',
-                    description: 'En la esquina superior derecha puedes ver tus estadísticas de energía. Toca aquí para ver tus cristales y luz cuántica.',
-                    child: const SizedBox(
-                      width: 45,
-                      height: 90,
-                    ),
-                  ),
-                ),
-                // Widget real posicionado independientemente (encima del widget invisible)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: const EnergyStatsTab(),
-                ),
-              ],
+            Positioned(
+              top: 0,
+              right: 0,
+              child: const EnergyStatsTab(),
             ),
           ],
         ),
