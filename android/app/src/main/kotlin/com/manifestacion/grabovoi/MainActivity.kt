@@ -1,4 +1,4 @@
-package com.example.grabovoi_build
+package com.manifestacion.grabovoi
 
 import io.flutter.embedding.android.FlutterActivity
 

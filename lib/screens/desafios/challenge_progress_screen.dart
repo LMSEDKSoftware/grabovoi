@@ -8,6 +8,8 @@ import '../../services/challenge_progress_tracker.dart';
 import 'challenge_congrats_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service_simple.dart';
+import '../../config/env.dart';
+import '../../config/supabase_config.dart';
 
 class ChallengeProgressScreen extends StatefulWidget {
   final Challenge challenge;
@@ -366,20 +368,21 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
             child: SizedBox(
               width: 360,
               child: CustomButton(
-            text: 'Finalizar Reto y Obtener Certificado',
-            onPressed: () {
-              const publicUrl = 'https://whtiazgcxdnemrrgjjqf.supabase.co/storage/v1/object/public/rewards/challenges/iniciacion_energetica/certificado.png';
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const ChallengeCongratsScreen(
-                    title: 'Desafío de Iniciación Energética',
-                    imageUrl: 'https://whtiazgcxdnemrrgjjqf.supabase.co/storage/v1/object/public/rewards/challenges/iniciacion_energetica/certificado.png',
-                    description: 'Comienza tu viaje de manifestación con los códigos básicos. Has completado con éxito este desafío de iniciación usando los códigos cuánticos de Grigori Grabovoi.',
-                  ),
-                ),
-              );
-            },
-            icon: Icons.emoji_events,
+                text: 'Finalizar Reto y Obtener Certificado',
+                onPressed: () {
+                  final supabaseBase = (Env.supabaseUrl.isNotEmpty ? Env.supabaseUrl : SupabaseConfig.url).replaceFirst(RegExp(r'/$'), '');
+                  final publicUrl = '$supabaseBase/storage/v1/object/public/rewards/challenges/iniciacion_energetica/certificado.png';
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ChallengeCongratsScreen(
+                        title: 'Desafío de Iniciación Energética',
+                        imageUrl: publicUrl,
+                        description: 'Comienza tu viaje de manifestación con los códigos básicos. Has completado con éxito este desafío de iniciación usando los códigos cuánticos de Grigori Grabovoi.',
+                      ),
+                    ),
+                  );
+                },
+                icon: Icons.emoji_events,
               ),
             ),
           ),

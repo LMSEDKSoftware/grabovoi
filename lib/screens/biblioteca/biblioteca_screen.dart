@@ -8,6 +8,8 @@ import '../../services/ai/openai_codes_service.dart';
 import '../../services/ai_codes_service.dart';
 import '../diag/diag_screen.dart';
 import '../../widgets/illuminated_code_text.dart';
+import '../../config/env.dart';
+import '../../config/supabase_config.dart';
 
 class BibliotecaScreen extends StatefulWidget {
   const BibliotecaScreen({super.key});
@@ -498,6 +500,9 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
   }
 
   void _mostrarInfoDebug() {
+    final supabaseBase = Env.supabaseUrl.isNotEmpty ? Env.supabaseUrl : SupabaseConfig.url;
+    final supabaseDisplay = supabaseBase.isNotEmpty ? supabaseBase : 'No configurada';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -536,7 +541,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _buildDebugInfoItem('URL Supabase', 'https://whtiazgcxdnemrrgjjqf.supabase.co'),
+              _buildDebugInfoItem('URL Supabase', supabaseDisplay),
                     _buildDebugInfoItem('Estado conexión', 'Conectado (anon key)'),
                   ],
                 ),

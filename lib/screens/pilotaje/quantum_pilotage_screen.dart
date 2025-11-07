@@ -487,8 +487,11 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     // Para mobile, intentar verificar con un endpoint más confiable
     try {
       // Intentar conectar a Supabase (nuestro propio servicio)
+      final supabaseUrl = Env.supabaseUrl.isNotEmpty
+          ? Env.supabaseUrl
+          : SupabaseConfig.url;
       final response = await http.head(
-        Uri.parse('https://whtiazgcxdnemrrgjjqf.supabase.co'),
+        Uri.parse(supabaseUrl),
       ).timeout(const Duration(seconds: 3));
       return response.statusCode >= 200 && response.statusCode < 500;
     } catch (e) {

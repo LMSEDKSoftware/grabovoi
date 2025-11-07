@@ -1,11 +1,20 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
-    namespace = "com.example.grabovoi_build"
+    namespace = "com.manifestacion.grabovoi"
     compileSdk = 35
     ndkVersion = "26.1.10909125"
 
@@ -20,18 +29,39 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.grabovoi_build"
+        applicationId = "com.manifestacion.grabovoi"
         minSdk = 21
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0.1"
+    }
+
+    signingConfigs {
+        release {
+            if (!keystorePropertiesFile.exists()) {
+                throw new IllegalStateException("No se encontró key.properties. Crea el keystore release y proporciona credenciales para firmar la app.")
+            }
+
+            if (!keystoreProperties.containsKey("storeFile")) {
+                throw new IllegalStateException("key.properties no contiene 'storeFile'. Actualiza la configuración del keystore.")
+            }
+
+            storeFile = rootProject.file(keystoreProperties["storeFile"])
+            storePassword = keystoreProperties["storePassword"]
+            keyAlias = keystoreProperties["keyAlias"]
+            keyPassword = keystoreProperties["keyPassword"]
+        }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
-            minifyEnabled false
-            shrinkResources false
+            signingConfig = signingConfigs.getByName("release")
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

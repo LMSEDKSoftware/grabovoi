@@ -1,4 +1,5 @@
 import '../models/supabase_models.dart';
+import '../config/supabase_config.dart';
 import 'supabase_service.dart';
 import 'auth_service_simple.dart';
 import 'user_favorites_service.dart';
@@ -22,8 +23,8 @@ class BibliotecaSupabaseService {
   static Future<List<CodigoGrabovoi>> getTodosLosCodigos() async {
     try {
       print('🔄 Iniciando conexión con Supabase...');
-      print('📍 URL: https://whtiazgcxdnemrrgjjqf.supabase.co');
-      print('🔑 Usando anon key...');
+      print('📍 URL: ${SupabaseConfig.url}');
+      print('🔑 Usando anon key seguro desde variables de entorno...');
       
       final codigos = await SupabaseService.getCodigos();
       print('📚 Respuesta de Supabase: ${codigos.length} códigos');
