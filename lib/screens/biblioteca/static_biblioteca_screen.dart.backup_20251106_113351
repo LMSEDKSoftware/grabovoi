@@ -13,7 +13,6 @@ import '../../widgets/custom_button.dart';
 import '../../repositories/codigos_repository.dart';
 import '../../config/env.dart';
 import '../../config/supabase_config.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/busqueda_profunda_model.dart';
 import '../../services/busquedas_profundas_service.dart';
 import '../../services/sugerencias_codigos_service.dart';
@@ -61,10 +60,6 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   bool _mostrarSeleccionCodigos = false;
   int _tokensUsadosOpenAI = 0;
   double _costoEstimadoOpenAI = 0.0;
-  
-  // Variables para el deslizamiento y reporte de códigos
-  final Map<String, double> _swipeOffsets = {}; // Almacena el offset de deslizamiento por código
-  final Map<String, String?> _reportReasons = {}; // Almacena la razón del reporte por código
 
   @override
   void initState() {
@@ -2317,624 +2312,313 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   }
 
   Widget _buildCodigoCard(CodigoGrabovoi codigo) {
-    final offset = _swipeOffsets[codigo.codigo] ?? 0.0;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = screenWidth - 40; // Ancho del card (padding incluido)
-    final reportWidth = cardWidth * 0.42; // 42% del ancho para el área de reporte (más visible)
-    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Área de reporte (detrás del card, a la derecha)
-          Positioned(
-            right: 20,
-            top: 0,
-            bottom: 0,
-            width: reportWidth,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: _buildReportArea(codigo, reportWidth),
-            ),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
-          // Card principal (se desliza)
-          GestureDetector(
-            onHorizontalDragUpdate: (details) {
-              // Solo permitir deslizamiento hacia la izquierda
-              if (details.delta.dx < 0) {
-                setState(() {
-                  final newOffset = (offset + details.delta.dx).clamp(-reportWidth, 0.0);
-                  _swipeOffsets[codigo.codigo] = newOffset;
-                });
-              } else if (details.delta.dx > 0 && offset < 0) {
-                // Permitir volver a la posición original deslizando hacia la derecha
-                setState(() {
-                  final newOffset = (offset + details.delta.dx).clamp(-reportWidth, 0.0);
-                  _swipeOffsets[codigo.codigo] = newOffset;
-                });
-              }
-            },
-            onHorizontalDragEnd: (details) {
-              // Si se deslizó más de la mitad, mantener abierto, sino cerrar
-              final threshold = -reportWidth / 2;
-              setState(() {
-                if (offset < threshold) {
-                  _swipeOffsets[codigo.codigo] = -reportWidth;
-                } else {
-                  _swipeOffsets[codigo.codigo] = 0.0;
-                }
-              });
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              transform: Matrix4.translationValues(offset, 0, 0),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460)],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Categoría
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _getCategoryColor(codigo.categoria).withOpacity(0.5),
+                      width: 1,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.2), width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
+                  child: Text(
+                    codigo.categoria,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: _getCategoryColor(codigo.categoria),
                     ),
-                  ],
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        // Categoría
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: _getCategoryColor(codigo.categoria).withOpacity(0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              codigo.categoria,
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: _getCategoryColor(codigo.categoria),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
+              ),
+              const SizedBox(width: 8),
+              // Botón de favorito con etiqueta
+              FutureBuilder<bool>(
+                future: BibliotecaSupabaseService.esFavorito(codigo.codigo),
+                builder: (context, snapshot) {
+                  final isFavorite = snapshot.data ?? false;
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () async {
+                          if (isFavorite) {
+                            // Si ya es favorito, removerlo directamente
+                            try {
+                              await BibliotecaSupabaseService.toggleFavorito(codigo.codigo);
+                              setState(() {});
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('❌ ${codigo.nombre} removido de favoritos'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            } catch (e) {
+                              print('Error removiendo favorito: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: ${e.toString()}'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          } else {
+                            // Si no es favorito, mostrar modal para etiquetar
+                            _mostrarModalEtiquetado(codigo);
+                          }
+                        },
+                        icon: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : Colors.white70,
+                          size: 20,
                         ),
-                        const SizedBox(width: 8),
-                        // Botón de favorito con etiqueta
-                        FutureBuilder<bool>(
-                          future: BibliotecaSupabaseService.esFavorito(codigo.codigo),
-                          builder: (context, snapshot) {
-                            final isFavorite = snapshot.data ?? false;
-                            return Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: () async {
-                                    if (isFavorite) {
-                                      // Si ya es favorito, removerlo directamente
-                                      try {
-                                        await BibliotecaSupabaseService.toggleFavorito(codigo.codigo);
-                                        setState(() {});
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('❌ ${codigo.nombre} removido de favoritos'),
-                                            backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 2),
-                                          ),
-                                        );
-                                      } catch (e) {
-                                        print('Error removiendo favorito: $e');
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Error: ${e.toString()}'),
-                                            backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 3),
-                                          ),
-                                        );
-                                      }
-                                    } else {
-                                      // Si no es favorito, mostrar modal para etiquetar
-                                      _mostrarModalEtiquetado(codigo);
-                                    }
-                                  },
-                                  icon: Icon(
-                                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                                    color: isFavorite ? Colors.red : Colors.white70,
-                                    size: 20,
+                      ),
+                      // Mostrar etiqueta si es favorito
+                      if (isFavorite)
+                        FutureBuilder<String?>(
+                          future: BibliotecaSupabaseService.getEtiquetaFavorito(codigo.codigo),
+                          builder: (context, etiquetaSnapshot) {
+                            final etiqueta = etiquetaSnapshot.data;
+                            if (etiqueta != null && etiqueta.isNotEmpty) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFFFD700).withOpacity(0.5),
+                                    width: 1,
                                   ),
                                 ),
-                                // Mostrar etiqueta si es favorito
-                                if (isFavorite)
-                                  FutureBuilder<String?>(
-                                    future: BibliotecaSupabaseService.getEtiquetaFavorito(codigo.codigo),
-                                    builder: (context, etiquetaSnapshot) {
-                                      final etiqueta = etiquetaSnapshot.data;
-                                      if (etiqueta != null && etiqueta.isNotEmpty) {
-                                        return Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFFFD700).withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: const Color(0xFFFFD700).withOpacity(0.5),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            etiqueta,
-                                            style: GoogleFonts.inter(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFFFFD700),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return const SizedBox.shrink();
-                                    },
+                                child: Text(
+                                  etiqueta,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFFFD700),
                                   ),
-                              ],
-                            );
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
                           },
                         ),
-                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Título
+          Text(
+            codigo.nombre,
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          
+          // Código con icono de copiar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  codigo.codigo,
+                  style: GoogleFonts.spaceMono(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD700),
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.copy,
+                  color: Color(0xFFFFD700),
+                  size: 20,
+                ),
+                tooltip: 'Copiar código',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: codigo.codigo));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Código ${codigo.codigo} copiado al portapapeles'),
+                      duration: const Duration(seconds: 2),
+                      backgroundColor: const Color(0xFFFFD700).withOpacity(0.9),
+                      behavior: SnackBarBehavior.floating,
                     ),
-                    const SizedBox(height: 12),
-                    
-                    // Título
-                    Text(
-                      codigo.nombre,
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          // Descripción
+          Text(
+            codigo.descripcion,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.white70,
+              height: 1.4,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          
+          // Títulos relacionados
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: SupabaseService.getTitulosRelacionados(codigo.codigo),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox.shrink();
+              }
+              
+              final titulosRelacionados = snapshot.data ?? [];
+              
+              if (titulosRelacionados.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFFFD700).withOpacity(0.3),
+                        width: 1,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
-                    
-                    // Código con icono de copiar
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            codigo.codigo,
-                            style: GoogleFonts.spaceMono(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFFFD700),
-                              letterSpacing: 2,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.copy,
-                            color: Color(0xFFFFD700),
-                            size: 20,
-                          ),
-                          tooltip: 'Copiar código',
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: codigo.codigo));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Código ${codigo.codigo} copiado al portapapeles'),
-                                duration: const Duration(seconds: 2),
-                                backgroundColor: const Color(0xFFFFD700).withOpacity(0.9),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    // Descripción
-                    Text(
-                      codigo.descripcion,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.white70,
-                        height: 1.4,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    
-                    // Títulos relacionados
-                    FutureBuilder<List<Map<String, dynamic>>>(
-                      future: SupabaseService.getTitulosRelacionados(codigo.codigo),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const SizedBox.shrink();
-                        }
-                        
-                        final titulosRelacionados = snapshot.data ?? [];
-                        
-                        if (titulosRelacionados.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
                           children: [
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFD700).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFFFFD700).withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.info_outline,
-                                        color: Color(0xFFFFD700),
-                                        size: 14,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'También relacionado con:',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFFFFD700),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  ...titulosRelacionados.map((tituloRel) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 4),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '• ${tituloRel['titulo']?.toString() ?? ''}',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          if (tituloRel['descripcion'] != null && 
-                                              (tituloRel['descripcion'] as String).isNotEmpty) ...[
-                                            const SizedBox(height: 2),
-                                            Padding(
-                                              padding: const EdgeInsets.only(left: 12),
-                                              child: Text(
-                                                tituloRel['descripcion']?.toString() ?? '',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 10,
-                                                  color: Colors.white.withOpacity(0.7),
-                                                  height: 1.2,
-                                                ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                                ],
+                            const Icon(
+                              Icons.info_outline,
+                              color: Color(0xFFFFD700),
+                              size: 14,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'También relacionado con:',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
                               ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Botón de acción
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          _mostrarModalRepeticion(codigo);
-                        },
-                        icon: const Icon(Icons.play_arrow, size: 18),
-                        label: const Text('Iniciar sesión de repetición'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFD700),
-                          foregroundColor: const Color(0xFF0B132B),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
                         ),
-                      ),
+                        const SizedBox(height: 6),
+                        ...titulosRelacionados.map((tituloRel) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '• ${tituloRel['titulo']?.toString() ?? ''}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (tituloRel['descripcion'] != null && 
+                                    (tituloRel['descripcion'] as String).isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 12),
+                                    child: Text(
+                                      tituloRel['descripcion']?.toString() ?? '',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        color: Colors.white.withOpacity(0.7),
+                                        height: 1.2,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
                     ),
-                  ],
+                  ),
+                ],
+              );
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Botón de acción
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                _mostrarModalRepeticion(codigo);
+              },
+              icon: const Icon(Icons.play_arrow, size: 18),
+              label: const Text('Iniciar sesión de repetición'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD700),
+                foregroundColor: const Color(0xFF0B132B),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
                 ),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// Widget para el área de reporte que se muestra al deslizar
-  Widget _buildReportArea(CodigoGrabovoi codigo, double width) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Título
-            Text(
-              'Reportar',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF0B132B),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            
-            // Número del código
-            Text(
-              'Código:',
-              style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF0B132B).withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              codigo.codigo,
-              style: GoogleFonts.spaceMono(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF0B132B),
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 14),
-            
-            // Opciones de botones para el motivo del reporte (se envían directamente al presionar)
-            _buildReportReasonButton(
-              codigo,
-              'Código incorrecto',
-              'codigo_incorrecto',
-            ),
-            const SizedBox(height: 8),
-            _buildReportReasonButton(
-              codigo,
-              'Descripción incorrecta',
-              'descripcion_incorrecta',
-            ),
-            const SizedBox(height: 8),
-            _buildReportReasonButton(
-              codigo,
-              'Categoría incorrecta',
-              'categoria_incorrecta',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Widget para cada opción de botón del reporte
-  /// Al presionar, envía el reporte directamente
-  Widget _buildReportReasonButton(CodigoGrabovoi codigo, String label, String value) {
-    return GestureDetector(
-      onTap: () {
-        // Enviar el reporte directamente al presionar el botón
-        _enviarReporte(codigo, value);
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0B132B).withOpacity(0.05),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: const Color(0xFF0B132B).withOpacity(0.2),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Flexible(
-              child: Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  color: const Color(0xFF0B132B),
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Método para enviar el reporte del código
-  Future<void> _enviarReporte(CodigoGrabovoi codigo, String tipoReporte) async {
-    try {
-      // Obtener información del usuario actual
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) {
-        _mostrarNotificacionError('Debes iniciar sesión para reportar un código');
-        return;
-      }
-
-      final userData = await SupabaseService.getCurrentUser();
-      final email = currentUser.email ?? userData?['email'] ?? '';
-
-      // Guardar el reporte en Supabase
-      await SupabaseService.guardarReporteCodigo(
-        usuarioId: currentUser.id,
-        email: email,
-        codigoId: codigo.codigo,
-        tipoReporte: tipoReporte,
-      );
-
-      // Cerrar el área de reporte y limpiar el estado
-      setState(() {
-        _swipeOffsets[codigo.codigo] = 0.0;
-        _reportReasons[codigo.codigo] = null;
-      });
-
-      // Mostrar notificación elegante de éxito
-      _mostrarNotificacionExito();
-    } catch (e) {
-      print('❌ Error enviando reporte: $e');
-      _mostrarNotificacionError('Error al enviar el reporte. Por favor intenta nuevamente.');
-    }
-  }
-
-  /// Muestra una notificación elegante de éxito
-  void _mostrarNotificacionExito() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Reporte enviado',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    'Gracias por ayudarnos a mejorar',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF10B981), // Verde elegante
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 3),
-        elevation: 6,
-      ),
-    );
-  }
-
-  /// Muestra una notificación de error
-  void _mostrarNotificacionError(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.error_outline,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                mensaje,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFFEF4444), // Rojo elegante
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 3),
-        elevation: 6,
       ),
     );
   }

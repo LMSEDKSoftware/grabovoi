@@ -20,8 +20,11 @@ import 'notification_history_screen.dart';
 import '../../services/admin_service.dart';
 import '../../screens/home/home_screen.dart';
 import '../admin/approve_suggestions_screen.dart';
+import '../admin/view_reports_screen.dart';
 import '../rewards/premium_store_screen.dart';
 import '../rewards/mantras_screen.dart';
+import '../../models/notification_history_item.dart';
+import '../../services/notification_count_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,6 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Map<String, dynamic>? _userProgress;
   bool _isLoading = true;
   bool _isAdmin = false;
+  int _unreadNotificationsCount = 0;
   
   // Animaciones
   late AnimationController _quantumController;
@@ -84,10 +88,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     try {
       final progress = await _progressService.getUserProgress();
       final esAdmin = await AdminService.esAdmin();
+      final unreadCount = await NotificationHistory.getUnreadCount();
       
       setState(() {
         _userProgress = progress;
         _isAdmin = esAdmin;
+        _unreadNotificationsCount = unreadCount;
         _isLoading = false;
       });
     } catch (e) {
@@ -95,6 +101,24 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recargar conteo de notificaciones cuando la pantalla se vuelve visible
+    _loadNotificationCount();
+  }
+  
+  Future<void> _loadNotificationCount() async {
+    final unreadCount = await NotificationHistory.getUnreadCount();
+    if (mounted) {
+      setState(() {
+        _unreadNotificationsCount = unreadCount;
+      });
+      // Actualizar el servicio compartido para sincronizar la burbuja en el icono de Perfil
+      await NotificationCountService().updateCount();
     }
   }
 
@@ -204,14 +228,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         _buildCompactButton(
                           text: 'Notificaciones',
                           icon: Icons.notifications,
-                          onPressed: () {
-                            Navigator.push(
+                          onPressed: () async {
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const NotificationHistoryScreen(),
                               ),
                             );
+                            // Recargar conteo después de volver de la pantalla de notificaciones
+                            if (mounted) {
+                              await _loadNotificationCount();
+                            }
                           },
+                          notificationCount: _unreadNotificationsCount,
                         ),
                         _buildCompactButton(
                           text: 'Tienda Cuántica',
@@ -237,10 +266,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                             );
                           },
                         ),
-                        if (_isAdmin)
+                        // Botones de administrador (solo si es admin)
+                        if (_isAdmin) ...[
                           _buildCompactButton(
                             text: 'Aprobar Sugerencias',
                             icon: Icons.admin_panel_settings,
+                            color: const Color(0xFFFFD700),
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -250,6 +281,20 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                               );
                             },
                           ),
+                          _buildCompactButton(
+                            text: 'Ver Reportes',
+                            icon: Icons.report,
+                            color: const Color(0xFFFF6B6B),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ViewReportsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -901,8 +946,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     required IconData icon,
     required VoidCallback onPressed,
     Color? color,
+    int? notificationCount,
   }) {
     final buttonColor = color ?? const Color(0xFFFFD700);
+    final showBadge = notificationCount != null && notificationCount > 0;
     
     return Container(
       decoration: BoxDecoration(
@@ -938,10 +985,44 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 18,
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      icon,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    if (showBadge)
+                      Positioned(
+                        right: -8,
+                        top: -8,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF1C2541),
+                              width: 1.5,
+                            ),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 14,
+                            minHeight: 14,
+                          ),
+                            child: Text(
+                              notificationCount > 99 ? '99+' : '$notificationCount',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 8),
                 Flexible(

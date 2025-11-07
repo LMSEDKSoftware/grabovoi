@@ -21,6 +21,9 @@ import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'repositories/codigos_repository.dart';
+import 'models/notification_history_item.dart';
+import 'services/notification_count_service.dart';
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -122,6 +125,7 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   
   late final List<Widget> _screens;
+  final NotificationCountService _notificationCountService = NotificationCountService();
 
   @override
   void initState() {
@@ -135,6 +139,13 @@ class _MainNavigationState extends State<MainNavigation> {
       const EvolucionScreen(),
       const ProfileScreen(),
     ];
+    _notificationCountService.initialize();
+  }
+  
+  @override
+  void dispose() {
+    // No cerramos el servicio aquí porque es un singleton compartido
+    super.dispose();
   }
 
   void _changeTab(int index) {
@@ -351,6 +362,10 @@ class _MainNavigationState extends State<MainNavigation> {
         setState(() {
           _currentIndex = index;
         });
+        // Actualizar conteo de notificaciones cuando se cambia a la pestaña de Perfil
+        if (index == 5) {
+          _notificationCountService.updateCount();
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -363,12 +378,57 @@ class _MainNavigationState extends State<MainNavigation> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? const Color(0xFFFFD700)
-                  : Colors.white.withOpacity(0.5),
-              size: 22, // Tamaño uniforme para todos los iconos
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected
+                      ? const Color(0xFFFFD700)
+                      : Colors.white.withOpacity(0.5),
+                  size: 22, // Tamaño uniforme para todos los iconos
+                ),
+                // Burbuja de notificaciones solo para el icono de Perfil (index 5)
+                if (index == 5)
+                  StreamBuilder<int>(
+                    stream: _notificationCountService.countStream,
+                    initialData: _notificationCountService.currentCount,
+                    builder: (context, snapshot) {
+                      final unreadCount = snapshot.data ?? 0;
+                      if (unreadCount > 0) {
+                        return Positioned(
+                          right: -6,
+                          top: -6,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFF0B132B),
+                                width: 2,
+                              ),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              unreadCount > 99 ? '99+' : '$unreadCount',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(

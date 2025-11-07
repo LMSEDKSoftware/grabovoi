@@ -940,4 +940,117 @@ class SupabaseService {
       return null;
     }
   }
+
+  // ===== REPORTES DE CÓDIGOS =====
+  
+  /// Guarda un reporte de código en la base de datos
+  /// Requiere: usuario_id, email, codigo_id, tipo_reporte
+  static Future<void> guardarReporteCodigo({
+    required String usuarioId,
+    required String email,
+    required String codigoId,
+    required String tipoReporte,
+  }) async {
+    try {
+      print('📝 Guardando reporte de código:');
+      print('  Usuario: $usuarioId');
+      print('  Email: $email');
+      print('  Código: $codigoId');
+      print('  Tipo: $tipoReporte');
+      
+      await _client.from('reportes_codigos').insert({
+        'usuario_id': usuarioId,
+        'email': email,
+        'codigo_id': codigoId,
+        'tipo_reporte': tipoReporte,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      
+      print('✅ Reporte guardado exitosamente');
+    } catch (e) {
+      print('❌ Error guardando reporte: $e');
+      throw Exception('Error al guardar el reporte: $e');
+    }
+  }
+
+  /// Obtiene todos los reportes de códigos (solo para administradores)
+  /// Opcionalmente filtra por tipo de reporte
+  /// Usa serviceClient para bypass RLS y evitar recursión infinita
+  static Future<List<Map<String, dynamic>>> getReportesCodigos({String? tipoReporte}) async {
+    try {
+      print('📊 Obteniendo reportes de códigos...');
+      print('🔍 Filtro: ${tipoReporte ?? "todos"}');
+      
+      // Usar serviceClient para bypass RLS (evita recursión infinita en políticas)
+      if (tipoReporte != null && tipoReporte != 'todos') {
+        final response = await _serviceClient
+            .from('reportes_codigos')
+            .select()
+            .eq('tipo_reporte', tipoReporte)
+            .order('created_at', ascending: false);
+        final reportes = (response as List).map((e) => Map<String, dynamic>.from(e)).toList();
+        print('✅ Reportes obtenidos: ${reportes.length}');
+        return reportes;
+      } else {
+        final response = await _serviceClient
+            .from('reportes_codigos')
+            .select()
+            .order('created_at', ascending: false);
+        final reportes = (response as List).map((e) => Map<String, dynamic>.from(e)).toList();
+        print('✅ Reportes obtenidos: ${reportes.length}');
+        return reportes;
+      }
+    } catch (e) {
+      print('❌ Error obteniendo reportes: $e');
+      throw Exception('Error al obtener reportes: $e');
+    }
+  }
+
+  /// Actualiza el estatus de un reporte de código
+  /// Requiere: reporteId, nuevoEstatus
+  /// Los estatus válidos son: pendiente, revisado, aceptado, rechazado, resuelto
+  static Future<void> actualizarEstatusReporte({
+    required String reporteId,
+    required String nuevoEstatus,
+  }) async {
+    try {
+      print('📝 Actualizando estatus del reporte:');
+      print('  Reporte ID: $reporteId');
+      print('  Nuevo estatus: $nuevoEstatus');
+
+      // Validar estatus
+      final estatusValidos = ['pendiente', 'revisado', 'aceptado', 'rechazado', 'resuelto'];
+      if (!estatusValidos.contains(nuevoEstatus)) {
+        throw Exception('Estatus inválido: $nuevoEstatus');
+      }
+
+      // Usar serviceClient para bypass RLS
+      await _serviceClient
+          .from('reportes_codigos')
+          .update({'estatus': nuevoEstatus})
+          .eq('id', reporteId);
+
+      print('✅ Estatus del reporte actualizado exitosamente');
+    } catch (e) {
+      print('❌ Error actualizando estatus del reporte: $e');
+      throw Exception('Error al actualizar el estatus del reporte: $e');
+    }
+  }
+
+  /// Obtiene un reporte específico por su ID
+  static Future<Map<String, dynamic>?> getReportePorId(String reporteId) async {
+    try {
+      final response = await _serviceClient
+          .from('reportes_codigos')
+          .select()
+          .eq('id', reporteId)
+          .maybeSingle();
+      
+      if (response == null) return null;
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      print('❌ Error obteniendo reporte por ID: $e');
+      throw Exception('Error al obtener el reporte: $e');
+    }
+  }
 }
