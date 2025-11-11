@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:math' as math;
 
 class SequenciaActivadaModal extends StatefulWidget {
   final VoidCallback onContinue;
@@ -78,185 +77,239 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(20),
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1C2541),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: const Color(0xFFFFD700),
-              width: 3,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFD700).withOpacity(0.5),
-                blurRadius: 30,
-                spreadRadius: 5,
+    final mediaQuery = MediaQuery.of(context);
+    final rawTextScale = mediaQuery.textScaleFactor;
+    final clampedTextScale = rawTextScale.clamp(1.0, 1.25).toDouble();
+    final effectiveScale = clampedTextScale;
+    final isCompactWidth = mediaQuery.size.width < 360;
+    final isVeryCompactWidth = mediaQuery.size.width < 330;
+    final dialogPadding = EdgeInsets.all(isCompactWidth ? 24 : 32);
+    final insetPadding =
+        EdgeInsets.symmetric(horizontal: isVeryCompactWidth ? 8 : 20, vertical: 20);
+    final titleFontSize = isCompactWidth ? 24.0 : 28.0;
+    final letterSpacing = isCompactWidth ? 2.0 : 3.0;
+    final messageFontSize = isCompactWidth ? 16.0 : 18.0;
+    final highlightTitleSize = isCompactWidth ? 16.0 : 18.0;
+    final highlightBodySize = isCompactWidth ? 14.0 : 15.0;
+    final buttonPadding =
+        EdgeInsets.symmetric(vertical: isCompactWidth ? 16.0 : 18.0);
+    final showScrollHint = effectiveScale >= 1.15;
+
+    return MediaQuery(
+      data: mediaQuery.copyWith(textScaleFactor: clampedTextScale),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: insetPadding,
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            padding: dialogPadding,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C2541),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: const Color(0xFFFFD700),
+                width: 3,
               ),
-            ],
-          ),
-          child: SingleChildScrollView(
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withOpacity(0.5),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Título centrado
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                if (showScrollHint)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFFFFD700).withOpacity(0.6),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Desliza para ver más información',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        ShaderMask(
-                          shaderCallback: (bounds) => LinearGradient(
-                            colors: [
-                              const Color(0xFFFFD700),
-                              Colors.white,
-                              const Color(0xFFFFD700),
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ).createShader(bounds),
-                          child: Text(
-                            'SECUENCIA',
-                            style: GoogleFonts.inter(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 3,
-                              color: Colors.white,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ShaderMask(
+                                  shaderCallback: (bounds) => LinearGradient(
+                                    colors: [
+                                      const Color(0xFFFFD700),
+                                      Colors.white,
+                                      const Color(0xFFFFD700),
+                                    ],
+                                    stops: const [0.0, 0.5, 1.0],
+                                  ).createShader(bounds),
+                                  child: Text(
+                                    'SECUENCIA',
+                                    style: GoogleFonts.inter(
+                                      fontSize: titleFontSize,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: letterSpacing,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                ShaderMask(
+                                  shaderCallback: (bounds) => LinearGradient(
+                                    colors: [
+                                      const Color(0xFFFFD700),
+                                      Colors.white,
+                                      const Color(0xFFFFD700),
+                                    ],
+                                    stops: const [0.0, 0.5, 1.0],
+                                  ).createShader(bounds),
+                                  child: Text(
+                                    'ACTIVADA',
+                                    style: GoogleFonts.inter(
+                                      fontSize: titleFontSize,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: letterSpacing,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          widget.mensajeCompletado ??
+                              '¡Excelente trabajo! Has completado tu sesión de repeticiones.',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: messageFontSize,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: EdgeInsets.all(isCompactWidth ? 16 : 20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(0xFFFFD700).withOpacity(0.15),
+                                const Color(0xFFFFD700).withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFFFD700).withOpacity(0.4),
+                              width: 2,
                             ),
                           ),
-                        ),
-                        ShaderMask(
-                          shaderCallback: (bounds) => LinearGradient(
-                            colors: [
-                              const Color(0xFFFFD700),
-                              Colors.white,
-                              const Color(0xFFFFD700),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.auto_awesome,
+                                    color: Color(0xFFFFD700),
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Es importante mantener la vibración',
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFFFFD700),
+                                        fontSize: highlightTitleSize,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética.',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white70,
+                                  fontSize: highlightBodySize,
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ).createShader(bounds),
-                          child: Text(
-                            'ACTIVADA',
-                            style: GoogleFonts.inter(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 3,
-                              color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        if (widget.buildSincronicosSection != null)
+                          widget.buildSincronicosSection!(),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: widget.onContinue,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFD700),
+                              foregroundColor: Colors.black,
+                              padding: buttonPadding,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 8,
+                              shadowColor:
+                                  const Color(0xFFFFD700).withOpacity(0.5),
+                            ),
+                            child: Text(
+                              'Continuar',
+                              style: GoogleFonts.inter(
+                                fontSize: highlightTitleSize,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-              
-              // Mensaje principal
-              Text(
-                widget.mensajeCompletado ?? 
-                '¡Excelente trabajo! Has completado tu sesión de repeticiones.',
-                style: GoogleFonts.inter(
-                  color: Colors.white70,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              
-              // Contenedor con información importante
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFFFFD700).withOpacity(0.15),
-                      const Color(0xFFFFD700).withOpacity(0.05),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFFFD700).withOpacity(0.4),
-                    width: 2,
                   ),
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.auto_awesome,
-                          color: Color(0xFFFFD700),
-                          size: 24,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Es importante mantener la vibración',
-                            style: GoogleFonts.inter(
-                              color: const Color(0xFFFFD700),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética.',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 15,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Sección de códigos sincrónicos si existe
-              if (widget.buildSincronicosSection != null)
-                widget.buildSincronicosSection!(),
-              
-              const SizedBox(height: 24),
-              
-              // Botón de continuar
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: widget.onContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFD700),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 8,
-                    shadowColor: const Color(0xFFFFD700).withOpacity(0.5),
-                  ),
-                  child: Text(
-                    'Continuar',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-              ),
               ],
             ),
           ),

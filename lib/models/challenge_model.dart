@@ -16,8 +16,8 @@ enum ChallengeStatus {
 
 enum ActionType {
   codigoRepetido,
-  meditacionCompletada,
   sesionPilotaje,
+  pilotajeCompartido,
   tiempoEnApp,
   codigoEspecifico,
 }

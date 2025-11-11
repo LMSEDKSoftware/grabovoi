@@ -45,9 +45,6 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   
   bool _isRepetitionActive = false;
   int _secondsRemaining = 120; // 2 minutos en segundos
-
-  late Future<Map<String, dynamic>> _codigoInfoFuture;
-  late Future<Map<String, String>> _shareableDataFuture;
   
   // Variables para el selector de colores (igual que en quantum_pilotage_screen)
   String _colorSeleccionado = 'dorado';
@@ -70,8 +67,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   @override
   void initState() {
     super.initState();
-    _codigoInfoFuture = _loadCodigoInfo();
-    _shareableDataFuture = _loadShareableData();
+    _recordMeditationSession();
     
     _pulseController = AnimationController(
       duration: const Duration(seconds: 3),
@@ -192,6 +188,14 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
 
   // Removed _formatCodeForDisplay method - now using CodeFormatter
 
+  Future<void> _recordMeditationSession() async {
+    // Registrar sesión de meditación para desafíos
+    final trackingService = ChallengeTrackingService();
+    await trackingService.recordMeditationSession(
+      const Duration(minutes: 15), // Duración estimada de la sesión
+    );
+  }
+
   Future<void> _shareImage() async {
     try {
       // Esperar a que el widget se renderice completamente
@@ -228,11 +232,6 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         await Share.shareXFiles(
           [XFile(file.path)],
           text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
-        );
-
-        ChallengeProgressTracker().trackPilotageShared(
-          codeId: widget.codigo,
-          codeName: widget.nombre ?? widget.codigo,
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -571,7 +570,15 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                       // Descripción del código
                       Center(
                         child: FutureBuilder<Map<String, dynamic>>(
-                          future: _codigoInfoFuture,
+                          future: Future.wait([
+                            _getCodigoTitulo(),
+                            _getCodigoDescription(),
+                            SupabaseService.getTitulosRelacionados(widget.codigo),
+                          ]).then((results) => {
+                            'titulo': results[0] as String,
+                            'descripcion': results[1] as String,
+                            'titulosRelacionados': results[2] as List<Map<String, dynamic>>,
+                          }),
                           builder: (context, snapshot) {
                             final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
                             final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
@@ -717,7 +724,13 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                       builder: (context) {
                         // Obtener datos del código de forma síncrona para evitar problemas de async
                         return FutureBuilder<Map<String, String>>(
-                          future: _shareableDataFuture,
+                          future: Future.wait([
+                            _getCodigoTitulo(),
+                            _getCodigoDescription(),
+                          ]).then((results) => {
+                            'titulo': results[0],
+                            'descripcion': results[1],
+                          }),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData) {
                               return Container(
@@ -1321,80 +1334,56 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        final mediaQuery = MediaQuery.of(context);
-        final constrainedScale =
-            mediaQuery.textScaleFactor.clamp(1.0, 1.25);
-
-        return MediaQuery(
-          data: mediaQuery.copyWith(textScaleFactor: constrainedScale),
-          child: AlertDialog(
-            backgroundColor: const Color(0xFF363636),
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Color(0xFFF5A623), width: 2),
-            ),
-            title: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Color(0xFFF5A623), size: 28),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Nota Importante',
-                    style: GoogleFonts.inter(
-                      color: const Color(0xFFF5A623),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            content: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: mediaQuery.size.width * 0.9,
-                maxHeight: mediaQuery.size.height * 0.6,
-              ),
-              child: SingleChildScrollView(
-                child: Text(
-                  'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
-                  'Siempre consulta con profesionales de la salud para cualquier condición médica. '
-                  'Estos códigos son herramientas complementarias de bienestar.',
-                  style: GoogleFonts.inter(
-                    color: const Color(0xFFCCCCCC),
-                    fontSize: 16,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ),
-            actionsAlignment: MainAxisAlignment.center,
-            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            actions: [
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFFF5A623),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    'Entendido',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+        return AlertDialog(
+          backgroundColor: const Color(0xFF363636),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFF5A623), width: 2),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Color(0xFFF5A623), size: 28),
+              const SizedBox(width: 10),
+              Text(
+                'Nota Importante',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFF5A623),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
+          content: Text(
+            'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
+            'Siempre consulta con profesionales de la salud para cualquier condición médica. '
+            'Estos códigos son herramientas complementarias de bienestar.',
+            style: GoogleFonts.inter(
+              color: const Color(0xFFCCCCCC),
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5A623),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Entendido',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -1456,65 +1445,98 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
               width: 1,
             ),
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final textScale = MediaQuery.of(context).textScaleFactor;
-              final bool forceColumn = constraints.maxWidth < 360 || textScale >= 1.15;
-              final double cardWidth = forceColumn
-                  ? constraints.maxWidth
-                  : math.min(200, constraints.maxWidth / 2 - 8);
-
-              final cards = codigosSincronicos.map((codigo) {
-                return SizedBox(
-                  width: cardWidth,
-                  child: _buildSincronicoCard(context, codigo),
-                );
-              }).toList();
-
-              if (forceColumn) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Combínalo con los siguientes códigos para amplificar la resonancia',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFFFD700),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Combínalo con los siguientes códigos para amplificar la resonancia',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: codigosSincronicos.map((codigo) {
+                  return GestureDetector(
+                    onTap: () async {
+                      // Copiar código al portapapeles
+                      final codigoTexto = codigo['codigo'] ?? '';
+                      await Clipboard.setData(ClipboardData(text: codigoTexto));
+                      
+                      // Mostrar confirmación
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '✅ Código copiado: $codigoTexto',
+                              style: GoogleFonts.inter(color: Colors.white),
+                            ),
+                            backgroundColor: const Color(0xFFFFD700),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: 160,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFFFD700).withOpacity(0.5),
+                          width: 1,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            codigo['codigo'] ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFFFD700),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            codigo['nombre'] ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              codigo['categoria'] ?? '',
+                              style: GoogleFonts.inter(
+                                fontSize: 8,
+                                color: const Color(0xFFFFD700),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    ...cards.map((card) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: card,
-                        )),
-                  ],
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Combínalo con los siguientes códigos para amplificar la resonancia',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFD700),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: cards,
-                  ),
-                ],
-              );
-            },
+                  );
+                }).toList(),
+              ),
+            ],
           ),
         );
       },
@@ -1549,98 +1571,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
       print('⚠️ Error al obtener categoría del código: $e');
       return 'General';
     }
-  }
-
-  Future<Map<String, dynamic>> _loadCodigoInfo() async {
-    final titulo = await _getCodigoTitulo();
-    final descripcion = await _getCodigoDescription();
-    final titulosRelacionados = await SupabaseService.getTitulosRelacionados(widget.codigo);
-    return {
-      'titulo': titulo,
-      'descripcion': descripcion,
-      'titulosRelacionados': titulosRelacionados,
-    };
-  }
-
-  Future<Map<String, String>> _loadShareableData() async {
-    final titulo = await _getCodigoTitulo();
-    final descripcion = await _getCodigoDescription();
-    return {
-      'titulo': titulo,
-      'descripcion': descripcion,
-    };
-  }
-
-  Widget _buildSincronicoCard(BuildContext context, Map<String, dynamic> codigo) {
-    return GestureDetector(
-      onTap: () async {
-        final codigoTexto = codigo['codigo'] ?? '';
-        await Clipboard.setData(ClipboardData(text: codigoTexto));
-        
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '✅ Código copiado: $codigoTexto',
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-              backgroundColor: const Color(0xFFFFD700),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFFFD700).withOpacity(0.5),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              codigo['codigo'] ?? '',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFFFD700),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              codigo['nombre'] ?? '',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                color: Colors.white.withOpacity(0.9),
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                codigo['categoria'] ?? '',
-                style: GoogleFonts.inter(
-                  fontSize: 9,
-                  color: const Color(0xFFFFD700),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

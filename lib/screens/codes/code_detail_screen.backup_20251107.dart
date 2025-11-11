@@ -58,8 +58,6 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   
   // Variables para el modo concentración
   bool _isConcentrationMode = false;
-  late Future<Map<String, dynamic>> _codigoInfoFuture;
-  late Future<Map<String, String>> _shareableDataFuture;
   
 
   @override
@@ -79,9 +77,6 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     _pulseAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
     );
-
-    _codigoInfoFuture = _loadCodigoInfo();
-    _shareableDataFuture = _loadShareableData();
     
     // Iniciar pilotaje automáticamente al entrar a la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -259,80 +254,56 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        final mediaQuery = MediaQuery.of(context);
-        final constrainedScale =
-            mediaQuery.textScaleFactor.clamp(1.0, 1.25);
-
-        return MediaQuery(
-          data: mediaQuery.copyWith(textScaleFactor: constrainedScale),
-          child: AlertDialog(
-            backgroundColor: const Color(0xFF363636),
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Color(0xFFF5A623), width: 2),
-            ),
-            title: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Color(0xFFF5A623), size: 28),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Nota Importante',
-                    style: GoogleFonts.inter(
-                      color: const Color(0xFFF5A623),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            content: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: mediaQuery.size.width * 0.9,
-                maxHeight: mediaQuery.size.height * 0.6,
-              ),
-              child: SingleChildScrollView(
-                child: Text(
-                  'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
-                  'Siempre consulta con profesionales de la salud para cualquier condición médica. '
-                  'Estos códigos son herramientas complementarias de bienestar.',
-                  style: GoogleFonts.inter(
-                    color: const Color(0xFFCCCCCC),
-                    fontSize: 16,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ),
-            actionsAlignment: MainAxisAlignment.center,
-            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            actions: [
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFFF5A623),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    'Entendido',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+        return AlertDialog(
+          backgroundColor: const Color(0xFF363636),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFF5A623), width: 2),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Color(0xFFF5A623), size: 28),
+              const SizedBox(width: 10),
+              Text(
+                'Nota Importante',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFF5A623),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
+          content: Text(
+            'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
+            'Siempre consulta con profesionales de la salud para cualquier condición médica. '
+            'Estos códigos son herramientas complementarias de bienestar.',
+            style: GoogleFonts.inter(
+              color: const Color(0xFFCCCCCC),
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5A623),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Entendido',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -374,11 +345,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
         await Share.shareXFiles(
           [XFile(file.path)],
           text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
-        );
-
-        ChallengeProgressTracker().trackPilotageShared(
-          codeId: widget.codigo,
-          codeName: widget.codigo,
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -569,26 +535,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
       print('⚠️ Error al obtener categoría del código: $e');
       return 'General';
     }
-  }
-
-  Future<Map<String, dynamic>> _loadCodigoInfo() async {
-    final titulo = await _getCodeTitulo(widget.codigo);
-    final descripcion = await _getCodeDescription(widget.codigo);
-    final titulosRelacionados = await _getTodosLosTitulosRelacionados(widget.codigo);
-    return {
-      'titulo': titulo,
-      'descripcion': descripcion,
-      'titulosRelacionados': titulosRelacionados,
-    };
-  }
-
-  Future<Map<String, String>> _loadShareableData() async {
-    final titulo = await _getCodigoTitulo();
-    final descripcion = await _getCodigoDescription();
-    return {
-      'titulo': titulo,
-      'descripcion': descripcion,
-    };
   }
 
   void _stopActivePilotage() {
@@ -856,7 +802,15 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 // Descripción
                 Center(
                   child: FutureBuilder<Map<String, dynamic>>(
-                    future: _codigoInfoFuture,
+                    future: Future.wait([
+                      _getCodeTitulo(widget.codigo),
+                      _getCodeDescription(widget.codigo),
+                      _getTodosLosTitulosRelacionados(widget.codigo),
+                    ]).then((results) => {
+                      'titulo': results[0] as String,
+                      'descripcion': results[1] as String,
+                      'titulosRelacionados': results[2] as List<Map<String, dynamic>>,
+                    }),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const CircularProgressIndicator(color: Color(0xFFFFD700));
@@ -1010,7 +964,13 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                   child: Builder(
                     builder: (context) {
                       return FutureBuilder<Map<String, String>>(
-                        future: _shareableDataFuture,
+                        future: Future.wait([
+                          _getCodigoTitulo(),
+                          _getCodigoDescription(),
+                        ]).then((results) => {
+                          'titulo': results[0],
+                          'descripcion': results[1],
+                        }),
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) {
                             return Container(

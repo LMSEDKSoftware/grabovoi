@@ -23,6 +23,7 @@ import 'screens/profile/profile_screen.dart';
 import 'repositories/codigos_repository.dart';
 import 'models/notification_history_item.dart';
 import 'services/notification_count_service.dart';
+import 'services/subscription_service.dart';
 import 'dart:async';
 
 void main() async {
@@ -50,6 +51,15 @@ void main() async {
       await NotificationScheduler().initialize();
     } catch (e) {
       print('⚠️ Error inicializando NotificationScheduler: $e');
+    }
+  }
+  
+  // Inicializar servicio de suscripciones (solo en Android/iOS)
+  if (!kIsWeb) {
+    try {
+      await SubscriptionService().initialize();
+    } catch (e) {
+      print('⚠️ Error inicializando SubscriptionService: $e');
     }
   }
   
@@ -268,7 +278,11 @@ class _MainNavigationState extends State<MainNavigation> {
             children: _screens,
           ),
         ),
-        bottomNavigationBar: Container(
+        bottomNavigationBar: MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaleFactor: MediaQuery.of(context).textScaleFactor.clamp(0.9, 1.05),
+        ),
+        child: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
@@ -288,7 +302,7 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -334,6 +348,7 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
       ),
       ),
+      ),
     );
   }
 
@@ -344,6 +359,8 @@ class _MainNavigationState extends State<MainNavigation> {
     bool isCenter = false,
   }) {
     final isSelected = _currentIndex == index;
+    final textScale = MediaQuery.of(context).textScaleFactor;
+    final showLabel = textScale <= 1.15;
     
     return GestureDetector(
       onTap: () async {
@@ -367,84 +384,90 @@ class _MainNavigationState extends State<MainNavigation> {
           _notificationCountService.updateCount();
         }
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFFFD700).withOpacity(0.2)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  icon,
-                  color: isSelected
-                      ? const Color(0xFFFFD700)
-                      : Colors.white.withOpacity(0.5),
-                  size: 22, // Tamaño uniforme para todos los iconos
-                ),
-                // Burbuja de notificaciones solo para el icono de Perfil (index 5)
-                if (index == 5)
-                  StreamBuilder<int>(
-                    stream: _notificationCountService.countStream,
-                    initialData: _notificationCountService.currentCount,
-                    builder: (context, snapshot) {
-                      final unreadCount = snapshot.data ?? 0;
-                      if (unreadCount > 0) {
-                        return Positioned(
-                          right: -6,
-                          top: -6,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFF0B132B),
-                                width: 2,
-                              ),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Text(
-                              unreadCount > 99 ? '99+' : '$unreadCount',
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
+      child: Tooltip(
+        message: label,
+        waitDuration: const Duration(milliseconds: 600),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFFFFD700).withOpacity(0.2)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    icon,
+                    color: isSelected
+                        ? const Color(0xFFFFD700)
+                        : Colors.white.withOpacity(0.5),
+                    size: 22, // Tamaño uniforme para todos los iconos
                   ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 9,
-                color: isSelected
-                    ? const Color(0xFFFFD700)
-                    : Colors.white.withOpacity(0.5),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  // Burbuja de notificaciones solo para el icono de Perfil (index 5)
+                  if (index == 5)
+                    StreamBuilder<int>(
+                      stream: _notificationCountService.countStream,
+                      initialData: _notificationCountService.currentCount,
+                      builder: (context, snapshot) {
+                        final unreadCount = snapshot.data ?? 0;
+                        if (unreadCount > 0) {
+                          return Positioned(
+                            right: -6,
+                            top: -6,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFF0B132B),
+                                  width: 2,
+                                ),
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                unreadCount > 99 ? '99+' : '$unreadCount',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                ],
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              if (showLabel) ...[
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    color: isSelected
+                        ? const Color(0xFFFFD700)
+                        : Colors.white.withOpacity(0.5),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

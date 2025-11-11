@@ -27,7 +27,7 @@ class ChallengeProgressTracker extends ChangeNotifier {
   // Contadores de acciones
   int _codesRepeatedToday = 0;
   int _codesPilotedToday = 0;
-  int _meditationMinutesToday = 0;
+  int _pilotagesSharedToday = 0;
 
   // Inicializar el tracker
   Future<void> initialize() async {
@@ -68,19 +68,18 @@ class ChallengeProgressTracker extends ChangeNotifier {
     _saveProgressToStorage();
   }
 
-  // Rastrear tiempo de meditación (tiempo en la app)
-  void trackMeditationTime(int minutes) {
-    _meditationMinutesToday += minutes;
-    _updateDailyProgress('meditation_minutes', _meditationMinutesToday);
+  // Rastrear cuando el usuario comparte un pilotaje
+  void trackPilotageShared({String? codeId, String? codeName}) {
+    _pilotagesSharedToday++;
+    _updateDailyProgress('pilotages_shared', _pilotagesSharedToday);
     
-    // Registrar en el sistema de tracking existente
-    _trackingService.recordUserAction(
-      type: ActionType.meditacionCompletada,
-      duration: Duration(minutes: minutes),
-      metadata: {'total_minutes': _meditationMinutesToday},
+    _trackingService.recordPilotageShare(
+      codeId: codeId,
+      codeName: codeName,
     );
     
     _saveProgressToStorage();
+    notifyListeners();
   }
 
   // Rastrear tiempo total de uso de la app
@@ -123,14 +122,12 @@ class ChallengeProgressTracker extends ChangeNotifier {
         return (counts['codes_piloted'] ?? 0) >= 2;
       case '🚀 Pilotar 3 códigos':
         return (counts['codes_piloted'] ?? 0) >= 3;
-      case '🧘 Meditar 10 minutos':
-        return (counts['meditation_minutes'] ?? 0) >= 10;
-      case '🧘 Meditar 15 minutos':
-        return (counts['meditation_minutes'] ?? 0) >= 15;
-      case '🧘 Meditar 20 minutos':
-        return (counts['meditation_minutes'] ?? 0) >= 20;
-      case '🧘 Meditar 30 minutos':
-        return (counts['meditation_minutes'] ?? 0) >= 30;
+      case '🖼️ Compartir 1 pilotaje':
+        return (counts['pilotages_shared'] ?? 0) >= 1;
+      case '🖼️ Compartir 2 pilotajes':
+        return (counts['pilotages_shared'] ?? 0) >= 2;
+      case '🖼️ Compartir 3 pilotajes':
+        return (counts['pilotages_shared'] ?? 0) >= 3;
       case '⏱️ Usar la app 15 minutos':
         return (counts['app_usage_seconds'] ?? 0) >= (15 * 60);
       case '⏱️ Usar la app 20 minutos':
@@ -153,8 +150,8 @@ class ChallengeProgressTracker extends ChangeNotifier {
       return counts['codes_repeated'] ?? 0;
     } else if (action.contains('🚀')) {
       return counts['codes_piloted'] ?? 0;
-    } else if (action.contains('🧘')) {
-      return counts['meditation_minutes'] ?? 0;
+    } else if (action.contains('🖼️')) {
+      return counts['pilotages_shared'] ?? 0;
     } else if (action.contains('⏱️')) {
       return (counts['app_usage_seconds'] ?? 0) ~/ 60; // Convertir a minutos
     }
@@ -172,11 +169,10 @@ class ChallengeProgressTracker extends ChangeNotifier {
       if (action.contains('1 código')) return 1;
       if (action.contains('2 códigos')) return 2;
       if (action.contains('3 códigos')) return 3;
-    } else if (action.contains('🧘')) {
-      if (action.contains('10 minutos')) return 10;
-      if (action.contains('15 minutos')) return 15;
-      if (action.contains('20 minutos')) return 20;
-      if (action.contains('30 minutos')) return 30;
+    } else if (action.contains('🖼️')) {
+      if (action.contains('1 pilotaje')) return 1;
+      if (action.contains('2 pilotajes')) return 2;
+      if (action.contains('3 pilotajes')) return 3;
     } else if (action.contains('⏱️')) {
       if (action.contains('15 minutos')) return 15;
       if (action.contains('20 minutos')) return 20;
@@ -281,7 +277,7 @@ class ChallengeProgressTracker extends ChangeNotifier {
       final start = DateTime(now.year, now.month, now.day).toUtc();
       final end = start.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
 
-      final actions = ['codigoRepetido', 'sesionPilotaje', 'meditacionCompletada', 'tiempoEnApp'];
+      final actions = ['codigoRepetido', 'sesionPilotaje', 'pilotajeCompartido', 'tiempoEnApp'];
 
       final response = await _supabase
           .from('user_actions')
@@ -293,7 +289,7 @@ class ChallengeProgressTracker extends ChangeNotifier {
 
       int codesRepeated = 0;
       int codesPiloted = 0;
-      int meditationMinutes = 0;
+      int pilotagesShared = 0;
       int appUsageSeconds = 0;
 
       for (final row in response as List) {
@@ -306,8 +302,8 @@ class ChallengeProgressTracker extends ChangeNotifier {
           case 'sesionPilotaje':
             codesPiloted += 1;
             break;
-          case 'meditacionCompletada':
-            meditationMinutes += (data?['duration'] as num?)?.toInt() ?? 0;
+          case 'pilotajeCompartido':
+            pilotagesShared += 1;
             break;
           case 'tiempoEnApp':
             final minutes = (data?['duration'] as num?)?.toInt() ?? 0;
@@ -319,7 +315,7 @@ class ChallengeProgressTracker extends ChangeNotifier {
       _dailyCounts[todayKey] = {
         if (codesRepeated > 0) 'codes_repeated': codesRepeated,
         if (codesPiloted > 0) 'codes_piloted': codesPiloted,
-        if (meditationMinutes > 0) 'meditation_minutes': meditationMinutes,
+        if (pilotagesShared > 0) 'pilotages_shared': pilotagesShared,
         if (appUsageSeconds > 0) 'app_usage_seconds': appUsageSeconds,
       };
 
@@ -337,7 +333,7 @@ class ChallengeProgressTracker extends ChangeNotifier {
     _dailyCounts[today] = {};
     _codesRepeatedToday = 0;
     _codesPilotedToday = 0;
-    _meditationMinutesToday = 0;
+    _pilotagesSharedToday = 0;
     _totalAppUsageSeconds = 0;
     await _saveProgressToStorage();
   }

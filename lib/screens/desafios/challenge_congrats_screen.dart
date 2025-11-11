@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../services/challenge_progress_tracker.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/illuminated_code_text.dart';
@@ -169,6 +170,10 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
         await Share.shareXFiles(
           [XFile(file.path)],
           text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        );
+
+        ChallengeProgressTracker().trackPilotageShared(
+          codeName: widget.title,
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

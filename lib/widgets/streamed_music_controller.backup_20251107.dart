@@ -34,7 +34,6 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   bool _hasShownVolumeMessage = false;
-  static bool _globalVolumeMessageShown = false;
   AnimationController? _animationController;
 
   @override
@@ -44,7 +43,6 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _syncWithExistingPlayback();
     _wireListeners();
     if (widget.isActive && widget.autoPlay) {
       _showVolumeMessageOnFirstPlay();
@@ -86,9 +84,8 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
   }
 
   void _showVolumeMessageOnFirstPlay() {
-    if ((!_hasShownVolumeMessage && !_globalVolumeMessageShown) && mounted) {
+    if (!_hasShownVolumeMessage && mounted) {
       _hasShownVolumeMessage = true;
-      _globalVolumeMessageShown = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _animationController != null) {
           final fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
@@ -184,32 +181,11 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
     });
 
     final file = _tracks[i]['file']!;
-
-    if (_audioManager.currentTrack == file && _audioManager.isPlaying) {
-      _isPlaying = true;
-      _position = _audioManager.position;
-      _duration = _audioManager.duration;
-      setState(() => _isBuffering = false);
-      return;
-    }
     
     await _audioManager.playTrack(file, autoPlay: widget.isActive && widget.autoPlay);
     
     if (!mounted) return;
     setState(() => _isBuffering = false);
-  }
-
-  void _syncWithExistingPlayback() {
-    final currentTrack = _audioManager.currentTrack;
-    if (currentTrack != null) {
-      final existingIndex = _tracks.indexWhere((track) => track['file'] == currentTrack);
-      if (existingIndex != -1) {
-        _index = existingIndex;
-      }
-    }
-    _isPlaying = _audioManager.isPlaying;
-    _position = _audioManager.position;
-    _duration = _audioManager.duration;
   }
 
   Future<void> _prev() async {

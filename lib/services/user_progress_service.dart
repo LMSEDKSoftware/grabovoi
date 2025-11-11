@@ -131,7 +131,7 @@ class UserProgressService {
         diasConsecutivos: diasConsecutivos,
         totalRepeticiones: estadisticas['total_repeticiones'] ?? 0,
         totalPilotajes: estadisticas['total_pilotajes'] ?? 0,
-        totalMeditaciones: estadisticas['total_meditaciones'] ?? 0,
+        totalCompartidos: estadisticas['total_compartidos'] ?? 0,
         totalMinutos: estadisticas['total_minutos'] ?? 0,
       );
 
@@ -180,7 +180,7 @@ class UserProgressService {
 
       int totalRepeticiones = 0;
       int totalPilotajes = 0;
-      int totalMeditaciones = 0;
+      int totalCompartidos = 0;
       int totalMinutos = 0;
 
       for (final row in response as List) {
@@ -194,8 +194,10 @@ class UserProgressService {
           case 'sesionPilotaje':
             totalPilotajes++;
             break;
-          case 'meditacionCompletada':
-            totalMeditaciones++;
+          case 'pilotajeCompartido':
+            totalCompartidos++;
+            break;
+          case 'tiempoEnApp':
             totalMinutos += (data?['duration'] as num?)?.toInt() ?? 0;
             break;
         }
@@ -204,7 +206,7 @@ class UserProgressService {
       return {
         'total_repeticiones': totalRepeticiones,
         'total_pilotajes': totalPilotajes,
-        'total_meditaciones': totalMeditaciones,
+        'total_compartidos': totalCompartidos,
         'total_minutos': totalMinutos,
       };
     } catch (e) {
@@ -218,7 +220,7 @@ class UserProgressService {
     required int diasConsecutivos,
     required int totalRepeticiones,
     required int totalPilotajes,
-    required int totalMeditaciones,
+    required int totalCompartidos,
     required int totalMinutos,
   }) {
     int nivel = 1;
@@ -240,7 +242,13 @@ class UserProgressService {
     else if (totalRepeticiones >= 100) nivel += 1;
     else if (totalRepeticiones >= 50) nivel += 1;
     
-    // Por minutos de práctica (tiempo invertido)
+    // Por pilotajes compartidos (impacto y difusión)
+    if (totalCompartidos >= 100) nivel += 2;
+    else if (totalCompartidos >= 50) nivel += 1;
+    else if (totalCompartidos >= 20) nivel += 1;
+    else if (totalCompartidos >= 5) nivel += 1;
+    
+    // Por minutos de uso en la app (tiempo invertido)
     if (totalMinutos >= 300) nivel += 2; // 5 horas
     else if (totalMinutos >= 180) nivel += 1; // 3 horas
     else if (totalMinutos >= 60) nivel += 1; // 1 hora
@@ -317,7 +325,7 @@ class UserProgressService {
 
     try {
       // Filtrar sólo acciones de sesión con duración
-      final actionTypes = ['sesionPilotaje', 'codigoRepetido', 'meditacionCompletada'];
+      final actionTypes = ['sesionPilotaje', 'codigoRepetido', 'pilotajeCompartido'];
       var query = _supabase
           .from('user_actions')
           .select()
@@ -356,8 +364,8 @@ class UserProgressService {
         return 'sesionPilotaje';
       case 'repetition':
         return 'codigoRepetido';
-      case 'meditation':
-        return 'meditacionCompletada';
+      case 'share':
+        return 'pilotajeCompartido';
       default:
         return 'tiempoEnApp';
     }

@@ -126,10 +126,15 @@ class ChallengeService extends ChangeNotifier {
             requiredCount: 1,
           ),
           ChallengeAction(
-            type: ActionType.meditacionCompletada,
-            description: 'Meditar al menos 10 minutos al día',
+            type: ActionType.pilotajeCompartido,
+            description: 'Compartir al menos 1 pilotaje o certificado al día',
             requiredCount: 1,
-            requiredDuration: Duration(minutes: 10),
+          ),
+          ChallengeAction(
+            type: ActionType.tiempoEnApp,
+            description: 'Pasar al menos 15 minutos en la app al día',
+            requiredCount: 1,
+            requiredDuration: const Duration(minutes: 15),
           ),
         ],
         icon: '🌟',
@@ -154,10 +159,15 @@ class ChallengeService extends ChangeNotifier {
             requiredCount: 1,
           ),
           ChallengeAction(
-            type: ActionType.meditacionCompletada,
-            description: 'Meditar al menos 15 minutos al día',
+            type: ActionType.pilotajeCompartido,
+            description: 'Compartir al menos 1 pilotaje al día',
             requiredCount: 1,
-            requiredDuration: Duration(minutes: 15),
+          ),
+          ChallengeAction(
+            type: ActionType.tiempoEnApp,
+            description: 'Pasar al menos 20 minutos en la app al día',
+            requiredCount: 1,
+            requiredDuration: const Duration(minutes: 20),
           ),
         ],
         icon: '⭐',
@@ -182,10 +192,9 @@ class ChallengeService extends ChangeNotifier {
             requiredCount: 2,
           ),
           ChallengeAction(
-            type: ActionType.meditacionCompletada,
-            description: 'Meditar al menos 20 minutos al día',
-            requiredCount: 1,
-            requiredDuration: Duration(minutes: 20),
+            type: ActionType.pilotajeCompartido,
+            description: 'Compartir al menos 2 pilotajes al día',
+            requiredCount: 2,
           ),
           ChallengeAction(
             type: ActionType.tiempoEnApp,
@@ -216,10 +225,9 @@ class ChallengeService extends ChangeNotifier {
             requiredCount: 3,
           ),
           ChallengeAction(
-            type: ActionType.meditacionCompletada,
-            description: 'Meditar al menos 30 minutos al día',
-            requiredCount: 1,
-            requiredDuration: Duration(minutes: 30),
+            type: ActionType.pilotajeCompartido,
+            description: 'Compartir al menos 3 pilotajes al día',
+            requiredCount: 3,
           ),
           ChallengeAction(
             type: ActionType.tiempoEnApp,
@@ -447,16 +455,16 @@ class ChallengeService extends ChangeNotifier {
     }
     
     // Logro: Primera meditación
-    final hasMeditated = _trackingService.userActions.any((action) => 
-      action.type == ActionType.meditacionCompletada);
-    if (hasMeditated) {
+    final hasSharedPilotage = _trackingService.userActions.any((action) =>
+      action.type == ActionType.pilotajeCompartido);
+    if (hasSharedPilotage) {
       achievements.add({
-        'id': 'first_meditation',
-        'title': 'Paz Interior',
-        'description': 'Completaste tu primera meditación',
-        'icon': '🧘',
+        'id': 'first_share',
+        'title': 'Expansión Energética',
+        'description': 'Compartiste tu primer pilotaje o certificado',
+        'icon': '🖼️',
         'unlockedAt': _trackingService.userActions
-            .where((action) => action.type == ActionType.meditacionCompletada)
+            .where((action) => action.type == ActionType.pilotajeCompartido)
             .first.timestamp,
       });
     }

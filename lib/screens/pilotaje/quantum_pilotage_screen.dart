@@ -1742,6 +1742,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     return AnimatedBuilder(
       animation: _colorBarAnimation,
       builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final textScale = mediaQuery.textScaleFactor;
         return Transform.translate(
           offset: _colorBarAnimation.value,
           child: GestureDetector(
@@ -1756,20 +1758,39 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   width: 1,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isColorBarExpanded) ...[
-                    Text(
-                      'Color:',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact =
+                      textScale > 1.1 || constraints.maxWidth < 340;
+
+                  Widget buildConcentrationButton() {
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isConcentrationMode = true;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _getColorSeleccionado().withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _getColorSeleccionado().withOpacity(0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.fullscreen,
+                          color: _getColorSeleccionado(),
+                          size: 20,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    ..._coloresDisponibles.entries.map((entry) {
+                    );
+                  }
+
+                  if (_isColorBarExpanded) {
+                    final colorItems = _coloresDisponibles.entries.map((entry) {
                       final isSelected = _colorSeleccionado == entry.key;
                       return GestureDetector(
                         onTap: () {
@@ -1782,8 +1803,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                           _onColorChanged();
                         },
                         child: Container(
-                          width: 24,
-                          height: 24,
+                          width: 28,
+                          height: 28,
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           decoration: BoxDecoration(
                             color: entry.value,
@@ -1792,13 +1813,15 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                               color: isSelected ? Colors.white : Colors.transparent,
                               width: 2,
                             ),
-                            boxShadow: isSelected ? [
-                              BoxShadow(
-                                color: entry.value.withOpacity(0.8),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ] : null,
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: entry.value.withOpacity(0.8),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: isSelected
                               ? const Icon(
@@ -1809,89 +1832,75 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                               : null,
                         ),
                       );
-                    }).toList(),
-                    
-                    const SizedBox(width: 16),
-                    
-                    // Botón de modo concentración
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isConcentrationMode = true;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: _getColorSeleccionado().withOpacity(0.2),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _getColorSeleccionado().withOpacity(0.5),
-                            width: 1,
+                    }).toList();
+
+                    final List<Widget> expandedChildren = [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: Text(
+                          'Color:',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        child: Icon(
-                          Icons.fullscreen,
-                          color: _getColorSeleccionado(),
-                          size: 20,
-                        ),
                       ),
-                    ),
-                  ] else ...[
-                    // Solo mostrar el círculo del color seleccionado
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: _getColorSeleccionado(),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _getColorSeleccionado().withOpacity(0.8),
-                            blurRadius: 8,
-                            spreadRadius: 2,
+                      ...colorItems,
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: buildConcentrationButton(),
+                      ),
+                    ];
+
+                    if (isCompact) {
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        alignment: WrapAlignment.center,
+                        children: expandedChildren,
+                      );
+                    }
+
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: expandedChildren,
+                    );
+                  } else {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: _getColorSeleccionado(),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _getColorSeleccionado().withOpacity(0.8),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 16),
-                    
-                    // Botón de modo concentración (también en modo colapsado)
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isConcentrationMode = true;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: _getColorSeleccionado().withOpacity(0.2),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _getColorSeleccionado().withOpacity(0.5),
-                            width: 1,
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 14,
                           ),
                         ),
-                        child: Icon(
-                          Icons.fullscreen,
-                          color: _getColorSeleccionado(),
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+                        const SizedBox(width: 12),
+                        buildConcentrationButton(),
+                      ],
+                    );
+                  }
+                },
               ),
             ),
           ),
@@ -1989,14 +1998,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                             height: 1.4,
                           ),
                         ),
-                        // Reproductor de audio integrado
-                        if (_showAudioController) ...[
-                          const SizedBox(height: 16),
-                          StreamedMusicController(
-                            autoPlay: true,
-                            isActive: true,
-                          ),
-                        ],
                       ],
                     ),
                   );
@@ -2004,6 +2005,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               ),
             ),
             const SizedBox(height: 20),
+            if (_showAudioController) ...[
+              StreamedMusicController(
+                autoPlay: true,
+                isActive: true,
+              ),
+              const SizedBox(height: 20),
+            ],
           ],
         ],
       ),
@@ -2125,67 +2133,87 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         // Dropdown con resultados filtrados
         if (_mostrarResultados && _codigosFiltrados.isNotEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _colorVibracional.withOpacity(0.3),
                 width: 1,
               ),
             ),
-            child: DropdownButton<String>(
-              value: _codigosFiltrados.any((codigo) => codigo.codigo == _codigoSeleccionado) 
-                  ? _codigoSeleccionado 
-                  : null,
-              isExpanded: true,
-              dropdownColor: const Color(0xFF1C2541),
-              style: GoogleFonts.spaceMono(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-              underline: const SizedBox(),
-              hint: const Text('Selecciona un código...'),
-              items: _codigosFiltrados.map((codigo) {
-                return DropdownMenuItem<String>(
-                  value: codigo.codigo,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _getCategoryColor(codigo.categoria),
-                          shape: BoxShape.circle,
-                        ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 260),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                itemCount: _codigosFiltrados.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 4),
+                itemBuilder: (context, index) {
+                  final codigo = _codigosFiltrados[index];
+                  final isSelected = codigo.codigo == _codigoSeleccionado;
+                  final categoryColor = _getCategoryColor(codigo.categoria);
+
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _codigoSeleccionado = codigo.codigo;
+                        _categoriaActual = codigo.categoria;
+                        _colorVibracional = categoryColor;
+                        _searchController.clear();
+                        _mostrarResultados = false;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isSelected ? categoryColor.withOpacity(0.18) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          '${codigo.codigo} - ${codigo.nombre}',
-                          style: GoogleFonts.spaceMono(
-                            color: Colors.white,
-                            fontSize: 14,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            margin: const EdgeInsets.only(top: 4),
+                            decoration: BoxDecoration(
+                              color: categoryColor,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  codigo.codigo,
+                                  style: GoogleFonts.spaceMono(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  codigo.nombre,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 13,
+                                    height: 1.3,
+                                  ),
+                                  softWrap: true,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _codigoSeleccionado = value;
-                    final codigo = _codigos.firstWhere((c) => c.codigo == value);
-                    _categoriaActual = codigo.categoria;
-                    _colorVibracional = _getCategoryColor(_categoriaActual);
-                    _searchController.clear();
-                    _mostrarResultados = false;
-                  });
-                }
-              },
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -3802,164 +3830,199 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     return Container(
       color: Colors.black.withOpacity(0.8),
       child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(20),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1C2541),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFFFFD700).withOpacity(0.3),
-              width: 2,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Título
-              Text(
-                'Códigos Encontrados',
-                style: GoogleFonts.inter(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final mediaQuery = MediaQuery.of(context);
+            final textScale = mediaQuery.textScaleFactor.clamp(1.0, 1.3);
+            final maxWidth = (mediaQuery.size.width * 0.9).clamp(320.0, 540.0);
+            final maxHeight = (mediaQuery.size.height * 0.8).clamp(380.0, 640.0);
+
+            return MediaQuery(
+              data: mediaQuery.copyWith(textScaleFactor: textScale),
+              child: Container(
+                width: maxWidth,
+                constraints: BoxConstraints(
+                  maxHeight: maxHeight,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Selecciona el código que mejor se adapte a tu necesidad:',
-                style: GoogleFonts.inter(
-                  color: Colors.white70,
-                  fontSize: 16,
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1C2541),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.3),
+                    width: 2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Lista de códigos
-              Container(
-                height: 400,
-                child: ListView.builder(
-                  itemCount: _codigosEncontrados.length,
-                  itemBuilder: (context, index) {
-                    final codigo = _codigosEncontrados[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _seleccionarCodigo(codigo),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2C3E50).withOpacity(0.7),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFFFD700).withOpacity(0.3),
-                                width: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Códigos encontrados',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Selecciona el código que mejor se adapte a tu necesidad:',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: _codigosEncontrados.map((codigo) {
+                            return ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 260,
+                                maxWidth: 320,
                               ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Código y nombre
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: _getCategoryColor(codigo.categoria),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        codigo.codigo,
-                                        style: GoogleFonts.inter(
-                                          color: _getCategoryColor(codigo.categoria),
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => _seleccionarCodigo(codigo),
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2C3E50).withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: _getCategoryColor(codigo.categoria).withOpacity(0.4),
+                                        width: 1.2,
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        codigo.nombre,
-                                        style: GoogleFonts.inter(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              width: 24,
+                                              height: 24,
+                                              decoration: BoxDecoration(
+                                                color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(
+                                                Icons.water_drop,
+                                                color: _getCategoryColor(codigo.categoria),
+                                                size: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
+                                                      borderRadius: BorderRadius.circular(10),
+                                                      border: Border.all(
+                                                        color: _getCategoryColor(codigo.categoria).withOpacity(0.6),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      codigo.codigo,
+                                                      style: GoogleFonts.spaceMono(
+                                                        color: _getCategoryColor(codigo.categoria),
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 10),
+                                                  Text(
+                                                    codigo.nombre,
+                                                    style: GoogleFonts.inter(
+                                                      color: Colors.white,
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          codigo.descripcion,
+                                          style: GoogleFonts.inter(
+                                            color: Colors.white.withOpacity(0.85),
+                                            fontSize: 14,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.category,
+                                              color: _getCategoryColor(codigo.categoria),
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                codigo.categoria,
+                                                style: GoogleFonts.inter(
+                                                  color: _getCategoryColor(codigo.categoria),
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                
-                                // Descripción
-                                Text(
-                                  codigo.descripcion,
-                                  style: GoogleFonts.inter(
-                                    color: Colors.white70,
-                                    fontSize: 14,
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 8),
-                                
-                                // Categoría
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.category,
-                                      color: _getCategoryColor(codigo.categoria),
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      codigo.categoria,
-                                      style: GoogleFonts.inter(
-                                        color: _getCategoryColor(codigo.categoria),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.center,
+                      child: TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _mostrarSeleccionCodigos = false;
+                            _codigosEncontrados = [];
+                          });
+                        },
+                        child: Text(
+                          'Cancelar',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 16,
                           ),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
-              
-              const SizedBox(height: 24),
-              
-              // Botón cancelar
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _mostrarSeleccionCodigos = false;
-                    _codigosEncontrados = [];
-                  });
-                },
-                child: Text(
-                  'Cancelar',
-                  style: GoogleFonts.inter(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

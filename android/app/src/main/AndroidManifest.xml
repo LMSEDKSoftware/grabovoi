@@ -19,6 +19,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     
+    <!-- Permiso de facturación para Google Play Billing (suscripciones) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+    
     <application
         android:label="MANIGRAB"
         android:name="${applicationName}"

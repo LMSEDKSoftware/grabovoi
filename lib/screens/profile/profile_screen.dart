@@ -23,6 +23,7 @@ import '../admin/approve_suggestions_screen.dart';
 import '../admin/view_reports_screen.dart';
 import '../rewards/premium_store_screen.dart';
 import '../rewards/mantras_screen.dart';
+import '../subscription/subscription_screen.dart';
 import '../../models/notification_history_item.dart';
 import '../../services/notification_count_service.dart';
 
@@ -250,6 +251,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const PremiumStoreScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildCompactButton(
+                          text: 'Suscripciones',
+                          icon: Icons.card_membership,
+                          color: const Color(0xFFFFD700),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SubscriptionScreen(),
                               ),
                             );
                           },

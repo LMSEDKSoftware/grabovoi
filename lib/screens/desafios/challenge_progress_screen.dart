@@ -243,28 +243,28 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
       case ChallengeDifficulty.principiante:
         return [
           '🔄 Repetir al menos 1 código',
-          '🧘 Meditar 10 minutos',
+          '🖼️ Compartir 1 pilotaje',
           '⏱️ Usar la app 15 minutos'
         ];
       case ChallengeDifficulty.intermedio:
         return [
           '🔄 Repetir 2 códigos diferentes',
           '🚀 Pilotar 1 código',
-          '🧘 Meditar 15 minutos',
+          '🖼️ Compartir 1 pilotaje',
           '⏱️ Usar la app 20 minutos'
         ];
       case ChallengeDifficulty.avanzado:
         return [
           '🔄 Repetir 3 códigos diferentes',
           '🚀 Pilotar 2 códigos',
-          '🧘 Meditar 20 minutos',
+          '🖼️ Compartir 2 pilotajes',
           '⏱️ Usar la app 30 minutos'
         ];
       case ChallengeDifficulty.maestro:
         return [
           '🔄 Repetir 5 códigos diferentes',
           '🚀 Pilotar 3 códigos',
-          '🧘 Meditar 30 minutos',
+          '🖼️ Compartir 3 pilotajes',
           '⏱️ Usar la app 45 minutos'
         ];
     }
@@ -273,7 +273,7 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
   IconData _getActionIcon(String action) {
     if (action.contains('🔄')) return Icons.repeat;
     if (action.contains('🚀')) return Icons.rocket_launch;
-    if (action.contains('🧘')) return Icons.self_improvement;
+    if (action.contains('🖼️')) return Icons.ios_share;
     if (action.contains('⏱️')) return Icons.timer;
     return Icons.check_circle_outline;
   }
@@ -425,14 +425,20 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
         .lte('recorded_at', end.toIso8601String());
 
     final Map<String, Map<String, int>> perDay = {};
-    int totalRepeated = 0, totalPiloted = 0, totalQuantum = 0, totalMeditation = 0, totalSeconds = 0;
+    int totalRepeated = 0, totalPiloted = 0, totalQuantum = 0, totalShared = 0;
 
     for (final row in response as List) {
       final date = DateTime.parse(row['recorded_at']).toLocal();
       final dayKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       final type = row['action_type'] as String? ?? '';
       final data = (row['action_data'] as Map?)?.cast<String, dynamic>();
-      perDay.putIfAbsent(dayKey, () => {'repetidos': 0, 'pilotajes': 0, 'pilotajes_cuanticos': 0, 'meditacion_min': 0});
+      perDay.putIfAbsent(dayKey, () => {
+            'repetidos': 0,
+            'pilotajes': 0,
+            'pilotajes_cuanticos': 0,
+            'compartidos': 0,
+            'uso_app_min': 0,
+          });
       switch (type) {
         case 'codigoRepetido':
           perDay[dayKey]!['repetidos'] = (perDay[dayKey]!['repetidos'] ?? 0) + 1;
@@ -446,14 +452,14 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
           perDay[dayKey]!['pilotajes_cuanticos'] = (perDay[dayKey]!['pilotajes_cuanticos'] ?? 0) + 1;
           totalQuantum++;
           break;
-        case 'meditacionCompletada':
-          final m = (data?['duration'] as num?)?.toInt() ?? 0;
-          perDay[dayKey]!['meditacion_min'] = (perDay[dayKey]!['meditacion_min'] ?? 0) + m;
-          totalMeditation += m;
+        case 'pilotajeCompartido':
+          perDay[dayKey]!['compartidos'] = (perDay[dayKey]!['compartidos'] ?? 0) + 1;
+          totalShared++;
           break;
         case 'tiempoEnApp':
           final minutes = (data?['duration'] as num?)?.toInt() ?? 0;
-          totalSeconds += minutes * 60;
+          perDay[dayKey]!['uso_app_min'] =
+              (perDay[dayKey]!['uso_app_min'] ?? 0) + minutes;
           break;
       }
     }
@@ -495,7 +501,7 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
                   children: [
                     _StatChip(icon: Icons.auto_awesome, label: 'Pil. cuánticos', value: '$totalQuantum', color: accent),
                     const SizedBox(width: 10),
-                    _StatChip(icon: Icons.self_improvement, label: 'Minutos de práctica', value: '${totalMeditation}m', color: accent),
+                    _StatChip(icon: Icons.ios_share, label: 'Pilotajes compartidos', value: '$totalShared', color: accent),
                   ],
                 ),
                 const SizedBox(height: 18),
@@ -526,7 +532,8 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
                                   _MiniStat(icon: Icons.repeat, text: '${m['repetidos']} rep'),
                                   _MiniStat(icon: Icons.rocket_launch, text: '${m['pilotajes']} pil'),
                                   _MiniStat(icon: Icons.auto_awesome, text: '${m['pilotajes_cuanticos']} pilQ'),
-                                  _MiniStat(icon: Icons.self_improvement, text: '${m['meditacion_min']} min'),
+                                  _MiniStat(icon: Icons.ios_share, text: '${m['compartidos']} comp'),
+                                  _MiniStat(icon: Icons.timer, text: '${m['uso_app_min']} min app'),
                                 ],
                               ),
                             ],

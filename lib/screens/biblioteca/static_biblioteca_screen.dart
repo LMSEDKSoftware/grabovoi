@@ -1498,19 +1498,15 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   
                   // Contador de códigos y botón de favoritos
                   Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFD700).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFFFD700).withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final textScale = MediaQuery.of(context).textScaleFactor;
+                        final isCompact = constraints.maxWidth < 360 || textScale > 1.1;
+
+                        Widget buildCounter() {
+                          return FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1532,15 +1528,16 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Botón de favoritos
-                          GestureDetector(
+                          );
+                        }
+
+                        Widget buildFavoritosButton() {
+                          return GestureDetector(
                             onTap: _toggleFavoritos,
                             child: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               decoration: BoxDecoration(
-                                color: mostrarFavoritos 
+                                color: mostrarFavoritos
                                     ? const Color(0xFFFFD700).withOpacity(0.2)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
@@ -1554,7 +1551,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                 children: [
                                   Icon(
                                     Icons.favorite,
-                                    color: mostrarFavoritos 
+                                    color: mostrarFavoritos
                                         ? const Color(0xFFFFD700)
                                         : Colors.white70,
                                     size: 16,
@@ -1564,7 +1561,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                     'Favoritos',
                                     style: GoogleFonts.inter(
                                       fontSize: 12,
-                                      color: mostrarFavoritos 
+                                      color: mostrarFavoritos
                                           ? const Color(0xFFFFD700)
                                           : Colors.white70,
                                       fontWeight: FontWeight.w600,
@@ -1573,69 +1570,107 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                 ],
                               ),
                             ),
+                          );
+                        }
+
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD700).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFFFD700).withOpacity(0.3),
+                              width: 1,
+                            ),
                           ),
-                        ],
-                      ),
+                          child: isCompact
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    buildCounter(),
+                                    const SizedBox(height: 8),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: buildFavoritosButton(),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  children: [
+                                    Expanded(child: buildCounter()),
+                                    const SizedBox(width: 12),
+                                    buildFavoritosButton(),
+                                  ],
+                                ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 20),
                   
                   // Barra de búsqueda (solo cuando NO están habilitados los favoritos)
                   if (!mostrarFavoritos) ...[
-                    TextField(
-                      controller: _searchController,
-                      onChanged: (value) {
-                        query = value;
-                        _queryBusqueda = value;
-                        _filtrarCodigos(value);
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isCompact = constraints.maxWidth < 360;
+                        return TextField(
+                          controller: _searchController,
+                          onChanged: (value) {
+                            query = value;
+                            _queryBusqueda = value;
+                            _filtrarCodigos(value);
+                          },
+                          onSubmitted: (value) {
+                            _confirmarBusqueda();
+                          },
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            hintText: 'Buscar código, intención o categoría...',
+                            hintStyle: const TextStyle(color: Colors.white54),
+                            prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                            suffixIcon: query.isNotEmpty
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (visible.isEmpty)
+                                        IconButton(
+                                          icon: const Icon(Icons.search, color: Color(0xFFFFD700)),
+                                          onPressed: _confirmarBusqueda,
+                                          tooltip: 'Buscar código completo',
+                                        ),
+                                      IconButton(
+                                        icon: const Icon(Icons.clear, color: Colors.white54),
+                                        onPressed: () {
+                                          setState(() {
+                                            _searchController.clear();
+                                            query = '';
+                                            _queryBusqueda = '';
+                                            _mostrarResultados = false;
+                                            _aplicarFiltros();
+                                          });
+                                        },
+                                        tooltip: 'Limpiar búsqueda',
+                                      ),
+                                    ],
+                                  )
+                                : null,
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.05),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(16)),
+                              borderSide: BorderSide(color: Color(0xFFFFD700)),
+                            ),
+                          ),
+                          style: const TextStyle(color: Colors.white),
+                        );
                       },
-                      onSubmitted: (value) {
-                        _confirmarBusqueda();
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Buscar código, intención o categoría...',
-                        hintStyle: const TextStyle(color: Colors.white54),
-                        prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                        suffixIcon: query.isNotEmpty
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (visible.isEmpty)
-                                    IconButton(
-                                      icon: const Icon(Icons.search, color: Color(0xFFFFD700)),
-                                      onPressed: _confirmarBusqueda,
-                                      tooltip: 'Buscar código completo',
-                                    ),
-                                  IconButton(
-                                    icon: const Icon(Icons.clear, color: Colors.white54),
-                                    onPressed: () {
-                                      setState(() {
-                                        _searchController.clear();
-                                        query = '';
-                                        _queryBusqueda = '';
-                                        _mostrarResultados = false;
-                                        _aplicarFiltros();
-                                      });
-                                    },
-                                    tooltip: 'Limpiar búsqueda',
-                                  ),
-                                ],
-                              )
-                            : null,
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.05),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(14)),
-                          borderSide: BorderSide(color: Color(0xFFFFD700)),
-                        ),
-                      ),
-                      style: const TextStyle(color: Colors.white),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     
                     // Filtros de categoría
                     SingleChildScrollView(
@@ -1768,7 +1803,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             ),
             // Lista de códigos con scroll independiente
             Expanded(
-              child: _buildContent(),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _buildContent(),
+                  );
+                },
+              ),
             ),
           ],
             ),
@@ -2030,173 +2072,206 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       child: Container(
         color: Colors.black.withOpacity(0.8),
         child: Center(
-          child: Container(
-            margin: const EdgeInsets.all(20),
-            padding: const EdgeInsets.all(24),
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.8,
-            ),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1C2541),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFFFD700).withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Códigos encontrados',
-                  style: GoogleFonts.inter(
-                    color: const Color(0xFFFFD700),
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final mediaQuery = MediaQuery.of(context);
+              final textScale = mediaQuery.textScaleFactor.clamp(1.0, 1.3);
+              final maxWidth = (mediaQuery.size.width * 0.9).clamp(320.0, 540.0);
+              final maxHeight = (mediaQuery.size.height * 0.8).clamp(380.0, 640.0);
+
+              return MediaQuery(
+                data: mediaQuery.copyWith(textScaleFactor: textScale),
+                child: Container(
+                  width: maxWidth,
+                  constraints: BoxConstraints(maxHeight: maxHeight),
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1C2541),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withOpacity(0.3),
+                      width: 1.5,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Selecciona el código que mejor se adapte a tu necesidad:',
-                  style: GoogleFonts.inter(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                
-                // Lista de códigos
-                Expanded(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _codigosEncontrados.length,
-                    itemBuilder: (context, index) {
-                      final codigo = _codigosEncontrados[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _seleccionarCodigo(codigo),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2C3E50).withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _getCategoryColor(codigo.categoria).withOpacity(0.3),
-                                  width: 1,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Códigos encontrados',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFFFFD700),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Selecciona el código que mejor se adapte a tu necesidad:',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 15,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: _codigosEncontrados.map((codigo) {
+                              return ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: 260,
+                                  maxWidth: 320,
                                 ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: _getCategoryColor(codigo.categoria),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          codigo.codigo,
-                                          style: GoogleFonts.inter(
-                                            color: _getCategoryColor(codigo.categoria),
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => _seleccionarCodigo(codigo),
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2C3E50).withOpacity(0.7),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: _getCategoryColor(codigo.categoria).withOpacity(0.4),
+                                          width: 1.2,
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          codigo.nombre,
-                                          style: GoogleFonts.inter(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Container(
+                                                width: 24,
+                                                height: 24,
+                                                decoration: BoxDecoration(
+                                                  color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.water_drop,
+                                                  color: _getCategoryColor(codigo.categoria),
+                                                  size: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
+                                                        borderRadius: BorderRadius.circular(10),
+                                                        border: Border.all(
+                                                          color: _getCategoryColor(codigo.categoria).withOpacity(0.6),
+                                                          width: 1,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        codigo.codigo,
+                                                        style: GoogleFonts.spaceMono(
+                                                          color: _getCategoryColor(codigo.categoria),
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 10),
+                                                    Text(
+                                                      codigo.nombre,
+                                                      style: GoogleFonts.inter(
+                                                        color: Colors.white,
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            codigo.descripcion,
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white.withOpacity(0.85),
+                                              fontSize: 14,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.category,
+                                                color: _getCategoryColor(codigo.categoria),
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  codigo.categoria,
+                                                  style: GoogleFonts.inter(
+                                                    color: _getCategoryColor(codigo.categoria),
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'Sugerido por IA',
+                                                style: GoogleFonts.inter(
+                                                  color: Colors.white54,
+                                                  fontSize: 11,
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Descripción real del código
-                                  Text(
-                                    codigo.descripcion,
-                                    style: GoogleFonts.inter(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
                                     ),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.category,
-                                        color: _getCategoryColor(codigo.categoria),
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        codigo.categoria,
-                                        style: GoogleFonts.inter(
-                                          color: _getCategoryColor(codigo.categoria),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      // Información de búsqueda como texto pequeño
-                                      Text(
-                                        'Sugerido por IA',
-                                        style: GoogleFonts.inter(
-                                          color: Colors.white54,
-                                          fontSize: 10,
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.center,
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _mostrarSeleccionCodigos = false;
+                              _codigosEncontrados = [];
+                            });
+                          },
+                          child: Text(
+                            'Cancelar',
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 16,
                             ),
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ),
-                
-                const SizedBox(height: 24),
-                
-                // Botón cancelar
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _mostrarSeleccionCodigos = false;
-                      _codigosEncontrados = [];
-                    });
-                  },
-                  child: Text(
-                    'Cancelar',
-                    style: GoogleFonts.inter(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

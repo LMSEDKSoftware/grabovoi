@@ -95,8 +95,8 @@ class ChallengeTrackingService extends ChangeNotifier {
         case ActionType.sesionPilotaje:
           actionName = 'Pilotaje de código';
           break;
-        case ActionType.meditacionCompletada:
-          actionName = 'Meditación';
+        case ActionType.pilotajeCompartido:
+          actionName = 'Pilotaje compartido';
           break;
         case ActionType.codigoRepetido:
           actionName = 'Repetición de código';
@@ -235,46 +235,35 @@ class ChallengeTrackingService extends ChangeNotifier {
     // Aquí implementarías la lógica específica para cada desafío
     // Por ejemplo, para un desafío de 7 días:
     
-    // Ejemplo: Día completado si se repitió al menos 1 código y se meditó al menos 10 minutos
-    if (dayNumber <= 7) {
-      final codigosRepetidos = actionCounts[ActionType.codigoRepetido] ?? 0;
-      final tiempoMeditacion = actionDurations[ActionType.meditacionCompletada] ?? Duration.zero;
-      
-      return codigosRepetidos >= 1 && tiempoMeditacion.inMinutes >= 10;
-    }
-    
-    // Ejemplo: Días más avanzados requieren más acciones
-    if (dayNumber <= 14) {
-      final codigosRepetidos = actionCounts[ActionType.codigoRepetido] ?? 0;
-      final sesionesPilotaje = actionCounts[ActionType.sesionPilotaje] ?? 0;
-      final tiempoMeditacion = actionDurations[ActionType.meditacionCompletada] ?? Duration.zero;
-      
-      return codigosRepetidos >= 2 && sesionesPilotaje >= 1 && tiempoMeditacion.inMinutes >= 15;
-    }
-    
-    // Ejemplo: Días avanzados
-    if (dayNumber <= 21) {
-      final codigosRepetidos = actionCounts[ActionType.codigoRepetido] ?? 0;
-      final sesionesPilotaje = actionCounts[ActionType.sesionPilotaje] ?? 0;
-      final tiempoMeditacion = actionDurations[ActionType.meditacionCompletada] ?? Duration.zero;
-      final tiempoEnApp = actionDurations[ActionType.tiempoEnApp] ?? Duration.zero;
-      
-      return codigosRepetidos >= 3 && 
-             sesionesPilotaje >= 2 && 
-             tiempoMeditacion.inMinutes >= 20 &&
-             tiempoEnApp.inMinutes >= 30;
-    }
-    
-    // Ejemplo: Días maestros
     final codigosRepetidos = actionCounts[ActionType.codigoRepetido] ?? 0;
     final sesionesPilotaje = actionCounts[ActionType.sesionPilotaje] ?? 0;
-    final tiempoMeditacion = actionDurations[ActionType.meditacionCompletada] ?? Duration.zero;
+    final pilotajesCompartidos = actionCounts[ActionType.pilotajeCompartido] ?? 0;
     final tiempoEnApp = actionDurations[ActionType.tiempoEnApp] ?? Duration.zero;
     
-    return codigosRepetidos >= 5 && 
-           sesionesPilotaje >= 3 && 
-           tiempoMeditacion.inMinutes >= 30 &&
-           tiempoEnApp.inMinutes >= 45;
+    if (dayNumber <= 7) {
+      return codigosRepetidos >= 1 &&
+          pilotajesCompartidos >= 1 &&
+          tiempoEnApp.inMinutes >= 15;
+    }
+    
+    if (dayNumber <= 14) {
+      return codigosRepetidos >= 2 &&
+          sesionesPilotaje >= 1 &&
+          pilotajesCompartidos >= 1 &&
+          tiempoEnApp.inMinutes >= 20;
+    }
+    
+    if (dayNumber <= 21) {
+      return codigosRepetidos >= 3 &&
+          sesionesPilotaje >= 2 &&
+          pilotajesCompartidos >= 2 &&
+          tiempoEnApp.inMinutes >= 30;
+    }
+    
+    return codigosRepetidos >= 5 &&
+        sesionesPilotaje >= 3 &&
+        pilotajesCompartidos >= 3 &&
+        tiempoEnApp.inMinutes >= 45;
   }
 
   // Calcular número de día basándose en la fecha de inicio
@@ -306,14 +295,6 @@ class ChallengeTrackingService extends ChangeNotifier {
     );
   }
 
-  Future<void> recordMeditationSession(Duration duration) async {
-    await recordUserAction(
-      type: ActionType.meditacionCompletada,
-      duration: duration,
-      metadata: {'action': 'meditation_session'},
-    );
-  }
-
   Future<void> recordPilotageSession(String codeId, String codeName, Duration duration) async {
     await recordUserAction(
       type: ActionType.sesionPilotaje,
@@ -321,6 +302,15 @@ class ChallengeTrackingService extends ChangeNotifier {
       codeName: codeName,
       duration: duration,
       metadata: {'action': 'pilotage_session'},
+    );
+  }
+
+  Future<void> recordPilotageShare({String? codeId, String? codeName}) async {
+    await recordUserAction(
+      type: ActionType.pilotajeCompartido,
+      codeId: codeId,
+      codeName: codeName,
+      metadata: {'action': 'pilotage_share'},
     );
   }
 
