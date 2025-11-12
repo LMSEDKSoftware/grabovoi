@@ -24,6 +24,7 @@ import 'repositories/codigos_repository.dart';
 import 'models/notification_history_item.dart';
 import 'services/notification_count_service.dart';
 import 'services/subscription_service.dart';
+import 'widgets/subscription_required_modal.dart';
 import 'dart:async';
 
 void main() async {
@@ -83,7 +84,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaleFactor: MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2),
+      ),
+      child: MaterialApp(
         title: 'ManiGrab - Manifestaciones Cuánticas Grabovoi',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -119,7 +124,16 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaleFactor: MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2),
+            ),
+            child: child!,
+          );
+        },
         home: const AuthWrapper(),
+      ),
     );
   }
 }
@@ -361,9 +375,29 @@ class _MainNavigationState extends State<MainNavigation> {
     final isSelected = _currentIndex == index;
     final textScale = MediaQuery.of(context).textScaleFactor;
     final showLabel = textScale <= 1.15;
+    final subscriptionService = SubscriptionService();
     
     return GestureDetector(
       onTap: () async {
+        // Verificar si el usuario es gratuito (sin suscripción después de los 7 días)
+        final isFreeUser = subscriptionService.isFreeUser;
+        
+        // Permitir acceso solo a Inicio (index 0) y Perfil (index 5) para usuarios gratuitos
+        if (isFreeUser && index != 0 && index != 5) {
+          // Mostrar modal de suscripción requerida
+          SubscriptionRequiredModal.show(
+            context,
+            message: 'Esta función está disponible solo para usuarios Premium. Suscríbete para acceder a todas las funciones de la app.',
+            onDismiss: () {
+              // Mantener en la pantalla actual (Inicio) después de cerrar el modal
+              setState(() {
+                _currentIndex = 0; // Forzar volver a Inicio
+              });
+            },
+          );
+          return;
+        }
+        
         // Interceptar cambio de tab si hay pilotaje activo
         if (_currentIndex == 2 && index != 2) {
           final pilotageService = PilotageStateService();

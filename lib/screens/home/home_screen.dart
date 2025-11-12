@@ -17,9 +17,10 @@ import '../desafios/desafios_screen.dart';
 import '../codes/code_detail_screen.dart';
 import '../../main.dart';
 import '../../repositories/codigos_repository.dart';
-import '../../widgets/rewards_display.dart';
+import '../../services/subscription_service.dart';
+import '../../widgets/subscription_required_modal.dart';
+import '../subscription/subscription_screen.dart';
 import '../../widgets/energy_stats_tab.dart';
-import '../onboarding/onboarding_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -143,6 +144,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -151,6 +154,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         fontSize: 14,
                         color: Colors.white70,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 30),
                 // Esfera con nombre del usuario sobre ella
@@ -243,6 +248,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ],
                               ),
                               textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ],
@@ -295,15 +302,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Icon(icon, color: const Color(0xFFFFD700), size: 28),
               ),
               const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
-                  const SizedBox(height: 4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
                     Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                  Text(value, style: GoogleFonts.inter(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                        Flexible(
+                          child: Text(
+                            value,
+                            style: GoogleFonts.inter(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                         const SizedBox(width: 10),
                         TextButton(
                           style: TextButton.styleFrom(
@@ -316,7 +335,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -329,6 +349,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 fontStyle: FontStyle.italic,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -339,10 +361,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildCodeOfDay(BuildContext context, String codigo) {
     // En la pantalla de inicio, mostrar el código original con _ sin formateo multilínea
     final fontSize = CodeFormatter.calculateFontSize(codigo);
+    final subscriptionService = SubscriptionService();
     
     return Center(
       child: GestureDetector(
         onTap: () async {
+          // Verificar si el usuario es gratuito (sin suscripción después de los 7 días)
+          if (subscriptionService.isFreeUser) {
+            // Usuario gratuito - redirigir a suscripciones
+            SubscriptionRequiredModal.show(
+              context,
+              message: 'El pilotaje cuántico está disponible solo para usuarios Premium. Suscríbete para acceder a esta función.',
+            );
+            return;
+          }
+          
+          // Usuario premium - permitir acceso normal
           await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CodeDetailScreen(codigo: codigo),
@@ -478,6 +512,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               color: Colors.white,
               height: 1.4,
             ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -570,6 +606,8 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
               color: Colors.white,
               height: 1.4,
             ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -625,6 +663,8 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFFFFD700),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -639,6 +679,8 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                     color: Colors.white,
                     height: 1.5,
                   ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 20),
                 
@@ -662,6 +704,8 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFFFFD700),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 12),
                       _buildInfoItem('• Es parte de la escala de niveles en el formulario que se llenó al inicio'),
@@ -685,6 +729,8 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                     fontStyle: FontStyle.italic,
                     height: 1.4,
                   ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 24),
                 

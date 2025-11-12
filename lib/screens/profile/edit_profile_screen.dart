@@ -16,7 +16,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _nameCtrl = TextEditingController();
-  final TextEditingController _avatarUrlCtrl = TextEditingController();
   String? _timezone;
   bool _saving = false;
 
@@ -39,14 +38,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final appUser = _authService.currentUser;
     final authUser = Supabase.instance.client.auth.currentUser;
     _nameCtrl.text = appUser?.name ?? authUser?.userMetadata?['name'] ?? '';
-    _avatarUrlCtrl.text = authUser?.userMetadata?['avatar_url'] ?? '';
     _timezone = authUser?.userMetadata?['timezone'] ?? 'UTC';
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _avatarUrlCtrl.dispose();
     super.dispose();
   }
 
@@ -56,7 +53,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       await _authService.updateProfile(
         name: _nameCtrl.text.trim(),
-        avatarUrl: _avatarUrlCtrl.text.trim().isEmpty ? null : _avatarUrlCtrl.text.trim(),
         timezone: _timezone ?? 'UTC',
       );
       if (mounted) {
@@ -97,13 +93,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 controller: _nameCtrl,
                 decoration: const InputDecoration(hintText: 'Tu nombre'),
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 16),
-              Text('Imagen de perfil (URL)', style: GoogleFonts.inter(color: Colors.white70)),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: _avatarUrlCtrl,
-                decoration: const InputDecoration(hintText: 'https://...'),
               ),
               const SizedBox(height: 16),
               Text('Zona horaria', style: GoogleFonts.inter(color: Colors.white70)),

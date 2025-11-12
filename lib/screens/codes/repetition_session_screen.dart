@@ -1459,39 +1459,25 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
           child: LayoutBuilder(
             builder: (context, constraints) {
               final textScale = MediaQuery.of(context).textScaleFactor;
-              final bool forceColumn = constraints.maxWidth < 360 || textScale >= 1.15;
+              final screenWidth = constraints.maxWidth;
+              final bool forceColumn = screenWidth < 360 || textScale >= 1.15;
+              
+              // Calcular ancho de cards para que quepan 2 sin scroll horizontal
+              // Considerando padding del container (16*2 = 32) y spacing entre cards (8)
+              final availableWidth = screenWidth - 32 - 8; // padding + spacing
               final double cardWidth = forceColumn
-                  ? constraints.maxWidth
-                  : math.min(200, constraints.maxWidth / 2 - 8);
+                  ? screenWidth - 32 // Ancho completo menos padding
+                  : (availableWidth / 2).floorToDouble(); // Mitad del espacio disponible
 
-              final cards = codigosSincronicos.map((codigo) {
+              // Limitar a máximo 2 códigos sincrónicos
+              final codigosLimitados = codigosSincronicos.take(2).toList();
+
+              final cards = codigosLimitados.map((codigo) {
                 return SizedBox(
                   width: cardWidth,
                   child: _buildSincronicoCard(context, codigo),
                 );
               }).toList();
-
-              if (forceColumn) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Combínalo con los siguientes códigos para amplificar la resonancia',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFFFD700),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    ...cards.map((card) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: card,
-                        )),
-                  ],
-                );
-              }
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1506,12 +1492,21 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: cards,
-                  ),
+                  if (forceColumn)
+                    ...cards.map((card) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: card,
+                        ))
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: cards.map((card) => Padding(
+                        padding: EdgeInsets.only(
+                          right: cards.indexOf(card) < cards.length - 1 ? 8 : 0,
+                        ),
+                        child: card,
+                      )).toList(),
+                    ),
                 ],
               );
             },
@@ -1572,73 +1567,94 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
   }
 
   Widget _buildSincronicoCard(BuildContext context, Map<String, dynamic> codigo) {
-    return GestureDetector(
-      onTap: () async {
-        final codigoTexto = codigo['codigo'] ?? '';
-        await Clipboard.setData(ClipboardData(text: codigoTexto));
-        
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '✅ Código copiado: $codigoTexto',
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-              backgroundColor: const Color(0xFFFFD700),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFFFD700).withOpacity(0.5),
-            width: 1,
-          ),
+    final codigoTexto = codigo['codigo'] ?? '';
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.5),
+          width: 1,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              codigo['codigo'] ?? '',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFFFD700),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              codigo['nombre'] ?? '',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                color: Colors.white.withOpacity(0.9),
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                codigo['categoria'] ?? '',
-                style: GoogleFonts.inter(
-                  fontSize: 9,
-                  color: const Color(0xFFFFD700),
-                  fontWeight: FontWeight.w600,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Código con icono de copiar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  codigoTexto,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD700),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () async {
+                  await Clipboard.setData(ClipboardData(text: codigoTexto));
+                  
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '✅ Código copiado: $codigoTexto',
+                          style: GoogleFonts.inter(color: Colors.white),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        backgroundColor: const Color(0xFFFFD700),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                child: Icon(
+                  Icons.content_copy,
+                  size: 16,
+                  color: const Color(0xFFFFD700).withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            codigo['nombre'] ?? '',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: Colors.white.withOpacity(0.9),
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              codigo['categoria'] ?? '',
+              style: GoogleFonts.inter(
+                fontSize: 9,
+                color: const Color(0xFFFFD700),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
