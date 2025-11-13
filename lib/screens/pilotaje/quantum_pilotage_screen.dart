@@ -30,6 +30,10 @@ import '../../services/audio_manager_service.dart';
 import '../../services/sugerencias_codigos_service.dart';
 import '../../services/pilotage_state_service.dart';
 import '../../models/sugerencia_codigo_model.dart';
+import '../../services/subscription_service.dart';
+import '../../widgets/subscription_required_modal.dart';
+import '../../services/rewards_service.dart';
+import '../../services/user_progress_service.dart';
 
 class QuantumPilotageScreen extends StatefulWidget {
   final String? codigoInicial;
@@ -134,6 +138,22 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   @override
   void initState() {
     super.initState();
+    
+    // Verificar si el usuario es gratuito después de los 7 días
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final subscriptionService = SubscriptionService();
+      if (subscriptionService.isFreeUser && mounted) {
+        SubscriptionRequiredModal.show(
+          context,
+          message: 'El Pilotaje Cuántico está disponible solo para usuarios Premium. Suscríbete para acceder a esta función.',
+          onDismiss: () {
+            // Redirigir a Inicio después de cerrar el modal
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
+        );
+      }
+    });
+    
     _initializeAnimations();
     _loadCodigos();
     _loadFavoritos();
@@ -1669,20 +1689,43 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          // Título principal
-          Text(
-            'Pilotaje Cuántico Consciente',
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFFD700),
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.5),
-                  blurRadius: 20,
+          // Título principal con indicador de recompensas
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  'Pilotaje Cuántico Consciente',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD700),
+                    shadows: [
+                      Shadow(
+                        color: const Color(0xFFFFD700).withOpacity(0.5),
+                        blurRadius: 20,
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 18),
+                  const SizedBox(width: 4),
+                  Text(
+                    '+5',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           
@@ -1937,12 +1980,51 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           
           // Botón para iniciar pilotaje (centrado)
           Center(
-            child: CustomButton(
-              text: _isPilotageActive ? 'Detener Pilotaje' : 'Iniciar Pilotaje Cuántico',
-              onPressed: _isPilotageActive ? _detenerPilotaje : (_codigoSeleccionado.isNotEmpty ? _startQuantumPilotage : null),
-              icon: _isPilotageActive ? Icons.stop : Icons.auto_awesome,
-              color: _isPilotageActive ? Colors.red : (_codigoSeleccionado.isNotEmpty ? _colorVibracional : Colors.grey),
-            ),
+            child: _isPilotageActive 
+              ? CustomButton(
+                  text: 'Detener Pilotaje',
+                  onPressed: _detenerPilotaje,
+                  icon: Icons.stop,
+                  color: Colors.red,
+                )
+              : Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    CustomButton(
+                      text: 'Iniciar Pilotaje Cuántico',
+                      onPressed: _codigoSeleccionado.isNotEmpty ? _startQuantumPilotage : null,
+                      icon: Icons.auto_awesome,
+                      color: _codigoSeleccionado.isNotEmpty ? _colorVibracional : Colors.grey,
+                    ),
+                    if (_codigoSeleccionado.isNotEmpty)
+                      Positioned(
+                        right: -8,
+                        top: -8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD700),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF0B132B), width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.diamond, color: Color(0xFF0B132B), size: 14),
+                              const Text(
+                                '+5',
+                                style: TextStyle(
+                                  color: Color(0xFF0B132B),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
           ),
           const SizedBox(height: 20),
           
@@ -3373,8 +3455,37 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     // Restaurar la posición de la barra de colores
     _colorBarController.reverse();
 
-    // Mostrar mensaje de finalización (completado exitosamente)
-    _mostrarMensajeFinalizacion();
+    // Otorgar recompensas por completar pilotaje y mostrar modal con recompensas
+    _otorgarRecompensasYMostrarModal();
+  }
+  
+  /// Otorgar recompensas y mostrar modal con información de recompensas
+  Future<void> _otorgarRecompensasYMostrarModal() async {
+    final recompensasInfo = await _otorgarRecompensasPorPilotaje();
+    
+    // Mostrar mensaje de finalización con recompensas
+    if (mounted) {
+      _mostrarMensajeFinalizacion(
+        cristalesGanados: recompensasInfo?['cristalesGanados'] as int?,
+        luzCuanticaAnterior: recompensasInfo?['luzCuanticaAnterior'] as double?,
+        luzCuanticaActual: recompensasInfo?['luzCuanticaActual'] as double?,
+      );
+    }
+  }
+
+  /// Otorgar recompensas por completar pilotaje cuántico
+  /// Retorna información sobre las recompensas otorgadas
+  Future<Map<String, dynamic>?> _otorgarRecompensasPorPilotaje() async {
+    try {
+      final rewardsService = RewardsService();
+      final recompensasInfo = await rewardsService.recompensarPorPilotajeCuantico();
+      
+      print('✅ Recompensas otorgadas por completar pilotaje cuántico');
+      return recompensasInfo;
+    } catch (e) {
+      print('⚠️ Error otorgando recompensas por pilotaje: $e');
+      return null;
+    }
   }
 
   void _mostrarMensajeCancelacion() {
@@ -3488,7 +3599,11 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     // Ya no ocultamos la barra automáticamente durante el pilotaje
   }
 
-  void _mostrarMensajeFinalizacion() {
+  void _mostrarMensajeFinalizacion({
+    int? cristalesGanados,
+    double? luzCuanticaAnterior,
+    double? luzCuanticaActual,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -3497,8 +3612,12 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         onContinue: () {
           Navigator.of(context).pop();
         },
-        buildSincronicosSection: _buildSincronicosSection,
+        buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
         mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de pilotaje cuántico.',
+        cristalesGanados: cristalesGanados,
+        luzCuanticaAnterior: luzCuanticaAnterior,
+        luzCuanticaActual: luzCuanticaActual,
+        tipoAccion: 'pilotaje_cuantico',
       ),
     );
   }
@@ -4581,7 +4700,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   }
 
   // Método para construir la sección de códigos sincrónicos
-  Widget _buildSincronicosSection() {
+  Widget _buildSincronicosSection({void Function(String)? onCodeCopied}) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _getSincronicosForCurrentCode(),
       builder: (context, snapshot) {
@@ -4643,8 +4762,10 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                       final codigoTexto = codigo['codigo'] ?? '';
                       await Clipboard.setData(ClipboardData(text: codigoTexto));
                       
-                      // Mostrar confirmación
-                      if (context.mounted) {
+                      // Usar el callback del modal si está disponible, de lo contrario usar SnackBar
+                      if (onCodeCopied != null) {
+                        onCodeCopied(codigoTexto);
+                      } else if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(

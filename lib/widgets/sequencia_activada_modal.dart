@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'reward_notification.dart';
 
 class SequenciaActivadaModal extends StatefulWidget {
   final VoidCallback onContinue;
-  final Widget Function()? buildSincronicosSection;
+  final Widget Function({void Function(String)? onCodeCopied})? buildSincronicosSection;
   final String? mensajeCompletado;
+  final int? cristalesGanados;
+  final double? luzCuanticaAnterior;
+  final double? luzCuanticaActual;
+  final String? tipoAccion;
 
   const SequenciaActivadaModal({
     super.key,
     required this.onContinue,
     this.buildSincronicosSection,
     this.mensajeCompletado,
+    this.cristalesGanados,
+    this.luzCuanticaAnterior,
+    this.luzCuanticaActual,
+    this.tipoAccion,
   });
 
   @override
@@ -25,6 +34,8 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
   late Animation<double> _pulseAnimation;
   late Animation<double> _glowAnimation;
   late Animation<double> _scaleAnimation;
+  String? _copiedCodeMessage;
+  OverlayEntry? _overlayEntry;
 
   @override
   void initState() {
@@ -69,10 +80,36 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
 
   @override
   void dispose() {
+    _hideCopiedMessage();
     _pulseController.dispose();
     _glowController.dispose();
     _scaleController.dispose();
     super.dispose();
+  }
+
+  void _showCopiedMessage(String codigo) {
+    setState(() {
+      _copiedCodeMessage = '✅ Código copiado: $codigo';
+    });
+    
+    // Ocultar el mensaje después de 2 segundos
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _copiedCodeMessage = null;
+        });
+      }
+    });
+  }
+
+  void _hideCopiedMessage() {
+    if (_overlayEntry != null) {
+      _overlayEntry!.remove();
+      _overlayEntry = null;
+    }
+    setState(() {
+      _copiedCodeMessage = null;
+    });
   }
 
   @override
@@ -102,65 +139,34 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
         insetPadding: insetPadding,
         child: ScaleTransition(
           scale: _scaleAnimation,
-          child: Container(
-            padding: dialogPadding,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1C2541),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: const Color(0xFFFFD700),
-                width: 3,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.5),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showScrollHint)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFFFD700).withOpacity(0.6),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Desliza para ver más información',
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ],
-                    ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: dialogPadding,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1C2541),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700),
+                    width: 3,
                   ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withOpacity(0.5),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -223,6 +229,16 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
+                        // Mostrar notificación de recompensas si hay cristales ganados
+                        if (widget.cristalesGanados != null && widget.cristalesGanados! > 0)
+                          RewardNotification(
+                            cristalesGanados: widget.cristalesGanados!,
+                            luzCuanticaAnterior: widget.luzCuanticaAnterior,
+                            luzCuanticaActual: widget.luzCuanticaActual,
+                            tipoAccion: widget.tipoAccion ?? 'repeticion',
+                          ),
+                        if (widget.cristalesGanados != null && widget.cristalesGanados! > 0)
+                          const SizedBox(height: 24),
                         Container(
                           padding: EdgeInsets.all(isCompactWidth ? 16 : 20),
                           decoration: BoxDecoration(
@@ -279,7 +295,7 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
                         ),
                         const SizedBox(height: 24),
                         if (widget.buildSincronicosSection != null)
-                          widget.buildSincronicosSection!(),
+                          widget.buildSincronicosSection!(onCodeCopied: _showCopiedMessage),
                         const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
@@ -312,6 +328,56 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
                 ),
               ],
             ),
+          ),
+              // Mensaje de confirmación que aparece sobre el modal
+              if (_copiedCodeMessage != null)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  right: 16,
+                  child: Material(
+                    color: Colors.transparent,
+                    elevation: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD700),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 15,
+                            spreadRadius: 3,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _copiedCodeMessage!,
+                              style: GoogleFonts.inter(
+                                color: Colors.black,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

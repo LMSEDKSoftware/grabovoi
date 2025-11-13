@@ -31,6 +31,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
   int _index = 0;
   bool _isBuffering = true;
   bool _isPlaying = false;
+  bool _isMuted = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   bool _hasShownVolumeMessage = false;
@@ -227,7 +228,19 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
     return '$twoDigitMinutes:$twoDigitSeconds';
+  }
+
+  Future<void> _toggleMute() async {
+    setState(() {
+      _isMuted = !_isMuted;
+    });
+    
+    if (_isMuted) {
+      await _audioManager.setVolume(0.0);
+    } else {
+      await _audioManager.setVolume(1.0);
     }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -273,6 +286,17 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
                 ),
               ],
             ),
+          ),
+          
+          // Botón de silenciar/activar sonido
+          IconButton(
+            onPressed: _toggleMute,
+            icon: Icon(
+              _isMuted ? Icons.volume_off : Icons.volume_up,
+              color: const Color(0xFFFFD700),
+              size: 24,
+            ),
+            tooltip: _isMuted ? 'Activar sonido' : 'Silenciar',
           ),
           
           IconButton(

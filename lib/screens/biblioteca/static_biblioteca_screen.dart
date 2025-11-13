@@ -2897,7 +2897,22 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                           _mostrarModalRepeticion(codigo);
                         },
                         icon: const Icon(Icons.play_arrow, size: 18),
-                        label: const Text('Iniciar sesión de repetición'),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Iniciar sesión de repetición'),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.diamond, color: Colors.white, size: 16),
+                            const Text(
+                              '+3',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFD700),
                           foregroundColor: const Color(0xFF0B132B),
@@ -3238,12 +3253,27 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                       ),
-                      child: Text(
-                        'Comenzar Repetición',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Comenzar Repetición',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.diamond, color: Colors.white, size: 16),
+                          const Text(
+                            '+3',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

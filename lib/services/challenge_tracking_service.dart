@@ -158,7 +158,14 @@ class ChallengeTrackingService extends ChangeNotifier {
   Future<void> completeChallenge(String challengeId) async {
     final progress = _challengesProgress[challengeId];
     if (progress != null) {
-      // Aquí podrías implementar lógica para marcar como completado
+      // Actualizar lastActivity para indicar que el desafío está completado
+      final updatedProgress = progress.copyWith(
+        lastActivity: DateTime.now(),
+      );
+      _challengesProgress[challengeId] = updatedProgress;
+      
+      // Notificar cambios
+      _progressControllers[challengeId]?.add(updatedProgress);
       notifyListeners();
     }
   }

@@ -21,6 +21,7 @@ import '../../services/challenge_progress_tracker.dart';
 import '../../services/pilotage_state_service.dart';
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/supabase_service.dart';
+import '../../services/rewards_service.dart';
 import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
 import '../../utils/code_formatter.dart';
@@ -158,7 +159,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
 
   void _startCountdown() {
     print('🕐 [CAMPO ENERGÉTICO] Iniciando temporizador: $_secondsRemaining segundos');
-    Future.delayed(const Duration(seconds: 1), () {
+    Future.delayed(const Duration(seconds: 1), () async {
       if (!mounted) return; // no llamar setState si ya no está montado
       if (_secondsRemaining > 0) {
         setState(() {
@@ -189,24 +190,56 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         final progressTracker = ChallengeProgressTracker();
         progressTracker.trackCodeRepeated();
         
+        // Registrar repetición en el sistema de progreso global
+        try {
+          await BibliotecaSupabaseService.registrarRepeticion(
+            codeId: widget.codigo,
+            codeName: widget.codigo,
+            durationMinutes: 2,
+          );
+        } catch (e) {
+          print('Error registrando repetición en usuario_progreso: $e');
+        }
+        
         _showCompletionDialog();
       }
     });
   }
 
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.9),
-      builder: (context) => SequenciaActivadaModal(
-        onContinue: () {
-          Navigator.of(context).pop();
-        },
-        buildSincronicosSection: _buildSincronicosSection,
-        mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de campo energético.',
-      ),
-    );
+  void _showCompletionDialog() async {
+    // Obtener recompensas antes de mostrar el modal
+    int? cristalesGanados;
+    double? luzCuanticaAnterior;
+    double? luzCuanticaActual;
+    
+    try {
+      final rewardsService = RewardsService();
+      final recompensasInfo = await rewardsService.recompensarPorRepeticion();
+      cristalesGanados = recompensasInfo['cristalesGanados'] as int;
+      luzCuanticaAnterior = recompensasInfo['luzCuanticaAnterior'] as double;
+      luzCuanticaActual = recompensasInfo['luzCuanticaActual'] as double;
+    } catch (e) {
+      print('⚠️ Error obteniendo recompensas: $e');
+    }
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black.withOpacity(0.9),
+        builder: (context) => SequenciaActivadaModal(
+          onContinue: () {
+            Navigator.of(context).pop();
+          },
+          buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
+          mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de campo energético.',
+          cristalesGanados: cristalesGanados,
+          luzCuanticaAnterior: luzCuanticaAnterior,
+          luzCuanticaActual: luzCuanticaActual,
+          tipoAccion: 'repeticion',
+        ),
+      );
+    }
   }
 
   void _copyToClipboard() async {
@@ -1261,16 +1294,17 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
   }
 
   // Método para construir la sección de códigos sincrónicos
-  Widget _buildSincronicosSection() {
-    return _SincronicosSection(codigo: widget.codigo);
+  Widget _buildSincronicosSection({void Function(String)? onCodeCopied}) {
+    return _SincronicosSection(codigo: widget.codigo, onCodeCopied: onCodeCopied);
   }
 }
 
 // Widget separado para manejar los códigos sincrónicos con estado local
 class _SincronicosSection extends StatefulWidget {
   final String codigo;
+  final void Function(String)? onCodeCopied;
   
-  const _SincronicosSection({required this.codigo});
+  const _SincronicosSection({required this.codigo, this.onCodeCopied});
   
   @override
   State<_SincronicosSection> createState() => _SincronicosSectionState();
@@ -1408,8 +1442,10 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
                       final codigoTexto = codigo['codigo'] ?? '';
                       await Clipboard.setData(ClipboardData(text: codigoTexto));
                       
-                      // Mostrar confirmación
-                      if (context.mounted) {
+                      // Usar el callback del modal si está disponible, de lo contrario usar SnackBar
+                      if (widget.onCodeCopied != null) {
+                        widget.onCodeCopied!(codigoTexto);
+                      } else if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -1470,160 +1506,4 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
       ),
     );
   }
-
-  // Método para construir la sección de códigos sincrónicos
-  Widget _buildSincronicosSection() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getSincronicosForCurrentCode(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFFFD700).withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFFFD700),
-              ),
-            ),
-          );
-        }
-
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        final codigosSincronicos = snapshot.data!;
-
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFFFFD700).withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Combínalo con los siguientes códigos para amplificar la resonancia',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFFD700),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: codigosSincronicos.take(2).toList().asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final codigo = entry.value;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () async {
-                        // Copiar código al portapapeles
-                        final codigoTexto = codigo['codigo'] ?? '';
-                        await Clipboard.setData(ClipboardData(text: codigoTexto));
-                        
-                        // Mostrar confirmación
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                '✅ Código copiado: $codigoTexto',
-                                style: GoogleFonts.inter(color: Colors.white),
-                              ),
-                              backgroundColor: const Color(0xFFFFD700),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      },
-                      child: Container(
-                        margin: EdgeInsets.only(right: index == 0 ? 8 : 0),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFFFD700).withOpacity(0.5),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              codigo['codigo'] ?? '',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFFD700),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              codigo['nombre'] ?? '',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                color: Colors.white.withOpacity(0.9),
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFD700).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                codigo['categoria'] ?? '',
-                                style: GoogleFonts.inter(
-                                  fontSize: 8,
-                                  color: const Color(0xFFFFD700),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // Método para obtener códigos sincrónicos del código actual
-  Future<List<Map<String, dynamic>>> _getSincronicosForCurrentCode() async {
-    try {
-      // Obtener la categoría del código actual
-      final categoria = await _getCodeCategory(widget.codigo);
-      if (categoria.isEmpty) return [];
-
-      // Obtener códigos sincrónicos
-      return await CodigosRepository().getSincronicosByCategoria(categoria);
-    } catch (e) {
-      print('⚠️ Error al obtener códigos sincrónicos: $e');
-      return [];
-    }
-  }
-
 }

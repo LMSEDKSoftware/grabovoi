@@ -1322,9 +1322,24 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     ),
-                    child: Text(
-                      'Iniciar sesión de repetición',
-                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Iniciar sesión de repetición',
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.diamond, color: Colors.white, size: 18),
+                        const Text(
+                          '+3',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

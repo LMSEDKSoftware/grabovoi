@@ -23,6 +23,7 @@ import '../../services/biblioteca_supabase_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/pilotage_state_service.dart';
 import '../../widgets/sequencia_activada_modal.dart';
+import '../../services/rewards_service.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -148,17 +149,6 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     final progressTracker = ChallengeProgressTracker();
     progressTracker.trackCodeRepeated();
 
-    // Actualizar progreso global (usuario_progreso)
-    try {
-      await BibliotecaSupabaseService.registrarRepeticion(
-        codeId: widget.codigo,
-        codeName: widget.nombre ?? widget.codigo,
-        durationMinutes: 2,
-      );
-    } catch (e) {
-      print('Error registrando repetición en usuario_progreso: $e');
-    }
-    
     // Ocultar la barra de colores después de 3 segundos
     _hideColorBarAfterDelay();
     // Iniciar el temporizador de 2 minutos
@@ -181,11 +171,13 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         // Notificar al servicio global
         PilotageStateService().setRepetitionActive(false);
         
-        // Detener audio y mostrar mensaje de finalización
+        // Detener audio
         try {
           AudioManagerService().stop();
         } catch (_) {}
-        _mostrarMensajeFinalizacion();
+        
+        // Registrar repetición y obtener recompensas
+        _registrarRepeticionYMostrarRecompensas();
       }
     });
   }
@@ -1400,8 +1392,43 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     );
   }
 
+  // Método para registrar repetición y mostrar recompensas
+  Future<void> _registrarRepeticionYMostrarRecompensas() async {
+    try {
+      // Registrar repetición
+      await BibliotecaSupabaseService.registrarRepeticion(
+        codeId: widget.codigo,
+        codeName: widget.nombre ?? widget.codigo,
+        durationMinutes: 2,
+      );
+      
+      // Obtener recompensas
+      final rewardsService = RewardsService();
+      final recompensasInfo = await rewardsService.recompensarPorRepeticion();
+      
+      // Mostrar modal con recompensas
+      if (mounted) {
+        _mostrarMensajeFinalizacion(
+          cristalesGanados: recompensasInfo['cristalesGanados'] as int,
+          luzCuanticaAnterior: recompensasInfo['luzCuanticaAnterior'] as double,
+          luzCuanticaActual: recompensasInfo['luzCuanticaActual'] as double,
+        );
+      }
+    } catch (e) {
+      print('⚠️ Error registrando repetición y obteniendo recompensas: $e');
+      // Mostrar modal sin recompensas si hay error
+      if (mounted) {
+        _mostrarMensajeFinalizacion();
+      }
+    }
+  }
+
   // Método para mostrar el mensaje de finalización con códigos sincrónicos
-  void _mostrarMensajeFinalizacion() {
+  void _mostrarMensajeFinalizacion({
+    int? cristalesGanados,
+    double? luzCuanticaAnterior,
+    double? luzCuanticaActual,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1410,14 +1437,18 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
         onContinue: () {
           Navigator.of(context).pop();
         },
-        buildSincronicosSection: _buildSincronicosSection,
+        buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
         mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de repeticiones.',
+        cristalesGanados: cristalesGanados,
+        luzCuanticaAnterior: luzCuanticaAnterior,
+        luzCuanticaActual: luzCuanticaActual,
+        tipoAccion: 'repeticion',
       ),
     );
   }
 
   // Método para construir la sección de códigos sincrónicos
-  Widget _buildSincronicosSection() {
+  Widget _buildSincronicosSection({void Function(String)? onCodeCopied}) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _getSincronicosForCurrentCode(),
       builder: (context, snapshot) {
@@ -1475,12 +1506,12 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
               final cards = codigosLimitados.map((codigo) {
                 return SizedBox(
                   width: cardWidth,
-                  child: _buildSincronicoCard(context, codigo),
+                  child: _buildSincronicoCard(context, codigo, onCodeCopied: onCodeCopied),
                 );
               }).toList();
 
               return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     'Combínalo con los siguientes códigos para amplificar la resonancia',
@@ -1490,6 +1521,8 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                       color: const Color(0xFFFFD700),
                     ),
                     textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
                   if (forceColumn)
@@ -1498,14 +1531,21 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                           child: card,
                         ))
                   else
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: cards.map((card) => Padding(
-                        padding: EdgeInsets.only(
-                          right: cards.indexOf(card) < cards.length - 1 ? 8 : 0,
-                        ),
-                        child: card,
-                      )).toList(),
+                    Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: cards.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final card = entry.value;
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              right: index < cards.length - 1 ? 8 : 0,
+                            ),
+                            child: card,
+                          );
+                        }).toList(),
+                      ),
                     ),
                 ],
               );
@@ -1566,7 +1606,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     };
   }
 
-  Widget _buildSincronicoCard(BuildContext context, Map<String, dynamic> codigo) {
+  Widget _buildSincronicoCard(BuildContext context, Map<String, dynamic> codigo, {void Function(String)? onCodeCopied}) {
     final codigoTexto = codigo['codigo'] ?? '';
     
     return Container(
@@ -1604,7 +1644,10 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 onTap: () async {
                   await Clipboard.setData(ClipboardData(text: codigoTexto));
                   
-                  if (context.mounted) {
+                  // Usar el callback del modal si está disponible, de lo contrario usar SnackBar
+                  if (onCodeCopied != null) {
+                    onCodeCopied(codigoTexto);
+                  } else if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(

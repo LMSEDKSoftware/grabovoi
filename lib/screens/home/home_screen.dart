@@ -460,7 +460,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 },
               ),
               const SizedBox(height: 8),
-              Text('Toca para pilotar', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Toca para pilotar', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.diamond, color: Colors.white54, size: 14),
+                  Text(
+                    '+3',
+                    style: GoogleFonts.inter(
+                      color: Colors.white54,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

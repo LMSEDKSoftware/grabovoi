@@ -1,5 +1,6 @@
 import '../models/supabase_models.dart';
 import '../config/supabase_config.dart';
+import '../repositories/codigos_repository.dart';
 import 'supabase_service.dart';
 import 'auth_service_simple.dart';
 import 'user_favorites_service.dart';
@@ -22,47 +23,33 @@ class BibliotecaSupabaseService {
   
   static Future<List<CodigoGrabovoi>> getTodosLosCodigos() async {
     try {
-      print('🔄 Iniciando conexión con Supabase...');
-      print('📍 URL: ${SupabaseConfig.url}');
-      print('🔑 Usando anon key seguro desde variables de entorno...');
+      // Usar el repositorio que tiene caché para evitar recargas innecesarias
+      final repository = CodigosRepository();
+      final codigos = repository.codigos;
       
-      final codigos = await SupabaseService.getCodigos();
-      print('📚 Respuesta de Supabase: ${codigos.length} códigos');
-      
-      if (codigos.isEmpty) {
-        print('⚠️ PROBLEMA: Supabase devolvió lista vacía');
-        print('🔍 Esto puede indicar:');
-        print('   - Problema de conectividad');
-        print('   - Tabla vacía en Supabase');
-        print('   - Error en RLS (Row Level Security)');
-        print('   - Credenciales incorrectas');
-      } else {
-        print('✅ Éxito: Códigos cargados correctamente');
-        if (codigos.length > 0) {
-          print('📄 Primer código: ${codigos.first.codigo} - ${codigos.first.nombre}');
-        }
+      // Si el repositorio tiene códigos en caché, usarlos directamente (sin llamar a Supabase)
+      if (codigos.isNotEmpty) {
+        print('✅ Códigos cargados desde caché del repositorio (${codigos.length} códigos)');
+        return codigos;
       }
       
-      return codigos;
+      // Si no hay caché, inicializar el repositorio (solo una vez al inicio de la app)
+      print('🔄 Inicializando repositorio de códigos (primera carga)...');
+      await repository.initCodigos();
+      final codigosInicializados = repository.codigos;
+      
+      if (codigosInicializados.isNotEmpty) {
+        print('✅ Códigos cargados desde repositorio (${codigosInicializados.length} códigos)');
+        return codigosInicializados;
+      }
+      
+      // Fallback a códigos locales si todo falla
+      print('⚠️ No se encontraron códigos, usando fallback local...');
+      return _getCodigosLocales();
     } catch (e) {
-      print('❌ ERROR CRÍTICO en conexión Supabase:');
-      print('   Tipo de error: ${e.runtimeType}');
-      print('   Mensaje: $e');
-      print('   Stack trace: ${StackTrace.current}');
-      
-      if (e.toString().contains('Connection')) {
-        print('🌐 DIAGNÓSTICO: Problema de conectividad');
-      } else if (e.toString().contains('401') || e.toString().contains('403')) {
-        print('🔐 DIAGNÓSTICO: Problema de autenticación/autorización');
-      } else if (e.toString().contains('404')) {
-        print('📋 DIAGNÓSTICO: Tabla no encontrada');
-      } else if (e.toString().contains('RLS') || e.toString().contains('row level')) {
-        print('🛡️ DIAGNÓSTICO: Problema con Row Level Security');
-      } else {
-        print('❓ DIAGNÓSTICO: Error desconocido');
-      }
-      
-      rethrow; // Re-lanzar el error para que se maneje arriba
+      print('❌ Error al obtener códigos: $e');
+      print('🔄 Usando códigos locales como fallback...');
+      return _getCodigosLocales();
     }
   }
 
@@ -292,23 +279,8 @@ class BibliotecaSupabaseService {
     // Notificar al scheduler de notificaciones
     await NotificationScheduler().onRepetitionCompleted();
     
-    // Recompensar por completar repetición (misma lógica que pilotaje)
-    try {
-      final rewardsService = RewardsService();
-      await rewardsService.recompensarPorPilotaje();
-      await rewardsService.addToHistory(
-        'cristales',
-        'Cristales de energía ganados por completar repetición',
-        cantidad: RewardsService.cristalesPorDia,
-      );
-      await rewardsService.addToHistory(
-        'luz_cuantica',
-        'Luz cuántica ganada por completar repetición',
-        cantidad: RewardsService.luzCuanticaPorPilotaje.toInt(),
-      );
-    } catch (e) {
-      print('⚠️ Error otorgando recompensas: $e');
-    }
+    // Las recompensas ahora se otorgan en el screen después de completar la repetición
+    // para poder mostrar la información en el modal de finalización
   }
 
   // ===== AUDIOS =====

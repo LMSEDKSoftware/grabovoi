@@ -93,6 +93,10 @@ class AudioManagerService {
     _currentTrackController.add(_currentTrack);
   }
 
+  Future<void> setVolume(double volume) async {
+    await _globalPlayer.setVolume(volume.clamp(0.0, 1.0));
+  }
+
   Future<void> dispose() async {
     await _stateSub?.cancel();
     await _posSub?.cancel();

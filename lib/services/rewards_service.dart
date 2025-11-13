@@ -3,19 +3,28 @@ import 'dart:convert';
 import '../models/rewards_model.dart';
 import '../config/supabase_config.dart';
 import 'auth_service_simple.dart';
+import 'user_progress_service.dart';
 
 /// Servicio para gestionar el sistema de recompensas
 class RewardsService {
   static const String _prefsKey = 'user_rewards';
   static const String _rewardsHistoryKey = 'rewards_history';
   
-  // Constantes del sistema
-  static const int cristalesPorDia = 10; // Cristales por día de pilotaje
+  // Constantes del sistema de recompensas
+  static const int cristalesPorRepeticion = 3; // Cristales por completar repetición
+  static const int cristalesPorPilotajeRetoDiario = 3; // Cristales por completar pilotaje del reto diario
+  static const int cristalesPorPilotajeCuantico = 5; // Cristales por completar pilotaje cuántico
+  static const int cristalesPorDesafio7Dias = 30; // Cristales por completar desafío de 7 días
+  static const int cristalesPorDesafio14Dias = 50; // Cristales por completar desafío de 14 días
+  static const int cristalesPorDesafio21Dias = 70; // Cristales por completar desafío de 21 días
+  static const double luzCuanticaPorDiaRacha = 5.0; // Luz cuántica por día de racha (5%)
+  static const double luzCuanticaMaxima = 100.0; // Máximo de luz cuántica (100%)
+  
+  // Constantes de compra
   static const int cristalesParaCodigoPremium = 100; // Cristales necesarios para código premium
+  static const int cristalesParaAnclaContinuidad = 20; // Cristales necesarios para comprar una ancla de continuidad
   static const int diasParaRestaurador = 7; // Días para obtener un restaurador
-  static const double luzCuanticaPorPilotaje = 5.0; // Luz cuántica ganada por pilotaje
   static const int diasParaMantra = 21; // Días consecutivos para desbloquear mantra
-  static const double luzCuanticaMaxima = 100.0; // Máximo de luz cuántica
 
   final AuthServiceSimple _authService = AuthServiceSimple();
   
@@ -41,6 +50,7 @@ class RewardsService {
           userId: userId,
           cristalesEnergia: response['cristales_energia'] ?? 0,
           restauradoresArmonia: response['restauradores_armonia'] ?? 0,
+          anclasContinuidad: response['anclas_continuidad'] ?? 0,
           luzCuantica: (response['luz_cuantica'] ?? 0.0).toDouble(),
           mantrasDesbloqueados: List<String>.from(response['mantras_desbloqueados'] ?? []),
           codigosPremiumDesbloqueados: List<String>.from(response['codigos_premium_desbloqueados'] ?? []),
@@ -52,17 +62,29 @@ class RewardsService {
         );
       }
 
-      // Si no existe en Supabase, crear uno nuevo
-      return UserRewards(
+      // Si no existe en Supabase, crear uno nuevo Y GUARDARLO
+      final newRewards = UserRewards(
         userId: userId,
         cristalesEnergia: 0,
         restauradoresArmonia: 0,
+        anclasContinuidad: 0,
         luzCuantica: 0.0,
         mantrasDesbloqueados: [],
         codigosPremiumDesbloqueados: [],
         ultimaActualizacion: DateTime.now(),
         logros: {},
       );
+      
+      // Guardar el nuevo registro en Supabase para que quede persistido
+      try {
+        await saveUserRewards(newRewards);
+        print('✅ Registro inicial de recompensas creado para usuario: $userId');
+      } catch (e) {
+        print('⚠️ Error creando registro inicial de recompensas: $e');
+        // Si falla al guardar, continuar con el objeto local
+      }
+      
+      return newRewards;
     } catch (e) {
       print('⚠️ Error obteniendo recompensas de Supabase: $e');
       // Fallback a SharedPreferences
@@ -81,6 +103,7 @@ class RewardsService {
         userId: userId,
         cristalesEnergia: map['cristalesEnergia'] ?? 0,
         restauradoresArmonia: map['restauradoresArmonia'] ?? 0,
+        anclasContinuidad: map['anclasContinuidad'] ?? 0,
         luzCuantica: (map['luzCuantica'] ?? 0.0).toDouble(),
         mantrasDesbloqueados: List<String>.from(map['mantrasDesbloqueados'] ?? []),
         codigosPremiumDesbloqueados: List<String>.from(map['codigosPremiumDesbloqueados'] ?? []),
@@ -93,6 +116,7 @@ class RewardsService {
       userId: userId,
       cristalesEnergia: 0,
       restauradoresArmonia: 0,
+      anclasContinuidad: 0,
       luzCuantica: 0.0,
       mantrasDesbloqueados: [],
       codigosPremiumDesbloqueados: [],
@@ -109,6 +133,7 @@ class RewardsService {
         'user_id': rewards.userId,
         'cristales_energia': rewards.cristalesEnergia,
         'restauradores_armonia': rewards.restauradoresArmonia,
+        'anclas_continuidad': rewards.anclasContinuidad,
         'luz_cuantica': rewards.luzCuantica,
         'mantras_desbloqueados': rewards.mantrasDesbloqueados,
         'codigos_premium_desbloqueados': rewards.codigosPremiumDesbloqueados,
@@ -129,6 +154,7 @@ class RewardsService {
         'userId': rewards.userId,
         'cristalesEnergia': rewards.cristalesEnergia,
         'restauradoresArmonia': rewards.restauradoresArmonia,
+        'anclasContinuidad': rewards.anclasContinuidad,
         'luzCuantica': rewards.luzCuantica,
         'mantrasDesbloqueados': rewards.mantrasDesbloqueados,
         'codigosPremiumDesbloqueados': rewards.codigosPremiumDesbloqueados,
@@ -139,21 +165,151 @@ class RewardsService {
     );
   }
 
-  /// Recompensar por completar un pilotaje
-  Future<UserRewards> recompensarPorPilotaje() async {
+  /// Recompensar por completar una repetición
+  /// Retorna un mapa con información sobre las recompensas otorgadas
+  Future<Map<String, dynamic>> recompensarPorRepeticion() async {
+    final rewards = await getUserRewards();
+    final luzCuanticaAnterior = rewards.luzCuantica;
+    
+    final updatedRewards = rewards.copyWith(
+      cristalesEnergia: rewards.cristalesEnergia + cristalesPorRepeticion,
+      ultimaActualizacion: DateTime.now(),
+    );
+
+    await saveUserRewards(updatedRewards);
+    await addToHistory(
+      'cristales',
+      'Cristales ganados por completar repetición',
+      cantidad: cristalesPorRepeticion,
+    );
+    
+    // Actualizar luz cuántica basada en racha
+    final progressService = UserProgressService();
+    final progress = await progressService.getUserProgress();
+    double? luzCuanticaActual;
+    if (progress != null) {
+      final diasConsecutivos = progress['dias_consecutivos'] ?? 0;
+      final updatedRewardsConLuz = await actualizarLuzCuanticaPorRacha(diasConsecutivos);
+      luzCuanticaActual = updatedRewardsConLuz.luzCuantica;
+    }
+    
+    return {
+      'rewards': updatedRewards,
+      'cristalesGanados': cristalesPorRepeticion,
+      'luzCuanticaAnterior': luzCuanticaAnterior,
+      'luzCuanticaActual': luzCuanticaActual ?? luzCuanticaAnterior,
+    };
+  }
+
+  /// Recompensar por completar pilotaje del reto diario
+  /// Retorna un mapa con información sobre las recompensas otorgadas
+  Future<Map<String, dynamic>> recompensarPorPilotajeRetoDiario() async {
+    final rewards = await getUserRewards();
+    final luzCuanticaAnterior = rewards.luzCuantica;
+    
+    final updatedRewards = rewards.copyWith(
+      cristalesEnergia: rewards.cristalesEnergia + cristalesPorPilotajeRetoDiario,
+      ultimaActualizacion: DateTime.now(),
+    );
+
+    await saveUserRewards(updatedRewards);
+    await addToHistory(
+      'cristales',
+      'Cristales ganados por completar pilotaje del reto diario',
+      cantidad: cristalesPorPilotajeRetoDiario,
+    );
+    
+    // Actualizar luz cuántica basada en racha
+    final progressService = UserProgressService();
+    final progress = await progressService.getUserProgress();
+    double? luzCuanticaActual;
+    if (progress != null) {
+      final diasConsecutivos = progress['dias_consecutivos'] ?? 0;
+      final updatedRewardsConLuz = await actualizarLuzCuanticaPorRacha(diasConsecutivos);
+      luzCuanticaActual = updatedRewardsConLuz.luzCuantica;
+    }
+    
+    return {
+      'rewards': updatedRewards,
+      'cristalesGanados': cristalesPorPilotajeRetoDiario,
+      'luzCuanticaAnterior': luzCuanticaAnterior,
+      'luzCuanticaActual': luzCuanticaActual ?? luzCuanticaAnterior,
+    };
+  }
+
+  /// Recompensar por completar pilotaje cuántico
+  /// Retorna un mapa con información sobre las recompensas otorgadas
+  Future<Map<String, dynamic>> recompensarPorPilotajeCuantico() async {
+    final rewards = await getUserRewards();
+    final luzCuanticaAnterior = rewards.luzCuantica;
+    
+    final updatedRewards = rewards.copyWith(
+      cristalesEnergia: rewards.cristalesEnergia + cristalesPorPilotajeCuantico,
+      ultimaActualizacion: DateTime.now(),
+    );
+
+    await saveUserRewards(updatedRewards);
+    await addToHistory(
+      'cristales',
+      'Cristales ganados por completar pilotaje cuántico',
+      cantidad: cristalesPorPilotajeCuantico,
+    );
+    
+    // Actualizar luz cuántica basada en racha
+    final progressService = UserProgressService();
+    final progress = await progressService.getUserProgress();
+    double? luzCuanticaActual;
+    if (progress != null) {
+      final diasConsecutivos = progress['dias_consecutivos'] ?? 0;
+      final updatedRewardsConLuz = await actualizarLuzCuanticaPorRacha(diasConsecutivos);
+      luzCuanticaActual = updatedRewardsConLuz.luzCuantica;
+    }
+    
+    return {
+      'rewards': updatedRewards,
+      'cristalesGanados': cristalesPorPilotajeCuantico,
+      'luzCuanticaAnterior': luzCuanticaAnterior,
+      'luzCuanticaActual': luzCuanticaActual ?? luzCuanticaAnterior,
+    };
+  }
+
+  /// Recompensar por completar un desafío completo
+  Future<UserRewards> recompensarPorDesafioCompletado(int duracionDias) async {
     final rewards = await getUserRewards();
     
-    // Agregar cristales
-    final nuevosCristales = rewards.cristalesEnergia + cristalesPorDia;
-    
-    // Agregar luz cuántica
-    double nuevaLuzCuantica = rewards.luzCuantica + luzCuanticaPorPilotaje;
-    if (nuevaLuzCuantica > luzCuanticaMaxima) {
-      nuevaLuzCuantica = luzCuanticaMaxima;
+    int cristalesGanados = 0;
+    if (duracionDias == 7) {
+      cristalesGanados = cristalesPorDesafio7Dias;
+    } else if (duracionDias == 14) {
+      cristalesGanados = cristalesPorDesafio14Dias;
+    } else if (duracionDias == 21) {
+      cristalesGanados = cristalesPorDesafio21Dias;
+    } else {
+      throw Exception('Duración de desafío no válida: $duracionDias días');
     }
-
+    
     final updatedRewards = rewards.copyWith(
-      cristalesEnergia: nuevosCristales,
+      cristalesEnergia: rewards.cristalesEnergia + cristalesGanados,
+      ultimaActualizacion: DateTime.now(),
+    );
+
+    await saveUserRewards(updatedRewards);
+    await addToHistory(
+      'cristales',
+      'Cristales ganados por completar desafío de $duracionDias días',
+      cantidad: cristalesGanados,
+    );
+    return updatedRewards;
+  }
+
+  /// Calcular y actualizar luz cuántica basada en la racha de días
+  Future<UserRewards> actualizarLuzCuanticaPorRacha(int diasConsecutivos) async {
+    final rewards = await getUserRewards();
+    
+    // Calcular luz cuántica: 5% por cada día de racha (máximo 100%)
+    double nuevaLuzCuantica = (diasConsecutivos * luzCuanticaPorDiaRacha).clamp(0.0, luzCuanticaMaxima);
+    
+    final updatedRewards = rewards.copyWith(
       luzCuantica: nuevaLuzCuantica,
       ultimaActualizacion: DateTime.now(),
     );
@@ -232,6 +388,51 @@ class RewardsService {
     );
 
     await saveUserRewards(updatedRewards);
+    return updatedRewards;
+  }
+
+  /// Comprar Ancla de Continuidad con cristales
+  Future<UserRewards> comprarAnclaContinuidad() async {
+    final rewards = await getUserRewards();
+    
+    if (rewards.cristalesEnergia < cristalesParaAnclaContinuidad) {
+      throw Exception('No tienes suficientes cristales de energía. Necesitas ${cristalesParaAnclaContinuidad} cristales.');
+    }
+
+    final updatedRewards = rewards.copyWith(
+      cristalesEnergia: rewards.cristalesEnergia - cristalesParaAnclaContinuidad,
+      anclasContinuidad: rewards.anclasContinuidad + 1,
+      ultimaActualizacion: DateTime.now(),
+    );
+
+    await saveUserRewards(updatedRewards);
+    await addToHistory(
+      'ancla_continuidad',
+      'Ancla de Continuidad comprada',
+      cantidad: 1,
+    );
+    return updatedRewards;
+  }
+
+  /// Usar Ancla de Continuidad para salvar la racha
+  Future<UserRewards> usarAnclaContinuidad() async {
+    final rewards = await getUserRewards();
+    
+    if (rewards.anclasContinuidad <= 0) {
+      throw Exception('No tienes Anclas de Continuidad disponibles');
+    }
+
+    final updatedRewards = rewards.copyWith(
+      anclasContinuidad: rewards.anclasContinuidad - 1,
+      ultimaActualizacion: DateTime.now(),
+    );
+
+    await saveUserRewards(updatedRewards);
+    await addToHistory(
+      'ancla_continuidad',
+      'Ancla de Continuidad usada para salvar racha',
+      cantidad: -1,
+    );
     return updatedRewards;
   }
 
