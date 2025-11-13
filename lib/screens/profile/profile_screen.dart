@@ -26,6 +26,8 @@ import '../rewards/mantras_screen.dart';
 import '../subscription/subscription_screen.dart';
 import '../../models/notification_history_item.dart';
 import '../../services/notification_count_service.dart';
+import '../../services/subscription_service.dart';
+import '../../widgets/subscription_required_modal.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -185,131 +187,161 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     ],
                     const SizedBox(height: 30),
                     // Botones de acción organizados en grid de 2 columnas
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 3.0,
-                      padding: EdgeInsets.zero,
-                      children: [
-                        _buildCompactButton(
-                          text: 'Editar Perfil',
-                          icon: Icons.edit,
-                          onPressed: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const EditProfileScreen(),
+                    // Para usuarios gratuitos, solo mostrar Suscripciones
+                    Builder(
+                      builder: (context) {
+                        final subscriptionService = SubscriptionService();
+                        final isFreeUser = subscriptionService.isFreeUser;
+                        
+                        if (isFreeUser) {
+                          // Usuario gratuito - solo mostrar botón de Suscripciones
+                          return Column(
+                            children: [
+                              _buildCompactButton(
+                                text: 'Suscripciones',
+                                icon: Icons.card_membership,
+                                color: const Color(0xFFFFD700),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SubscriptionScreen(),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                            if (mounted) {
-                              setState(() {});
-                              await _loadUserData();
-                            }
-                          },
-                        ),
-                        _buildCompactButton(
-                          text: 'Configuración',
-                          icon: Icons.settings,
-                          onPressed: () => _showConfigurationMenu(context),
-                        ),
-                        _buildCompactButton(
-                          text: 'Mis Sugerencias',
-                          icon: Icons.lightbulb_outline,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SugerenciasScreen(),
+                            ],
+                          );
+                        }
+                        
+                        // Usuario premium - mostrar todos los botones
+                        return GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 3.0,
+                          padding: EdgeInsets.zero,
+                          children: [
+                            _buildCompactButton(
+                              text: 'Editar Perfil',
+                              icon: Icons.edit,
+                              onPressed: () async {
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const EditProfileScreen(),
+                                  ),
+                                );
+                                if (mounted) {
+                                  setState(() {});
+                                  await _loadUserData();
+                                }
+                              },
+                            ),
+                            _buildCompactButton(
+                              text: 'Configuración',
+                              icon: Icons.settings,
+                              onPressed: () => _showConfigurationMenu(context),
+                            ),
+                            _buildCompactButton(
+                              text: 'Mis Sugerencias',
+                              icon: Icons.lightbulb_outline,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SugerenciasScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            _buildCompactButton(
+                              text: 'Notificaciones',
+                              icon: Icons.notifications,
+                              onPressed: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const NotificationHistoryScreen(),
+                                  ),
+                                );
+                                // Recargar conteo después de volver de la pantalla de notificaciones
+                                if (mounted) {
+                                  await _loadNotificationCount();
+                                }
+                              },
+                              notificationCount: _unreadNotificationsCount,
+                            ),
+                            _buildCompactButton(
+                              text: 'Tienda Cuántica',
+                              icon: Icons.store,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const PremiumStoreScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            _buildCompactButton(
+                              text: 'Suscripciones',
+                              icon: Icons.card_membership,
+                              color: const Color(0xFFFFD700),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SubscriptionScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            _buildCompactButton(
+                              text: 'Mis Mantras',
+                              icon: Icons.auto_awesome,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const MantrasScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            // Botones de administrador (solo si es admin)
+                            if (_isAdmin) ...[
+                              _buildCompactButton(
+                                text: 'Aprobar Sugerencias',
+                                icon: Icons.admin_panel_settings,
+                                color: const Color(0xFFFFD700),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ApproveSuggestionsScreen(),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
-                        _buildCompactButton(
-                          text: 'Notificaciones',
-                          icon: Icons.notifications,
-                          onPressed: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const NotificationHistoryScreen(),
+                              _buildCompactButton(
+                                text: 'Ver Reportes',
+                                icon: Icons.report,
+                                color: const Color(0xFFFF6B6B),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ViewReportsScreen(),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                            // Recargar conteo después de volver de la pantalla de notificaciones
-                            if (mounted) {
-                              await _loadNotificationCount();
-                            }
-                          },
-                          notificationCount: _unreadNotificationsCount,
-                        ),
-                        _buildCompactButton(
-                          text: 'Tienda Cuántica',
-                          icon: Icons.store,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const PremiumStoreScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildCompactButton(
-                          text: 'Suscripciones',
-                          icon: Icons.card_membership,
-                          color: const Color(0xFFFFD700),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SubscriptionScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildCompactButton(
-                          text: 'Mis Mantras',
-                          icon: Icons.auto_awesome,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MantrasScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        // Botones de administrador (solo si es admin)
-                        if (_isAdmin) ...[
-                          _buildCompactButton(
-                            text: 'Aprobar Sugerencias',
-                            icon: Icons.admin_panel_settings,
-                            color: const Color(0xFFFFD700),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ApproveSuggestionsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildCompactButton(
-                            text: 'Ver Reportes',
-                            icon: Icons.report,
-                            color: const Color(0xFFFF6B6B),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ViewReportsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ],
+                            ],
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     // Botón de cerrar sesión (ancho completo)

@@ -8,7 +8,8 @@ class UserRewards {
   final String userId;
   final int cristalesEnergia; // Monedas virtuales acumuladas
   final int restauradoresArmonia; // Restauradores disponibles
-  final double luzCuantica; // 0.0 a 100.0, barra de progreso
+  final int anclasContinuidad; // Anclas de continuidad para salvar rachas
+  final double luzCuantica; // 0.0 a 100.0, barra de progreso (calculada por racha)
   final List<String> mantrasDesbloqueados; // IDs de mantras desbloqueados
   final List<String> codigosPremiumDesbloqueados; // IDs de códigos premium
   final DateTime ultimaActualizacion;
@@ -19,6 +20,7 @@ class UserRewards {
     required this.userId,
     this.cristalesEnergia = 0,
     this.restauradoresArmonia = 0,
+    this.anclasContinuidad = 0,
     this.luzCuantica = 0.0,
     this.mantrasDesbloqueados = const [],
     this.codigosPremiumDesbloqueados = const [],
@@ -34,6 +36,7 @@ class UserRewards {
     String? userId,
     int? cristalesEnergia,
     int? restauradoresArmonia,
+    int? anclasContinuidad,
     double? luzCuantica,
     List<String>? mantrasDesbloqueados,
     List<String>? codigosPremiumDesbloqueados,
@@ -45,6 +48,7 @@ class UserRewards {
       userId: userId ?? this.userId,
       cristalesEnergia: cristalesEnergia ?? this.cristalesEnergia,
       restauradoresArmonia: restauradoresArmonia ?? this.restauradoresArmonia,
+      anclasContinuidad: anclasContinuidad ?? this.anclasContinuidad,
       luzCuantica: luzCuantica ?? this.luzCuantica,
       mantrasDesbloqueados: mantrasDesbloqueados ?? this.mantrasDesbloqueados,
       codigosPremiumDesbloqueados: codigosPremiumDesbloqueados ?? this.codigosPremiumDesbloqueados,

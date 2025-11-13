@@ -12,7 +12,7 @@ class EnergyStatsTab extends StatefulWidget {
   State<EnergyStatsTab> createState() => _EnergyStatsTabState();
 }
 
-class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProviderStateMixin {
+class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final RewardsService _rewardsService = RewardsService();
   bool _expanded = false;
   UserRewards? _rewards;
@@ -23,6 +23,7 @@ class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -43,19 +44,41 @@ class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProvid
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refrescar cuando la app vuelve a estar activa (solo entonces, no periódicamente)
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadRewards(forceRefresh: true);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refrescar cuando el widget se vuelve visible (pero no en cada cambio)
+    // Solo refrescar si no está cargando y no hay recompensas cargadas
+    if (!_isLoading && _rewards == null) {
+      _loadRewards();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _slideController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadRewards() async {
+  Future<void> _loadRewards({bool forceRefresh = false}) async {
     try {
-      final rewards = await _rewardsService.getUserRewards();
+      // Solo forzar lectura fresca cuando sea necesario (cuando se actualizan recompensas)
+      final rewards = await _rewardsService.getUserRewards(forceRefresh: forceRefresh);
       if (mounted) {
         setState(() {
           _rewards = rewards;
           _isLoading = false;
         });
+        print('📊 EnergyStatsTab actualizado: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
       }
     } catch (e) {
       print('Error cargando recompensas: $e');
@@ -65,6 +88,11 @@ class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProvid
         });
       }
     }
+  }
+  
+  // Método público para refrescar desde fuera (cuando se actualizan recompensas)
+  void refresh() {
+    _loadRewards(forceRefresh: true);
   }
 
   void _toggleExpanded() {

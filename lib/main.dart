@@ -315,8 +315,9 @@ class _MainNavigationState extends State<MainNavigation> {
           ],
         ),
         child: SafeArea(
+          top: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -417,6 +418,8 @@ class _MainNavigationState extends State<MainNavigation> {
         if (index == 5) {
           _notificationCountService.updateCount();
         }
+        // Refrescar recompensas cuando se vuelve a la pantalla de inicio
+        // El HomeScreen se refrescará automáticamente mediante didChangeDependencies
       },
       child: Tooltip(
         message: label,

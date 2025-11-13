@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/challenge_model.dart';
 import 'challenge_tracking_service.dart';
 import 'auth_service_simple.dart';
+import 'rewards_service.dart';
 
 class ChallengeService extends ChangeNotifier {
   static final ChallengeService _instance = ChallengeService._internal();
@@ -336,6 +337,43 @@ class ChallengeService extends ChangeNotifier {
     }
 
     return true;
+  }
+
+  // Verificar y otorgar recompensas si un desafío está completado
+  Future<void> verificarYOtorgarRecompensasDesafio(String challengeId) async {
+    if (!isChallengeCompleted(challengeId)) return;
+    
+    final challenge = getChallenge(challengeId);
+    if (challenge == null) return;
+    
+    // Verificar si ya se otorgaron recompensas para este desafío
+    final progress = getChallengeProgress(challengeId);
+    if (progress == null) return;
+    
+    // Verificar si ya se otorgaron recompensas para este desafío
+    final rewardsService = RewardsService();
+    final rewards = await rewardsService.getUserRewards();
+    final logros = rewards.logros;
+    final desafioKey = 'desafio_${challengeId}_recompensado';
+    
+    if (logros[desafioKey] == true) {
+      // Ya se otorgaron recompensas
+      return;
+    }
+    
+    // Otorgar recompensas
+    try {
+      await rewardsService.recompensarPorDesafioCompletado(challenge.durationDays);
+      
+      // Marcar como recompensado
+      final nuevosLogros = Map<String, dynamic>.from(logros);
+      nuevosLogros[desafioKey] = true;
+      await rewardsService.saveUserRewards(rewards.copyWith(logros: nuevosLogros));
+      
+      print('✅ Recompensas otorgadas por completar desafío de ${challenge.durationDays} días');
+    } catch (e) {
+      print('⚠️ Error otorgando recompensas por desafío: $e');
+    }
   }
 
   // Obtener estadísticas de un desafío

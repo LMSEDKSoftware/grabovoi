@@ -1,5 +1,9 @@
+-- Schema completo de user_rewards (actualizado con anclas_continuidad)
+-- Este schema refleja el estado DESEADO de la tabla
+-- Usa migration_add_anclas_continuidad.sql para migrar desde el estado actual
+
 -- Tabla para almacenar las recompensas del usuario
-CREATE TABLE IF NOT EXISTS user_rewards (
+CREATE TABLE IF NOT EXISTS public.user_rewards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   cristales_energia INTEGER NOT NULL DEFAULT 0,
@@ -16,11 +20,11 @@ CREATE TABLE IF NOT EXISTS user_rewards (
 );
 
 -- Índices para mejorar rendimiento
-CREATE INDEX IF NOT EXISTS idx_user_rewards_user_id ON user_rewards(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_rewards_cristales ON user_rewards(cristales_energia);
+CREATE INDEX IF NOT EXISTS idx_user_rewards_user_id ON public.user_rewards(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_rewards_cristales ON public.user_rewards(cristales_energia);
 
 -- Función para actualizar updated_at automáticamente
-CREATE OR REPLACE FUNCTION update_user_rewards_updated_at()
+CREATE OR REPLACE FUNCTION public.update_user_rewards_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -29,32 +33,32 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger para actualizar updated_at
-DROP TRIGGER IF EXISTS trigger_update_user_rewards_updated_at ON user_rewards;
+DROP TRIGGER IF EXISTS trigger_update_user_rewards_updated_at ON public.user_rewards;
 CREATE TRIGGER trigger_update_user_rewards_updated_at
-  BEFORE UPDATE ON user_rewards
+  BEFORE UPDATE ON public.user_rewards
   FOR EACH ROW
-  EXECUTE FUNCTION update_user_rewards_updated_at();
+  EXECUTE FUNCTION public.update_user_rewards_updated_at();
 
 -- Políticas RLS (Row Level Security)
-ALTER TABLE user_rewards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_rewards ENABLE ROW LEVEL SECURITY;
 
 -- Eliminar políticas existentes si existen (para evitar duplicados)
-DROP POLICY IF EXISTS "Users can view their own rewards" ON user_rewards;
-DROP POLICY IF EXISTS "Users can insert their own rewards" ON user_rewards;
-DROP POLICY IF EXISTS "Users can update their own rewards" ON user_rewards;
+DROP POLICY IF EXISTS "Users can view their own rewards" ON public.user_rewards;
+DROP POLICY IF EXISTS "Users can insert their own rewards" ON public.user_rewards;
+DROP POLICY IF EXISTS "Users can update their own rewards" ON public.user_rewards;
 
 -- Los usuarios solo pueden ver y modificar sus propias recompensas
-CREATE POLICY "Users can view their own rewards" ON user_rewards
+CREATE POLICY "Users can view their own rewards" ON public.user_rewards
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own rewards" ON user_rewards
+CREATE POLICY "Users can insert their own rewards" ON public.user_rewards
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own rewards" ON user_rewards
+CREATE POLICY "Users can update their own rewards" ON public.user_rewards
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Tabla para mantras desbloqueables
-CREATE TABLE IF NOT EXISTS mantras (
+CREATE TABLE IF NOT EXISTS public.mantras (
   id TEXT PRIMARY KEY,
   nombre TEXT NOT NULL,
   descripcion TEXT NOT NULL,
@@ -66,14 +70,14 @@ CREATE TABLE IF NOT EXISTS mantras (
 );
 
 -- Insertar mantras por defecto
-INSERT INTO mantras (id, nombre, descripcion, texto, dias_requeridos, categoria) VALUES
+INSERT INTO public.mantras (id, nombre, descripcion, texto, dias_requeridos, categoria) VALUES
   ('mantra_21_dias', 'Mantra de Manifestación Cuántica', 'Mantra especial desbloqueado tras 21 días consecutivos', 'Om Namah Shivaya - Yo honro la conciencia dentro de mí', 21, 'Espiritualidad'),
   ('mantra_30_dias', 'Mantra de Transformación', 'Mantra para transformación profunda', 'Om Mani Padme Hum - La joya en el loto', 30, 'Transformación'),
   ('mantra_7_dias', 'Mantra de Protección', 'Mantra de protección y armonía', 'Om Tare Tuttare Ture Svaha', 7, 'Protección')
 ON CONFLICT (id) DO NOTHING;
 
 -- Tabla para códigos premium
-CREATE TABLE IF NOT EXISTS codigos_premium (
+CREATE TABLE IF NOT EXISTS public.codigos_premium (
   id TEXT PRIMARY KEY,
   codigo TEXT NOT NULL UNIQUE,
   nombre TEXT NOT NULL,
@@ -85,14 +89,14 @@ CREATE TABLE IF NOT EXISTS codigos_premium (
 );
 
 -- Insertar códigos premium por defecto
-INSERT INTO codigos_premium (id, codigo, nombre, descripcion, costo_cristales, categoria, es_raro) VALUES
+INSERT INTO public.codigos_premium (id, codigo, nombre, descripcion, costo_cristales, categoria, es_raro) VALUES
   ('premium_1', '888_888_888', 'Código de Manifestación Máxima', 'Código especial para manifestación de máximo potencial', 100, 'Manifestación', false),
   ('premium_2', '999_999_999', 'Código de Transformación Total', 'Transformación profunda y completa', 150, 'Transformación', true),
   ('premium_3', '777_777_777', 'Código de Sabiduría Cuántica', 'Acceso a sabiduría cuántica superior', 200, 'Espiritualidad', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Tabla para meditaciones especiales
-CREATE TABLE IF NOT EXISTS meditaciones_especiales (
+CREATE TABLE IF NOT EXISTS public.meditaciones_especiales (
   id TEXT PRIMARY KEY,
   nombre TEXT NOT NULL,
   descripcion TEXT NOT NULL,
@@ -103,22 +107,22 @@ CREATE TABLE IF NOT EXISTS meditaciones_especiales (
 );
 
 -- Insertar meditaciones especiales por defecto
-INSERT INTO meditaciones_especiales (id, nombre, descripcion, audio_url, luz_cuantica_requerida, duracion_minutos) VALUES
+INSERT INTO public.meditaciones_especiales (id, nombre, descripcion, audio_url, luz_cuantica_requerida, duracion_minutos) VALUES
   ('meditacion_1', 'Meditación de Luz Cuántica', 'Meditación guiada especial cuando la luz cuántica está completa', NULL, 100.0, 15),
   ('meditacion_2', 'Viaje Cuántico', 'Viaje profundo de transformación cuántica', NULL, 100.0, 20),
   ('meditacion_3', 'Reconexión Energética', 'Reconexión con tu esencia energética', NULL, 100.0, 10)
 ON CONFLICT (id) DO NOTHING;
 
 -- Políticas RLS para tablas de referencia (públicas para lectura)
-ALTER TABLE mantras ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Anyone can view mantras" ON mantras;
-CREATE POLICY "Anyone can view mantras" ON mantras FOR SELECT USING (true);
+ALTER TABLE public.mantras ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view mantras" ON public.mantras;
+CREATE POLICY "Anyone can view mantras" ON public.mantras FOR SELECT USING (true);
 
-ALTER TABLE codigos_premium ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Anyone can view premium codes" ON codigos_premium;
-CREATE POLICY "Anyone can view premium codes" ON codigos_premium FOR SELECT USING (true);
+ALTER TABLE public.codigos_premium ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view premium codes" ON public.codigos_premium;
+CREATE POLICY "Anyone can view premium codes" ON public.codigos_premium FOR SELECT USING (true);
 
-ALTER TABLE meditaciones_especiales ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Anyone can view special meditations" ON meditaciones_especiales;
-CREATE POLICY "Anyone can view special meditations" ON meditaciones_especiales FOR SELECT USING (true);
+ALTER TABLE public.meditaciones_especiales ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view special meditations" ON public.meditaciones_especiales;
+CREATE POLICY "Anyone can view special meditations" ON public.meditaciones_especiales FOR SELECT USING (true);
 

@@ -18,6 +18,7 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
   int _currentPage = 0;
   final AuthServiceSimple _authService = AuthServiceSimple();
   final UserProgressService _progressService = UserProgressService();
+  bool _hasShownModal = false;
 
   // Respuestas de la encuesta
   String _knowledgeLevel = '';
@@ -235,9 +236,193 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Mostrar modal de confirmación al iniciar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showAssessmentModal();
+    });
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// Mostrar modal de confirmación para la evaluación
+  Future<void> _showAssessmentModal() async {
+    if (_hasShownModal) return;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: const Color(0xFFFFD700).withOpacity(0.5),
+            width: 2,
+          ),
+        ),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.info_outline,
+              color: Color(0xFFFFD700),
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Evaluación Personalizada',
+                style: GoogleFonts.playfairDisplay(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFFFD700),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Esta evaluación es OBLIGATORIA para personalizar tu experiencia con los códigos de Grabovoi.',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: const Color(0xFFFFD700),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '¿Por qué es importante?',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildModalBulletPoint(
+                'Personaliza tu experiencia según tu nivel de conocimiento',
+              ),
+              _buildModalBulletPoint(
+                'Recomienda códigos y prácticas adecuadas para ti',
+              ),
+              _buildModalBulletPoint(
+                'Ajusta el contenido según tus objetivos personales',
+              ),
+              _buildModalBulletPoint(
+                'Optimiza tu tiempo y práctica diaria',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(false);
+              // Si cancela, volver atrás
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.inter(
+                color: Colors.white54,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop(true);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700),
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Comenzar Evaluación',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _hasShownModal = true;
+      });
+    } else {
+      // Si el usuario cancela, salir de la pantalla
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  Widget _buildModalBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.check_circle,
+            color: Color(0xFFFFD700),
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: Colors.white70,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _nextPage() {
@@ -457,31 +642,6 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          
-          // Mensaje de obligatoriedad en la primera página
-          if (_currentPage == 0) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: const Color(0xFFFFD700).withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Text(
-                '⚠️ Esta evaluación es OBLIGATORIA para personalizar tu experiencia con los códigos de Grabovoi',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: const Color(0xFFFFD700),
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
         ],
       ),
     );

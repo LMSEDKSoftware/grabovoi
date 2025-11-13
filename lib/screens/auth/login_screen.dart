@@ -491,27 +491,27 @@ class _LoginScreenState extends State<LoginScreen> {
       body: GlowBackground(
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   
                   // Logo y título con diseño mejorado
                   Column(
                     children: [
-                      // Esfera dorada 180px con glow 0.9
+                      // Esfera dorada reducida para compactar
                       const GoldenSphere(
-                        size: 150,
+                        size: 120,
                         color: Color(0xFFFFD700),
                         glowIntensity: 0.9,
                         isAnimated: true,
                       ),
                       // Letrero semitransparente con el título (superpuesto)
                       Transform.translate(
-                        offset: const Offset(0, -150),
+                        offset: const Offset(0, -120),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 28,
@@ -566,14 +566,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       Transform.translate(
-                        offset: const Offset(0, -100),
+                        offset: const Offset(0, -80),
                         child: Column(
                           children: [
-                            // "Bienvenid@ de Vuelta" en dorado, 40px
+                            // "Bienvenid@ de Vuelta" en dorado, reducido
                             Text(
                               'Bienvenid@ de Vuelta',
                               style: GoogleFonts.playfairDisplay(
-                                fontSize: 36,
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFFFFD700),
                                 letterSpacing: 1,
@@ -600,7 +600,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -623,6 +623,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
                           ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -637,7 +638,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -650,7 +651,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
@@ -684,6 +685,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
                           ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -698,24 +700,29 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   
                   // Olvidé mi contraseña
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: _isLoading ? null : _handleForgotPassword,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       child: Text(
                         '¿Olvidaste tu contraseña?',
                         style: GoogleFonts.inter(
                           color: const Color(0xFFFFD700),
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
                       ),
                     ),
                   ),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   
                   // Mensaje de error
                   if (_errorMessage != null)
@@ -752,19 +759,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     icon: Icons.login,
                   ),
                   
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   
                   // Divider
                   Row(
                     children: [
                       Expanded(child: Divider(color: Colors.white.withOpacity(0.3))),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           'O continúa con',
                           style: GoogleFonts.inter(
                             color: Colors.white54,
-                            fontSize: 14,
+                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -772,7 +779,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   
                   // Botón de Google
                   CustomButton(
@@ -783,7 +790,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Colors.white,
                   ),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   
                   // Enlace a registro
                   Row(
@@ -793,7 +800,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         '¿No tienes cuenta? ',
                         style: GoogleFonts.inter(
                           color: Colors.white54,
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
                       ),
                       TextButton(
@@ -804,11 +811,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                         child: Text(
                           'Regístrate aquí',
                           style: GoogleFonts.inter(
                             color: const Color(0xFFFFD700),
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -816,7 +828,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 12),
                   
                   // Versión y crédito
                   Column(
@@ -824,16 +836,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'v.1.0.1',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: 12,
                           color: const Color(0xFFFFD700),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         'creado por Iván Fernández Almaguer',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Colors.white54,
                         ),
                       ),

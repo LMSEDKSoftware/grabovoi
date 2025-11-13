@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service_simple.dart';
 import '../services/user_progress_service.dart';
+import '../services/subscription_service.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/onboarding/user_assessment_screen.dart';
@@ -58,6 +59,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
         final needsAssessment = assessment == null || !_isAssessmentComplete(assessment);
         
         print('📋 Necesita evaluación: $needsAssessment');
+        
+        // IMPORTANTE: Verificar estado de suscripción después de autenticación
+        // Esto asegura que usuarios nuevos obtengan su período de prueba de 7 días
+        try {
+          await SubscriptionService().checkSubscriptionStatus();
+          print('✅ Estado de suscripción verificado después de autenticación');
+        } catch (e) {
+          print('⚠️ Error verificando suscripción después de autenticación: $e');
+        }
         
         if (mounted) {
           setState(() {

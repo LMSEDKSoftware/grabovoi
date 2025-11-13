@@ -245,8 +245,8 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -261,30 +261,37 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
         children: [
           IconButton(
             onPressed: _isBuffering ? null : _prev,
-            icon: Icon(Icons.skip_previous, color: const Color(0xFFFFD700), size: 28),
+            icon: Icon(Icons.skip_previous, color: const Color(0xFFFFD700), size: 24),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
           
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD700).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.timer, color: const Color(0xFFFFD700), size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  _formatDuration(_position),
-                  style: GoogleFonts.spaceMono(
-                    color: const Color(0xFFFFD700), 
-                    fontSize: 12, 
-                    fontWeight: FontWeight.bold
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.timer, color: const Color(0xFFFFD700), size: 14),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      _formatDuration(_position),
+                      style: GoogleFonts.spaceMono(
+                        color: const Color(0xFFFFD700), 
+                        fontSize: 11, 
+                        fontWeight: FontWeight.bold
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           
@@ -294,14 +301,18 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
             icon: Icon(
               _isMuted ? Icons.volume_off : Icons.volume_up,
               color: const Color(0xFFFFD700),
-              size: 24,
+              size: 22,
             ),
             tooltip: _isMuted ? 'Activar sonido' : 'Silenciar',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
           
           IconButton(
             onPressed: _isBuffering ? null : _next,
-            icon: Icon(Icons.skip_next, color: const Color(0xFFFFD700), size: 28),
+            icon: Icon(Icons.skip_next, color: const Color(0xFFFFD700), size: 24),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ],
       ),

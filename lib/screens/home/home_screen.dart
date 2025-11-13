@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glow_background.dart';
@@ -30,7 +31,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   Map<String, dynamic> _datosHome = {
     'nivel': 1,
     'codigoRecomendado': '5197148',
@@ -46,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _cargarDatosHome();
     _cargarNombreUsuario();
     _checkOnboarding();
@@ -55,6 +57,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         await _checkWelcomeModal();
       }
     });
+  }
+  
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refrescar cuando la app vuelve a estar activa
+    if (state == AppLifecycleState.resumed && mounted) {
+      _cargarDatosHome();
+      // El EnergyStatsTab se refrescará automáticamente
+    }
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // El EnergyStatsTab se refrescará automáticamente mediante su propio mecanismo
   }
   
   Future<void> _checkOnboarding() async {
@@ -385,6 +409,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           // Al volver de la sesión/código, refrescar nivel y datos
           if (mounted) {
             await _cargarDatosHome();
+            // El EnergyStatsTab se refrescará automáticamente
           }
         },
         child: Container(

@@ -162,6 +162,9 @@ class UserProgressService {
       try {
         final rewardsService = RewardsService();
         await rewardsService.verificarRecompensasPorRacha(diasConsecutivos);
+        
+        // Actualizar luz cuántica basada en la racha de días
+        await rewardsService.actualizarLuzCuanticaPorRacha(diasConsecutivos);
       } catch (e) {
         print('⚠️ Error verificando recompensas por racha: $e');
       }

@@ -29,12 +29,14 @@ class SubscriptionService {
   DateTime? _subscriptionExpiryDate;
   String? _activeProductId;
 
-  // Getters
-  bool get isAvailable => _isAvailable;
-  bool get isPremium => _isPremium;
-  DateTime? get subscriptionExpiryDate => _subscriptionExpiryDate;
-  String? get activeProductId => _activeProductId;
-  Stream<bool> get subscriptionStatusStream => _subscriptionStatusController.stream;
+  // Verificar si el usuario es gratuito (sin suscripción activa después del período de prueba)
+  bool get isFreeUser {
+    // Si no tiene suscripción premium activa, es usuario gratuito
+    return !_isPremium;
+  }
+
+  // Verificar si el usuario tiene acceso premium (suscripción activa o en período de prueba)
+  bool get hasPremiumAccess => _isPremium;
 
   // Inicializar el servicio
   Future<void> initialize() async {
@@ -42,6 +44,8 @@ class SubscriptionService {
     
     if (!_isAvailable) {
       print('⚠️ In-App Purchase no está disponible');
+      // IMPORTANTE: Aún así verificar estado de suscripción (puede haber suscripción en Supabase)
+      await checkSubscriptionStatus();
       return;
     }
 
@@ -61,14 +65,16 @@ class SubscriptionService {
 
   // Verificar estado de suscripción
   Future<void> checkSubscriptionStatus() async {
-    if (!_isAvailable) return;
-
+    print('🔍 Iniciando verificación de estado de suscripción...');
+    print('🔍 Usuario autenticado: ${_authService.isLoggedIn}');
+    
     try {
       // Obtener información del usuario desde Supabase
       if (_authService.isLoggedIn && _authService.currentUser != null) {
         final userId = _authService.currentUser!.id;
+        print('🔍 User ID: $userId');
         
-        // Verificar en Supabase si hay suscripción activa
+        // Verificar en Supabase si hay suscripción activa (SIEMPRE verificar, incluso si IAP no está disponible)
         final subscriptionData = await _supabase
             .from('user_subscriptions')
             .select()
@@ -80,6 +86,8 @@ class SubscriptionService {
           final expiryDate = DateTime.parse(subscriptionData['expires_at']);
           final now = DateTime.now();
           
+          print('🔍 Suscripción encontrada en Supabase. Expira: $expiryDate');
+          
           if (expiryDate.isAfter(now)) {
             _isPremium = true;
             _subscriptionExpiryDate = expiryDate;
@@ -89,44 +97,80 @@ class SubscriptionService {
             return;
           } else {
             // Suscripción expirada, actualizar estado
+            print('⚠️ Suscripción expirada, actualizando estado...');
             await _supabase
                 .from('user_subscriptions')
                 .update({'is_active': false})
                 .eq('user_id', userId)
                 .eq('id', subscriptionData['id']);
           }
+        } else {
+          print('🔍 No se encontró suscripción activa en Supabase');
         }
+      } else {
+        print('⚠️ Usuario no autenticado o currentUser es null');
       }
 
-      // Restaurar compras anteriores desde Google Play
-      await restorePurchases();
+      // Solo verificar Google Play si está disponible
+      if (_isAvailable) {
+        print('🔍 Verificando compras en Google Play...');
+        // Restaurar compras anteriores desde Google Play
+        await restorePurchases();
+      } else {
+        print('⚠️ Google Play IAP no está disponible, saltando verificación');
+      }
 
-      // Verificar si está en período de prueba
-      await _checkFreeTrialStatus();
+      // Verificar si está en período de prueba (solo si no hay suscripción activa)
+      // Solo verificar período de prueba si no se encontró suscripción activa en Supabase
+      if (!_isPremium) {
+        print('🔍 No hay suscripción premium activa, verificando período de prueba...');
+        await _checkFreeTrialStatus();
+      } else {
+        print('✅ Usuario ya tiene acceso premium, no se verifica período de prueba');
+      }
 
     } catch (e) {
       print('❌ Error verificando estado de suscripción: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      // En caso de error, verificar período de prueba como fallback
+      await _checkFreeTrialStatus();
     }
   }
 
   // Verificar si el usuario está en período de prueba gratis
   Future<void> _checkFreeTrialStatus() async {
-    if (!_authService.isLoggedIn) return;
+    print('🔍 Verificando estado de período de prueba...');
+    print('🔍 Usuario autenticado: ${_authService.isLoggedIn}');
+    
+    if (!_authService.isLoggedIn) {
+      // Usuario no autenticado = usuario gratuito
+      _isPremium = false;
+      _subscriptionExpiryDate = null;
+      _subscriptionStatusController.add(false);
+      print('⚠️ Usuario no autenticado - no se puede verificar período de prueba');
+      return;
+    }
 
     try {
       final userId = _authService.currentUser!.id;
+      print('🔍 User ID: $userId');
+      
       final prefs = await SharedPreferences.getInstance();
       final trialStartKey = 'free_trial_start_$userId';
       final trialStartStr = prefs.getString(trialStartKey);
 
+      print('🔍 Clave de período de prueba: $trialStartKey');
+      print('🔍 Valor encontrado: $trialStartStr');
+
       if (trialStartStr == null) {
-        // Iniciar período de prueba
+        // Usuario nuevo - iniciar período de prueba automáticamente
         final now = DateTime.now();
         await prefs.setString(trialStartKey, now.toIso8601String());
         _isPremium = true;
         _subscriptionExpiryDate = now.add(Duration(days: freeTrialDays));
         _subscriptionStatusController.add(true);
-        print('✅ Período de prueba iniciado. Expira: ${_subscriptionExpiryDate}');
+        print('✅ Período de prueba iniciado automáticamente. Expira: ${_subscriptionExpiryDate}');
+        print('✅ Usuario ahora tiene acceso premium: $_isPremium');
         return;
       }
 
@@ -134,19 +178,30 @@ class SubscriptionService {
       final trialEnd = trialStart.add(Duration(days: freeTrialDays));
       final now = DateTime.now();
 
+      print('🔍 Período de prueba inició: $trialStart');
+      print('🔍 Período de prueba expira: $trialEnd');
+      print('🔍 Fecha actual: $now');
+
       if (now.isBefore(trialEnd)) {
+        // Usuario en período de prueba activo
         _isPremium = true;
         _subscriptionExpiryDate = trialEnd;
         _subscriptionStatusController.add(true);
         print('✅ Usuario en período de prueba. Expira: $trialEnd');
       } else {
+        // Período de prueba expirado - usuario gratuito
         _isPremium = false;
         _subscriptionExpiryDate = null;
         _subscriptionStatusController.add(false);
-        print('⚠️ Período de prueba expirado');
+        print('⚠️ Período de prueba expirado - usuario gratuito');
       }
     } catch (e) {
       print('❌ Error verificando período de prueba: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      // En caso de error, considerar como usuario gratuito
+      _isPremium = false;
+      _subscriptionExpiryDate = null;
+      _subscriptionStatusController.add(false);
     }
   }
 

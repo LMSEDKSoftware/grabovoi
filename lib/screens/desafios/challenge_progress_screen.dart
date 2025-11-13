@@ -369,7 +369,11 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
               width: 360,
               child: CustomButton(
                 text: 'Finalizar Reto y Obtener Certificado',
-                onPressed: () {
+                onPressed: () async {
+                  // Verificar y otorgar recompensas si el desafío está completado
+                  final challengeService = ChallengeService();
+                  await challengeService.verificarYOtorgarRecompensasDesafio(_challenge.id);
+                  
                   final supabaseBase = (Env.supabaseUrl.isNotEmpty ? Env.supabaseUrl : SupabaseConfig.url).replaceFirst(RegExp(r'/$'), '');
                   final publicUrl = '$supabaseBase/storage/v1/object/public/rewards/challenges/iniciacion_energetica/certificado.png';
                   Navigator.of(context).push(

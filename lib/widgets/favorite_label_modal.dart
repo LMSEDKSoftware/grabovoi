@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FavoriteLabelModal extends StatefulWidget {
@@ -24,14 +25,9 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
   @override
   void initState() {
     super.initState();
-    _etiquetaController.text = 'Favorito'; // Valor por defecto
     // Enfocar el campo después de que se construya el modal
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _etiquetaFocus.requestFocus();
-      _etiquetaController.selection = TextSelection(
-        baseOffset: 0,
-        extentOffset: _etiquetaController.text.length,
-      );
     });
   }
 
@@ -142,28 +138,24 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
             const SizedBox(height: 20),
             
             // Campo de etiqueta
-            Text(
-              'Etiqueta',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
             TextField(
               controller: _etiquetaController,
               focusNode: _etiquetaFocus,
+              maxLength: 15,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')), // Solo alfanuméricos, sin espacios ni caracteres especiales
+              ],
               style: GoogleFonts.inter(
                 fontSize: 16,
                 color: Colors.white,
               ),
               decoration: InputDecoration(
-                hintText: 'Ej: trabajo, hijo mayor, mi suerte...',
+                hintText: 'Etiqueta...',
                 hintStyle: GoogleFonts.inter(
                   color: Colors.white54,
                   fontSize: 14,
                 ),
+                counterText: '', // Ocultar contador de caracteres
                 filled: true,
                 fillColor: const Color(0xFF0B132B),
                 border: OutlineInputBorder(

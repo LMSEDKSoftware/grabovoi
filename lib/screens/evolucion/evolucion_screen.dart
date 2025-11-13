@@ -9,6 +9,8 @@ import '../../services/user_progress_service.dart';
 import '../../services/auth_service_simple.dart';
 import '../../services/app_time_tracker.dart';
 import '../../models/challenge_model.dart';
+import '../../services/subscription_service.dart';
+import '../../widgets/subscription_required_modal.dart';
 
 class EvolucionScreen extends StatefulWidget {
   const EvolucionScreen({super.key});
@@ -35,6 +37,22 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
     WidgetsBinding.instance.addObserver(this);
     _appTimeTracker.addListener(_updateSessionTime);
     _startSessionTimeTimer();
+    
+    // Verificar si el usuario es gratuito después de los 7 días
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final subscriptionService = SubscriptionService();
+      if (subscriptionService.isFreeUser && mounted) {
+        SubscriptionRequiredModal.show(
+          context,
+          message: 'La sección de Evolución está disponible solo para usuarios Premium. Suscríbete para acceder a esta función.',
+          onDismiss: () {
+            // Redirigir a Inicio después de cerrar el modal
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
+        );
+      }
+    });
+    
     _loadUserData();
   }
 

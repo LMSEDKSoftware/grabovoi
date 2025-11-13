@@ -5,6 +5,8 @@ import '../../widgets/custom_button.dart';
 import '../../services/challenge_service.dart';
 import '../../models/challenge_model.dart';
 import 'challenge_progress_screen.dart';
+import '../../services/subscription_service.dart';
+import '../../widgets/subscription_required_modal.dart';
 
 class DesafiosScreen extends StatefulWidget {
   const DesafiosScreen({super.key});
@@ -22,6 +24,22 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Verificar si el usuario es gratuito después de los 7 días
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final subscriptionService = SubscriptionService();
+      if (subscriptionService.isFreeUser && mounted) {
+        SubscriptionRequiredModal.show(
+          context,
+          message: 'Los Desafíos están disponibles solo para usuarios Premium. Suscríbete para acceder a esta función.',
+          onDismiss: () {
+            // Redirigir a Inicio después de cerrar el modal
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
+        );
+      }
+    });
+    
     _loadChallenges();
   }
 

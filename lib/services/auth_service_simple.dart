@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_model.dart' as app_models;
+import 'subscription_service.dart';
 
 class AuthServiceSimple {
   static final AuthServiceSimple _instance = AuthServiceSimple._internal();
@@ -156,6 +157,17 @@ class AuthServiceSimple {
         }
         
         await _saveUserToLocal(_currentUser!);
+        
+        // IMPORTANTE: Verificar estado de suscripción después de registro
+        // Esto asegura que usuarios nuevos obtengan su período de prueba de 7 días
+        // NO hacer que el registro falle si esto falla
+        try {
+          await SubscriptionService().checkSubscriptionStatus();
+          print('✅ Estado de suscripción verificado después de registro');
+        } catch (e) {
+          print('⚠️ Error verificando suscripción después de registro: $e');
+          // NO relanzar el error - el registro fue exitoso
+        }
       }
 
       return response;
@@ -178,6 +190,15 @@ class AuthServiceSimple {
 
       if (response.user != null) {
         await _loadUserFromSession(response.session!);
+      }
+
+      // IMPORTANTE: Verificar estado de suscripción después de login
+      // Esto asegura que usuarios nuevos obtengan su período de prueba de 7 días
+      try {
+        await SubscriptionService().checkSubscriptionStatus();
+        print('✅ Estado de suscripción verificado después de login');
+      } catch (e) {
+        print('⚠️ Error verificando suscripción después de login: $e');
       }
 
       return response;

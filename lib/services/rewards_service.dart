@@ -31,22 +31,36 @@ class RewardsService {
   AuthServiceSimple get authService => _authService;
 
   /// Obtener recompensas del usuario
-  Future<UserRewards> getUserRewards() async {
+  Future<UserRewards> getUserRewards({bool forceRefresh = false}) async {
     final userId = _authService.currentUser?.id;
     if (userId == null) {
+      print('❌ ERROR: Usuario no autenticado en getUserRewards');
       throw Exception('Usuario no autenticado');
     }
 
+    print('🔍 [DIAGNÓSTICO] getUserRewards llamado para usuario: $userId, forceRefresh: $forceRefresh');
+
     try {
       // Intentar obtener de Supabase primero
-      final response = await SupabaseConfig.client
+      // Si forceRefresh es true, ordenar por updated_at para obtener la versión más reciente
+      dynamic queryBuilder = SupabaseConfig.client
           .from('user_rewards')
           .select()
-          .eq('user_id', userId)
-          .maybeSingle();
+          .eq('user_id', userId);
+      
+      // Forzar lectura fresca si es necesario
+      if (forceRefresh) {
+        queryBuilder = queryBuilder.order('updated_at', ascending: false);
+      }
+      
+      print('🔍 [DIAGNÓSTICO] Ejecutando query a Supabase...');
+      final response = await queryBuilder.maybeSingle();
+      print('🔍 [DIAGNÓSTICO] Respuesta de Supabase: ${response != null ? "ENCONTRADA" : "NO ENCONTRADA"}');
 
       if (response != null && response.isNotEmpty) {
-        return UserRewards(
+        print('🔍 [DIAGNÓSTICO] Datos RAW de Supabase: cristales_energia=${response['cristales_energia']}, luz_cuantica=${response['luz_cuantica']}');
+        
+        final rewards = UserRewards(
           userId: userId,
           cristalesEnergia: response['cristales_energia'] ?? 0,
           restauradoresArmonia: response['restauradores_armonia'] ?? 0,
@@ -60,6 +74,11 @@ class RewardsService {
               : null,
           logros: Map<String, dynamic>.from(response['logros'] ?? {}),
         );
+        
+        print('✅ [DIAGNÓSTICO] Recompensas leídas de SUPABASE para usuario $userId: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
+        return rewards;
+      } else {
+        print('⚠️ [DIAGNÓSTICO] No se encontró registro en Supabase para usuario $userId');
       }
 
       // Si no existe en Supabase, crear uno nuevo Y GUARDARLO
@@ -84,11 +103,16 @@ class RewardsService {
         // Si falla al guardar, continuar con el objeto local
       }
       
+      print('⚠️ [DIAGNÓSTICO] No se encontró registro en Supabase, creando nuevo registro con valores en 0');
       return newRewards;
-    } catch (e) {
-      print('⚠️ Error obteniendo recompensas de Supabase: $e');
+    } catch (e, stackTrace) {
+      print('❌ [DIAGNÓSTICO] ERROR obteniendo recompensas de Supabase: $e');
+      print('❌ [DIAGNÓSTICO] Stack trace: $stackTrace');
+      print('⚠️ [DIAGNÓSTICO] Haciendo FALLBACK a SharedPreferences...');
       // Fallback a SharedPreferences
-      return await _getRewardsFromPrefs(userId);
+      final prefsRewards = await _getRewardsFromPrefs(userId);
+      print('⚠️ [DIAGNÓSTICO] Recompensas leídas de SHAREDPREFERENCES (fallback): ${prefsRewards.cristalesEnergia} cristales, ${prefsRewards.luzCuantica}% luz cuántica');
+      return prefsRewards;
     }
   }
 
@@ -127,9 +151,12 @@ class RewardsService {
 
   /// Guardar recompensas
   Future<void> saveUserRewards(UserRewards rewards) async {
+    print('💾 [DIAGNÓSTICO] saveUserRewards llamado para usuario ${rewards.userId}');
+    print('💾 [DIAGNÓSTICO] Datos a guardar: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
+    
     try {
-      // Guardar en Supabase
-      await SupabaseConfig.client.from('user_rewards').upsert({
+      // Guardar en Supabase usando upsert con onConflict para asegurar actualización
+      final dataToSave = {
         'user_id': rewards.userId,
         'cristales_energia': rewards.cristalesEnergia,
         'restauradores_armonia': rewards.restauradoresArmonia,
@@ -141,9 +168,21 @@ class RewardsService {
         'ultima_meditacion_especial': rewards.ultimaMeditacionEspecial?.toIso8601String(),
         'logros': rewards.logros,
         'updated_at': DateTime.now().toIso8601String(),
-      });
-    } catch (e) {
-      print('⚠️ Error guardando recompensas en Supabase: $e');
+      };
+      
+      print('💾 [DIAGNÓSTICO] Ejecutando upsert en Supabase con datos: $dataToSave');
+      
+      final response = await SupabaseConfig.client.from('user_rewards').upsert(
+        dataToSave,
+        onConflict: 'user_id'
+      ).select().single();
+      
+      print('✅ [DIAGNÓSTICO] Recompensas GUARDADAS en Supabase para usuario ${rewards.userId}');
+      print('✅ [DIAGNÓSTICO] Confirmación de Supabase: ${response['cristales_energia']} cristales, ${response['luz_cuantica']}% luz cuántica');
+    } catch (e, stackTrace) {
+      print('❌ [DIAGNÓSTICO] ERROR guardando recompensas en Supabase: $e');
+      print('❌ [DIAGNÓSTICO] Stack trace: $stackTrace');
+      rethrow; // Re-lanzar el error para que se pueda manejar arriba
     }
 
     // También guardar en SharedPreferences como backup
@@ -168,14 +207,18 @@ class RewardsService {
   /// Recompensar por completar una repetición
   /// Retorna un mapa con información sobre las recompensas otorgadas
   Future<Map<String, dynamic>> recompensarPorRepeticion() async {
-    final rewards = await getUserRewards();
+    // Forzar lectura fresca antes de otorgar recompensas
+    final rewards = await getUserRewards(forceRefresh: true);
     final luzCuanticaAnterior = rewards.luzCuantica;
+    
+    print('💎 Otorgando ${cristalesPorRepeticion} cristales por repetición. Cristales actuales: ${rewards.cristalesEnergia}');
     
     final updatedRewards = rewards.copyWith(
       cristalesEnergia: rewards.cristalesEnergia + cristalesPorRepeticion,
       ultimaActualizacion: DateTime.now(),
     );
 
+    print('💎 Guardando ${updatedRewards.cristalesEnergia} cristales totales después de la repetición');
     await saveUserRewards(updatedRewards);
     await addToHistory(
       'cristales',
@@ -240,14 +283,18 @@ class RewardsService {
   /// Recompensar por completar pilotaje cuántico
   /// Retorna un mapa con información sobre las recompensas otorgadas
   Future<Map<String, dynamic>> recompensarPorPilotajeCuantico() async {
-    final rewards = await getUserRewards();
+    // Forzar lectura fresca antes de otorgar recompensas
+    final rewards = await getUserRewards(forceRefresh: true);
     final luzCuanticaAnterior = rewards.luzCuantica;
+    
+    print('💎 Otorgando ${cristalesPorPilotajeCuantico} cristales por pilotaje cuántico. Cristales actuales: ${rewards.cristalesEnergia}');
     
     final updatedRewards = rewards.copyWith(
       cristalesEnergia: rewards.cristalesEnergia + cristalesPorPilotajeCuantico,
       ultimaActualizacion: DateTime.now(),
     );
 
+    print('💎 Guardando ${updatedRewards.cristalesEnergia} cristales totales después del pilotaje');
     await saveUserRewards(updatedRewards);
     await addToHistory(
       'cristales',

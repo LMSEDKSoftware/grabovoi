@@ -17,11 +17,26 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool _isLoading = true;
   bool _isPurchasing = false;
   String? _selectedProductId;
+  bool _hasPremiumAccess = false;
+  DateTime? _trialExpiryDate;
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
+    _checkTrialStatus();
+  }
+
+  Future<void> _checkTrialStatus() async {
+    // Asegurar que el servicio esté inicializado
+    await _subscriptionService.initialize();
+    
+    // Verificar si el usuario tiene acceso premium (período de prueba o suscripción activa)
+    _hasPremiumAccess = _subscriptionService.hasPremiumAccess;
+    
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadProducts() async {
@@ -31,8 +46,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     try {
       final products = await _subscriptionService.getProducts();
+      // Filtrar productos gratuitos - solo mostrar los que tienen precio
+      final paidProducts = products.where((product) {
+        // Filtrar productos que no sean gratuitos
+        final price = product.price.toLowerCase();
+        return !price.contains('gratis') && 
+               !price.contains('free') && 
+               !price.contains(r'$0') &&
+               product.price.isNotEmpty;
+      }).toList();
+      
       setState(() {
-        _products = products;
+        _products = paidProducts;
         _isLoading = false;
       });
     } catch (e) {
@@ -170,10 +195,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                '7 Días GRATIS',
+                                _hasPremiumAccess ? 'Tienes 7 Días Premium' : '7 Días Premium GRATIS',
                                 style: GoogleFonts.inter(
                                   color: const Color(0xFFFFD700),
-                                  fontSize: 28,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -181,13 +206,44 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Prueba todas las funciones premium sin costo',
+                            _hasPremiumAccess 
+                              ? 'Desde que te registraste, disfrutas de acceso completo a todas las funciones premium por 7 días.'
+                              : 'Al registrarte, disfrutarás de acceso completo a todas las funciones premium por 7 días.',
                             style: GoogleFonts.inter(
                               color: Colors.white70,
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.w500,
                             ),
                             textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: Color(0xFFFFD700),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Después del período de prueba, elige uno de los planes para continuar disfrutando de los beneficios.',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -201,6 +257,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Selecciona una opción para continuar después de tu período de prueba',
+                      style: GoogleFonts.inter(
+                        color: Colors.white54,
+                        fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
                     ),

@@ -190,56 +190,65 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         final progressTracker = ChallengeProgressTracker();
         progressTracker.trackCodeRepeated();
         
-        // Registrar repetición en el sistema de progreso global
-        try {
-          await BibliotecaSupabaseService.registrarRepeticion(
-            codeId: widget.codigo,
-            codeName: widget.codigo,
-            durationMinutes: 2,
-          );
-        } catch (e) {
-          print('Error registrando repetición en usuario_progreso: $e');
-        }
-        
-        _showCompletionDialog();
+        // Registrar repetición y mostrar recompensas (igual que en repeticiones)
+        _registrarRepeticionYMostrarRecompensas();
       }
     });
   }
 
-  void _showCompletionDialog() async {
-    // Obtener recompensas antes de mostrar el modal
-    int? cristalesGanados;
-    double? luzCuanticaAnterior;
-    double? luzCuanticaActual;
-    
+  // Método para registrar repetición y mostrar recompensas (igual que en repeticiones)
+  Future<void> _registrarRepeticionYMostrarRecompensas() async {
     try {
+      // Registrar repetición
+      await BibliotecaSupabaseService.registrarRepeticion(
+        codeId: widget.codigo,
+        codeName: widget.codigo,
+        durationMinutes: 2,
+      );
+      
+      // Obtener recompensas
       final rewardsService = RewardsService();
       final recompensasInfo = await rewardsService.recompensarPorRepeticion();
-      cristalesGanados = recompensasInfo['cristalesGanados'] as int;
-      luzCuanticaAnterior = recompensasInfo['luzCuanticaAnterior'] as double;
-      luzCuanticaActual = recompensasInfo['luzCuanticaActual'] as double;
+      
+      // Mostrar modal con recompensas
+      if (mounted) {
+        _mostrarMensajeFinalizacion(
+          cristalesGanados: recompensasInfo['cristalesGanados'] as int,
+          luzCuanticaAnterior: recompensasInfo['luzCuanticaAnterior'] as double,
+          luzCuanticaActual: recompensasInfo['luzCuanticaActual'] as double,
+        );
+      }
     } catch (e) {
-      print('⚠️ Error obteniendo recompensas: $e');
+      print('⚠️ Error registrando repetición y obteniendo recompensas: $e');
+      // Mostrar modal sin recompensas si hay error
+      if (mounted) {
+        _mostrarMensajeFinalizacion();
+      }
     }
-    
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.9),
-        builder: (context) => SequenciaActivadaModal(
-          onContinue: () {
-            Navigator.of(context).pop();
-          },
-          buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
-          mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de campo energético.',
-          cristalesGanados: cristalesGanados,
-          luzCuanticaAnterior: luzCuanticaAnterior,
-          luzCuanticaActual: luzCuanticaActual,
-          tipoAccion: 'repeticion',
-        ),
-      );
-    }
+  }
+
+  // Método para mostrar el mensaje de finalización con códigos sincrónicos (igual que en repeticiones)
+  void _mostrarMensajeFinalizacion({
+    int? cristalesGanados,
+    double? luzCuanticaAnterior,
+    double? luzCuanticaActual,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.9),
+      builder: (context) => SequenciaActivadaModal(
+        onContinue: () {
+          Navigator.of(context).pop();
+        },
+        buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
+        mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de campo energético.',
+        cristalesGanados: cristalesGanados,
+        luzCuanticaAnterior: luzCuanticaAnterior,
+        luzCuanticaActual: luzCuanticaActual,
+        tipoAccion: 'campo_energetico',
+      ),
+    );
   }
 
   void _copyToClipboard() async {

@@ -118,9 +118,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Indicadores de página
+              // Indicadores de página (más compactos)
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(
@@ -146,10 +146,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
               
-              // Botones de navegación
+              // Botones de navegación (más compactos)
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -166,7 +167,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               'Atrás',
                               style: GoogleFonts.inter(
                                 color: Colors.white70,
-                                fontSize: 16,
+                                fontSize: 15,
                               ),
                             ),
                           )
@@ -181,7 +182,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ],
                     ),
                     
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     
                     // Botón Saltar
                     TextButton(
@@ -190,7 +191,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         'Saltar',
                         style: GoogleFonts.inter(
                           color: Colors.white54,
-                          fontSize: 14,
+                          fontSize: 13,
                           decoration: TextDecoration.underline,
                         ),
                       ),
@@ -223,110 +224,118 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildSlide(OnboardingSlide slide) {
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       child: Padding(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Esfera dorada simple
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  slide.color.withOpacity(0.3),
-                  slide.color.withOpacity(0.1),
-                  Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Esfera dorada simple (más pequeña)
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    slide.color.withOpacity(0.3),
+                    slide.color.withOpacity(0.1),
+                    Colors.transparent,
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: slide.color.withOpacity(0.3),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                  ),
                 ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: slide.color.withOpacity(0.3),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Center(
-              child: Icon(
-                slide.icon,
-                size: 50,
-                color: slide.color,
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 60),
-          
-          // Título
-          Text(
-            slide.title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              shadows: [
-                Shadow(
-                  color: slide.color.withOpacity(0.5),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 30),
-          
-          // Descripción
-          Text(
-            slide.description,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              color: Colors.white70,
-              height: 1.6,
-            ),
-          ),
-          
-          const SizedBox(height: 30),
-          
-          // Mental Shift
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: slide.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: slide.color.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.lightbulb_outline,
+              child: Center(
+                child: Icon(
+                  slide.icon,
+                  size: 45,
                   color: slide.color,
-                  size: 24,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '💡 ${slide.mentalShift}',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      color: slide.color,
-                      fontWeight: FontWeight.w600,
-                      fontStyle: FontStyle.italic,
-                      height: 1.4,
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Título (más compacto)
+            Text(
+              slide.title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                height: 1.2,
+                shadows: [
+                  Shadow(
+                    color: slide.color.withOpacity(0.5),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Descripción (texto más compacto, sin espacios extra)
+            Text(
+              slide.description,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                color: Colors.white70,
+                height: 1.4,
+                letterSpacing: 0.2,
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Mental Shift (más compacto)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: slide.color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: slide.color.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    color: slide.color,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      slide.mentalShift,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: slide.color,
+                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
+                        height: 1.3,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            
+            // Espacio adicional al final para asegurar que el contenido sea scrolleable
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );
