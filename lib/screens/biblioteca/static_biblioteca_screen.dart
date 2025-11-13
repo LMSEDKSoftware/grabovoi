@@ -2902,13 +2902,27 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                           children: [
                             const Text('Iniciar sesión de repetición'),
                             const SizedBox(width: 8),
-                            const Icon(Icons.diamond, color: Colors.white, size: 16),
-                            const Text(
-                              '+3',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFD700),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFF0B132B), width: 1),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.diamond, color: Color(0xFF0B132B), size: 14),
+                                  const SizedBox(width: 3),
+                                  const Text(
+                                    '+3',
+                                    style: TextStyle(
+                                      color: Color(0xFF0B132B),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -3182,25 +3196,112 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.8,
+        return _RepetitionInstructionsModal(codigo: codigo);
+      },
+    );
+  }
+
+  void _mostrarModalEtiquetado(CodigoGrabovoi codigo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => FavoriteLabelModal(
+        codigo: codigo.codigo,
+        nombre: codigo.nombre,
+        onSave: (etiqueta) async {
+          try {
+            await BibliotecaSupabaseService.agregarFavoritoConEtiqueta(codigo.codigo, etiqueta);
+            // Actualizar estado de favoritos después de agregar
+            await _actualizarEstadoFavoritos();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('❤️ ${codigo.nombre} agregado a favoritos con etiqueta: $etiqueta'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          } catch (e) {
+            print('Error agregando favorito con etiqueta: $e');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error: ${e.toString()}'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _RepetitionInstructionsModal extends StatefulWidget {
+  final CodigoGrabovoi codigo;
+  
+  const _RepetitionInstructionsModal({required this.codigo});
+
+  @override
+  State<_RepetitionInstructionsModal> createState() => _RepetitionInstructionsModalState();
+}
+
+class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsModal> {
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollIndicator = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_checkScrollPosition);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkScrollPosition();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _checkScrollPosition() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      final canScroll = maxScroll > 0;
+      final shouldShow = canScroll && currentScroll < maxScroll - 50;
+      if (_showScrollIndicator != shouldShow) {
+        setState(() {
+          _showScrollIndicator = shouldShow;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C2541),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1C2541),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: SingleChildScrollView(
+          ],
+        ),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -3241,8 +3342,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => RepetitionSessionScreen(
-                              codigo: codigo.codigo,
-                              nombre: codigo.nombre,
+                              codigo: widget.codigo.codigo,
+                              nombre: widget.codigo.nombre,
                             ),
                           ),
                         );
@@ -3293,44 +3394,52 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 ],
               ),
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _mostrarModalEtiquetado(CodigoGrabovoi codigo) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => FavoriteLabelModal(
-        codigo: codigo.codigo,
-        nombre: codigo.nombre,
-        onSave: (etiqueta) async {
-          try {
-            await BibliotecaSupabaseService.agregarFavoritoConEtiqueta(codigo.codigo, etiqueta);
-            // Actualizar estado de favoritos después de agregar
-            await _actualizarEstadoFavoritos();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('❤️ ${codigo.nombre} agregado a favoritos con etiqueta: $etiqueta'),
-                backgroundColor: Colors.green,
-                duration: const Duration(seconds: 2),
+            // Mensaje "Desliza hacia arriba" cuando hay contenido scrolleable
+            if (_showScrollIndicator)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  ignoring: true,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          const Color(0xFF1C2541).withOpacity(0.95),
+                          const Color(0xFF1C2541),
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.keyboard_arrow_up,
+                          color: const Color(0xFFFFD700),
+                          size: 28,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Desliza hacia arriba',
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFFFFD700),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            );
-          } catch (e) {
-            print('Error agregando favorito con etiqueta: $e');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error: ${e.toString()}'),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 3),
-              ),
-            );
-          }
-        },
+          ],
+        ),
       ),
     );
   }
-
 }

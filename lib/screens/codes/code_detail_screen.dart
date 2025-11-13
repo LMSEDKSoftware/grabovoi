@@ -210,6 +210,12 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       final rewardsService = RewardsService();
       final recompensasInfo = await rewardsService.recompensarPorRepeticion();
       
+      // Debug: Verificar valores obtenidos
+      print('🔍 [CAMPO ENERGÉTICO] Recompensas obtenidas:');
+      print('   cristalesGanados: ${recompensasInfo['cristalesGanados']}');
+      print('   luzCuanticaAnterior: ${recompensasInfo['luzCuanticaAnterior']}');
+      print('   luzCuanticaActual: ${recompensasInfo['luzCuanticaActual']}');
+      
       // Mostrar modal con recompensas
       if (mounted) {
         _mostrarMensajeFinalizacion(
@@ -218,8 +224,9 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
           luzCuanticaActual: recompensasInfo['luzCuanticaActual'] as double,
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('⚠️ Error registrando repetición y obteniendo recompensas: $e');
+      print('⚠️ Stack trace: $stackTrace');
       // Mostrar modal sin recompensas si hay error
       if (mounted) {
         _mostrarMensajeFinalizacion();
@@ -233,6 +240,13 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     double? luzCuanticaAnterior,
     double? luzCuanticaActual,
   }) {
+    // Debug: Verificar valores que se pasan al modal
+    print('🔍 [CAMPO ENERGÉTICO] Valores pasados al modal:');
+    print('   cristalesGanados: $cristalesGanados');
+    print('   luzCuanticaAnterior: $luzCuanticaAnterior');
+    print('   luzCuanticaActual: $luzCuanticaActual');
+    print('   tipoAccion: campo_energetico');
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1426,91 +1440,106 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: codigosSincronicos.length,
-              itemBuilder: (context, index) {
-                final codigo = codigosSincronicos[index];
-                return Container(
-                  width: 180,
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFFFD700).withOpacity(0.5),
-                      width: 1,
-                    ),
+          // Mostrar códigos uno arriba del otro (centrados)
+          ...codigosSincronicos.take(2).map((codigo) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.5),
+                    width: 1,
                   ),
-                  child: GestureDetector(
-                    onTap: () async {
-                      // Copiar código al portapapeles
-                      final codigoTexto = codigo['codigo'] ?? '';
-                      await Clipboard.setData(ClipboardData(text: codigoTexto));
-                      
-                      // Usar el callback del modal si está disponible, de lo contrario usar SnackBar
-                      if (widget.onCodeCopied != null) {
-                        widget.onCodeCopied!(codigoTexto);
-                      } else if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '✅ Código copiado: $codigoTexto',
-                              style: GoogleFonts.inter(color: Colors.white),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                      // Código con icono de copiar (igual que en repeticiones)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              codigo['codigo'] ?? '',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            backgroundColor: const Color(0xFFFFD700),
-                            duration: const Duration(seconds: 2),
                           ),
-                        );
-                      }
-                    },
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          codigo['codigo'] ?? '',
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () async {
+                              // Copiar código al portapapeles
+                              final codigoTexto = codigo['codigo'] ?? '';
+                              await Clipboard.setData(ClipboardData(text: codigoTexto));
+                              
+                              // Usar el callback del modal si está disponible, de lo contrario usar SnackBar
+                              if (widget.onCodeCopied != null) {
+                                widget.onCodeCopied!(codigoTexto);
+                              } else if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '✅ Código copiado: $codigoTexto',
+                                      style: GoogleFonts.inter(color: Colors.white),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    backgroundColor: const Color(0xFFFFD700),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Icon(
+                              Icons.content_copy,
+                              size: 16,
+                              color: const Color(0xFFFFD700).withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        codigo['nombre'] ?? '',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD700).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          codigo['categoria'] ?? '',
                           style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 9,
                             color: const Color(0xFFFFD700),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          codigo['nombre'] ?? '',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFD700).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            codigo['categoria'] ?? '',
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              color: const Color(0xFFFFD700),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
+                ),
+            );
+          }).toList(),
         ],
       ),
     );

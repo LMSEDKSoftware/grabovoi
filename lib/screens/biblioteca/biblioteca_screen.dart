@@ -1330,13 +1330,27 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                           style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.diamond, color: Colors.white, size: 18),
-                        const Text(
-                          '+3',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD700),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF0B132B), width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.diamond, color: Color(0xFF0B132B), size: 16),
+                              const SizedBox(width: 4),
+                              const Text(
+                                '+3',
+                                style: TextStyle(
+                                  color: Color(0xFF0B132B),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

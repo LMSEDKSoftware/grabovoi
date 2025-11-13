@@ -3599,6 +3599,32 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     // Ya no ocultamos la barra automáticamente durante el pilotaje
   }
 
+  // MÉTODO COMENTADO - ALERTA ANTERIOR DE CAMPO CUÁNTICO
+  // void _mostrarMensajeFinalizacion({
+  //   int? cristalesGanados,
+  //   double? luzCuanticaAnterior,
+  //   double? luzCuanticaActual,
+  // }) {
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     barrierColor: Colors.black.withOpacity(0.9),
+  //     builder: (context) => SequenciaActivadaModal(
+  //       onContinue: () {
+  //         Navigator.of(context).pop();
+  //       },
+  //       buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
+  //       mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de pilotaje cuántico.',
+  //       cristalesGanados: cristalesGanados,
+  //       luzCuanticaAnterior: luzCuanticaAnterior,
+  //       luzCuanticaActual: luzCuanticaActual,
+  //       tipoAccion: 'pilotaje_cuantico',
+  //     ),
+  //   );
+  // }
+
+  // MÉTODO IDÉNTICO AL DE SESIÓN DE REPETICIONES (para pruebas)
+  // Método para mostrar el mensaje de finalización con códigos sincrónicos
   void _mostrarMensajeFinalizacion({
     int? cristalesGanados,
     double? luzCuanticaAnterior,
@@ -3613,11 +3639,11 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           Navigator.of(context).pop();
         },
         buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
-        mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de pilotaje cuántico.',
+        mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de repeticiones.',
         cristalesGanados: cristalesGanados,
         luzCuanticaAnterior: luzCuanticaAnterior,
         luzCuanticaActual: luzCuanticaActual,
-        tipoAccion: 'pilotaje_cuantico',
+        tipoAccion: 'repeticion',
       ),
     );
   }

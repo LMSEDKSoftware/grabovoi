@@ -1525,28 +1525,11 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
-                  if (forceColumn)
-                    ...cards.map((card) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: card,
-                        ))
-                  else
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: cards.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final card = entry.value;
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              right: index < cards.length - 1 ? 8 : 0,
-                            ),
-                            child: card,
-                          );
-                        }).toList(),
-                      ),
-                    ),
+                  // Mostrar códigos uno arriba del otro (centrados)
+                  ...cards.map((card) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: card,
+                      )),
                 ],
               );
             },

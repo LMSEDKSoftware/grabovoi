@@ -491,13 +491,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 children: [
                   Text('Toca para pilotar', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
                   const SizedBox(width: 8),
-                  const Icon(Icons.diamond, color: Colors.white54, size: 14),
-                  Text(
-                    '+3',
-                    style: GoogleFonts.inter(
-                      color: Colors.white54,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF0B132B), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.diamond, color: Color(0xFF0B132B), size: 14),
+                        const SizedBox(width: 4),
+                        const Text(
+                          '+5',
+                          style: TextStyle(
+                            color: Color(0xFF0B132B),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -602,13 +616,12 @@ class _NivelEnergeticoModal extends StatefulWidget {
 }
 
 class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
-  late ScrollController _scrollController;
+  final ScrollController _scrollController = ScrollController();
   bool _showScrollIndicator = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
     _scrollController.addListener(_checkScrollPosition);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkScrollPosition();
@@ -675,15 +688,15 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                 ),
               ],
             ),
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+            child: Stack(
               children: [
+                SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Icono y título
                 Row(
                   children: [
@@ -778,55 +791,61 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                 // Botón de cerrar
                 CustomButton(
                   text: 'Entendido',
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
                   icon: Icons.check,
                 ),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
+                const SizedBox(height: 8),
+                ],
+              ),
+            ),
+            // Mensaje "Desliza hacia arriba" cuando hay contenido scrolleable
+            if (_showScrollIndicator)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  ignoring: true,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          const Color(0xFF1C2541).withOpacity(0.95),
+                          const Color(0xFF1C2541),
+                        ],
                       ),
-                      // Indicador de scroll flotante
-                      if (_showScrollIndicator)
-                        Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                const Color(0xFF1C2541).withOpacity(0.9),
-                                const Color(0xFF1C2541),
-              ],
-            ),
-          ),
-                          child: Column(
-      children: [
-                              Icon(
-                                Icons.keyboard_arrow_up,
-                                color: const Color(0xFFFFD700).withOpacity(0.7),
-                                size: 32,
-                              ),
-                              Text(
-                                'Desliza hacia arriba',
-            style: GoogleFonts.inter(
-                                  color: const Color(0xFFFFD700).withOpacity(0.7),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-            ),
-          ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.keyboard_arrow_up,
+                          color: const Color(0xFFFFD700),
+                          size: 28,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Desliza hacia arriba',
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFFFFD700),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
-      ],
-        ),
-      ),
-    );
+          ),
+        );
   }
 }

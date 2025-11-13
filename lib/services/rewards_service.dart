@@ -154,13 +154,29 @@ class RewardsService {
     print('💾 [DIAGNÓSTICO] saveUserRewards llamado para usuario ${rewards.userId}');
     print('💾 [DIAGNÓSTICO] Datos a guardar: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
     
+    // Verificar autenticación antes de guardar
+    final currentUser = SupabaseConfig.client.auth.currentUser;
+    if (currentUser == null) {
+      print('❌ ERROR: Usuario no autenticado en Supabase. No se puede guardar recompensas.');
+      throw Exception('Usuario no autenticado en Supabase');
+    }
+    
+    // Verificar que el userId coincida con el usuario autenticado
+    if (currentUser.id != rewards.userId) {
+      print('❌ ERROR: userId no coincide con usuario autenticado. userId: ${rewards.userId}, auth.uid: ${currentUser.id}');
+      throw Exception('userId no coincide con usuario autenticado');
+    }
+    
+    print('✅ [DIAGNÓSTICO] Usuario autenticado verificado: ${currentUser.id}');
+    
     try {
       // Guardar en Supabase usando upsert con onConflict para asegurar actualización
+      // Nota: anclas_continuidad puede no existir en la tabla, así que lo omitimos si falla
       final dataToSave = {
         'user_id': rewards.userId,
         'cristales_energia': rewards.cristalesEnergia,
         'restauradores_armonia': rewards.restauradoresArmonia,
-        'anclas_continuidad': rewards.anclasContinuidad,
+        // 'anclas_continuidad': rewards.anclasContinuidad, // Comentado: columna no existe en Supabase
         'luz_cuantica': rewards.luzCuantica,
         'mantras_desbloqueados': rewards.mantrasDesbloqueados,
         'codigos_premium_desbloqueados': rewards.codigosPremiumDesbloqueados,

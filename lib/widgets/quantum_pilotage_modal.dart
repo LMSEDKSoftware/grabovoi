@@ -9,6 +9,38 @@ class QuantumPilotageModal extends StatefulWidget {
 }
 
 class _QuantumPilotageModalState extends State<QuantumPilotageModal> {
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollIndicator = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_checkScrollPosition);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkScrollPosition();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _checkScrollPosition() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      final canScroll = maxScroll > 0;
+      final shouldShow = canScroll && currentScroll < maxScroll - 50;
+      if (_showScrollIndicator != shouldShow) {
+        setState(() {
+          _showScrollIndicator = shouldShow;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -26,8 +58,11 @@ class _QuantumPilotageModalState extends State<QuantumPilotageModal> {
         ),
         textAlign: TextAlign.center,
       ),
-      content: SingleChildScrollView(
-        child: Column(
+      content: Stack(
+        children: [
+          SingleChildScrollView(
+            controller: _scrollController,
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -85,8 +120,54 @@ class _QuantumPilotageModalState extends State<QuantumPilotageModal> {
                 fontStyle: FontStyle.italic,
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
+      ),
+          // Mensaje "Desliza hacia arriba" cuando hay contenido scrolleable
+          if (_showScrollIndicator)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                ignoring: true,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        const Color(0xFF1C2541).withOpacity(0.95),
+                        const Color(0xFF1C2541),
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.keyboard_arrow_up,
+                        color: const Color(0xFFFFD700),
+                        size: 28,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Desliza hacia arriba',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFFFFD700),
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       actions: [
         SizedBox(

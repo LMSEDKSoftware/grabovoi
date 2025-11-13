@@ -82,8 +82,33 @@ class UserProgressService {
 
       // Registrar sesión en user_actions PRIMERO
       final String actionType = _mapSessionTypeToAction(sessionType);
+      
+      // Debug: Verificar autenticación antes de insertar
+      final currentUser = _supabase.auth.currentUser;
+      final userIdFromAuth = _authService.currentUser!.id;
+      
+      print('🔍 [DEBUG user_actions] Verificando autenticación:');
+      print('   userId desde AuthService: $userIdFromAuth');
+      print('   auth.uid() desde Supabase: ${currentUser?.id}');
+      print('   ¿Coinciden?: ${currentUser?.id == userIdFromAuth}');
+      print('   ¿Usuario autenticado?: ${currentUser != null}');
+      
+      if (currentUser == null) {
+        print('❌ [DEBUG user_actions] ERROR: No hay usuario autenticado en Supabase');
+        throw Exception('Usuario no autenticado en Supabase');
+      }
+      
+      if (currentUser.id != userIdFromAuth) {
+        print('❌ [DEBUG user_actions] ERROR: userId no coincide');
+        print('   AuthService.userId: $userIdFromAuth');
+        print('   Supabase.auth.uid(): ${currentUser.id}');
+        throw Exception('userId no coincide con auth.uid()');
+      }
+      
+      print('✅ [DEBUG user_actions] Autenticación verificada, insertando acción...');
+      
       await _supabase.from('user_actions').insert({
-        'user_id': _authService.currentUser!.id,
+        'user_id': userIdFromAuth,
         'challenge_id': null,
         'action_type': actionType,
         'action_data': {
@@ -95,6 +120,8 @@ class UserProgressService {
         },
         'recorded_at': now.toIso8601String(),
       });
+      
+      print('✅ [DEBUG user_actions] Acción insertada correctamente');
 
       // Ahora obtener estadísticas COMPLETAS desde user_actions y recalcular
       final estadisticas = await _obtenerEstadisticasCompletas();

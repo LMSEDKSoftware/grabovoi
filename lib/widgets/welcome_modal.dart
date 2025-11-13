@@ -34,9 +34,12 @@ class _WelcomeModalState extends State<WelcomeModal> {
       final maxScroll = _scrollController.position.maxScrollExtent;
       final currentScroll = _scrollController.position.pixels;
       final canScroll = maxScroll > 0;
-      setState(() {
-        _showScrollIndicator = canScroll && currentScroll < maxScroll - 50;
-      });
+      final shouldShow = canScroll && currentScroll < maxScroll - 50;
+      if (_showScrollIndicator != shouldShow) {
+        setState(() {
+          _showScrollIndicator = shouldShow;
+        });
+      }
     }
   }
 
@@ -132,10 +135,10 @@ class _WelcomeModalState extends State<WelcomeModal> {
       children: [
         SingleChildScrollView(
           controller: _scrollController,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Título
             Center(
               child: Text(
@@ -290,7 +293,7 @@ class _WelcomeModalState extends State<WelcomeModal> {
           ],
         ),
       ),
-        // Indicador de scroll flotante
+        // Mensaje "Desliza hacia arriba" cuando hay contenido scrolleable
         if (_showScrollIndicator)
           Positioned(
             bottom: 0,
@@ -299,30 +302,33 @@ class _WelcomeModalState extends State<WelcomeModal> {
             child: IgnorePointer(
               ignoring: true,
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      const Color(0xFF1C2541).withOpacity(0.9),
+                      const Color(0xFF1C2541).withOpacity(0.95),
                       const Color(0xFF1C2541),
                     ],
                   ),
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.keyboard_arrow_up,
-                      color: const Color(0xFFFFD700).withOpacity(0.7),
-                      size: 32,
+                      color: const Color(0xFFFFD700),
+                      size: 28,
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       'Desliza hacia arriba',
                       style: GoogleFonts.inter(
-                        color: const Color(0xFFFFD700).withOpacity(0.7),
-                        fontSize: 12,
+                        color: const Color(0xFFFFD700),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
