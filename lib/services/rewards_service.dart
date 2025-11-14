@@ -220,9 +220,95 @@ class RewardsService {
     );
   }
 
+  /// Verificar si ya se otorgaron recompensas por un código en el día actual
+  Future<bool> yaSeOtorgaronRecompensas({
+    required String codigoId,
+    required String tipoAccion, // 'repeticion' o 'pilotaje'
+  }) async {
+    try {
+      final userId = _authService.currentUser?.id;
+      if (userId == null) return false;
+
+      final hoy = DateTime.now();
+      final fechaDia = DateTime(hoy.year, hoy.month, hoy.day);
+      final fechaDiaStr = fechaDia.toIso8601String().split('T')[0]; // Formato YYYY-MM-DD
+
+      // Verificar en Supabase si ya existe un registro
+      final response = await SupabaseConfig.client
+          .from('user_rewarded_actions')
+          .select()
+          .eq('user_id', userId)
+          .eq('codigo_id', codigoId)
+          .eq('tipo_accion', tipoAccion)
+          .eq('fecha_dia', fechaDiaStr)
+          .maybeSingle();
+
+      return response != null;
+    } catch (e) {
+      print('⚠️ Error verificando recompensas otorgadas: $e');
+      // Si hay error, permitir otorgar recompensas (fallback)
+      return false;
+    }
+  }
+
+  /// Registrar que se otorgaron recompensas por un código
+  Future<void> registrarRecompensaOtorgada({
+    required String codigoId,
+    required String tipoAccion, // 'repeticion' o 'pilotaje'
+    required int cristalesOtorgados,
+  }) async {
+    try {
+      final userId = _authService.currentUser?.id;
+      if (userId == null) return;
+
+      final hoy = DateTime.now();
+
+      // Insertar registro en Supabase
+      final fechaDia = DateTime(hoy.year, hoy.month, hoy.day);
+      await SupabaseConfig.client.from('user_rewarded_actions').insert({
+        'user_id': userId,
+        'codigo_id': codigoId,
+        'tipo_accion': tipoAccion,
+        'cristales_otorgados': cristalesOtorgados,
+        'fecha': hoy.toIso8601String(),
+        'fecha_dia': fechaDia.toIso8601String().split('T')[0], // Formato YYYY-MM-DD
+        'created_at': hoy.toIso8601String(),
+      });
+
+      print('✅ Recompensa registrada: $tipoAccion para código $codigoId');
+    } catch (e) {
+      print('⚠️ Error registrando recompensa otorgada: $e');
+      // No lanzar error, solo registrar
+    }
+  }
+
   /// Recompensar por completar una repetición
   /// Retorna un mapa con información sobre las recompensas otorgadas
-  Future<Map<String, dynamic>> recompensarPorRepeticion() async {
+  Future<Map<String, dynamic>> recompensarPorRepeticion({
+    String? codigoId,
+  }) async {
+    // Si se proporciona código ID, verificar si ya se otorgaron recompensas
+    bool yaOtorgadas = false;
+    if (codigoId != null) {
+      yaOtorgadas = await yaSeOtorgaronRecompensas(
+        codigoId: codigoId,
+        tipoAccion: 'repeticion',
+      );
+    }
+
+    // Si ya se otorgaron, retornar información sin otorgar más
+    if (yaOtorgadas) {
+      final rewards = await getUserRewards(forceRefresh: true);
+      return {
+        'rewards': rewards,
+        'cristalesGanados': 0,
+        'luzCuanticaAnterior': rewards.luzCuantica,
+        'luzCuanticaActual': rewards.luzCuantica,
+        'yaOtorgadas': true,
+        'mensaje': 'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.',
+      };
+    }
+
     // Forzar lectura fresca antes de otorgar recompensas
     final rewards = await getUserRewards(forceRefresh: true);
     final luzCuanticaAnterior = rewards.luzCuantica;
@@ -241,6 +327,15 @@ class RewardsService {
       'Cristales ganados por completar repetición',
       cantidad: cristalesPorRepeticion,
     );
+
+    // Registrar que se otorgaron recompensas
+    if (codigoId != null) {
+      await registrarRecompensaOtorgada(
+        codigoId: codigoId,
+        tipoAccion: 'repeticion',
+        cristalesOtorgados: cristalesPorRepeticion,
+      );
+    }
     
     // Actualizar luz cuántica basada en racha
     final progressService = UserProgressService();
@@ -257,6 +352,7 @@ class RewardsService {
       'cristalesGanados': cristalesPorRepeticion,
       'luzCuanticaAnterior': luzCuanticaAnterior,
       'luzCuanticaActual': luzCuanticaActual ?? luzCuanticaAnterior,
+      'yaOtorgadas': false,
     };
   }
 
@@ -298,7 +394,31 @@ class RewardsService {
 
   /// Recompensar por completar pilotaje cuántico
   /// Retorna un mapa con información sobre las recompensas otorgadas
-  Future<Map<String, dynamic>> recompensarPorPilotajeCuantico() async {
+  Future<Map<String, dynamic>> recompensarPorPilotajeCuantico({
+    String? codigoId,
+  }) async {
+    // Si se proporciona código ID, verificar si ya se otorgaron recompensas
+    bool yaOtorgadas = false;
+    if (codigoId != null) {
+      yaOtorgadas = await yaSeOtorgaronRecompensas(
+        codigoId: codigoId,
+        tipoAccion: 'pilotaje',
+      );
+    }
+
+    // Si ya se otorgaron, retornar información sin otorgar más
+    if (yaOtorgadas) {
+      final rewards = await getUserRewards(forceRefresh: true);
+      return {
+        'rewards': rewards,
+        'cristalesGanados': 0,
+        'luzCuanticaAnterior': rewards.luzCuantica,
+        'luzCuanticaActual': rewards.luzCuantica,
+        'yaOtorgadas': true,
+        'mensaje': 'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.',
+      };
+    }
+
     // Forzar lectura fresca antes de otorgar recompensas
     final rewards = await getUserRewards(forceRefresh: true);
     final luzCuanticaAnterior = rewards.luzCuantica;
@@ -317,6 +437,15 @@ class RewardsService {
       'Cristales ganados por completar pilotaje cuántico',
       cantidad: cristalesPorPilotajeCuantico,
     );
+
+    // Registrar que se otorgaron recompensas
+    if (codigoId != null) {
+      await registrarRecompensaOtorgada(
+        codigoId: codigoId,
+        tipoAccion: 'pilotaje',
+        cristalesOtorgados: cristalesPorPilotajeCuantico,
+      );
+    }
     
     // Actualizar luz cuántica basada en racha
     final progressService = UserProgressService();
@@ -333,6 +462,7 @@ class RewardsService {
       'cristalesGanados': cristalesPorPilotajeCuantico,
       'luzCuanticaAnterior': luzCuanticaAnterior,
       'luzCuanticaActual': luzCuanticaActual ?? luzCuanticaAnterior,
+      'yaOtorgadas': false,
     };
   }
 

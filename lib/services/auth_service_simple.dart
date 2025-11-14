@@ -1,8 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import '../models/user_model.dart' as app_models;
 import 'subscription_service.dart';
+import 'biometric_auth_service.dart';
 
 class AuthServiceSimple {
   static final AuthServiceSimple _instance = AuthServiceSimple._internal();
@@ -10,6 +13,11 @@ class AuthServiceSimple {
   AuthServiceSimple._internal();
 
   final SupabaseClient _supabase = Supabase.instance.client;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
   app_models.User? _currentUser;
   bool _isInitialized = false;
 
@@ -181,6 +189,7 @@ class AuthServiceSimple {
   Future<AuthResponse> signIn({
     required String email,
     required String password,
+    bool saveForBiometric = false,
   }) async {
     try {
       final response = await _supabase.auth.signInWithPassword(
@@ -190,6 +199,11 @@ class AuthServiceSimple {
 
       if (response.user != null) {
         await _loadUserFromSession(response.session!);
+        
+        // Guardar credenciales de forma segura si se solicita
+        if (saveForBiometric) {
+          await saveBiometricCredentials(email: email, password: password);
+        }
       }
 
       // IMPORTANTE: Verificar estado de suscripción después de login
@@ -208,6 +222,94 @@ class AuthServiceSimple {
     }
   }
 
+  // Guardar credenciales de forma segura para autenticación biométrica
+  Future<void> saveBiometricCredentials({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await _secureStorage.write(key: 'biometric_email', value: email);
+      await _secureStorage.write(key: 'biometric_password', value: password);
+      await _secureStorage.write(key: 'biometric_enabled', value: 'true');
+      print('✅ Credenciales guardadas de forma segura para biométrica');
+    } catch (e) {
+      print('❌ Error guardando credenciales biométricas: $e');
+    }
+  }
+
+  // Obtener credenciales guardadas de forma segura
+  Future<Map<String, String>?> getBiometricCredentials() async {
+    try {
+      final email = await _secureStorage.read(key: 'biometric_email');
+      final password = await _secureStorage.read(key: 'biometric_password');
+      final enabled = await _secureStorage.read(key: 'biometric_enabled');
+      
+      if (email != null && password != null && enabled == 'true') {
+        return {'email': email, 'password': password};
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error obteniendo credenciales biométricas: $e');
+      return null;
+    }
+  }
+
+  // Verificar si hay credenciales biométricas guardadas
+  Future<bool> hasBiometricCredentials() async {
+    try {
+      final enabled = await _secureStorage.read(key: 'biometric_enabled');
+      return enabled == 'true';
+    } catch (e) {
+      print('❌ Error verificando credenciales biométricas: $e');
+      return false;
+    }
+  }
+
+  // Eliminar credenciales biométricas
+  Future<void> removeBiometricCredentials() async {
+    try {
+      await _secureStorage.delete(key: 'biometric_email');
+      await _secureStorage.delete(key: 'biometric_password');
+      await _secureStorage.delete(key: 'biometric_enabled');
+      print('✅ Credenciales biométricas eliminadas');
+    } catch (e) {
+      print('❌ Error eliminando credenciales biométricas: $e');
+    }
+  }
+
+  // Login con autenticación biométrica
+  Future<AuthResponse> signInWithBiometric() async {
+    try {
+      // Primero autenticar con biométrica
+      final biometricService = BiometricAuthService();
+      final biometricType = await biometricService.getBiometricTypeName();
+      
+      final authenticated = await biometricService.authenticate(
+        reason: 'Autentícate con $biometricType para acceder a tu cuenta',
+      );
+
+      if (!authenticated) {
+        throw Exception('Autenticación biométrica cancelada o fallida');
+      }
+
+      // Obtener credenciales guardadas
+      final credentials = await getBiometricCredentials();
+      if (credentials == null) {
+        throw Exception('No hay credenciales guardadas para autenticación biométrica');
+      }
+
+      // Hacer login con las credenciales
+      return await signIn(
+        email: credentials['email']!,
+        password: credentials['password']!,
+        saveForBiometric: false, // Ya están guardadas
+      );
+    } catch (e) {
+      print('Error en login biométrico: $e');
+      rethrow;
+    }
+  }
+
   // Login con Google
   Future<void> signInWithGoogle() async {
     try {
@@ -222,7 +324,7 @@ class AuthServiceSimple {
   }
 
   // Cerrar sesión
-  Future<void> signOut() async {
+  Future<void> signOut({bool removeBiometric = false}) async {
     try {
       await _supabase.auth.signOut();
       _currentUser = null;
@@ -230,6 +332,11 @@ class AuthServiceSimple {
       // Limpiar datos locales
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('current_user');
+      
+      // Opcionalmente eliminar credenciales biométricas
+      if (removeBiometric) {
+        await removeBiometricCredentials();
+      }
     } catch (e) {
       print('Error cerrando sesión: $e');
     }

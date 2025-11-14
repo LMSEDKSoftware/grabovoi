@@ -4,6 +4,7 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../services/auth_service_simple.dart';
+import '../../services/biometric_auth_service.dart';
 import 'register_screen.dart';
 import '../../main.dart';
 import '../../widgets/auth_wrapper.dart';
@@ -20,16 +21,59 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final AuthServiceSimple _authService = AuthServiceSimple();
+  final BiometricAuthService _biometricService = BiometricAuthService();
   
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _saveForBiometric = false;
+  bool _biometricAvailable = false;
+  bool _hasBiometricCredentials = false;
+  String _biometricTypeName = 'Biometría';
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricAvailability();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    try {
+      final isSupported = await _biometricService.isDeviceSupported();
+      final canCheck = await _biometricService.canCheckBiometrics();
+      final hasCredentials = await _authService.hasBiometricCredentials();
+      
+      String biometricTypeName = 'Biometría';
+      if (isSupported && canCheck) {
+        biometricTypeName = await _biometricService.getBiometricTypeName();
+      }
+      
+      if (mounted) {
+        setState(() {
+          _biometricAvailable = isSupported && canCheck;
+          _hasBiometricCredentials = hasCredentials;
+          _biometricTypeName = biometricTypeName;
+        });
+        
+        // Si hay credenciales guardadas, intentar autenticación biométrica automática
+        if (_hasBiometricCredentials && _biometricAvailable) {
+          // Esperar un momento antes de mostrar el diálogo
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            _signInWithBiometric();
+          }
+        }
+      }
+    } catch (e) {
+      print('Error verificando disponibilidad biométrica: $e');
+    }
   }
 
   Future<void> _signIn() async {
@@ -44,6 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        saveForBiometric: _saveForBiometric && _biometricAvailable,
       );
 
       if (mounted) {
@@ -52,6 +97,34 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const AuthWrapper()),
           (route) => false, // Eliminar todas las rutas anteriores
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = _getErrorMessage(e.toString());
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithBiometric() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _authService.signInWithBiometric();
+
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthWrapper()),
+          (route) => false,
         );
       }
     } catch (e) {
@@ -702,6 +775,34 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   const SizedBox(height: 8),
                   
+                  // Checkbox para guardar credenciales biométricas
+                  if (_biometricAvailable)
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _saveForBiometric,
+                          onChanged: _isLoading
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    _saveForBiometric = value ?? false;
+                                  });
+                                },
+                          activeColor: const Color(0xFFFFD700),
+                          checkColor: const Color(0xFF1a1a2e),
+                        ),
+                        Expanded(
+                          child: Text(
+                            'Usar $_biometricTypeName para iniciar sesión',
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  
                   // Olvidé mi contraseña
                   Align(
                     alignment: Alignment.centerRight,
@@ -758,6 +859,61 @@ class _LoginScreenState extends State<LoginScreen> {
                     isLoading: _isLoading,
                     icon: Icons.login,
                   ),
+                  
+                  // Botón de autenticación biométrica (si hay credenciales guardadas)
+                  if (_biometricAvailable && _hasBiometricCredentials && !_isLoading)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Column(
+                        children: [
+                          // Divider
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: Colors.white.withOpacity(0.3))),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  'O',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white54,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Divider(color: Colors.white.withOpacity(0.3))),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Botón biométrico
+                          OutlinedButton.icon(
+                            onPressed: _signInWithBiometric,
+                            icon: Icon(
+                              _biometricTypeName.toLowerCase().contains('face')
+                                  ? Icons.face
+                                  : Icons.fingerprint,
+                              color: const Color(0xFFFFD700),
+                              size: 24,
+                            ),
+                            label: Text(
+                              'Iniciar con $_biometricTypeName',
+                              style: GoogleFonts.inter(
+                                color: const Color(0xFFFFD700),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                              side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   
                   const SizedBox(height: 16),
                   

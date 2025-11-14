@@ -21,6 +21,7 @@ import '../../models/sugerencia_codigo_model.dart';
 import '../codes/repetition_session_screen.dart';
 import '../../services/subscription_service.dart';
 import '../../widgets/subscription_required_modal.dart';
+import '../../services/user_progress_service.dart';
 
 class StaticBibliotecaScreen extends StatefulWidget {
   const StaticBibliotecaScreen({super.key});
@@ -47,6 +48,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   List<CodigoGrabovoi> favoritosFiltrados = [];
   DateTime? _lastLoadTime;
   bool _tieneFavoritos = false; // Flag para saber si hay favoritos disponibles
+  
+  // Variables para ordenamiento inteligente basado en evaluación
+  List<String> _userGoals = []; // Objetivos del usuario desde la evaluación
+  final UserProgressService _progressService = UserProgressService();
   
   // Variables para búsqueda profunda con IA
   TextEditingController _searchController = TextEditingController();
@@ -113,17 +118,24 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     });
 
     try {
+      // Cargar preferencias del usuario ANTES de cargar el resto de los datos
+      await _loadUserPreferences();
+
       final items = await BibliotecaSupabaseService.getTodosLosCodigos();
       final cats = items.map((c) => c.categoria).toSet().toList();
       final etiquetas = await BibliotecaSupabaseService.getEtiquetasFavoritos();
-      
-      // Verificar si hay favoritos disponibles
       final favoritos = await BibliotecaSupabaseService.getFavoritos();
+
+      // Ordenar las categorías basadas en los objetivos del usuario
+      final sortedCategories = _applyCategorySorting(cats, _userGoals);
+
+      // Ordenar los códigos visibles iniciales alfabéticamente por nombre
+      items.sort((a, b) => a.nombre.compareTo(b.nombre));
       
       setState(() {
         _codigos = items;
-        visible = items;
-        categorias = ['Todos', ...cats];
+        visible = items; // La lista visible inicial contiene todos los códigos ordenados
+        categorias = ['Todos', ...sortedCategories];
         etiquetasFavoritos = etiquetas;
         _tieneFavoritos = favoritos.isNotEmpty;
         loading = false;
@@ -138,13 +150,75 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     }
   }
 
+  /// Cargar los objetivos del usuario desde la evaluación.
+  Future<void> _loadUserPreferences() async {
+    try {
+      final assessment = await _progressService.getUserAssessment();
+      if (assessment != null && assessment['goals'] != null) {
+        final goals = assessment['goals'];
+        if (goals is List) {
+          _userGoals = List<String>.from(goals.map((e) => e.toString()));
+          print('✅ Objetivos del usuario cargados para ordenamiento: $_userGoals');
+        }
+      }
+    } catch (e) {
+      print('⚠️ Error cargando las preferencias del usuario (evaluación): $e');
+      _userGoals = [];
+    }
+  }
+
+  /// Ordena la lista de categorías para que las que coinciden con los objetivos del usuario aparezcan primero.
+  List<String> _applyCategorySorting(List<String> allCategories, List<String> userGoals) {
+    if (userGoals.isEmpty) {
+      allCategories.sort((a, b) => a.compareTo(b));
+      return allCategories;
+    }
+
+    final preferredCategories = <String>[];
+    final remainingCategories = <String>[];
+
+    // Mapeo flexible de objetivos a posibles categorías
+    final Map<String, List<String>> goalToCategoryMap = {
+      'amor y relaciones': ['amor', 'relaciones', 'pareja', 'familia'],
+      'salud y bienestar': ['salud', 'sanación', 'bienestar', 'curación', 'medicina'],
+      'desarrollo personal y espiritual': ['desarrollo', 'crecimiento', 'espiritualidad', 'conciencia'],
+      'carrera y finanzas': ['abundancia', 'prosperidad', 'dinero', 'finanzas', 'trabajo', 'negocio', 'éxito'],
+      'protección y armonía': ['protección', 'seguridad', 'armonía', 'paz', 'equilibrio', 'limpieza'],
+    };
+
+    // Crear una lista plana de todas las palabras clave de categorías preferidas
+    final Set<String> preferredKeywords = {};
+    for (final goal in userGoals) {
+      final keywords = goalToCategoryMap[goal.toLowerCase()];
+      if (keywords != null) {
+        preferredKeywords.addAll(keywords);
+      }
+    }
+
+    for (final category in allCategories) {
+      bool isPreferred = preferredKeywords.any((keyword) => category.toLowerCase().contains(keyword));
+      if (isPreferred) {
+        preferredCategories.add(category);
+      } else {
+        remainingCategories.add(category);
+      }
+    }
+
+    // Ordenar alfabéticamente cada sub-lista
+    preferredCategories.sort((a, b) => a.compareTo(b));
+    remainingCategories.sort((a, b) => a.compareTo(b));
+
+    print('🔀 Categorías ordenadas: ${[...preferredCategories, ...remainingCategories]}');
+    return [...preferredCategories, ...remainingCategories];
+  }
+
   // Método para actualizar códigos desde el repositorio (pull to refresh)
   Future<void> _refreshCodigos() async {
     try {
       // Actualizar códigos desde Supabase
       await CodigosRepository().refreshCodigos();
       
-      // Recargar los datos en la pantalla
+      // Recargar los datos en la pantalla (esto ya incluye la carga de preferencias)
       await _load();
       
       // Mostrar mensaje de éxito

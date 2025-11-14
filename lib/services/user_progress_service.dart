@@ -468,12 +468,18 @@ class UserProgressService {
     await _saveAssessmentLocally(assessmentData);
 
     try {
-      // Guardar en la tabla de evaluaciones
-      await _supabase.from('user_assessments').insert({
-        'user_id': _authService.currentUser!.id,
-        'assessment_data': assessmentData,
-        'created_at': DateTime.now().toIso8601String(),
-      });
+      // Intentar guardar en la tabla de evaluaciones (puede no existir aún)
+      try {
+        await _supabase.from('user_assessments').insert({
+          'user_id': _authService.currentUser!.id,
+          'assessment_data': assessmentData,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+        print('✅ Evaluación guardada en user_assessments');
+      } catch (e) {
+        print('⚠️ No se pudo guardar en user_assessments (tabla puede no existir o error de RLS): $e');
+        // Continuar con el guardado en user_progress que es más importante
+      }
 
       // Actualizar preferencias del usuario basadas en la evaluación
       final preferences = <String, dynamic>{
@@ -558,7 +564,32 @@ class UserProgressService {
 
     print('🔍 Buscando evaluación para usuario: ${_authService.currentUser!.id}');
 
-    // Primero intentar en Supabase
+    // Primero intentar obtener desde user_progress (más confiable)
+    try {
+      final progress = await getUserProgress();
+      if (progress != null && progress['preferences'] != null) {
+        final preferences = progress['preferences'] as Map<String, dynamic>;
+        if (preferences['assessment_completed'] == true) {
+          // Reconstruir assessmentData desde preferences
+          final assessmentData = <String, dynamic>{
+            'knowledge_level': preferences['knowledge_level'],
+            'goals': preferences['goals'],
+            'experience_level': preferences['experience_level'],
+            'time_available': preferences['time_available'],
+            'preferences': preferences['preferences'],
+            'motivation': preferences['motivation'],
+            'completed_at': preferences['assessment_date'],
+            'is_complete': true,
+          };
+          print('✅ Evaluación encontrada en user_progress');
+          return assessmentData;
+        }
+      }
+    } catch (e) {
+      print('⚠️ Error obteniendo evaluación de user_progress: $e');
+    }
+
+    // Intentar obtener desde user_assessments (puede no existir)
     try {
       final response = await _supabase
           .from('user_assessments')
@@ -569,14 +600,14 @@ class UserProgressService {
           .maybeSingle();
 
       if (response != null && response['assessment_data'] != null) {
-        print('✅ Evaluación encontrada en Supabase');
+        print('✅ Evaluación encontrada en user_assessments');
         final assessmentData = response['assessment_data'] as Map<String, dynamic>;
         // Asegurarse de que tiene el flag is_complete
         assessmentData['is_complete'] = true;
         return assessmentData;
       }
     } catch (e) {
-      print('⚠️ Error obteniendo evaluación de Supabase: $e');
+      print('⚠️ Error obteniendo evaluación de user_assessments (tabla puede no existir): $e');
       // Continuar con fallback a SharedPreferences
     }
 

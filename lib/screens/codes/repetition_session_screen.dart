@@ -115,6 +115,89 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   }
 
   Future<void> _startRepetition() async {
+    // Verificar si ya se otorgaron recompensas antes de iniciar
+    final rewardsService = RewardsService();
+    final yaOtorgadas = await rewardsService.yaSeOtorgaronRecompensas(
+      codigoId: widget.codigo,
+      tipoAccion: 'repeticion',
+    );
+
+    // Si ya se otorgaron recompensas, mostrar diálogo de confirmación
+    if (yaOtorgadas && mounted) {
+      final continuar = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1C2541),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+          ),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
+                color: Color(0xFFFFD700),
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Recompensas ya otorgadas',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.\n\n¿Deseas continuar?',
+            style: GoogleFonts.inter(
+              color: Colors.white70,
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.inter(
+                  color: Colors.white54,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD700),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Continuar',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFF1a1a2e),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      // Si el usuario cancela, no iniciar la repetición
+      if (continuar != true) {
+        Navigator.of(context).pop(); // Volver atrás
+        return;
+      }
+    }
+
     setState(() {
       _isRepetitionActive = true;
       _secondsRemaining = 120; // 2 minutos
@@ -1404,7 +1487,28 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
       
       // Obtener recompensas
       final rewardsService = RewardsService();
-      final recompensasInfo = await rewardsService.recompensarPorRepeticion();
+      final recompensasInfo = await rewardsService.recompensarPorRepeticion(
+        codigoId: widget.codigo,
+      );
+      
+      // Mostrar notificación si ya se otorgaron recompensas
+      if (recompensasInfo['yaOtorgadas'] == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              recompensasInfo['mensaje'] as String? ?? 
+              'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
       
       // Mostrar modal con recompensas
       if (mounted) {

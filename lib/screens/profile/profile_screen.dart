@@ -28,6 +28,7 @@ import '../../models/notification_history_item.dart';
 import '../../services/notification_count_service.dart';
 import '../../services/subscription_service.dart';
 import '../../widgets/subscription_required_modal.dart';
+import '../../services/biometric_auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -696,6 +697,17 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 _showPermissionsDialog(context);
               },
             ),
+            const SizedBox(height: 16),
+            _buildConfigMenuItem(
+              context: context,
+              icon: Icons.fingerprint,
+              title: 'Autenticación Biométrica',
+              subtitle: 'Face ID / Huella dactilar',
+              onTap: () {
+                Navigator.pop(context);
+                _showBiometricSettings(context);
+              },
+            ),
             const SizedBox(height: 24),
           ],
         ),
@@ -773,6 +785,413 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
   
+  // Mostrar configuración de autenticación biométrica
+  void _showBiometricSettings(BuildContext context) {
+    final biometricService = BiometricAuthService();
+    bool biometricEnabled = false;
+    bool isChecking = true;
+    bool biometricAvailable = false;
+    String biometricTypeName = 'Biometría';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // Verificar estado inicial
+          if (isChecking) {
+            Future.microtask(() async {
+              final available = await biometricService.isDeviceSupported() &&
+                  await biometricService.canCheckBiometrics();
+              final enabled = await _authService.hasBiometricCredentials();
+              final typeName = available
+                  ? await biometricService.getBiometricTypeName()
+                  : 'Biometría';
+
+              setDialogState(() {
+                biometricAvailable = available;
+                biometricEnabled = enabled;
+                biometricTypeName = typeName;
+                isChecking = false;
+              });
+            });
+          }
+
+          if (isChecking) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1C2541),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+              ),
+              content: const SizedBox(
+                height: 100,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1C2541),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+            ),
+            title: Row(
+              children: [
+                Icon(
+                  biometricTypeName.toLowerCase().contains('face')
+                      ? Icons.face
+                      : Icons.fingerprint,
+                  color: const Color(0xFFFFD700),
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Autenticación Biométrica',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!biometricAvailable)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.orange.withOpacity(0.5),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            color: Colors.orange,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Tu dispositivo no soporta autenticación biométrica o no está configurada.',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else ...[
+                    Text(
+                      'Habilita $biometricTypeName para iniciar sesión de forma rápida y segura.',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C3E50).withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFFFD700).withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Usar $biometricTypeName',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  biometricEnabled
+                                      ? 'Activado - Inicia sesión con $biometricTypeName'
+                                      : 'Desactivado - Usa email y contraseña',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: biometricEnabled,
+                            onChanged: biometricAvailable
+                                ? (value) async {
+                                    if (value) {
+                                      // Activar: pedir autenticación biométrica
+                                      final authenticated =
+                                          await biometricService.authenticate(
+                                        reason:
+                                            'Autentícate con $biometricTypeName para habilitar el inicio de sesión biométrico',
+                                      );
+
+                                      if (authenticated) {
+                                        // Obtener credenciales del usuario actual
+                                        final user = _authService.currentUser;
+                                        if (user != null) {
+                                          // Necesitamos el email, pero no tenemos la contraseña
+                                          // Mostrar diálogo para ingresar contraseña
+                                          final passwordController =
+                                              TextEditingController();
+                                          final formKey = GlobalKey<FormState>();
+
+                                          final shouldSave = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              backgroundColor:
+                                                  const Color(0xFF1C2541),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                side: const BorderSide(
+                                                  color: Color(0xFFFFD700),
+                                                  width: 2,
+                                                ),
+                                              ),
+                                              title: Text(
+                                                'Confirmar Contraseña',
+                                                style: GoogleFonts.inter(
+                                                  color: const Color(0xFFFFD700),
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              content: Form(
+                                                key: formKey,
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      'Ingresa tu contraseña para guardar tus credenciales de forma segura.',
+                                                      style: GoogleFonts.inter(
+                                                        color: Colors.white70,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    TextFormField(
+                                                      controller:
+                                                          passwordController,
+                                                      obscureText: true,
+                                                      style: GoogleFonts.inter(
+                                                          color: Colors.white),
+                                                      decoration:
+                                                          InputDecoration(
+                                                        labelText: 'Contraseña',
+                                                        labelStyle:
+                                                            GoogleFonts.inter(
+                                                          color: Colors.white70,
+                                                        ),
+                                                        prefixIcon:
+                                                            const Icon(
+                                                          Icons.lock_outline,
+                                                          color:
+                                                              Color(0xFFFFD700),
+                                                        ),
+                                                        filled: true,
+                                                        fillColor: Colors.white
+                                                            .withOpacity(0.1),
+                                                        border:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                          borderSide:
+                                                              BorderSide.none,
+                                                        ),
+                                                        enabledBorder:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                          borderSide:
+                                                              BorderSide(
+                                                            color: Colors.white
+                                                                .withOpacity(
+                                                                    0.2),
+                                                          ),
+                                                        ),
+                                                        focusedBorder:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                          borderSide:
+                                                              const BorderSide(
+                                                            color: Color(
+                                                                0xFFFFD700),
+                                                            width: 2,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      validator: (value) {
+                                                        if (value == null ||
+                                                            value.isEmpty) {
+                                                          return 'Por favor ingresa tu contraseña';
+                                                        }
+                                                        return null;
+                                                      },
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(
+                                                      context)
+                                                      .pop(false),
+                                                  child: Text(
+                                                    'Cancelar',
+                                                    style: GoogleFonts.inter(
+                                                      color: Colors.white54,
+                                                    ),
+                                                  ),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    if (formKey.currentState!
+                                                        .validate()) {
+                                                      Navigator.of(context).pop(
+                                                          true);
+                                                    }
+                                                  },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        const Color(0xFFFFD700),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    'Guardar',
+                                                    style: GoogleFonts.inter(
+                                                      color:
+                                                          const Color(0xFF1a1a2e),
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+
+                                          if (shouldSave == true &&
+                                              passwordController.text.isNotEmpty) {
+                                            // Guardar credenciales
+                                            await _authService
+                                                .saveBiometricCredentials(
+                                              email: user.email,
+                                              password: passwordController.text,
+                                            );
+
+                                            setDialogState(() {
+                                              biometricEnabled = true;
+                                            });
+
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                      '$biometricTypeName habilitado exitosamente'),
+                                                  backgroundColor:
+                                                      const Color(0xFF4CAF50),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        }
+                                      } else {
+                                        // Autenticación cancelada o fallida
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                  'Autenticación biométrica cancelada'),
+                                              backgroundColor: Colors.orange,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    } else {
+                                      // Desactivar: eliminar credenciales
+                                      await _authService
+                                          .removeBiometricCredentials();
+                                      setDialogState(() {
+                                        biometricEnabled = false;
+                                      });
+
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                                '$biometricTypeName deshabilitado'),
+                                            backgroundColor: Colors.orange,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                : null,
+                            activeColor: const Color(0xFFFFD700),
+                            inactiveThumbColor: Colors.grey,
+                            inactiveTrackColor: Colors.grey.withOpacity(0.3),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              CustomButton(
+                text: 'Cerrar',
+                onPressed: () => Navigator.of(context).pop(),
+                color: const Color(0xFFFFD700),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   // Mostrar diálogo de permisos
   void _showPermissionsDialog(BuildContext context) {
     showDialog(

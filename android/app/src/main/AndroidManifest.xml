@@ -21,6 +21,9 @@
     
     <!-- Permiso de facturación para Google Play Billing (suscripciones) -->
     <uses-permission android:name="com.android.vending.BILLING" />
+
+    <!-- Permiso para usar autenticación biométrica (huella dactilar, facial) -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     
     <application
         android:label="MANIGRAB"
