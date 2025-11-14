@@ -1551,10 +1551,16 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     );
   }
 
+  // Cache para el Future de códigos sincrónicos
+  Future<List<Map<String, dynamic>>>? _sincronicosFuture;
+
   // Método para construir la sección de códigos sincrónicos
   Widget _buildSincronicosSection({void Function(String)? onCodeCopied}) {
+    // Cachear el Future para evitar múltiples ejecuciones
+    _sincronicosFuture ??= _getSincronicosForCurrentCode();
+    
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getSincronicosForCurrentCode(),
+      future: _sincronicosFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(

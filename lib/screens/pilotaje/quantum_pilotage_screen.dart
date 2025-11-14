@@ -103,7 +103,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     'dorado': const Color(0xFFFFD700),
     'plateado': const Color(0xFFC0C0C0),
     'azul_celestial': const Color(0xFF87CEEB),
-    'categoria': const Color(0xFFFFD700), // Se actualizará dinámicamente
   };
   
   // Variables para la animación de la barra de colores
@@ -1641,10 +1640,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   _buildDynamicHeader(),
                   const SizedBox(height: 30),
                   
-                  // Controles de visualización FUERA del recuadro
-                  _buildVisualizationControls(),
-                  const SizedBox(height: 20),
-                  
                   // Zona Central - Visualización del Código
                   _buildCodeVisualization(),
                 ],
@@ -1684,12 +1679,237 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
            );
          }
 
+  // Método para copiar código al portapapeles con contexto
+  void _copyToClipboard() async {
+    try {
+      final codigoId = _codigoSeleccionado.isNotEmpty ? _codigoSeleccionado : widget.codigoInicial ?? '';
+      if (codigoId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay código seleccionado'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Buscar el código en la base de datos para obtener su información real
+      final codigos = await SupabaseService.getCodigos();
+      final codigoEncontrado = codigos.firstWhere(
+        (c) => c.codigo == codigoId,
+        orElse: () => CodigoGrabovoi(
+          id: '',
+          codigo: codigoId,
+          nombre: 'Código Sagrado',
+          descripcion: 'Código sagrado para la manifestación y transformación energética.',
+          categoria: 'General',
+          color: '#FFD700',
+        ),
+      );
+      
+      final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
+${codigoEncontrado.descripcion}
+Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+      
+      Clipboard.setData(ClipboardData(text: textToCopy));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Código ${codigoId} copiado con descripción'),
+          backgroundColor: const Color(0xFFFFD700),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      // Fallback si hay error
+      final codigoId = _codigoSeleccionado.isNotEmpty ? _codigoSeleccionado : widget.codigoInicial ?? '';
+      final textToCopy = '''$codigoId : Código Sagrado
+Código sagrado para la manifestación y transformación energética.
+Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+      
+      Clipboard.setData(ClipboardData(text: textToCopy));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Código $codigoId copiado'),
+          backgroundColor: const Color(0xFFFFD700),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // Método para mostrar la nota importante
+  void _mostrarNotaImportante() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final mediaQuery = MediaQuery.of(context);
+        final constrainedScale =
+            mediaQuery.textScaleFactor.clamp(1.0, 1.25);
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(textScaleFactor: constrainedScale),
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF363636),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0xFFF5A623), width: 2),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Color(0xFFF5A623), size: 28),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Nota Importante',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFF5A623),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: mediaQuery.size.width * 0.9,
+                maxHeight: mediaQuery.size.height * 0.6,
+              ),
+              child: SingleChildScrollView(
+                child: Text(
+                  'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
+                  'Siempre consulta con profesionales de la salud para cualquier condición médica. '
+                  'Estos códigos son herramientas complementarias de bienestar.',
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFFCCCCCC),
+                    fontSize: 16,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            actions: [
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFF5A623),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    'Entendido',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Método para compartir código
+  Future<void> _shareCode() async {
+    try {
+      final codigoId = _codigoSeleccionado.isNotEmpty ? _codigoSeleccionado : widget.codigoInicial ?? '';
+      if (codigoId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay código seleccionado'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Obtener información del código
+      final titulo = await _getCodigoTitulo();
+      final descripcion = await _getCodigoDescription();
+      
+      // Esperar a que el widget se renderice completamente
+      await WidgetsBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Forzar rebuild para asegurar que el widget oculto esté renderizado
+      if (mounted) {
+        setState(() {});
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+      
+      // Capturar la imagen del widget oculto (si existe)
+      final Uint8List? pngBytes = await _screenshotController.capture(pixelRatio: 2.0);
+      
+      if (pngBytes == null || pngBytes.isEmpty) {
+        // Si no se puede capturar imagen, compartir texto
+        final textToShare = '''$codigoId : $titulo
+$descripcion
+Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+        
+        if (!kIsWeb) {
+          await Share.share(textToShare);
+        } else {
+          Clipboard.setData(ClipboardData(text: textToShare));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Texto copiado al portapapeles (compartir no disponible en web)'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Solo para móvil, web no soporta compartir imágenes
+      if (!kIsWeb) {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/grabovoi_${codigoId.replaceAll(RegExp(r'[^\w\s-]'), '_')}.png');
+        await file.writeAsBytes(pngBytes);
+
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Función de compartir no disponible en web'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error al compartir código: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildDynamicHeader() {
     // Estructura estándar: el padding externo ya lo aplica el contenedor padre.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          // Título principal con indicador de recompensas
+          // Título principal con iconos de acción
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -1710,20 +1930,23 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 ),
               ),
               const SizedBox(width: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 18),
-                  const SizedBox(width: 4),
-                  Text(
-                    '+5',
-                    style: GoogleFonts.inter(
-                      color: const Color(0xFFFFD700),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
+              // Botón de información
+              IconButton(
+                onPressed: _mostrarNotaImportante,
+                icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
+                tooltip: 'Nota importante',
+              ),
+              // Botón de copiar
+              IconButton(
+                onPressed: _copyToClipboard,
+                icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
+                tooltip: 'Copiar código',
+              ),
+              // Botón de compartir
+              IconButton(
+                onPressed: _shareCode,
+                icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
+                tooltip: 'Compartir código',
               ),
             ],
           ),
@@ -1839,9 +2062,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                         onTap: () {
                           setState(() {
                             _colorSeleccionado = entry.key;
-                            if (entry.key == 'categoria') {
-                              _coloresDisponibles['categoria'] = _colorVibracional;
-                            }
                           });
                           _onColorChanged();
                         },
@@ -2070,6 +2290,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                             fontWeight: FontWeight.bold,
                             color: _colorVibracional,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -2079,6 +2300,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                             color: Colors.white.withOpacity(0.9),
                             height: 1.4,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
@@ -2312,110 +2534,48 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           _pulseAnimation.value * 1.3 : 
           _pulseAnimation.value;
         
-        if (_isSphereMode) {
-          // Modo Esfera - Usando GoldenSphere como en repeticiones
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Esfera con números centrados usando Stack
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Esfera con animaciones - SIN contenedor adicional
-                  Transform.scale(
-                    scale: _isPilotageActive ? pulseScale : 1.0,
-                    child: GoldenSphere(
-                      size: 260,
-                      color: _getColorSeleccionado(),
-                      glowIntensity: _isPilotageActive ? 0.8 : 0.6,
-                      isAnimated: true,
-                    ),
+        // Modo Esfera - Usando GoldenSphere como en repeticiones (siempre activo)
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Esfera con números centrados usando Stack
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                // Esfera con animaciones - SIN contenedor adicional
+                Transform.scale(
+                  scale: _isPilotageActive ? pulseScale : 1.0,
+                  child: GoldenSphere(
+                    size: 260,
+                    color: _getColorSeleccionado(),
+                    glowIntensity: _isPilotageActive ? 0.8 : 0.6,
+                    isAnimated: true,
                   ),
-                  // Números centrados en la esfera
-                  if (_codigoSeleccionado != null)
-                    AnimatedBuilder(
-                      animation: _pulseAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _isPilotageActive ? pulseScale : 1.0,
-                          child: IlluminatedCodeText(
-                            code: CodeFormatter.formatCodeForDisplay(_codigoSeleccionado),
-                            fontSize: CodeFormatter.calculateFontSize(_codigoSeleccionado, baseSize: 32),
-                            color: _getColorSeleccionado(),
-                            letterSpacing: 4,
-                            isAnimated: false,
-                          ),
-                        );
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Selector de colores
-              _buildColorSelector(),
-            ],
-          );
-        } else {
-          // Modo Luz - Visualización de luz
-          return Container(
-            width: 400,
-            height: 200,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Colors.transparent,
-                  _colorVibracional.withOpacity(0.3),
-                  _colorVibracional.withOpacity(0.6),
-                  _colorVibracional.withOpacity(0.3),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: _colorVibracional.withOpacity(0.8),
-                  blurRadius: 40,
-                  spreadRadius: 5,
                 ),
-                BoxShadow(
-                  color: _colorVibracional.withOpacity(0.4),
-                  blurRadius: 80,
-                  spreadRadius: 10,
-                ),
+                // Números centrados en la esfera
+                if (_codigoSeleccionado != null)
+                  AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _isPilotageActive ? pulseScale : 1.0,
+                        child: IlluminatedCodeText(
+                          code: CodeFormatter.formatCodeForDisplay(_codigoSeleccionado),
+                          fontSize: CodeFormatter.calculateFontSize(_codigoSeleccionado, baseSize: 32),
+                          color: _getColorSeleccionado(),
+                          letterSpacing: 4,
+                          isAnimated: false,
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Transform.scale(
-                    scale: pulseScale,
-                    child: _buildAutoSizedCodeText(),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: 200,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          _colorVibracional.withOpacity(0.8),
-                          Colors.transparent,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          );
-        }
+            const SizedBox(height: 20),
+            // Selector de colores
+            _buildColorSelector(),
+          ],
+        );
       },
     );
   }
@@ -2688,90 +2848,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     );
   }
 
-  Widget _buildVisualizationControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        // Modo Esfera
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _isSphereMode = true;
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: _isSphereMode ? _colorVibracional.withOpacity(0.3) : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _colorVibracional.withOpacity(0.5),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.radio_button_checked,
-                  color: _isSphereMode ? Colors.white : _colorVibracional,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Modo Esfera',
-                  style: GoogleFonts.inter(
-                    color: _isSphereMode ? Colors.white : _colorVibracional,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        
-        // Modo Luz Directa
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _isSphereMode = false;
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: !_isSphereMode ? _colorVibracional.withOpacity(0.3) : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _colorVibracional.withOpacity(0.5),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.wb_sunny,
-                  color: !_isSphereMode ? Colors.white : _colorVibracional,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Modo Luz',
-                  style: GoogleFonts.inter(
-                    color: !_isSphereMode ? Colors.white : _colorVibracional,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildStepByStepGuide() {
     return Container(
@@ -4831,10 +4907,23 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     );
   }
 
+  // Cache para el Future de códigos sincrónicos
+  Future<List<Map<String, dynamic>>>? _sincronicosFuture;
+  String? _cachedCodigoForSincronicos;
+
   // Método para construir la sección de códigos sincrónicos
   Widget _buildSincronicosSection({void Function(String)? onCodeCopied}) {
+    // Obtener el código actual
+    final codigoId = _codigoSeleccionado.isNotEmpty ? _codigoSeleccionado : widget.codigoInicial ?? '';
+    
+    // Si el código cambió o no hay Future cacheado, crear uno nuevo
+    if (_sincronicosFuture == null || _cachedCodigoForSincronicos != codigoId) {
+      _cachedCodigoForSincronicos = codigoId;
+      _sincronicosFuture = _getSincronicosForCurrentCode();
+    }
+    
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getSincronicosForCurrentCode(),
+      future: _sincronicosFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
@@ -4871,103 +4960,150 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               width: 1,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Combínalo con los siguientes códigos para amplificar la resonancia',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFFD700),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: codigosSincronicos.map((codigo) {
-                  return GestureDetector(
-                    onTap: () async {
-                      // Copiar código al portapapeles
-                      final codigoTexto = codigo['codigo'] ?? '';
-                      await Clipboard.setData(ClipboardData(text: codigoTexto));
-                      
-                      // Usar el callback del modal si está disponible, de lo contrario usar SnackBar
-                      if (onCodeCopied != null) {
-                        onCodeCopied(codigoTexto);
-                      } else if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '✅ Código copiado: $codigoTexto',
-                              style: GoogleFonts.inter(color: Colors.white),
-                            ),
-                            backgroundColor: const Color(0xFFFFD700),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      width: 160,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFFFD700).withOpacity(0.5),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            codigo['codigo'] ?? '',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFFFD700),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            codigo['nombre'] ?? '',
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              color: Colors.white.withOpacity(0.9),
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFD700).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              codigo['categoria'] ?? '',
-                              style: GoogleFonts.inter(
-                                fontSize: 8,
-                                color: const Color(0xFFFFD700),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final textScale = MediaQuery.of(context).textScaleFactor;
+              final screenWidth = constraints.maxWidth;
+              final bool forceColumn = screenWidth < 360 || textScale >= 1.15;
+              
+              // Calcular ancho de cards para que quepan 2 sin scroll horizontal
+              // Considerando padding del container (16*2 = 32) y spacing entre cards (8)
+              final availableWidth = screenWidth - 32 - 8; // padding + spacing
+              final double cardWidth = forceColumn
+                  ? screenWidth - 32 // Ancho completo menos padding
+                  : (availableWidth / 2).floorToDouble(); // Mitad del espacio disponible
+
+              // Limitar a máximo 2 códigos sincrónicos
+              final codigosLimitados = codigosSincronicos.take(2).toList();
+
+              final cards = codigosLimitados.map((codigo) {
+                return SizedBox(
+                  width: cardWidth,
+                  child: _buildSincronicoCard(context, codigo, onCodeCopied: onCodeCopied),
+                );
+              }).toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Combínalo con los siguientes códigos para amplificar la resonancia',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFD700),
                     ),
-                  );
-                }).toList(),
-              ),
-            ],
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 12),
+                  // Mostrar códigos uno arriba del otro (centrados)
+                  ...cards.map((card) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: card,
+                      )),
+                ],
+              );
+            },
           ),
         );
       },
+    );
+  }
+
+  // Método para construir la tarjeta de código sincrónico
+  Widget _buildSincronicoCard(BuildContext context, Map<String, dynamic> codigo, {void Function(String)? onCodeCopied}) {
+    final codigoTexto = codigo['codigo'] ?? '';
+    return GestureDetector(
+      onTap: () async {
+        await Clipboard.setData(ClipboardData(text: codigoTexto));
+        
+        if (onCodeCopied != null) {
+          onCodeCopied(codigoTexto);
+        } else if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '✅ Código copiado: $codigoTexto',
+                style: GoogleFonts.inter(color: Colors.white),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              backgroundColor: const Color(0xFFFFD700),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFFFD700).withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Código con icono de copiar
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    codigoTexto,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFD700),
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.content_copy,
+                  size: 16,
+                  color: const Color(0xFFFFD700).withOpacity(0.7),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              codigo['nombre'] ?? '',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: Colors.white.withOpacity(0.9),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                codigo['categoria'] ?? '',
+                style: GoogleFonts.inter(
+                  fontSize: 9,
+                  color: const Color(0xFFFFD700),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

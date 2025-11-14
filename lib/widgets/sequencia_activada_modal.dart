@@ -36,6 +36,9 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
   late Animation<double> _scaleAnimation;
   String? _copiedCodeMessage;
   OverlayEntry? _overlayEntry;
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollIndicator = false;
+  bool _isCheckingScroll = false;
 
   @override
   void initState() {
@@ -76,6 +79,14 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
     
     // Iniciar animación de entrada
     _scaleController.forward();
+    
+    // Configurar listener para el scroll con debounce
+    _scrollController.addListener(_checkScrollPositionDebounced);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _checkScrollPosition();
+      });
+    });
   }
 
   @override
@@ -84,7 +95,37 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
     _pulseController.dispose();
     _glowController.dispose();
     _scaleController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _checkScrollPositionDebounced() {
+    if (_isCheckingScroll) return;
+    _isCheckingScroll = true;
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _isCheckingScroll = false;
+      _checkScrollPosition();
+    });
+  }
+
+  void _checkScrollPosition() {
+    if (!mounted || !_scrollController.hasClients) return;
+    
+    try {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      final canScroll = maxScroll > 0;
+      final shouldShow = canScroll && currentScroll < maxScroll - 50;
+      
+      if (_showScrollIndicator != shouldShow && mounted) {
+        setState(() {
+          _showScrollIndicator = shouldShow;
+        });
+      }
+    } catch (e) {
+      // Ignorar errores si el controller ya no está disponible
+      print('⚠️ Error en _checkScrollPosition: $e');
+    }
   }
 
   void _showCopiedMessage(String codigo) {
@@ -164,6 +205,7 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
                   children: [
                     Flexible(
                       child: SingleChildScrollView(
+                        controller: _scrollController,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -370,6 +412,49 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              // Mensaje "Desliza hacia arriba" cuando hay contenido scrolleable
+              if (_showScrollIndicator)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    ignoring: true,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            const Color(0xFF1C2541).withOpacity(0.95),
+                            const Color(0xFF1C2541),
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.keyboard_arrow_up,
+                            color: const Color(0xFFFFD700),
+                            size: 28,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Desliza hacia arriba',
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFFFFD700),
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
