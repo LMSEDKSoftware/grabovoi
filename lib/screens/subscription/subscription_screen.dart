@@ -130,6 +130,19 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     return 'Acceso completo';
   }
 
+  String _getFormattedPrice(String productId, String defaultPrice) {
+    // Formatear precios específicos según el producto
+    if (productId == SubscriptionService.monthlyProductId) {
+      // Precio mensual: $88.00
+      return '\$88.00';
+    } else if (productId == SubscriptionService.yearlyProductId) {
+      // Precio anual: $888.00
+      return '\$888.00';
+    }
+    // Si no es uno de los productos esperados, usar el precio por defecto
+    return defaultPrice;
+  }
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -194,12 +207,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                 size: 32,
                               ),
                               const SizedBox(width: 12),
-                              Text(
-                                _hasPremiumAccess ? 'Tienes 7 Días Premium' : '7 Días Premium GRATIS',
-                                style: GoogleFonts.inter(
-                                  color: const Color(0xFFFFD700),
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                              Flexible(
+                                child: Text(
+                                  _hasPremiumAccess ? 'Tienes 7 Días Premium' : '7 Días Premium GRATIS',
+                                  style: GoogleFonts.inter(
+                                    color: const Color(0xFFFFD700),
+                                    fontSize: isCompact ? 20 : 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.visible,
+                                  softWrap: true,
                                 ),
                               ),
                             ],
@@ -390,28 +408,34 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                             ],
                                           ),
                                         ),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              product.price,
-                                              style: GoogleFonts.inter(
-                                                color: const Color(0xFFFFD700),
-                                                fontSize: 28,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            if (isYearly)
-                                              Text(
-                                                'Ahorra 33%',
-                                                style: GoogleFonts.inter(
-                                                  color: Colors.green,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
+                                        Flexible(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: [
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
+                                                  _getFormattedPrice(product.id, product.price),
+                                                  style: GoogleFonts.inter(
+                                                    color: const Color(0xFFFFD700),
+                                                    fontSize: isCompact ? 22 : 28,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  maxLines: 1,
                                                 ),
                                               ),
-                                          ],
+                                              if (isYearly)
+                                                Text(
+                                                  'Ahorra 33%',
+                                                  style: GoogleFonts.inter(
+                                                    color: Colors.green,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),

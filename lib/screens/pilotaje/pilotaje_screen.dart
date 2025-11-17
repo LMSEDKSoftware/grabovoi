@@ -252,19 +252,14 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
                       // Ocultar la barra de colores después de 3 segundos
                       _hideColorBarAfterDelay();
 
-                      // Registrar pilotaje en usuario_progreso
+                      // NO registrar el pilotaje aquí - solo se registra cuando se COMPLETA
+                      // El pilotaje se completará en CodeDetailScreen y ahí se registrará
+                      // Esto evita notificaciones duplicadas
                       final codigoUsado = _codigoPersonalizado.isNotEmpty ? _codigoPersonalizado : '5197148';
-                      try {
-                        await BibliotecaSupabaseService.registrarPilotaje(
-                          codeId: codigoUsado,
-                          codeName: codigoUsado,
-                          durationMinutes: 2,
-                        );
-                      } catch (_) {}
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => CodeDetailScreen(
-                            codigo: _codigoPersonalizado.isNotEmpty ? _codigoPersonalizado : '5197148',
+                            codigo: codigoUsado,
                           ),
                         ),
                       );

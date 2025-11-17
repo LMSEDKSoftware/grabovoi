@@ -1915,7 +1915,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
             children: [
               Expanded(
                 child: Text(
-                  'Pilotaje Cuántico Consciente',
+                  'Pilotaje Cuántico',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,

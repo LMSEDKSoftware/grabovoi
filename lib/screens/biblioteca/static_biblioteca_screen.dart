@@ -2979,7 +2979,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFD700),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: const Color(0xFF0B132B), width: 1),
                               ),

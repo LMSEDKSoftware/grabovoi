@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../services/supabase_service.dart';
 import '../../models/notification_history_item.dart';
+import '../../services/notification_count_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ReportDetailScreen extends StatefulWidget {
@@ -195,6 +196,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
         body: cuerpo,
         type: 'reporte_estatus',
       );
+      
+      // Actualizar conteo inmediatamente
+      await NotificationCountService().updateCount();
 
       // También intentar notificar usando el sistema de notificaciones locales
       // (solo si el usuario está activo en ese momento)

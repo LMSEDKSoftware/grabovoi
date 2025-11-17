@@ -5,6 +5,7 @@ import '../../widgets/custom_button.dart';
 import '../../models/challenge_model.dart';
 import '../../services/challenge_service.dart';
 import '../../services/challenge_progress_tracker.dart';
+import '../../services/challenge_tracking_service.dart';
 import 'challenge_congrats_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service_simple.dart';
@@ -62,12 +63,25 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
     });
     try {
       await _progressTracker.initialize();
+      // Verificar y actualizar racha al cargar la pantalla
+      final challengeService = ChallengeService();
+      final trackingService = ChallengeTrackingService();
+      await trackingService.verificarYActualizarRacha(_challenge.id);
+      // Recargar el desafío actualizado
+      final updatedChallenge = challengeService.getChallenge(_challenge.id);
+      if (updatedChallenge != null && mounted) {
+        setState(() {
+          _challenge = updatedChallenge;
+        });
+      }
     } catch (e) {
       print('Error inicializando el rastreador de progreso: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

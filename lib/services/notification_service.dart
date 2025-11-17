@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -7,6 +8,26 @@ import '../models/notification_type.dart';
 import '../models/notification_preferences.dart';
 import '../models/notification_history_item.dart';
 import 'auth_service_simple.dart';
+import 'notification_count_service.dart';
+
+/// Notificación pendiente en la cola
+class _PendingNotification {
+  final String title;
+  final String body;
+  final NotificationType type;
+  final String? payload;
+  final NotificationPriority priority;
+  final DateTime timestamp;
+
+  _PendingNotification({
+    required this.title,
+    required this.body,
+    required this.type,
+    this.payload,
+    required this.priority,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+}
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -20,6 +41,15 @@ class NotificationService {
   
   // Intervalo mínimo entre notificaciones de baja prioridad (6 horas)
   static const _minLowPriorityInterval = Duration(hours: 6);
+  
+  // Rate limiting: máximo 2 notificaciones por minuto
+  static const _maxNotificationsPerMinute = 2;
+  static const _rateLimitWindow = Duration(minutes: 1);
+  final List<DateTime> _notificationTimestamps = [];
+  
+  // Cola de notificaciones pendientes para consolidar
+  final List<_PendingNotification> _notificationQueue = [];
+  bool _isProcessingQueue = false;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -35,8 +65,15 @@ class NotificationService {
       // Inicializar timezone
       tz.initializeTimeZones();
 
-      const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
+      // Configurar Android para notificaciones en segundo plano
+      const AndroidInitializationSettings androidSettings = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
+      const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
       const InitializationSettings settings = InitializationSettings(
         android: androidSettings,
         iOS: iosSettings,
@@ -71,11 +108,122 @@ class NotificationService {
     return difference >= _minLowPriorityInterval;
   }
 
-  /// Mostrar notificación genérica
-  Future<void> showNotification({
+  /// Verificar rate limiting (máximo 2 notificaciones por minuto)
+  bool _canSendNotification() {
+    final now = DateTime.now();
+    
+    // Limpiar timestamps antiguos (más de 1 minuto)
+    _notificationTimestamps.removeWhere((timestamp) => 
+      now.difference(timestamp) > _rateLimitWindow
+    );
+    
+    // Verificar si podemos enviar más notificaciones
+    return _notificationTimestamps.length < _maxNotificationsPerMinute;
+  }
+
+  /// Registrar timestamp de notificación enviada
+  void _recordNotificationSent() {
+    final now = DateTime.now();
+    _notificationTimestamps.add(now);
+    
+    // Mantener solo las últimas necesarias
+    if (_notificationTimestamps.length > _maxNotificationsPerMinute) {
+      _notificationTimestamps.removeAt(0);
+    }
+  }
+
+  /// Agregar notificación a la cola
+  Future<void> _enqueueNotification({
     required String title,
     required String body,
-    NotificationType type = NotificationType.weeklyMotivational,
+    required NotificationType type,
+    String? payload,
+  }) async {
+    final pending = _PendingNotification(
+      title: title,
+      body: body,
+      type: type,
+      payload: payload,
+      priority: type.priority,
+    );
+    
+    // Si hay notificaciones similares en la cola, consolidar
+    final now = DateTime.now();
+    final similarIndex = _notificationQueue.indexWhere((n) => 
+      n.type == type && 
+      now.difference(n.timestamp).inSeconds < 5
+    );
+    
+    if (similarIndex != -1 && type.priority != NotificationPriority.high) {
+      // Consolidar: actualizar la más reciente o eliminar la duplicada
+      print('🔄 Consolidando notificación duplicada: ${type.toString()}');
+      if (type.priority == NotificationPriority.high) {
+        // La nueva es más importante, reemplazar
+        _notificationQueue[similarIndex] = pending;
+      }
+      // Si no es alta prioridad, simplemente ignorar la duplicada
+      return;
+    }
+    
+    _notificationQueue.add(pending);
+    _processNotificationQueue();
+  }
+
+  /// Procesar cola de notificaciones
+  Future<void> _processNotificationQueue() async {
+    if (_isProcessingQueue || _notificationQueue.isEmpty) return;
+    
+    _isProcessingQueue = true;
+    
+    while (_notificationQueue.isNotEmpty) {
+      // Verificar rate limiting
+      if (!_canSendNotification()) {
+        print('⏸️ Rate limit alcanzado, esperando...');
+        // Esperar hasta que podamos enviar más
+        await Future.delayed(const Duration(seconds: 30));
+        continue;
+      }
+      
+      // Priorizar: primero las de alta prioridad, luego mediana, luego baja
+      _notificationQueue.sort((a, b) {
+        if (a.priority != b.priority) {
+          final priorityOrder = {
+            NotificationPriority.high: 0,
+            NotificationPriority.medium: 1,
+            NotificationPriority.low: 2,
+          };
+          return priorityOrder[a.priority]!.compareTo(priorityOrder[b.priority]!);
+        }
+        // Mismo nivel de prioridad, la más antigua primero
+        return a.timestamp.compareTo(b.timestamp);
+      });
+      
+      final pending = _notificationQueue.removeAt(0);
+      
+      // Enviar la notificación
+      await _sendNotificationDirectly(
+        title: pending.title,
+        body: pending.body,
+        type: pending.type,
+        payload: pending.payload,
+      );
+      
+      _recordNotificationSent();
+      
+      // Si aún hay espacio y hay más notificaciones, esperar un poco
+      if (_notificationQueue.isNotEmpty && _canSendNotification()) {
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    }
+    
+    _isProcessingQueue = false;
+  }
+
+  /// Enviar notificación directamente (sin rate limiting)
+  Future<void> _sendNotificationDirectly({
+    required String title,
+    required String body,
+    required NotificationType type,
     String? payload,
   }) async {
     await initialize();
@@ -86,15 +234,6 @@ class NotificationService {
       return;
     }
     
-    // Verificar si se debe mostrar (evitar spam de baja prioridad)
-    if (type.priority == NotificationPriority.low) {
-      if (!_shouldShowLowPriorityNotification()) {
-        print('⏭️ Notificación de baja prioridad omitida por intervalo mínimo');
-        return;
-      }
-      _lastLowPriorityNotification = DateTime.now();
-    }
-
     // Obtener preferencias del usuario
     final preferences = await NotificationPreferences.load();
     if (!preferences.enabled) {
@@ -141,7 +280,60 @@ class NotificationService {
       type: type.toString(),
     );
     
+    // Actualizar conteo inmediatamente
+    await NotificationCountService().updateCount();
+    
     print('📤 Notificación enviada: $title');
+  }
+
+  /// Mostrar notificación genérica (con rate limiting y cola)
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    NotificationType type = NotificationType.weeklyMotivational,
+    String? payload,
+    bool bypassQueue = false, // Para notificaciones críticas
+  }) async {
+    await initialize();
+    
+    // En web, no mostrar notificaciones
+    if (kIsWeb) {
+      print('⚠️ Notificaciones locales no disponibles en web');
+      return;
+    }
+    
+    // Verificar si se debe mostrar (evitar spam de baja prioridad)
+    if (type.priority == NotificationPriority.low) {
+      if (!_shouldShowLowPriorityNotification()) {
+        print('⏭️ Notificación de baja prioridad omitida por intervalo mínimo');
+        return;
+      }
+      _lastLowPriorityNotification = DateTime.now();
+    }
+
+    // Para notificaciones de alta prioridad o bypass, intentar enviar inmediatamente
+    if (bypassQueue || type.priority == NotificationPriority.high) {
+      if (_canSendNotification()) {
+        await _sendNotificationDirectly(
+          title: title,
+          body: body,
+          type: type,
+          payload: payload,
+        );
+        _recordNotificationSent();
+        return;
+      } else {
+        print('⚠️ Rate limit activo, pero notificación de alta prioridad, agregando a cola prioritaria');
+      }
+    }
+
+    // Agregar a la cola para procesamiento
+    await _enqueueNotification(
+      title: title,
+      body: body,
+      type: type,
+      payload: payload,
+    );
   }
 
   /// Programar notificación local
@@ -325,8 +517,38 @@ class NotificationService {
     );
   }
 
+  /// Verificar si un streak ya fue notificado (anti-duplicados)
+  bool _isStreakAlreadyNotified(String streakKey) {
+    final now = DateTime.now();
+    
+    // Limpiar streaks antiguos
+    _notifiedStreaksTimestamps.removeWhere((key, timestamp) {
+      final shouldRemove = now.difference(timestamp) > _notifiedStreaksExpiry;
+      if (shouldRemove) {
+        _notifiedStreaks.remove(key);
+      }
+      return shouldRemove;
+    });
+    
+    return _notifiedStreaks.contains(streakKey);
+  }
+  
+  /// Marcar streak como notificado
+  void _markStreakAsNotified(String streakKey) {
+    final now = DateTime.now();
+    _notifiedStreaks.add(streakKey);
+    _notifiedStreaksTimestamps[streakKey] = now;
+  }
+
   /// Notificación de hito de racha
   Future<void> notifyStreakMilestone(String userName, int days) async {
+    // Verificar si ya fue notificado
+    final streakKey = 'streak_$days';
+    if (_isStreakAlreadyNotified(streakKey)) {
+      print('⏭️ Milestone de racha omitido: $days días ya fue notificado');
+      return;
+    }
+    
     String title;
     String body;
     NotificationType type;
@@ -362,15 +584,47 @@ class NotificationService {
     }
 
     await showNotification(title: title, body: body, type: type);
+    _markStreakAsNotified(streakKey);
+  }
+
+  /// Verificar si un nivel energético ya fue notificado (anti-duplicados)
+  bool _isEnergyLevelAlreadyNotified(int level) {
+    final now = DateTime.now();
+    
+    // Limpiar niveles antiguos
+    _notifiedEnergyLevelsTimestamps.removeWhere((lvl, timestamp) {
+      final shouldRemove = now.difference(timestamp) > _notifiedEnergyLevelsExpiry;
+      if (shouldRemove) {
+        _notifiedEnergyLevels.remove(lvl);
+      }
+      return shouldRemove;
+    });
+    
+    return _notifiedEnergyLevels.contains(level);
+  }
+  
+  /// Marcar nivel energético como notificado
+  void _markEnergyLevelAsNotified(int level) {
+    final now = DateTime.now();
+    _notifiedEnergyLevels.add(level);
+    _notifiedEnergyLevelsTimestamps[level] = now;
   }
 
   /// Notificación de nivel energético sube
   Future<void> notifyEnergyLevelUp(int newLevel) async {
+    // Verificar si ya fue notificado para este nivel
+    if (_isEnergyLevelAlreadyNotified(newLevel)) {
+      print('⏭️ Notificación de nivel energético omitida: nivel $newLevel ya fue notificado');
+      return;
+    }
+    
     await showNotification(
       title: '⚡ ¡Tu energía ha subido!',
       body: 'Ahora estás en nivel $newLevel/10. ¡Sigue así!',
       type: NotificationType.energyLevelUp,
     );
+    
+    _markEnergyLevelAsNotified(newLevel);
   }
 
   /// Notificación de nivel máximo
@@ -400,17 +654,58 @@ class NotificationService {
     );
   }
 
+  // Cache para evitar notificación de primer pilotaje duplicada
+  bool _firstPilotageNotified = false;
+
   /// Notificación de primer pilotaje
   Future<void> notifyFirstPilotage(String userName) async {
+    // Solo notificar una vez
+    if (_firstPilotageNotified) {
+      print('⏭️ Notificación de primer pilotaje omitida: ya fue notificado');
+      return;
+    }
+    
     await showNotification(
       title: '🎉 ¡Bienvenido al viaje cuántico!',
       body: 'Has completado tu primer pilotaje consciente. El viaje de transformación comienza.',
       type: NotificationType.firstPilotage,
     );
+    
+    _firstPilotageNotified = true;
+  }
+
+  /// Verificar si un milestone ya fue notificado (anti-duplicados)
+  bool _isMilestoneAlreadyNotified(String milestoneKey) {
+    final now = DateTime.now();
+    
+    // Limpiar milestones antiguos
+    _notifiedMilestonesTimestamps.removeWhere((key, timestamp) {
+      final shouldRemove = now.difference(timestamp) > _notifiedMilestonesExpiry;
+      if (shouldRemove) {
+        _notifiedMilestones.remove(key);
+      }
+      return shouldRemove;
+    });
+    
+    return _notifiedMilestones.contains(milestoneKey);
+  }
+  
+  /// Marcar milestone como notificado
+  void _markMilestoneAsNotified(String milestoneKey) {
+    final now = DateTime.now();
+    _notifiedMilestones.add(milestoneKey);
+    _notifiedMilestonesTimestamps[milestoneKey] = now;
   }
 
   /// Notificación de logro (hito de pilotajes)
   Future<void> notifyPilotageMilestone(int totalPilotages, String userName) async {
+    // Verificar si ya fue notificado
+    final milestoneKey = 'pilotage_$totalPilotages';
+    if (_isMilestoneAlreadyNotified(milestoneKey)) {
+      print('⏭️ Milestone de pilotajes omitido: $totalPilotages ya fue notificado');
+      return;
+    }
+    
     String title;
     String body;
     NotificationType type;
@@ -446,6 +741,7 @@ class NotificationService {
     }
 
     await showNotification(title: title, body: body, type: type);
+    _markMilestoneAsNotified(milestoneKey);
   }
 
   /// Notificación de código recomendado
@@ -512,13 +808,78 @@ class NotificationService {
     await showNotification(title: title, body: body, type: NotificationType.challengeDayCompleted);
   }
 
+  // Cache de códigos ya notificados para evitar duplicados
+  final Set<String> _notifiedCodes = <String>{};
+  static const _notifiedCodesExpiry = Duration(hours: 1);
+  final Map<String, DateTime> _notifiedCodesTimestamps = <String, DateTime>{};
+  
+  // Cache de milestones ya notificados para evitar duplicados
+  final Set<String> _notifiedMilestones = <String>{};
+  final Map<String, DateTime> _notifiedMilestonesTimestamps = <String, DateTime>{};
+  static const _notifiedMilestonesExpiry = Duration(hours: 24); // 24 horas para milestones
+  
+  // Cache de streaks ya notificados para evitar duplicados
+  final Set<String> _notifiedStreaks = <String>{};
+  final Map<String, DateTime> _notifiedStreaksTimestamps = <String, DateTime>{};
+  static const _notifiedStreaksExpiry = Duration(hours: 24); // 24 horas para streaks
+  
+  // Cache de nivel energético ya notificado (por nivel específico)
+  final Set<int> _notifiedEnergyLevels = <int>{};
+  final Map<int, DateTime> _notifiedEnergyLevelsTimestamps = <int, DateTime>{};
+  static const _notifiedEnergyLevelsExpiry = Duration(hours: 6); // 6 horas por nivel
+
   Future<void> showActionCompletedNotification({
     required String actionName,
     required String challengeName,
+    String? codeNumber,
   }) async {
+    // Si hay un código, verificar si ya se notificó recientemente
+    if (codeNumber != null && codeNumber.isNotEmpty) {
+      // Limpiar códigos antiguos del cache
+      final now = DateTime.now();
+      _notifiedCodesTimestamps.removeWhere((code, timestamp) {
+        final shouldRemove = now.difference(timestamp) > _notifiedCodesExpiry;
+        if (shouldRemove) {
+          _notifiedCodes.remove(code);
+        }
+        return shouldRemove;
+      });
+
+      // Verificar si este código ya fue notificado
+      if (_notifiedCodes.contains(codeNumber)) {
+        print('⏭️ Notificación omitida: código $codeNumber ya fue notificado recientemente');
+        return;
+      }
+
+      // Agregar el código al cache
+      _notifiedCodes.add(codeNumber);
+      _notifiedCodesTimestamps[codeNumber] = now;
+    }
+
+    // Construir mensaje con el código si está disponible (evitando duplicar "código")
+    String body = 'Has completado: $actionName en $challengeName';
+    if (codeNumber != null && codeNumber.isNotEmpty) {
+      // Eliminar "de código", "código", etc. del actionName para evitar duplicación
+      String cleanActionName = actionName;
+      
+      // Remover "de código", "de código específico", etc.
+      cleanActionName = cleanActionName.replaceAll(RegExp(r'\s*[Dd]e\s+[Cc]ódigo\s+', caseSensitive: false), ' ').trim();
+      cleanActionName = cleanActionName.replaceAll(RegExp(r'\s*[Cc]ódigo\s+', caseSensitive: false), ' ').trim();
+      cleanActionName = cleanActionName.replaceAll(RegExp(r'\s+'), ' '); // Limpiar espacios múltiples
+      
+      // Si queda vacío o solo tiene artículos, usar una versión alternativa
+      if (cleanActionName.isEmpty || cleanActionName.length < 3) {
+        // Extraer solo la primera palabra relevante (ej: "Pilotaje" de "Pilotaje de código")
+        final words = actionName.split(' ');
+        cleanActionName = words.firstWhere((w) => w.length > 3 && !w.toLowerCase().contains('código'), orElse: () => actionName.split(' ').first);
+      }
+      
+      body = 'Has completado: $cleanActionName - $codeNumber en $challengeName';
+    }
+
     await showNotification(
       title: '¡Acción Completada! 🎉',
-      body: 'Has completado: $actionName en $challengeName',
+      body: body,
       type: NotificationType.challengeDayCompleted,
     );
   }

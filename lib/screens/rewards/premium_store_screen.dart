@@ -178,6 +178,272 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
     }
   }
 
+  Future<void> _comprarAnclaContinuidad() async {
+    if (_rewards == null) return;
+
+    const costo = RewardsService.cristalesParaAnclaContinuidad;
+
+    if (_rewards!.cristalesEnergia < costo) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '❌ No tienes suficientes cristales. Necesitas $costo, tienes ${_rewards!.cristalesEnergia}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        title: Text(
+          'Comprar Ancla de Continuidad',
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Deseas comprar una Ancla de Continuidad por $costo cristales?',
+              style: GoogleFonts.inter(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Color(0xFFFFD700), size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        '¿Qué hace?',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFFFFD700),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'La Ancla de Continuidad salva automáticamente tu racha cuando no completes un día en un desafío. Si no completas un día, se usará automáticamente para mantener tu progreso. Solo puedes tener máximo 2 anclas (para salvar máximo 2 días seguidos).',
+                    style: GoogleFonts.inter(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.inter(color: Colors.white70),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700),
+              foregroundColor: const Color(0xFF0B132B),
+            ),
+            child: Text(
+              'Comprar',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    try {
+      final updatedRewards = await _rewardsService.comprarAnclaContinuidad();
+
+      await _rewardsService.addToHistory(
+        'compra',
+        'Ancla de Continuidad comprada',
+        cantidad: costo,
+      );
+
+      if (mounted) {
+        setState(() {
+          _rewards = updatedRewards;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Ancla de Continuidad comprada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildAnclaContinuidadCard() {
+    final puedeComprar = (_rewards?.cristalesEnergia ?? 0) >= RewardsService.cristalesParaAnclaContinuidad;
+    final anclasDisponibles = _rewards?.anclasContinuidad ?? 0;
+    final maxAnclas = RewardsService.maxAnclasContinuidad;
+    final puedeComprarMas = anclasDisponibles < maxAnclas;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFFFD700).withOpacity(0.2),
+            const Color(0xFFFFD700).withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.anchor,
+                  color: Color(0xFFFFD700),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ancla de Continuidad',
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Salva tu racha automáticamente cuando no completes un día (máximo 2 anclas = 2 días seguidos)',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: anclasDisponibles >= maxAnclas 
+                  ? Colors.orange.withOpacity(0.1)
+                  : Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: anclasDisponibles >= maxAnclas
+                    ? Colors.orange.withOpacity(0.3)
+                    : Colors.green.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  anclasDisponibles >= maxAnclas ? Icons.info_outline : Icons.check_circle,
+                  color: anclasDisponibles >= maxAnclas ? Colors.orange : Colors.green,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    anclasDisponibles >= maxAnclas
+                        ? 'Tienes el máximo de $maxAnclas anclas. No puedes comprar más.'
+                        : 'Tienes $anclasDisponibles/${maxAnclas} anclas disponible${anclasDisponibles == 1 ? '' : 's'}',
+                    style: GoogleFonts.inter(
+                      color: anclasDisponibles >= maxAnclas ? Colors.orange : Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 20),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${RewardsService.cristalesParaAnclaContinuidad}',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFD700),
+                    ),
+                  ),
+                ],
+              ),
+              CustomButton(
+                text: !puedeComprarMas
+                    ? 'Máximo alcanzado'
+                    : puedeComprar
+                        ? 'Comprar'
+                        : 'Insuficientes',
+                onPressed: (puedeComprarMas && puedeComprar) ? () => _comprarAnclaContinuidad() : null,
+                color: (puedeComprarMas && puedeComprar) ? const Color(0xFFFFD700) : Colors.grey,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _usarMeditacionEspecial(MeditacionEspecial meditacion) async {
     if (_rewards == null) return;
 
@@ -274,6 +540,18 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                       ),
                       const SizedBox(height: 16),
                       ..._codigosPremium.map((codigo) => _buildCodigoPremiumCard(codigo)),
+                      const SizedBox(height: 30),
+                      // Anclas de Continuidad
+                      Text(
+                        'Elementos Salvadores',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildAnclaContinuidadCard(),
                       const SizedBox(height: 30),
                       // Meditaciones Especiales
                       Text(

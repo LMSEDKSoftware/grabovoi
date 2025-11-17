@@ -22,7 +22,8 @@ class RewardsService {
   
   // Constantes de compra
   static const int cristalesParaCodigoPremium = 100; // Cristales necesarios para código premium
-  static const int cristalesParaAnclaContinuidad = 20; // Cristales necesarios para comprar una ancla de continuidad
+  static const int cristalesParaAnclaContinuidad = 200; // Cristales necesarios para comprar una ancla de continuidad
+  static const int maxAnclasContinuidad = 2; // Máximo de anclas que se pueden tener (solo 2 días seguidos)
   static const int diasParaRestaurador = 7; // Días para obtener un restaurador
   static const int diasParaMantra = 21; // Días consecutivos para desbloquear mantra
 
@@ -590,6 +591,11 @@ class RewardsService {
     
     if (rewards.cristalesEnergia < cristalesParaAnclaContinuidad) {
       throw Exception('No tienes suficientes cristales de energía. Necesitas ${cristalesParaAnclaContinuidad} cristales.');
+    }
+
+    // Verificar límite máximo de anclas
+    if (rewards.anclasContinuidad >= maxAnclasContinuidad) {
+      throw Exception('Ya tienes el máximo de ${maxAnclasContinuidad} anclas de continuidad. Solo puedes tener ${maxAnclasContinuidad} anclas para salvar máximo ${maxAnclasContinuidad} días seguidos.');
     }
 
     final updatedRewards = rewards.copyWith(

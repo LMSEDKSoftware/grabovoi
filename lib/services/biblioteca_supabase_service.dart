@@ -8,6 +8,7 @@ import 'user_progress_service.dart';
 import 'daily_code_service.dart';
 import 'notification_scheduler.dart';
 import 'rewards_service.dart';
+import 'mensajes_diarios_service.dart';
 
 class BibliotecaSupabaseService {
   static final AuthServiceSimple _authService = AuthServiceSimple();
@@ -253,8 +254,8 @@ class BibliotecaSupabaseService {
       category: category,
     );
     
-    // Notificar al scheduler de notificaciones
-    await NotificationScheduler().onPilotageCompleted();
+    // Notificar al scheduler de notificaciones con el código para evitar duplicados
+    await NotificationScheduler().onPilotageCompleted(codeNumber: codeId ?? codeName);
   }
 
   static Future<void> registrarRepeticion({
@@ -303,12 +304,15 @@ class BibliotecaSupabaseService {
       // Todos los usuarios verán el mismo código cada día
       final codigoRecomendado = await DailyCodeService.getTodayCode();
 
+      // Obtener el mensaje diario desde la tabla mensajes_diarios
+      final mensajeDiario = await MensajesDiariosService.obtenerMensajeDiarioConFallback();
+
       // Si el usuario no está autenticado, usar datos por defecto
       if (!_authService.isLoggedIn) {
         return {
           'nivel': 1,
           'codigoRecomendado': codigoRecomendado,
-          'fraseMotivacional': '🌙 Inicia sesión para personalizar tu experiencia',
+          'fraseMotivacional': mensajeDiario,
           'proximoPaso': 'Regístrate para comenzar tu viaje energético',
         };
       }
@@ -316,16 +320,17 @@ class BibliotecaSupabaseService {
       return {
         'nivel': progreso?.nivelEnergetico ?? 1,
         'codigoRecomendado': codigoRecomendado,
-        'fraseMotivacional': _generarFraseMotivacional(progreso?.nivelEnergetico ?? 1, progreso?.diasConsecutivos ?? 0),
+        'fraseMotivacional': mensajeDiario,
         'proximoPaso': _determinarProximoPaso(progreso?.diasConsecutivos ?? 0, progreso?.totalPilotajes ?? 0),
       };
     } catch (e) {
       print('❌ Error en getDatosParaHome: $e');
-      // Fallback en caso de error
+      // Fallback en caso de error - usar mensaje diario si está disponible
+      final mensajeDiario = await MensajesDiariosService.obtenerMensajeDiarioConFallback();
       return {
         'nivel': 1,
         'codigoRecomendado': '812_719_819_14', // Vitalidad como fallback
-        'fraseMotivacional': '🌙 El viaje de mil millas comienza con un solo paso.',
+        'fraseMotivacional': mensajeDiario,
         'proximoPaso': 'Realiza tu primer pilotaje consciente hoy',
       };
     }

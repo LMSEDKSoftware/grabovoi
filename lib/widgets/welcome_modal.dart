@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/permissions_service.dart';
 
 class WelcomeModal extends StatefulWidget {
   const WelcomeModal({super.key});
@@ -62,9 +63,16 @@ class _WelcomeModalState extends State<WelcomeModal> {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('welcome_modal_shown', true);
               }
+              
+              // Cerrar modal primero
               if (mounted) {
                 Navigator.of(context, rootNavigator: true).pop();
               }
+              
+              // Solicitar permisos después de cerrar el modal
+              // (pequeño delay para que el modal se cierre completamente)
+              await Future.delayed(const Duration(milliseconds: 300));
+              await PermissionsService().requestInitialPermissions();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFD700),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
+import '../../widgets/subscription_welcome_modal.dart';
 import '../../services/auth_service_simple.dart';
 import '../../services/biometric_auth_service.dart';
 import 'register_screen.dart';
@@ -30,11 +32,27 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _hasBiometricCredentials = false;
   String _biometricTypeName = 'Biometría';
   String? _errorMessage;
+  String _appVersion = 'v.2.1.1';
 
   @override
   void initState() {
     super.initState();
     _checkBiometricAvailability();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = 'v.${packageInfo.version}';
+        });
+      }
+    } catch (e) {
+      print('Error cargando versión: $e');
+      // Mantener versión por defecto si falla
+    }
   }
 
   @override
@@ -92,6 +110,18 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
+        // Verificar si debe mostrar el modal de bienvenida de suscripción (para usuarios nuevos)
+        final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
+        
+        if (shouldShowModal) {
+          // Mostrar modal de bienvenida de suscripción antes de navegar
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const SubscriptionWelcomeModal(),
+          );
+        }
+        
         // Navegar de vuelta a AuthWrapper para que detecte el login exitoso
         // y muestre la pantalla correcta (MainNavigation o UserAssessmentScreen)
         Navigator.of(context).pushAndRemoveUntil(
@@ -122,6 +152,18 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.signInWithBiometric();
 
       if (mounted) {
+        // Verificar si debe mostrar el modal de bienvenida de suscripción (para usuarios nuevos)
+        final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
+        
+        if (shouldShowModal) {
+          // Mostrar modal de bienvenida de suscripción antes de navegar
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const SubscriptionWelcomeModal(),
+          );
+        }
+        
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const AuthWrapper()),
           (route) => false,
@@ -150,6 +192,18 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.signInWithGoogle();
       
       if (mounted) {
+        // Verificar si debe mostrar el modal de bienvenida de suscripción (para usuarios nuevos)
+        final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
+        
+        if (shouldShowModal) {
+          // Mostrar modal de bienvenida de suscripción antes de navegar
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const SubscriptionWelcomeModal(),
+          );
+        }
+        
         // Navegar de vuelta a AuthWrapper para que detecte el login exitoso
         // y muestre la pantalla correcta (MainNavigation o UserAssessmentScreen)
         Navigator.of(context).pushAndRemoveUntil(
@@ -990,7 +1044,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Column(
                     children: [
                       Text(
-                        'v.1.0.1',
+                        _appVersion,
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: const Color(0xFFFFD700),

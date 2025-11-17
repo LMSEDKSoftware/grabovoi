@@ -96,6 +96,31 @@ class NotificationHistory {
     return history.where((item) => !item.isRead).toList();
   }
 
+  /// Marcar una notificación como leída por su ID
+  static Future<void> markAsRead(String id) async {
+    final history = await getHistory();
+    final prefs = await SharedPreferences.getInstance();
+
+    final updatedHistory = history.map((item) {
+      if (item.id == id) {
+        return NotificationHistoryItem(
+          id: item.id,
+          title: item.title,
+          body: item.body,
+          timestamp: item.timestamp,
+          isRead: true,
+          type: item.type,
+        );
+      }
+      return item;
+    }).toList();
+
+    final historyJson = updatedHistory.map((item) => item.toJson()).toList();
+    await prefs.setString(_key, jsonEncode(historyJson));
+    
+    print('✅ Notificación marcada como leída: $id');
+  }
+
   /// Marcar todas como leídas
   static Future<void> markAllAsRead() async {
     final history = await getHistory();
@@ -112,6 +137,8 @@ class NotificationHistory {
 
     final historyJson = updatedHistory.map((item) => item.toJson()).toList();
     await prefs.setString(_key, jsonEncode(historyJson));
+    
+    print('✅ Todas las notificaciones marcadas como leídas');
   }
 
   /// Eliminar todas las notificaciones

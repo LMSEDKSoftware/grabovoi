@@ -42,6 +42,12 @@ class ChallengeService extends ChangeNotifier {
     );
   }
 
+  // Actualizar desafío (usado internamente por ChallengeTrackingService)
+  void actualizarDesafio(String challengeId, Challenge updatedChallenge) {
+    _userChallenges[challengeId] = updatedChallenge;
+    notifyListeners();
+  }
+
   // Inicializar desafíos disponibles
   Future<void> initializeChallenges() async {
     if (!_authService.isLoggedIn) {
@@ -79,6 +85,14 @@ class ChallengeService extends ChangeNotifier {
       for (final challengeData in response) {
         final challenge = _createChallengeFromSupabaseData(challengeData);
         _userChallenges[challenge.id] = challenge;
+        
+        // Si el desafío está en progreso, inicializar progreso y verificar racha
+        if (challenge.status == ChallengeStatus.enProgreso) {
+          // Inicializar progreso desde el desafío
+          await _inicializarProgresoDesdeChallenge(challenge);
+          // Verificar y actualizar racha al cargar
+          await _trackingService.verificarYActualizarRacha(challenge.id);
+        }
       }
     } catch (e) {
       print('Error cargando desafíos del usuario: $e');
@@ -109,6 +123,28 @@ class ChallengeService extends ChangeNotifier {
         (k, v) => MapEntry(int.parse(k), DayProgress.fromJson(v as Map<String, dynamic>)),
       ) ?? {},
     );
+  }
+
+  // Inicializar progreso del desafío desde Challenge
+  Future<void> _inicializarProgresoDesdeChallenge(Challenge challenge) async {
+    // Convertir dayProgress del Challenge a ChallengeProgress
+    final dayProgressMap = <int, DayProgress>{};
+    for (final entry in challenge.dayProgress.entries) {
+      dayProgressMap[entry.key] = entry.value;
+    }
+
+    final progress = ChallengeProgress(
+      challengeId: challenge.id,
+      currentDay: challenge.currentDay,
+      dayProgress: dayProgressMap,
+      totalActionsCompleted: 0, // Calcular desde dayProgress si es necesario
+      totalTimeSpent: Duration.zero, // Calcular desde dayProgress si es necesario
+      recentActions: [],
+      lastActivity: DateTime.now(),
+    );
+
+    // Registrar el progreso en el tracking service
+    _trackingService.registrarProgreso(progress);
   }
 
   // Crear desafíos por defecto

@@ -214,28 +214,8 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     // Notificar al servicio global
     PilotageStateService().setPilotageActive(true);
     
-    // Registrar acción de pilotaje para desafíos
-    final trackingService = ChallengeTrackingService();
-    await trackingService.recordPilotageSession(
-      widget.codigo,
-      widget.codigo,
-      const Duration(minutes: 5),
-    );
-    
-    // Registrar en el nuevo sistema de progreso
-    final progressTracker = ChallengeProgressTracker();
-    progressTracker.trackCodePiloted();
-
-    // Actualizar progreso global (usuario_progreso)
-    try {
-      await BibliotecaSupabaseService.registrarPilotaje(
-        codeId: widget.codigo,
-        codeName: widget.codigo,
-        durationMinutes: 5,
-      );
-    } catch (e) {
-      print('Error registrando pilotaje en usuario_progreso: $e');
-    }
+    // NO registrar el pilotaje aquí - solo se registra cuando se COMPLETA
+    // Las notificaciones se enviarán solo cuando el timer llegue a 0
     
     _startCountdown();
   }
@@ -262,16 +242,36 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         // Detener el audio
         AudioManagerService().stop();
         
-        // Registrar repetición de código completada para desafíos
-        final trackingService = ChallengeTrackingService();
-        trackingService.recordCodeRepetition(
-          widget.codigo,
-          widget.codigo,
-        );
-        
-        // Registrar en el nuevo sistema de progreso
-        final progressTracker = ChallengeProgressTracker();
-        progressTracker.trackCodeRepeated();
+        // AHORA SÍ: Registrar el pilotaje completado (solo cuando se completa)
+        try {
+          // Registrar acción de pilotaje para desafíos
+          final trackingService = ChallengeTrackingService();
+          await trackingService.recordPilotageSession(
+            widget.codigo,
+            widget.codigo,
+            const Duration(minutes: 2), // Duración real completada (2 minutos)
+          );
+          
+          // Registrar repetición de código completada para desafíos
+          await trackingService.recordCodeRepetition(
+            widget.codigo,
+            widget.codigo,
+          );
+          
+          // Registrar en el nuevo sistema de progreso
+          final progressTracker = ChallengeProgressTracker();
+          progressTracker.trackCodePiloted();
+          progressTracker.trackCodeRepeated();
+
+          // Actualizar progreso global (usuario_progreso)
+          await BibliotecaSupabaseService.registrarPilotaje(
+            codeId: widget.codigo,
+            codeName: widget.codigo,
+            durationMinutes: 2,
+          );
+        } catch (e) {
+          print('Error registrando pilotaje completado: $e');
+        }
         
         // Registrar repetición y mostrar recompensas (igual que en repeticiones)
         _registrarRepeticionYMostrarRecompensas();
@@ -501,6 +501,21 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
 
   Future<void> _shareCode() async {
     try {
+      if (!mounted) return;
+      
+      // Verificar que el screenshot controller esté inicializado
+      if (_screenshotController == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: El sistema de captura no está inicializado. Intenta nuevamente.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       // Esperar a que el widget se renderice completamente
       await WidgetsBinding.instance.endOfFrame;
       await Future.delayed(const Duration(milliseconds: 300));
@@ -510,6 +525,8 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
         setState(() {});
         await Future.delayed(const Duration(milliseconds: 200));
       }
+      
+      if (!mounted) return;
       
       // Capturar la imagen del widget oculto
       final Uint8List? pngBytes = await _screenshotController.capture(pixelRatio: 2.0);
@@ -528,35 +545,61 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
 
       // Solo para móvil, web no soporta compartir imágenes
       if (!kIsWeb) {
-        final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/grabovoi_${widget.codigo.replaceAll(RegExp(r'[^\w\s-]'), '_')}.png');
-        await file.writeAsBytes(pngBytes);
+        try {
+          final dir = await getTemporaryDirectory();
+          final safeFileName = widget.codigo.replaceAll(RegExp(r'[^\w\s-]'), '_');
+          final file = File('${dir.path}/grabovoi_$safeFileName.png');
+          await file.writeAsBytes(pngBytes);
 
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
-        );
+          if (!mounted) return;
 
-        ChallengeProgressTracker().trackPilotageShared(
-          codeId: widget.codigo,
-          codeName: widget.codigo,
-        );
+          await Share.shareXFiles(
+            [XFile(file.path)],
+            text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+          );
+
+          // Registrar compartido solo si se compartió exitosamente
+          try {
+            ChallengeProgressTracker().trackPilotageShared(
+              codeId: widget.codigo,
+              codeName: widget.codigo,
+            );
+          } catch (e) {
+            print('⚠️ Error registrando pilotaje compartido: $e');
+            // No mostrar error al usuario, solo log
+          }
+        } catch (shareError) {
+          print('❌ Error al compartir archivo: $shareError');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al compartir: ${shareError.toString()}'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Función de compartir no disponible en web'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Función de compartir no disponible en web'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
-    } catch (e) {
-      print('Error al compartir imagen: $e');
+    } catch (e, stackTrace) {
+      print('❌ Error crítico al compartir imagen: $e');
+      print('Stack trace: $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al compartir: $e'),
+            content: Text('Error inesperado al compartir. Por favor, intenta nuevamente.'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

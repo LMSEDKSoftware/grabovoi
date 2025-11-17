@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../models/notification_history_item.dart';
+import '../../services/notification_count_service.dart';
 
 class NotificationHistoryScreen extends StatefulWidget {
   const NotificationHistoryScreen({super.key});
@@ -30,9 +31,40 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
     });
   }
 
+  Future<void> _markAsRead(String id) async {
+    if (!mounted) return;
+    
+    // Marcar como leída
+    await NotificationHistory.markAsRead(id);
+    
+    // Recargar historial
+    await _loadHistory();
+    
+    // Actualizar contador de notificaciones no leídas
+    await NotificationCountService().updateCount();
+  }
+
   Future<void> _markAllAsRead() async {
+    if (!mounted) return;
+    
+    // Marcar todas como leídas
     await NotificationHistory.markAllAsRead();
-    _loadHistory();
+    
+    // Recargar historial
+    await _loadHistory();
+    
+    // Actualizar contador de notificaciones no leídas
+    await NotificationCountService().updateCount();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Todas las notificaciones marcadas como leídas'),
+          backgroundColor: Color(0xFFFFD700),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<void> _clearHistory() async {
@@ -235,39 +267,47 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
   }
 
   Widget _buildNotificationItem(NotificationHistoryItem notification) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            notification.isRead
-                ? Colors.black.withOpacity(0.2)
-                : const Color(0xFFFFD700).withOpacity(0.15),
-            Colors.black.withOpacity(0.1),
-          ],
+    return InkWell(
+      onTap: () {
+        // Si no está leída, marcarla como leída al hacer clic
+        if (!notification.isRead) {
+          _markAsRead(notification.id);
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              notification.isRead
+                  ? Colors.black.withOpacity(0.2)
+                  : const Color(0xFFFFD700).withOpacity(0.15),
+              Colors.black.withOpacity(0.1),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: notification.isRead
+                ? Colors.white.withOpacity(0.05)
+                : const Color(0xFFFFD700).withOpacity(0.3),
+            width: notification.isRead ? 1 : 2,
+          ),
+          boxShadow: notification.isRead
+              ? null
+              : [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withOpacity(0.1),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ],
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: notification.isRead
-              ? Colors.white.withOpacity(0.05)
-              : const Color(0xFFFFD700).withOpacity(0.3),
-          width: notification.isRead ? 1 : 2,
-        ),
-        boxShadow: notification.isRead
-            ? null
-            : [
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.1),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-              ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Container(
               width: 48,
               height: 48,
@@ -344,6 +384,7 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }

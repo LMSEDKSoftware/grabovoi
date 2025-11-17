@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/subscription_welcome_modal.dart';
 import '../../services/auth_service_simple.dart';
 import '../../main.dart';
 
@@ -68,6 +69,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
         
+        // Verificar si debe mostrar el modal de bienvenida de suscripción
+        final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
+        
+        if (shouldShowModal) {
+          // Mostrar modal de bienvenida de suscripción
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const SubscriptionWelcomeModal(),
+          );
+        }
+        
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainNavigation()),
         );
@@ -95,6 +108,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await _authService.signInWithGoogle();
       
       if (mounted) {
+        // Verificar si debe mostrar el modal de bienvenida de suscripción
+        final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
+        
+        if (shouldShowModal) {
+          // Mostrar modal de bienvenida de suscripción
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const SubscriptionWelcomeModal(),
+          );
+        }
+        
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainNavigation()),
         );
