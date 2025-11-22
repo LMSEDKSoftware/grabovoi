@@ -198,19 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           // Usuario gratuito - solo mostrar botón de Suscripciones
                           return Column(
                             children: [
-                              _buildCompactButton(
-                                text: 'Suscripciones',
-                                icon: Icons.card_membership,
-                                color: const Color(0xFFFFD700),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const SubscriptionScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
+                            _buildSubscriptionButton(context),
                             ],
                           );
                         }
@@ -286,19 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                 );
                               },
                             ),
-                            _buildCompactButton(
-                              text: 'Suscripciones',
-                              icon: Icons.card_membership,
-                              color: const Color(0xFFFFD700),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const SubscriptionScreen(),
-                                  ),
-                                );
-                              },
-                            ),
+                            _buildSubscriptionButton(context),
                             _buildCompactButton(
                               text: 'Mis Mantras',
                               icon: Icons.auto_awesome,
@@ -1508,6 +1484,124 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           ),
         ),
       ),
+    );
+  }
+
+  // Botón de Suscripciones con información de fechas cuando NO es FREE
+  Widget _buildSubscriptionButton(BuildContext context) {
+    final subscriptionService = SubscriptionService();
+    final isFreeUser = subscriptionService.isFreeUser;
+    final expiryDate = subscriptionService.subscriptionExpiryDate;
+    
+    return FutureBuilder<DateTime?>(
+      future: subscriptionService.getSubscriptionStartDate(),
+      builder: (context, snapshot) {
+        final startDate = snapshot.data;
+        
+        String buttonText = 'Suscripciones';
+        String? subtitle;
+        
+        // Si NO es FREE, mostrar fechas
+        if (!isFreeUser && expiryDate != null) {
+          final now = DateTime.now();
+          final startDateStr = startDate != null 
+              ? '${startDate.day}/${startDate.month}/${startDate.year}'
+              : 'N/A';
+          final expiryDateStr = '${expiryDate.day}/${expiryDate.month}/${expiryDate.year}';
+          
+          if (expiryDate.isAfter(now)) {
+            subtitle = 'Válido hasta $expiryDateStr';
+          } else {
+            subtitle = 'Expirado el $expiryDateStr';
+          }
+        }
+        
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFFFFD700).withOpacity(0.15),
+                const Color(0xFFFFD700).withOpacity(0.08),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFFFD700).withOpacity(0.4),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFD700).withOpacity(0.2),
+                blurRadius: 8,
+                spreadRadius: 0,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SubscriptionScreen(),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.card_membership,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            buttonText,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

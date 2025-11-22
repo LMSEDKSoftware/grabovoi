@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/challenge_model.dart';
 import '../models/notification_type.dart';
 import 'auth_service_simple.dart';
@@ -101,6 +102,43 @@ class ChallengeTrackingService extends ChangeNotifier {
   // Mostrar notificación de acción completada
   Future<void> _showActionNotification(UserAction action) async {
     try {
+      // IMPORTANTE: Verificar que haya al menos un desafío activo antes de enviar notificación
+      if (_challengesProgress.isEmpty) {
+        print('⏭️ No hay desafíos activos, omitiendo notificación de acción completada');
+        return;
+      }
+      
+      // Verificar que haya al menos un desafío con progreso (iniciado)
+      bool hasActiveChallenge = false;
+      String? activeChallengeId;
+      for (final entry in _challengesProgress.entries) {
+        if (entry.value.currentDay > 0) {
+          hasActiveChallenge = true;
+          activeChallengeId = entry.key;
+          break;
+        }
+      }
+      
+      if (!hasActiveChallenge) {
+        print('⏭️ No hay desafíos iniciados, omitiendo notificación de acción completada');
+        return;
+      }
+      
+      // Verificar también en ChallengeService que el desafío esté realmente en progreso
+      try {
+        final challengeService = ChallengeService();
+        if (activeChallengeId != null) {
+          final challenge = challengeService.getChallenge(activeChallengeId);
+          if (challenge == null || challenge.status != ChallengeStatus.enProgreso) {
+            print('⏭️ Desafío no está en progreso, omitiendo notificación de acción completada');
+            return;
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error verificando estado del desafío: $e');
+        // Continuar de todas formas si hay error
+      }
+      
       String actionName = '';
       String? codeNumber = action.codeName ?? action.codeId;
       
@@ -124,10 +162,15 @@ class ChallengeTrackingService extends ChangeNotifier {
 
       // Obtener el nombre del desafío activo
       String challengeName = 'Desafío Activo';
-      for (final progress in _challengesProgress.values) {
-        if (progress.currentDay > 0) {
-          challengeName = 'Desafío de Iniciación Energética';
-          break;
+      if (activeChallengeId != null) {
+        try {
+          final challengeService = ChallengeService();
+          final challenge = challengeService.getChallenge(activeChallengeId);
+          if (challenge != null) {
+            challengeName = challenge.title;
+          }
+        } catch (e) {
+          print('⚠️ Error obteniendo nombre del desafío: $e');
         }
       }
 
@@ -136,6 +179,7 @@ class ChallengeTrackingService extends ChangeNotifier {
         actionName: actionName,
         challengeName: challengeName,
         codeNumber: codeNumber, // Incluir el código
+        actionType: action.type.toString().split('.').last, // Pasar el tipo de acción
       );
     } catch (e) {
       print('Error mostrando notificación: $e');
@@ -209,6 +253,12 @@ class ChallengeTrackingService extends ChangeNotifier {
     final challenge = challengeService.getChallenge(challengeId);
     if (challenge == null || challenge.startDate == null) return;
 
+    // Lógica especial para el desafío Maestro de Abundancia (30 días)
+    if (challengeId == 'maestro_abundancia') {
+      await _verificarMaestroAbundancia(challengeId, challenge, progress);
+      return;
+    }
+
     final today = DateTime.now();
     final startDate = challenge.startDate!;
     final todayNormalized = DateTime(today.year, today.month, today.day);
@@ -239,6 +289,152 @@ class ChallengeTrackingService extends ChangeNotifier {
           }
         }
       }
+    }
+  }
+
+  // Lógica especial para el desafío Maestro de Abundancia
+  Future<void> _verificarMaestroAbundancia(String challengeId, Challenge challenge, ChallengeProgress progress) async {
+    final today = DateTime.now();
+    final startDate = challenge.startDate!;
+    final todayNormalized = DateTime(today.year, today.month, today.day);
+    
+    // Encontrar días perdidos consecutivos más recientes
+    // Verificar desde ayer hacia atrás para encontrar la secuencia más reciente de días perdidos
+    int consecutiveLostDays = 0;
+    bool foundLostDay = false;
+    
+    // Buscar desde ayer hacia atrás
+    for (int offset = 1; offset <= challenge.durationDays; offset++) {
+      final checkDate = todayNormalized.subtract(Duration(days: offset));
+      final dayNumber = checkDate.difference(startDate).inDays + 1;
+      
+      // Solo verificar días dentro del rango del desafío
+      if (dayNumber < 1 || dayNumber > challenge.durationDays) {
+        break;
+      }
+      
+      // Solo verificar días pasados
+      if (checkDate.isBefore(todayNormalized)) {
+        final dayProgress = progress.dayProgress[dayNumber];
+        final isLost = dayProgress == null || !dayProgress.isCompleted;
+        
+        if (isLost) {
+          if (!foundLostDay) {
+            // Primer día perdido encontrado
+            foundLostDay = true;
+            consecutiveLostDays = 1;
+          } else {
+            // Verificar si es consecutivo al día anterior
+            final previousDayNumber = dayNumber + 1;
+            if (previousDayNumber <= challenge.durationDays) {
+              final previousDayProgress = progress.dayProgress[previousDayNumber];
+              final previousDayDate = startDate.add(Duration(days: previousDayNumber - 1));
+              final previousDayDateNormalized = DateTime(previousDayDate.year, previousDayDate.month, previousDayDate.day);
+              
+              // Si el día anterior también está perdido y es consecutivo, incrementar
+              if (previousDayDateNormalized.isBefore(todayNormalized) &&
+                  (previousDayProgress == null || !previousDayProgress.isCompleted)) {
+                consecutiveLostDays++;
+              } else {
+                // No es consecutivo, romper el ciclo
+                break;
+              }
+            } else {
+              consecutiveLostDays++;
+            }
+          }
+        } else {
+          // Si encontramos un día completado, romper la secuencia
+          if (foundLostDay) {
+            break;
+          }
+        }
+      }
+    }
+    
+    print('🔍 Maestro de Abundancia: Días perdidos consecutivos más recientes: $consecutiveLostDays');
+    
+    // Si hay 2 o más días consecutivos perdidos, bajar de nivel
+    if (consecutiveLostDays >= 2) {
+      print('⚠️ Maestro de Abundancia: 2 días consecutivos perdidos. Bajando de nivel...');
+      await _bajarDeNivelMaestro();
+      return;
+    }
+    
+    // Si hay 1 día perdido, reiniciar el desafío
+    if (consecutiveLostDays == 1) {
+      print('⚠️ Maestro de Abundancia: 1 día perdido. Reiniciando desafío...');
+      await _reiniciarDesafio(challengeId);
+      return;
+    }
+    
+    // Si no hay días perdidos consecutivos, verificar si hay días individuales perdidos (no consecutivos)
+    // En este caso, intentar usar anclas
+    for (int day = 1; day <= challenge.durationDays; day++) {
+      final dayDate = startDate.add(Duration(days: day - 1));
+      final dayDateNormalized = DateTime(dayDate.year, dayDate.month, dayDate.day);
+      
+      if (dayDateNormalized.isBefore(todayNormalized)) {
+        final dayProgress = progress.dayProgress[day];
+        
+        if (dayProgress == null || !dayProgress.isCompleted) {
+          // Intentar usar ancla para salvar el día
+          final anclaUsada = await _intentarUsarAnclaContinuidad(challengeId, day);
+          if (!anclaUsada) {
+            // Si no hay anclas y es un día perdido, reiniciar
+            print('⚠️ Maestro de Abundancia: Día $day perdido sin anclas. Reiniciando...');
+            await _reiniciarDesafio(challengeId);
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  // Bajar de nivel del Maestro de Abundancia al desafío de 21 días
+  Future<void> _bajarDeNivelMaestro() async {
+    try {
+      if (!_authService.isLoggedIn) return;
+      
+      final challengeService = ChallengeService();
+      
+      // Eliminar el desafío maestro de la base de datos para que pueda volver a intentarlo después
+      await _supabase
+          .from('user_challenges')
+          .delete()
+          .eq('user_id', _authService.currentUser!.id)
+          .eq('challenge_id', 'maestro_abundancia');
+      
+      // Eliminar el progreso del desafío maestro de memoria
+      _challengesProgress.remove('maestro_abundancia');
+      _progressControllers['maestro_abundancia']?.close();
+      _progressControllers.remove('maestro_abundancia');
+      
+      // Eliminar también el desafío de 21 días para que pueda reiniciarlo
+      await _supabase
+          .from('user_challenges')
+          .delete()
+          .eq('user_id', _authService.currentUser!.id)
+          .eq('challenge_id', 'luz_dorada_avanzada');
+      
+      // Eliminar el progreso del desafío de 21 días de memoria
+      _challengesProgress.remove('luz_dorada_avanzada');
+      _progressControllers['luz_dorada_avanzada']?.close();
+      _progressControllers.remove('luz_dorada_avanzada');
+      
+      // El servicio de desafíos se actualizará automáticamente cuando se recargue desde Supabase
+      
+      // Notificar al usuario
+      await _notificationService.showNotification(
+        title: '⚠️ Nivel Bajado',
+        body: 'Has perdido 2 días consecutivos en el Desafío Maestro de Abundancia. Debes completar nuevamente el Desafío Avanzado de Luz Dorada (21 días) antes de volver al nivel Maestro.',
+        type: NotificationType.challengeAtRisk,
+      );
+      
+      print('📉 Usuario bajado de nivel Maestro. Debe completar el desafío de 21 días nuevamente.');
+      notifyListeners();
+    } catch (e) {
+      print('❌ Error bajando de nivel maestro: $e');
     }
   }
 
@@ -330,6 +526,55 @@ class ChallengeTrackingService extends ChangeNotifier {
     }
   }
 
+  // Verificar si ya se envió notificación de reinicio para este desafío con este startDate
+  Future<bool> _yaSeNotificoReinicio(String challengeId, DateTime startDate) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final startDateNormalized = DateTime(startDate.year, startDate.month, startDate.day);
+      final key = 'challenge_restart_notified_${challengeId}_${startDateNormalized.toIso8601String().split('T')[0]}';
+      return prefs.getBool(key) ?? false;
+    } catch (e) {
+      print('❌ Error verificando si ya se notificó reinicio: $e');
+      return false;
+    }
+  }
+
+  // Marcar que se envió notificación de reinicio para este desafío con este startDate
+  Future<void> _marcarReinicioNotificado(String challengeId, DateTime startDate) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final startDateNormalized = DateTime(startDate.year, startDate.month, startDate.day);
+      final key = 'challenge_restart_notified_${challengeId}_${startDateNormalized.toIso8601String().split('T')[0]}';
+      await prefs.setBool(key, true);
+      
+      // Limpiar notificaciones antiguas (más de 30 días)
+      final allKeys = prefs.getKeys();
+      final now = DateTime.now();
+      for (final key in allKeys) {
+        if (key.startsWith('challenge_restart_notified_')) {
+          final timestampStr = prefs.getString('${key}_timestamp');
+          if (timestampStr != null) {
+            try {
+              final timestamp = DateTime.parse(timestampStr);
+              if (now.difference(timestamp).inDays > 30) {
+                await prefs.remove(key);
+                await prefs.remove('${key}_timestamp');
+              }
+            } catch (e) {
+              // Si no se puede parsear, eliminar la clave
+              await prefs.remove(key);
+            }
+          }
+        }
+      }
+      
+      // Guardar timestamp de esta notificación
+      await prefs.setString('${key}_timestamp', DateTime.now().toIso8601String());
+    } catch (e) {
+      print('❌ Error marcando reinicio como notificado: $e');
+    }
+  }
+
   // Reiniciar desafío al día 1
   Future<void> _reiniciarDesafio(String challengeId) async {
     try {
@@ -349,6 +594,9 @@ class ChallengeTrackingService extends ChangeNotifier {
         completedActions: [],
       );
 
+      // Verificar si ya se notificó este reinicio
+      final yaNotificado = await _yaSeNotificoReinicio(challengeId, newStartDate);
+      
       // Actualizar en Supabase
       await _supabase
           .from('user_challenges')
@@ -384,12 +632,21 @@ class ChallengeTrackingService extends ChangeNotifier {
         _challengesProgress[challengeId] = updatedProgress;
         _progressControllers[challengeId]?.add(updatedProgress);
         
-        // Notificar al usuario
-        await _notificationService.showNotification(
-          title: '⚠️ Desafío Reiniciado',
-          body: 'El desafío "${challenge.title}" ha sido reiniciado al día 1 porque se perdió la racha. ¡Puedes comenzar de nuevo!',
-          type: NotificationType.challengeAtRisk,
-        );
+        // Solo notificar si no se ha notificado antes para este reinicio
+        if (!yaNotificado) {
+          await _notificationService.showNotification(
+            title: '⚠️ Desafío Reiniciado',
+            body: 'El desafío "${challenge.title}" ha sido reiniciado al día 1 porque se perdió la racha. ¡Puedes comenzar de nuevo!',
+            type: NotificationType.challengeAtRisk,
+          );
+          
+          // Marcar como notificado
+          await _marcarReinicioNotificado(challengeId, newStartDate);
+          
+          print('📢 Notificación de reinicio enviada para desafío $challengeId (startDate: ${newStartDate.toString().split(' ')[0]})');
+        } else {
+          print('⚠️ Ya se notificó el reinicio de desafío $challengeId para startDate ${newStartDate.toString().split(' ')[0]}. No se enviará notificación duplicada.');
+        }
         
         print('🔄 Desafío $challengeId reiniciado al día 1 (nuevo startDate: ${newStartDate.toString().split(' ')[0]})');
         notifyListeners();

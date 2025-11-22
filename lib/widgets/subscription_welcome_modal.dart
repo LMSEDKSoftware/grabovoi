@@ -3,11 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/subscription/subscription_screen.dart';
 import '../services/auth_service_simple.dart';
+import '../services/subscription_service.dart';
 
 class SubscriptionWelcomeModal extends StatefulWidget {
   const SubscriptionWelcomeModal({super.key});
 
-  /// Verificar si el modal ya fue mostrado para este usuario
+  /// Verificar si el modal debe mostrarse
+  /// Se muestra siempre que el usuario esté en estado FREE (sin suscripción activa)
+  /// O si está en período de prueba (aunque tenga acceso premium temporal)
   static Future<bool> shouldShowModal() async {
     try {
       final authService = AuthServiceSimple();
@@ -15,32 +18,27 @@ class SubscriptionWelcomeModal extends StatefulWidget {
         return false;
       }
 
-      final userId = authService.currentUser!.id;
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'subscription_welcome_shown_$userId';
-      final shown = prefs.getBool(key) ?? false;
+      // Verificar si el usuario está en estado FREE (sin suscripción activa)
+      final subscriptionService = SubscriptionService();
+      await subscriptionService.checkSubscriptionStatus();
       
-      return !shown; // Mostrar solo si NO ha sido mostrado
+      // Verificar si está en período de prueba
+      final remainingDays = await subscriptionService.getRemainingTrialDays();
+      
+      // Mostrar si:
+      // 1. Es usuario FREE (sin suscripción activa después del período de prueba)
+      // 2. O está en período de prueba (remainingDays != null y > 0)
+      if (remainingDays != null && remainingDays > 0) {
+        print('✅ Modal debe mostrarse: Usuario en período de prueba ($remainingDays días restantes)');
+        return true;
+      }
+      
+      final isFreeUser = subscriptionService.isFreeUser;
+      print('✅ Modal debe mostrarse: isFreeUser = $isFreeUser');
+      return isFreeUser;
     } catch (e) {
       print('Error verificando si debe mostrar modal: $e');
       return false;
-    }
-  }
-
-  /// Marcar el modal como mostrado para este usuario
-  static Future<void> markAsShown() async {
-    try {
-      final authService = AuthServiceSimple();
-      if (!authService.isLoggedIn || authService.currentUser == null) {
-        return;
-      }
-
-      final userId = authService.currentUser!.id;
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'subscription_welcome_shown_$userId';
-      await prefs.setBool(key, true);
-    } catch (e) {
-      print('Error marcando modal como mostrado: $e');
     }
   }
 
@@ -49,7 +47,23 @@ class SubscriptionWelcomeModal extends StatefulWidget {
 }
 
 class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
-  bool _dontShowAgain = false;
+  int? _remainingDays;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRemainingDays();
+  }
+
+  Future<void> _loadRemainingDays() async {
+    final subscriptionService = SubscriptionService();
+    final remaining = await subscriptionService.getRemainingTrialDays();
+    setState(() {
+      _remainingDays = remaining;
+      _isLoading = false;
+    });
+  }
 
   void _navigateToSubscription() {
     Navigator.of(context, rootNavigator: true).pop();
@@ -60,11 +74,7 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
     );
   }
 
-  void _closeModal() async {
-    if (_dontShowAgain) {
-      await SubscriptionWelcomeModal.markAsShown();
-    }
-    
+  void _closeModal() {
     if (mounted) {
       Navigator.of(context, rootNavigator: true).pop();
     }
@@ -167,7 +177,11 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Tienes 7 días GRATIS con acceso completo a todas las funciones premium',
+                              _isLoading
+                                  ? 'Tienes 7 días GRATIS con acceso completo a todas las funciones premium'
+                                  : _remainingDays != null && _remainingDays! > 0
+                                      ? 'Tienes $_remainingDays ${_remainingDays == 1 ? 'día' : 'días'} GRATIS con acceso completo a todas las funciones premium'
+                                      : 'Tienes 7 días GRATIS con acceso completo a todas las funciones premium',
                               style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -208,131 +222,141 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                       const SizedBox(height: 20),
                       
                       // Plan Mensual
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Mensual',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Acceso completo por 1 mes',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ],
+                      GestureDetector(
+                        onTap: _navigateToSubscription,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1,
                             ),
-                            Text(
-                              '\$88.00',
-                              style: GoogleFonts.inter(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFFD700),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Plan Anual
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFD700).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFFFD700).withOpacity(0.5),
-                            width: 2,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Anual',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFFD700),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          'AHORRA',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                  Text(
+                                    'Mensual',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Acceso completo por 1 año',
+                                    'Acceso completo por 1 mes',
                                     style: GoogleFonts.inter(
                                       fontSize: 13,
                                       color: Colors.white70,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Ahorra 33%',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
                                 ],
                               ),
-                            ),
-                            Text(
-                              '\$888.00',
-                              style: GoogleFonts.inter(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFFD700),
+                              Text(
+                                _remainingDays != null && _remainingDays! > 0
+                                    ? 'Gratis durante prueba'
+                                    : '\$88.00',
+                                style: GoogleFonts.inter(
+                                  fontSize: _remainingDays != null && _remainingDays! > 0 ? 14 : 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: _remainingDays != null && _remainingDays! > 0
+                                      ? Colors.green
+                                      : const Color(0xFFFFD700),
+                                ),
                               ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Plan Anual
+                      GestureDetector(
+                        onTap: _navigateToSubscription,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD700).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFFFD700).withOpacity(0.5),
+                              width: 2,
                             ),
-                          ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Anual',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFFD700),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            'AHORRA',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Acceso completo por 1 año',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Ahorra 33%',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '\$888.00',
+                                style: GoogleFonts.inter(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFFFD700),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -340,83 +364,28 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                 ),
                 const SizedBox(height: 24),
 
-                // Botones de acción
-                Column(
-                  children: [
-                    // Botón Ver Planes
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _navigateToSubscription,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFD700),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 8,
-                        ),
-                        child: Text(
-                          'Ver Planes de Suscripción',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                // Botón Continuar y Aprovechar mi Prueba Gratis
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _closeModal,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFD700),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 8,
+                    ),
+                    child: Text(
+                      'Continuar y Aprovechar mi Prueba Gratis',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
-
-                    // Botón Continuar
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton(
-                        onPressed: _closeModal,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          'Continuar y Aprovechar mi Prueba Gratis',
-                          style: GoogleFonts.inter(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFFFFD700),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Checkbox "No volver a mostrar"
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Checkbox(
-                      value: _dontShowAgain,
-                      onChanged: (value) {
-                        setState(() {
-                          _dontShowAgain = value ?? false;
-                        });
-                      },
-                      activeColor: const Color(0xFFFFD700),
-                      checkColor: Colors.black,
-                    ),
-                    Expanded(
-                      child: Text(
-                        'No volver a mostrar este mensaje',
-                        style: GoogleFonts.inter(
-                          color: Colors.white60,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),

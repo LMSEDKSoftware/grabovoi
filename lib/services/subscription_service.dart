@@ -38,6 +38,42 @@ class SubscriptionService {
   // Verificar si el usuario tiene acceso premium (suscripción activa o en período de prueba)
   bool get hasPremiumAccess => _isPremium;
 
+  // Obtener fecha de expiración de la suscripción
+  DateTime? get subscriptionExpiryDate => _subscriptionExpiryDate;
+
+  // Obtener fecha de inicio de la suscripción (si está disponible)
+  Future<DateTime?> getSubscriptionStartDate() async {
+    if (!_authService.isLoggedIn) return null;
+    
+    try {
+      final userId = _authService.currentUser!.id;
+      final subscriptionData = await _supabase
+          .from('user_subscriptions')
+          .select()
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .maybeSingle();
+      
+      if (subscriptionData != null) {
+        return DateTime.parse(subscriptionData['transaction_date'] ?? subscriptionData['created_at']);
+      }
+      
+      // Si no hay suscripción activa, verificar período de prueba
+      final prefs = await SharedPreferences.getInstance();
+      final trialStartKey = 'free_trial_start_$userId';
+      final trialStartStr = prefs.getString(trialStartKey);
+      
+      if (trialStartStr != null) {
+        return DateTime.parse(trialStartStr);
+      }
+      
+      return null;
+    } catch (e) {
+      print('❌ Error obteniendo fecha de inicio: $e');
+      return null;
+    }
+  }
+
   // Inicializar el servicio
   Future<void> initialize() async {
     _isAvailable = await _inAppPurchase.isAvailable();
@@ -134,6 +170,40 @@ class SubscriptionService {
       print('❌ Stack trace: ${StackTrace.current}');
       // En caso de error, verificar período de prueba como fallback
       await _checkFreeTrialStatus();
+    }
+  }
+
+  // Obtener días restantes del período de prueba
+  Future<int?> getRemainingTrialDays() async {
+    if (!_authService.isLoggedIn) {
+      return null;
+    }
+
+    try {
+      final userId = _authService.currentUser!.id;
+      final prefs = await SharedPreferences.getInstance();
+      final trialStartKey = 'free_trial_start_$userId';
+      final trialStartStr = prefs.getString(trialStartKey);
+
+      if (trialStartStr == null) {
+        // Usuario nuevo - aún no ha iniciado período de prueba
+        return null;
+      }
+
+      final trialStart = DateTime.parse(trialStartStr);
+      final trialEnd = trialStart.add(Duration(days: freeTrialDays));
+      final now = DateTime.now();
+
+      if (now.isBefore(trialEnd)) {
+        final remaining = trialEnd.difference(now).inDays;
+        return remaining >= 0 ? remaining : 0;
+      } else {
+        // Período de prueba expirado
+        return 0;
+      }
+    } catch (e) {
+      print('❌ Error obteniendo días restantes: $e');
+      return null;
     }
   }
 

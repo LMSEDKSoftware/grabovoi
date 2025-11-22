@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service_simple.dart';
 import '../services/user_progress_service.dart';
 import '../services/subscription_service.dart';
@@ -25,6 +26,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void initState() {
     super.initState();
     _checkAuthStatus();
+    
+    // Escuchar cambios de autenticación (para OAuth/Google)
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn && mounted) {
+        print('🔄 Cambio de autenticación detectado (OAuth/Google), verificando estado...');
+        _checkAuthStatus();
+      }
+    });
   }
 
   @override

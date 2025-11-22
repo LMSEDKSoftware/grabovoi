@@ -213,6 +213,7 @@ class NotificationScheduler {
         actionName: 'Pilotaje',
         challengeName: challengeName,
         codeNumber: codeNumber,
+        actionType: 'sesionPilotaje', // Tipo de acción para tracking
       );
     }
     

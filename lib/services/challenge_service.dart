@@ -286,6 +286,37 @@ class ChallengeService extends ChangeNotifier {
     ];
   }
 
+  // Obtener el orden de los desafíos
+  List<String> get _challengeOrder => [
+    'iniciacion_energetica',      // 7 días - Primero
+    'armonizacion_intermedia',     // 14 días - Segundo
+    'luz_dorada_avanzada',         // 21 días - Tercero
+    'maestro_abundancia',          // 30 días - Cuarto
+  ];
+
+  // Verificar si el desafío anterior está completado
+  bool _isPreviousChallengeCompleted(String challengeId) {
+    final challengeIndex = _challengeOrder.indexOf(challengeId);
+    
+    // Si es el primer desafío, siempre está disponible
+    if (challengeIndex <= 0) {
+      return true;
+    }
+    
+    // Verificar que el desafío anterior esté completado
+    final previousChallengeId = _challengeOrder[challengeIndex - 1];
+    final previousChallenge = _userChallenges[previousChallengeId];
+    
+    if (previousChallenge == null) {
+      // Si no existe el desafío anterior, no se puede iniciar este
+      return false;
+    }
+    
+    // Verificar que el desafío anterior esté completado
+    return previousChallenge.status == ChallengeStatus.completado &&
+           isChallengeCompleted(previousChallengeId);
+  }
+
   // Iniciar un desafío
   Future<void> startChallenge(String challengeId) async {
     // TEMPORAL: Permitir desafíos sin autenticación para testing
@@ -303,6 +334,19 @@ class ChallengeService extends ChangeNotifier {
       (c) => c.id == challengeId,
       orElse: () => throw Exception('Challenge not found'),
     );
+
+    // Verificar que el desafío anterior esté completado (validación secuencial)
+    if (!_isPreviousChallengeCompleted(challengeId)) {
+      final challengeIndex = _challengeOrder.indexOf(challengeId);
+      if (challengeIndex > 0) {
+        final previousChallengeId = _challengeOrder[challengeIndex - 1];
+        final previousChallenge = _availableChallenges.firstWhere(
+          (c) => c.id == previousChallengeId,
+          orElse: () => throw Exception('Previous challenge not found'),
+        );
+        throw Exception('Debes completar primero el "${previousChallenge.title}" antes de iniciar este desafío.');
+      }
+    }
 
     final startedChallenge = challenge.copyWith(
       status: ChallengeStatus.enProgreso,

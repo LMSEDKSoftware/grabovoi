@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/notification_type.dart';
 import '../models/notification_preferences.dart';
 import '../models/notification_history_item.dart';
@@ -36,6 +37,7 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
   final AuthServiceSimple _authService = AuthServiceSimple();
+  final SupabaseClient _supabase = Supabase.instance.client;
   bool _isInitialized = false;
   DateTime? _lastLowPriorityNotification;
   
@@ -828,32 +830,102 @@ class NotificationService {
   final Map<int, DateTime> _notifiedEnergyLevelsTimestamps = <int, DateTime>{};
   static const _notifiedEnergyLevelsExpiry = Duration(hours: 6); // 6 horas por nivel
 
+  // Verificar si ya se envió una notificación de acción completada para este código y acción
+  Future<bool> _yaSeNotificoAccionCompletada({
+    required String actionType,
+    String? codeId,
+    String? codeName,
+  }) async {
+    if (!_authService.isLoggedIn) {
+      return false;
+    }
+
+    try {
+      final userId = _authService.currentUser!.id;
+      
+      // Buscar si ya existe una notificación enviada para esta combinación
+      // Verificar por code_id o code_name (el código puede estar en cualquiera de los dos campos)
+      final codeToCheck = codeId ?? codeName ?? '';
+      
+      if (codeToCheck.isEmpty) {
+        return false; // Sin código, no se puede verificar
+      }
+      
+      // Buscar notificaciones que coincidan con el usuario, tipo, acción y código
+      final existing = await _supabase
+          .from('user_notifications_sent')
+          .select()
+          .eq('user_id', userId)
+          .eq('notification_type', NotificationType.challengeDayCompleted.toString().split('.').last)
+          .eq('action_type', actionType)
+          .or('code_id.eq.$codeToCheck,code_name.eq.$codeToCheck')
+          .maybeSingle();
+
+      return existing != null;
+    } catch (e) {
+      print('❌ Error verificando si ya se notificó acción completada: $e');
+      return false;
+    }
+  }
+
+  // Marcar que se envió una notificación de acción completada
+  Future<void> _marcarAccionCompletadaNotificada({
+    required String actionType,
+    String? codeId,
+    String? codeName,
+  }) async {
+    if (!_authService.isLoggedIn) {
+      return;
+    }
+
+    try {
+      final userId = _authService.currentUser!.id;
+      
+      // Determinar qué campo usar para el código (preferir code_id si está disponible)
+      final finalCodeId = codeId?.isNotEmpty == true ? codeId : null;
+      final finalCodeName = (codeId == null || codeId.isEmpty) && codeName?.isNotEmpty == true ? codeName : null;
+      
+      await _supabase.from('user_notifications_sent').insert({
+        'user_id': userId,
+        'notification_type': NotificationType.challengeDayCompleted.toString().split('.').last,
+        'action_type': actionType,
+        'code_id': finalCodeId,
+        'code_name': finalCodeName,
+        'sent_at': DateTime.now().toIso8601String(),
+      });
+      
+      print('✅ Notificación de acción completada marcada como enviada en BD (tipo: $actionType, código: ${finalCodeId ?? finalCodeName})');
+    } catch (e) {
+      print('❌ Error marcando acción completada como notificada: $e');
+      // Si es un error de duplicado (unique constraint), está bien, significa que ya existe
+      if (e.toString().contains('duplicate') || e.toString().contains('unique') || e.toString().contains('violates unique constraint')) {
+        print('⚠️ Notificación ya existía en BD (duplicado evitado)');
+      }
+    }
+  }
+
   Future<void> showActionCompletedNotification({
     required String actionName,
     required String challengeName,
     String? codeNumber,
+    String? actionType,
   }) async {
-    // Si hay un código, verificar si ya se notificó recientemente
+    // Si hay un código, verificar si ya se notificó en la base de datos
     if (codeNumber != null && codeNumber.isNotEmpty) {
-      // Limpiar códigos antiguos del cache
-      final now = DateTime.now();
-      _notifiedCodesTimestamps.removeWhere((code, timestamp) {
-        final shouldRemove = now.difference(timestamp) > _notifiedCodesExpiry;
-        if (shouldRemove) {
-          _notifiedCodes.remove(code);
-        }
-        return shouldRemove;
-      });
+      // Determinar el tipo de acción desde actionName
+      final determinedActionType = actionType ?? _determineActionTypeFromName(actionName);
+      
+      // Verificar en la base de datos si ya se notificó
+      final yaNotificado = await _yaSeNotificoAccionCompletada(
+        actionType: determinedActionType,
+        codeId: codeNumber,
+        codeName: codeNumber,
+      );
 
-      // Verificar si este código ya fue notificado
-      if (_notifiedCodes.contains(codeNumber)) {
-        print('⏭️ Notificación omitida: código $codeNumber ya fue notificado recientemente');
+      if (yaNotificado) {
+        print('⏭️ Notificación omitida: acción "$actionName" con código "$codeNumber" ya fue notificada');
         return;
       }
-
-      // Agregar el código al cache
-      _notifiedCodes.add(codeNumber);
-      _notifiedCodesTimestamps[codeNumber] = now;
     }
 
     // Construir mensaje con el código si está disponible (evitando duplicar "código")
@@ -882,6 +954,33 @@ class NotificationService {
       body: body,
       type: NotificationType.challengeDayCompleted,
     );
+
+    // Marcar como notificada en la base de datos después de enviar
+    if (codeNumber != null && codeNumber.isNotEmpty) {
+      final determinedActionType = actionType ?? _determineActionTypeFromName(actionName);
+      await _marcarAccionCompletadaNotificada(
+        actionType: determinedActionType,
+        codeId: codeNumber,
+        codeName: codeNumber,
+      );
+    }
+  }
+
+  // Determinar el tipo de acción desde el nombre de la acción
+  String _determineActionTypeFromName(String actionName) {
+    final lowerName = actionName.toLowerCase();
+    if (lowerName.contains('pilotaje') || lowerName.contains('pilot')) {
+      return 'sesionPilotaje';
+    } else if (lowerName.contains('repet') || lowerName.contains('repetición')) {
+      return 'codigoRepetido';
+    } else if (lowerName.contains('compart')) {
+      return 'pilotajeCompartido';
+    } else if (lowerName.contains('tiempo') || lowerName.contains('uso') || lowerName.contains('aplicación')) {
+      return 'tiempoEnApp';
+    } else if (lowerName.contains('específico') || lowerName.contains('especifico')) {
+      return 'codigoEspecifico';
+    }
+    return 'unknown';
   }
 
   Future<void> showChallengeCompletedNotification({

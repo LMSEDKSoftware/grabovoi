@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../services/ai_service.dart';
@@ -30,6 +31,11 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   List<Map<String, dynamic>> completedChallenges = [];
   bool isLoading = true;
   Timer? _sessionTimeUpdateTimer;
+  
+  // Caché para códigos explorados
+  int? _cachedExploredCodesCount;
+  DateTime? _cacheTimestamp;
+  static const _cacheDuration = Duration(minutes: 5);
 
   @override
   void initState() {
@@ -54,6 +60,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
     });
     
     _loadUserData();
+    _loadExploredCodesCount();
   }
 
   @override
@@ -88,6 +95,69 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
       _loadUserData();
+      // Refrescar códigos explorados si el caché expiró
+      _loadExploredCodesCount();
+    }
+  }
+
+  // Obtener conteo de códigos explorados desde la BD con caché
+  Future<int> _getExploredCodesCount({bool forceRefresh = false}) async {
+    if (!_authService.isLoggedIn) {
+      return 0;
+    }
+
+    // Usar caché si está disponible y no ha expirado
+    if (!forceRefresh && 
+        _cachedExploredCodesCount != null && 
+        _cacheTimestamp != null &&
+        DateTime.now().difference(_cacheTimestamp!) < _cacheDuration) {
+      return _cachedExploredCodesCount!;
+    }
+
+    try {
+      final supabase = Supabase.instance.client;
+      final userId = _authService.currentUser!.id;
+      
+      // Contar códigos únicos en user_code_history
+      // Optimizado: solo traer code_id para reducir transferencia de datos
+      final response = await supabase
+          .from('user_code_history')
+          .select('code_id')
+          .eq('user_id', userId);
+      
+      // Obtener códigos únicos
+      final uniqueCodes = <String>{};
+      for (final row in response) {
+        final codeId = row['code_id'] as String?;
+        if (codeId != null && codeId.isNotEmpty) {
+          uniqueCodes.add(codeId);
+        }
+      }
+      
+      final count = uniqueCodes.length;
+      
+      // Guardar en caché
+      _cachedExploredCodesCount = count;
+      _cacheTimestamp = DateTime.now();
+      
+      return count;
+    } catch (e) {
+      print('❌ Error obteniendo códigos explorados: $e');
+      // Si hay error pero tenemos caché, usar el valor en caché
+      if (_cachedExploredCodesCount != null) {
+        return _cachedExploredCodesCount!;
+      }
+      return 0;
+    }
+  }
+  
+  // Cargar códigos explorados una vez al iniciar
+  Future<void> _loadExploredCodesCount() async {
+    final count = await _getExploredCodesCount();
+    if (mounted) {
+      setState(() {
+        _cachedExploredCodesCount = count;
+      });
     }
   }
 
@@ -309,7 +379,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
           _buildProgressRow('Días Consecutivos', dias, Icons.calendar_today),
           _buildProgressRow('Total Pilotajes', total, Icons.play_circle),
           _buildProgressRow('Desafíos Completados', '${completedChallenges.length}', Icons.emoji_events),
-          _buildProgressRow('Códigos Explorados', '8', Icons.explore),
+          _buildProgressRow('Códigos Explorados', '${_cachedExploredCodesCount ?? 0}', Icons.explore),
         ],
       ),
     );

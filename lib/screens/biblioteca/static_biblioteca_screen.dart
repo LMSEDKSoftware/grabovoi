@@ -2979,9 +2979,9 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: const Color(0xFFFFD700).withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFF0B132B), width: 1),
+                                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5), width: 1),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -3428,31 +3428,34 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Comenzar Repetición',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.diamond, color: Colors.white, size: 16),
-                          const Text(
-                            '+3',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'Comenzar Repetición',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+                  
+                  // Badge con icono de cristal y +3
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        '+3',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   
                   // Botón de cancelar
                   TextButton(

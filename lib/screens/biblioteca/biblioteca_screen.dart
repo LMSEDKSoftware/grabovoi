@@ -1333,9 +1333,9 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: const Color(0xFFFFD700).withOpacity(0.3),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF0B132B), width: 1),
+                            border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5), width: 1),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,

@@ -4,6 +4,8 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/subscription_welcome_modal.dart';
 import '../../services/auth_service_simple.dart';
+import '../../services/subscription_service.dart';
+import '../../services/challenge_service.dart';
 import '../../main.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -69,6 +71,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
         
+        // IMPORTANTE: Asegurar que el período de prueba se inicie antes de verificar el modal
+        final subscriptionService = SubscriptionService();
+        await subscriptionService.checkSubscriptionStatus();
+        
+        // Iniciar automáticamente el desafío de iniciación energética para usuarios nuevos
+        try {
+          final challengeService = ChallengeService();
+          await challengeService.initializeChallenges();
+          
+          // Verificar si el usuario ya tiene desafíos
+          final userChallenges = challengeService.getUserChallenges();
+          final hasIniciacionEnergetica = userChallenges.any(
+            (c) => c.id == 'iniciacion_energetica',
+          );
+          
+          // Si no tiene el desafío de iniciación energética, iniciarlo automáticamente
+          if (!hasIniciacionEnergetica) {
+            try {
+              await challengeService.startChallenge('iniciacion_energetica');
+              print('✅ Desafío de iniciación energética iniciado automáticamente para nuevo usuario');
+            } catch (e) {
+              print('⚠️ Error iniciando desafío automáticamente: $e');
+              // No fallar el registro si esto falla
+            }
+          }
+        } catch (e) {
+          print('⚠️ Error inicializando desafíos: $e');
+          // No fallar el registro si esto falla
+        }
+        
         // Verificar si debe mostrar el modal de bienvenida de suscripción
         final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
         
@@ -108,6 +140,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await _authService.signInWithGoogle();
       
       if (mounted) {
+        // IMPORTANTE: Asegurar que el período de prueba se inicie antes de verificar el modal
+        final subscriptionService = SubscriptionService();
+        await subscriptionService.checkSubscriptionStatus();
+        
+        // Iniciar automáticamente el desafío de iniciación energética para usuarios nuevos
+        try {
+          final challengeService = ChallengeService();
+          await challengeService.initializeChallenges();
+          
+          // Verificar si el usuario ya tiene desafíos
+          final userChallenges = challengeService.getUserChallenges();
+          final hasIniciacionEnergetica = userChallenges.any(
+            (c) => c.id == 'iniciacion_energetica',
+          );
+          
+          // Si no tiene el desafío de iniciación energética, iniciarlo automáticamente
+          if (!hasIniciacionEnergetica) {
+            try {
+              await challengeService.startChallenge('iniciacion_energetica');
+              print('✅ Desafío de iniciación energética iniciado automáticamente para nuevo usuario');
+            } catch (e) {
+              print('⚠️ Error iniciando desafío automáticamente: $e');
+              // No fallar el registro si esto falla
+            }
+          }
+        } catch (e) {
+          print('⚠️ Error inicializando desafíos: $e');
+          // No fallar el registro si esto falla
+        }
+        
         // Verificar si debe mostrar el modal de bienvenida de suscripción
         final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
         
@@ -146,6 +208,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return 'Por favor ingresa un email válido.';
     } else if (error.contains('Signup is disabled')) {
       return 'El registro está temporalmente deshabilitado.';
+    } else if (error.contains('rate limit') || error.contains('429') || error.contains('over_email_send_rate_limit')) {
+      return 'Se han enviado demasiados correos. Por favor espera unos minutos antes de intentar nuevamente.';
+    } else if (error.contains('sending confirmation email') || error.contains('Error sending email') || error.contains('SMTP') || (error.contains('500') && error.contains('email'))) {
+      return 'Error al enviar email de confirmación. Por favor, configura SMTP en Supabase Dashboard o contacta al administrador.';
     } else {
       return 'Error al registrarse. Inténtalo nuevamente.';
     }

@@ -120,6 +120,29 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
   Widget _buildChallengeCard(Challenge challenge) {
     final color = Color(int.parse(challenge.color.replaceAll('#', '0xFF')));
     
+    // Verificar si el desafío anterior está completado
+    final challengeIndex = _challengeService.availableChallenges.indexWhere((c) => c.id == challenge.id);
+    final challengeOrder = ['iniciacion_energetica', 'armonizacion_intermedia', 'luz_dorada_avanzada', 'maestro_abundancia'];
+    final currentIndex = challengeOrder.indexOf(challenge.id);
+    bool isLocked = false;
+    String? lockMessage;
+    
+    if (currentIndex > 0) {
+      final previousChallengeId = challengeOrder[currentIndex - 1];
+      final previousChallenge = _challengeService.getUserChallenges().firstWhere(
+        (c) => c.id == previousChallengeId,
+        orElse: () => challenge, // Si no existe, usar el actual como fallback
+      );
+      
+      // Verificar si el desafío anterior está completado
+      if (previousChallenge.id != challenge.id) {
+        isLocked = previousChallenge.status != ChallengeStatus.completado;
+        if (isLocked) {
+          lockMessage = 'Completa primero: ${previousChallenge.title}';
+        }
+      }
+    }
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -127,17 +150,20 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            color.withOpacity(0.1),
-            color.withOpacity(0.05),
+            color.withOpacity(isLocked ? 0.05 : 0.1),
+            color.withOpacity(isLocked ? 0.02 : 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color, width: 2),
+        border: Border.all(
+          color: isLocked ? Colors.grey.withOpacity(0.5) : color,
+          width: 2,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _showChallengeDialog(challenge),
+          onTap: isLocked ? null : () => _showChallengeDialog(challenge),
           borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -146,16 +172,40 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        challenge.icon,
-                        style: const TextStyle(fontSize: 24),
-                      ),
+                    Stack(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(isLocked ? 0.1 : 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            challenge.icon,
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: isLocked ? Colors.grey : Colors.white,
+                            ),
+                          ),
+                        ),
+                        if (isLocked)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.grey,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.lock,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -165,7 +215,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                           Text(
                             challenge.title,
                             style: GoogleFonts.inter(
-                              color: Colors.white,
+                              color: isLocked ? Colors.grey : Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -175,14 +225,14 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                             children: [
                               Icon(
                                 Icons.timer,
-                                color: Colors.white70,
+                                color: isLocked ? Colors.grey : Colors.white70,
                                 size: 16,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 '${challenge.durationDays} días',
                                 style: GoogleFonts.inter(
-                                  color: Colors.white70,
+                                  color: isLocked ? Colors.grey : Colors.white70,
                                   fontSize: 14,
                                 ),
                               ),
@@ -190,7 +240,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: _getDifficultyColor(challenge.difficulty).withOpacity(0.2),
+                                  color: _getDifficultyColor(challenge.difficulty).withOpacity(isLocked ? 0.1 : 0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -207,22 +257,55 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white54,
-                      size: 16,
-                    ),
+                    if (isLocked)
+                      const Icon(
+                        Icons.lock,
+                        color: Colors.grey,
+                        size: 24,
+                      )
+                    else
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white54,
+                        size: 16,
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
                   challenge.description,
                   style: GoogleFonts.inter(
-                    color: Colors.white70,
+                    color: isLocked ? Colors.grey : Colors.white70,
                     fontSize: 14,
                     height: 1.4,
                   ),
                 ),
+                if (isLocked && lockMessage != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.orange, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            lockMessage,
+                            style: GoogleFonts.inter(
+                              color: Colors.orange,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -457,13 +540,52 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _challengeService.startChallenge(challenge.id);
-              setState(() {
-                _userChallenges = _challengeService.getUserChallenges();
-                _availableChallenges = _challengeService.getAvailableChallenges();
-              });
+            onPressed: () async {
+              // Verificar si el desafío anterior está completado
+              final challengeOrder = ['iniciacion_energetica', 'armonizacion_intermedia', 'luz_dorada_avanzada', 'maestro_abundancia'];
+              final currentIndex = challengeOrder.indexOf(challenge.id);
+              bool canStart = true;
+              String? errorMessage;
+              
+              if (currentIndex > 0) {
+                final previousChallengeId = challengeOrder[currentIndex - 1];
+                final previousChallenge = _challengeService.getUserChallenges().firstWhere(
+                  (c) => c.id == previousChallengeId,
+                  orElse: () => challenge,
+                );
+                
+                if (previousChallenge.id != challenge.id && previousChallenge.status != ChallengeStatus.completado) {
+                  canStart = false;
+                  errorMessage = 'Debes completar primero el "${previousChallenge.title}" antes de iniciar este desafío.';
+                }
+              }
+              
+              if (!canStart) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(errorMessage ?? 'No puedes iniciar este desafío'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+              
+              try {
+                Navigator.of(context).pop();
+                await _challengeService.startChallenge(challenge.id);
+                setState(() {
+                  _userChallenges = _challengeService.getUserChallenges();
+                  _availableChallenges = _challengeService.getAvailableChallenges();
+                });
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFD700),

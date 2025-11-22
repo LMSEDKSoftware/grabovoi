@@ -1,9 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
 import 'dart:io' show Platform;
 import '../models/user_model.dart' as app_models;
+import '../config/supabase_config.dart';
 import 'subscription_service.dart';
 import 'biometric_auth_service.dart';
 
@@ -55,38 +57,78 @@ class AuthServiceSimple {
       print('✅ Usuario cargado desde tabla users');
     } catch (e) {
       print('⚠️ Usuario no encontrado en tabla users, creando...');
-      // Si no existe, crear el usuario
+      // Si no existe, crear el usuario (esto incluye usuarios de OAuth/Google)
       await _createUserFromSession(session);
     }
   }
 
-  // Crear usuario desde sesión
+  // Crear usuario desde sesión (incluye usuarios de OAuth/Google)
   Future<void> _createUserFromSession(Session session) async {
     try {
+      // Obtener nombre de Google OAuth si está disponible
+      String userName = session.user.userMetadata?['name'] ?? 
+                       session.user.userMetadata?['full_name'] ??
+                       session.user.email?.split('@')[0] ?? 
+                       'Usuario';
+      
+      // Obtener avatar de Google si está disponible
+      String? avatarUrl = session.user.userMetadata?['avatar_url'] ?? 
+                         session.user.userMetadata?['picture'];
+      
       final newUser = app_models.User(
         id: session.user.id,
         email: session.user.email ?? '',
-        name: session.user.userMetadata?['name'] ?? session.user.email?.split('@')[0] ?? 'Usuario',
+        name: userName,
         createdAt: DateTime.now(),
         lastLoginAt: DateTime.now(),
         isEmailVerified: session.user.emailConfirmedAt != null,
+        avatar: avatarUrl,
       );
 
       // Intentar insertar en la tabla users
-      await _supabase.from('users').insert(newUser.toJson());
-      _currentUser = newUser;
-      await _saveUserToLocal(_currentUser!);
-      print('✅ Usuario creado en tabla users');
+      try {
+        await _supabase.from('users').insert(newUser.toJson());
+        _currentUser = newUser;
+        await _saveUserToLocal(_currentUser!);
+        print('✅ Usuario creado en tabla users (OAuth/Google)');
+      } catch (insertError) {
+        // Si falla por duplicado, intentar cargar el usuario existente
+        if (insertError.toString().contains('duplicate') || insertError.toString().contains('unique')) {
+          print('⚠️ Usuario ya existe, cargando...');
+          try {
+            final userData = await _supabase
+                .from('users')
+                .select()
+                .eq('id', session.user.id)
+                .single();
+            _currentUser = app_models.User.fromJson(userData);
+            await _saveUserToLocal(_currentUser!);
+            print('✅ Usuario cargado después de intento de inserción');
+          } catch (loadError) {
+            // Si también falla la carga, usar datos de sesión
+            _currentUser = newUser;
+            await _saveUserToLocal(_currentUser!);
+            print('⚠️ Usuario creado solo localmente');
+          }
+        } else {
+          throw insertError;
+        }
+      }
     } catch (e) {
       print('❌ Error creando usuario en tabla users: $e');
       // Si falla, usar solo datos de sesión
       _currentUser = app_models.User(
         id: session.user.id,
         email: session.user.email ?? '',
-        name: session.user.userMetadata?['name'] ?? session.user.email?.split('@')[0] ?? 'Usuario',
+        name: session.user.userMetadata?['name'] ?? 
+              session.user.userMetadata?['full_name'] ??
+              session.user.email?.split('@')[0] ?? 
+              'Usuario',
         createdAt: DateTime.now(),
         lastLoginAt: DateTime.now(),
         isEmailVerified: session.user.emailConfirmedAt != null,
+        avatar: session.user.userMetadata?['avatar_url'] ?? 
+                session.user.userMetadata?['picture'],
       );
       await _saveUserToLocal(_currentUser!);
       print('⚠️ Usuario creado solo localmente');
@@ -120,10 +162,21 @@ class AuthServiceSimple {
     required String name,
   }) async {
     try {
+      // Configurar emailRedirectTo según la plataforma para evitar errores de envío de email
+      String? emailRedirectTo;
+      if (kIsWeb) {
+        // En web, usar la URL de callback de Supabase
+        emailRedirectTo = '${SupabaseConfig.url}/auth/v1/callback';
+      } else {
+        // En móvil, usar deep link
+        emailRedirectTo = 'com.manifestacion.grabovoi://login-callback';
+      }
+      
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {'name': name},
+        emailRedirectTo: emailRedirectTo,
       );
 
       if (response.user != null) {
@@ -180,7 +233,19 @@ class AuthServiceSimple {
 
       return response;
     } catch (e) {
-      print('Error en registro: $e');
+      print('❌ Error en registro: $e');
+      print('❌ Tipo de error: ${e.runtimeType}');
+      
+      // Si el error es específicamente sobre envío de email, proporcionar mensaje más útil
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('sending confirmation email') || 
+          errorString.contains('error sending email') ||
+          errorString.contains('unexpected_failure') ||
+          (errorString.contains('500') && errorString.contains('email'))) {
+        print('⚠️ Error relacionado con envío de email - probablemente falta SMTP en Supabase');
+        throw Exception('Error al enviar email de confirmación. Por favor, configura SMTP en Supabase Dashboard o contacta al administrador.');
+      }
+      
       rethrow;
     }
   }
@@ -217,7 +282,9 @@ class AuthServiceSimple {
 
       return response;
     } catch (e) {
-      print('Error en login: $e');
+      print('❌ Error en login: $e');
+      print('❌ Tipo de error: ${e.runtimeType}');
+      print('❌ Stack trace: ${StackTrace.current}');
       rethrow;
     }
   }
@@ -313,12 +380,34 @@ class AuthServiceSimple {
   // Login con Google
   Future<void> signInWithGoogle() async {
     try {
+      print('🔐 Iniciando login con Google...');
+      
+      // Configurar redirect URL según la plataforma
+      String redirectTo;
+      if (kIsWeb) {
+        // En web, usar la URL de callback de Supabase
+        // Esto permite que Supabase maneje el callback y luego redirija a nuestra app
+        final supabaseUrl = SupabaseConfig.url;
+        redirectTo = '$supabaseUrl/auth/v1/callback';
+        print('🌐 Usando redirect para web: $redirectTo');
+      } else {
+        // En móvil, usar deep link
+        redirectTo = 'com.manifestacion.grabovoi://login-callback';
+        print('📱 Usando redirect para móvil: $redirectTo');
+      }
+      
       await _supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'io.supabase.flutterquickstart://login-callback/',
+        redirectTo: redirectTo,
+        authScreenLaunchMode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
       );
+      print('✅ Redirección a Google iniciada');
     } catch (e) {
-      print('Error en login con Google: $e');
+      print('❌ Error en login con Google: $e');
+      // Si el error es que el proveedor no está habilitado, mostrar mensaje más claro
+      if (e.toString().contains('not enabled') || e.toString().contains('Unsupported provider')) {
+        throw Exception('Google OAuth no está habilitado en Supabase. Por favor, habilítalo en el Dashboard de Supabase > Authentication > Providers > Google');
+      }
       rethrow;
     }
   }

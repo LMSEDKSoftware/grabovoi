@@ -40,10 +40,21 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    
     return Dialog(
       backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: 20 + keyboardHeight,
+      ),
       child: Container(
-        margin: const EdgeInsets.all(20),
+        constraints: BoxConstraints(
+          maxHeight: mediaQuery.size.height * 0.8 - keyboardHeight,
+        ),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: const Color(0xFF1C2541),
@@ -60,10 +71,11 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Header con título e ícono
             Row(
               children: [
@@ -239,7 +251,8 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
                 ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

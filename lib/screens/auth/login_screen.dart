@@ -231,6 +231,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return 'Por favor confirma tu email antes de iniciar sesión.';
     } else if (error.contains('Too many requests')) {
       return 'Demasiados intentos. Espera un momento antes de intentar nuevamente.';
+    } else if (error.contains('not enabled') || error.contains('Unsupported provider')) {
+      return 'Google OAuth no está habilitado. Por favor, contacta al administrador.';
     } else {
       return 'Error al iniciar sesión. Inténtalo nuevamente.';
     }

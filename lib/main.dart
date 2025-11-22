@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'config/supabase_config.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/migration_service.dart';
 import 'services/app_time_tracker.dart';
 import 'services/pilotage_state_service.dart';
@@ -25,6 +26,7 @@ import 'models/notification_history_item.dart';
 import 'services/notification_count_service.dart';
 import 'services/subscription_service.dart';
 import 'widgets/subscription_required_modal.dart';
+import 'services/auth_service_simple.dart';
 import 'dart:async';
 
 void main() async {
@@ -39,6 +41,17 @@ void main() async {
 
   // Inicializar Supabase
   await SupabaseConfig.initialize();
+  
+  // Manejar deep links de OAuth (Google Sign In)
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    final AuthChangeEvent event = data.event;
+    final Session? session = data.session;
+    
+    if (event == AuthChangeEvent.signedIn && session != null) {
+      print('✅ Usuario autenticado con OAuth (Google)');
+      // El AuthWrapper se encargará de cargar el usuario y navegar
+    }
+  });
   
   // Inicializar rastreador de tiempo
   AppTimeTracker().startSession();
