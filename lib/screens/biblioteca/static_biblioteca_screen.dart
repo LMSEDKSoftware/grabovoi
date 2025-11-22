@@ -22,6 +22,8 @@ import '../codes/repetition_session_screen.dart';
 import '../../services/subscription_service.dart';
 import '../../widgets/subscription_required_modal.dart';
 import '../../services/user_progress_service.dart';
+import '../../services/user_custom_codes_service.dart';
+import '../../services/user_favorites_service.dart';
 
 class StaticBibliotecaScreen extends StatefulWidget {
   const StaticBibliotecaScreen({super.key});
@@ -49,6 +51,17 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   DateTime? _lastLoadTime;
   bool _tieneFavoritos = false; // Flag para saber si hay favoritos disponibles
   
+  // Caché de favoritos para optimizar consultas
+  Map<String, bool> _favoritosCache = {}; // codigo -> isFavorite
+  Map<String, String?> _etiquetasCache = {}; // codigo -> etiqueta
+  Set<String> _customCodesCache = {}; // códigos personalizados
+  DateTime? _favoritosCacheTime;
+  static const Duration _cacheDuration = Duration(minutes: 5);
+  
+  // Caché de títulos relacionados para evitar consultas repetitivas durante scroll
+  Map<String, List<Map<String, dynamic>>> _titulosRelacionadosCache = {}; // codigo -> titulos relacionados
+  bool _titulosRelacionadosCargados = false;
+  
   // Variables para ordenamiento inteligente basado en evaluación
   List<String> _userGoals = []; // Objetivos del usuario desde la evaluación
   final UserProgressService _progressService = UserProgressService();
@@ -69,6 +82,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   bool _mostrarSeleccionCodigos = false;
   int _tokensUsadosOpenAI = 0;
   double _costoEstimadoOpenAI = 0.0;
+  
+  // Variables para pilotaje manual
+  bool _showManualPilotage = false;
+  TextEditingController _manualCodeController = TextEditingController();
+  TextEditingController _manualTitleController = TextEditingController();
+  TextEditingController _manualDescriptionController = TextEditingController();
+  String _manualCategory = 'Abundancia y Prosperidad';
   
   // Variables para el deslizamiento y reporte de códigos
   final Map<String, double> _swipeOffsets = {}; // Almacena el offset de deslizamiento por código
@@ -105,9 +125,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   // Los datos se cargan una sola vez en initState y se actualizan solo con pull-to-refresh
 
   @override
+  @override
   void dispose() {
     _scrollController.dispose();
     _searchController.dispose();
+    _manualCodeController.dispose();
+    _manualTitleController.dispose();
+    _manualDescriptionController.dispose();
     super.dispose();
   }
 
@@ -125,6 +149,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       final cats = items.map((c) => c.categoria).toSet().toList();
       final etiquetas = await BibliotecaSupabaseService.getEtiquetasFavoritos();
       final favoritos = await BibliotecaSupabaseService.getFavoritos();
+      
+      // Cargar y cachear favoritos
+      await _cargarFavoritosCache();
+      
+      // Precargar títulos relacionados para todos los códigos visibles (solo una vez)
+      if (!_titulosRelacionadosCargados) {
+        await _precargarTitulosRelacionados(items);
+      }
 
       // Ordenar las categorías basadas en los objetivos del usuario
       final sortedCategories = _applyCategorySorting(cats, _userGoals);
@@ -463,6 +495,96 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     });
   }
 
+  // Cargar favoritos en caché para optimizar consultas
+  Future<void> _cargarFavoritosCache() async {
+    try {
+      // Solo recargar si el caché expiró
+      if (_favoritosCacheTime != null && 
+          DateTime.now().difference(_favoritosCacheTime!) < _cacheDuration) {
+        print('✅ Usando caché de favoritos');
+        return;
+      }
+      
+      print('🔄 Cargando favoritos en caché...');
+      final favoritesWithDetails = await UserFavoritesService().getFavoritesWithDetails();
+      
+      _favoritosCache.clear();
+      _etiquetasCache.clear();
+      _customCodesCache.clear();
+      
+      for (final item in favoritesWithDetails) {
+        final codigoId = item['codigo_id'] as String? ?? 
+                        (item['codigos_grabovoi'] as Map?)?['codigo'] as String? ?? '';
+        final etiqueta = item['etiqueta'] as String?;
+        final isCustom = item['is_custom'] == true;
+        
+        if (codigoId.isNotEmpty) {
+          _favoritosCache[codigoId] = true;
+          _etiquetasCache[codigoId] = etiqueta;
+          if (isCustom) {
+            _customCodesCache.add(codigoId);
+          }
+        }
+      }
+      
+      _favoritosCacheTime = DateTime.now();
+      print('✅ Caché de favoritos cargado: ${_favoritosCache.length} códigos');
+    } catch (e) {
+      print('⚠️ Error cargando caché de favoritos: $e');
+    }
+  }
+  
+  // Verificar si un código es favorito (usando caché)
+  bool _esFavoritoCached(String codigoId) {
+    return _favoritosCache[codigoId] ?? false;
+  }
+  
+  // Obtener etiqueta de un favorito (usando caché)
+  String? _getEtiquetaCached(String codigoId) {
+    return _etiquetasCache[codigoId];
+  }
+  
+  // Verificar si un código es personalizado
+  bool _esCodigoPersonalizado(String codigoId) {
+    return _customCodesCache.contains(codigoId);
+  }
+  
+  // Precargar títulos relacionados para todos los códigos (solo una vez)
+  Future<void> _precargarTitulosRelacionados(List<CodigoGrabovoi> codigos) async {
+    if (_titulosRelacionadosCargados) return;
+    
+    print('🔄 Precargando títulos relacionados para ${codigos.length} códigos...');
+    try {
+      // Cargar títulos relacionados en paralelo para los primeros 50 códigos (para no sobrecargar)
+      final codigosALimitar = codigos.take(50).toList();
+      final futures = codigosALimitar.map((codigo) async {
+        try {
+          final titulos = await SupabaseService.getTitulosRelacionados(codigo.codigo);
+          _titulosRelacionadosCache[codigo.codigo] = titulos;
+        } catch (e) {
+          print('⚠️ Error precargando títulos para ${codigo.codigo}: $e');
+          _titulosRelacionadosCache[codigo.codigo] = [];
+        }
+      });
+      
+      await Future.wait(futures);
+      _titulosRelacionadosCargados = true;
+      print('✅ Títulos relacionados precargados para ${_titulosRelacionadosCache.length} códigos');
+    } catch (e) {
+      print('⚠️ Error precargando títulos relacionados: $e');
+    }
+  }
+  
+  // Obtener títulos relacionados desde cache o cargar si no están en cache
+  List<Map<String, dynamic>> _getTitulosRelacionados(String codigo) {
+    // Si está en cache, retornar inmediatamente
+    if (_titulosRelacionadosCache.containsKey(codigo)) {
+      return _titulosRelacionadosCache[codigo]!;
+    }
+    // Si no está en cache, retornar lista vacía (no hacer consulta durante scroll)
+    return [];
+  }
+
   Future<void> _filtrarFavoritosPorEtiqueta(String etiqueta) async {
     try {
       final favoritos = await BibliotecaSupabaseService.getFavoritosPorEtiqueta(etiqueta);
@@ -491,6 +613,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   Future<void> _cargarFavoritosPorEtiqueta(String etiqueta) async {
     try {
       final favoritos = await BibliotecaSupabaseService.getFavoritosPorEtiqueta(etiqueta);
+      
+      // Precargar títulos relacionados para los favoritos si no se han cargado
+      if (!_titulosRelacionadosCargados && favoritos.isNotEmpty) {
+        await _precargarTitulosRelacionados(favoritos);
+      }
+      
       setState(() {
         favoritosFiltrados = favoritos;
         etiquetaSeleccionada = etiqueta;
@@ -504,6 +632,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
 
   /// Actualizar el estado de favoritos después de agregar/quitar uno
   Future<void> _actualizarEstadoFavoritos() async {
+    // Recargar caché de favoritos
+    await _cargarFavoritosCache();
     try {
       final favoritos = await BibliotecaSupabaseService.getFavoritos();
       final etiquetas = await BibliotecaSupabaseService.getEtiquetasFavoritos();
@@ -537,11 +667,24 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   }
 
   Future<void> _toggleFavoritos() async {
+    // Si no estamos mostrando favoritos, cargar y precargar títulos relacionados
     if (!mostrarFavoritos) {
+      // Precargar títulos relacionados si no se han cargado
+      if (!_titulosRelacionadosCargados && _codigos.isNotEmpty) {
+        await _precargarTitulosRelacionados(_codigos);
+      }
       // Activar filtro de favoritos
       try {
+        // Recargar caché antes de mostrar favoritos
+        await _cargarFavoritosCache();
+        
         final favoritos = await BibliotecaSupabaseService.getFavoritos();
         final etiquetas = await BibliotecaSupabaseService.getEtiquetasFavoritos();
+        
+        // Precargar títulos relacionados para los favoritos si no se han cargado
+        if (!_titulosRelacionadosCargados && favoritos.isNotEmpty) {
+          await _precargarTitulosRelacionados(favoritos);
+        }
         
         if (favoritos.isEmpty) {
           // Si no hay favoritos, mostrar mensaje y no cambiar el estado
@@ -1966,6 +2109,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           ),
           // Modales de búsqueda profunda
           if (_showOptionsModal) _buildOptionsModal(),
+          if (_showManualPilotage) _buildManualPilotageModal(),
           if (_mostrarSeleccionCodigos) _buildSeleccionCodigosModal(),
           if (_buscandoConIA) _buildBuscandoConIAModal(),
           if (_mostrarConfirmacionGuardado) _buildConfirmacionGuardadoModal(),
@@ -2064,19 +2208,38 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: CustomButton(
-                    text: 'Búsqueda Profunda con IA',
-                    icon: Icons.psychology,
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
                     onPressed: () {
                       setState(() {
                         _showOptionsModal = false;
                       });
                       _busquedaProfunda(_codigoNoEncontrado ?? _queryBusqueda);
                     },
-                    color: const Color(0xFF4CAF50),
-                  ),
+                        icon: const Icon(Icons.psychology, color: Colors.white),
+                        label: const Text('Búsqueda Profunda'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4CAF50),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _iniciarPilotajeManual,
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        label: const Text('Pilotaje Manual'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD700),
+                          foregroundColor: const Color(0xFF0B132B),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 TextButton(
@@ -2096,6 +2259,241 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         ),
       ),
     );
+  }
+
+  void _iniciarPilotajeManual() {
+    setState(() {
+      _showManualPilotage = true;
+      _showOptionsModal = false;
+    });
+  }
+
+  Widget _buildManualPilotageModal() {
+    // Obtener todas las categorías únicas del JSON
+    final categoriasDisponibles = [
+      'Abundancia y Prosperidad',
+      'Amor y Relaciones',
+      'Conciencia Espiritual',
+      'Liberación Emocional',
+      'Limpieza y Reconexión',
+      'Protección Energética',
+      'Salud y Regeneración',
+    ];
+
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.8),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C2541),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFFFD700).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Pilotaje Manual',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ingresa tu código personalizado',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _manualCodeController,
+                    decoration: InputDecoration(
+                      labelText: 'Código',
+                      hintText: 'Ej: 123_456_789',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFFFD700)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _manualTitleController,
+                    decoration: InputDecoration(
+                      labelText: 'Título',
+                      hintText: 'Ej: Mi código personalizado',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFFFD700)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _manualDescriptionController,
+                    decoration: InputDecoration(
+                      labelText: 'Descripción',
+                      hintText: 'Ej: Descripción del código personalizado',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFFFD700)),
+                      ),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _manualCategory,
+                    decoration: InputDecoration(
+                      labelText: 'Categoría',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFFFD700)),
+                      ),
+                    ),
+                    items: categoriasDisponibles.map((cat) {
+                      return DropdownMenuItem(
+                        value: cat,
+                        child: Text(cat),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _manualCategory = value ?? 'Abundancia y Prosperidad';
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _guardarCodigoManual,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            foregroundColor: const Color(0xFF0B132B),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Guardar y Usar'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _showManualPilotage = false;
+                              _manualCodeController.clear();
+                              _manualTitleController.clear();
+                              _manualDescriptionController.clear();
+                            });
+                          },
+                          child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _guardarCodigoManual() async {
+    if (_manualCodeController.text.isEmpty || _manualTitleController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor completa todos los campos'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final customCodesService = UserCustomCodesService();
+      
+      // Guardar código personalizado
+      final success = await customCodesService.saveCustomCode(
+        codigo: _manualCodeController.text,
+        nombre: _manualTitleController.text,
+        categoria: _manualCategory,
+        descripcion: _manualDescriptionController.text.isNotEmpty 
+            ? _manualDescriptionController.text 
+            : 'Código personalizado del usuario',
+      );
+
+      if (success) {
+        // Guardar valores antes de limpiar
+        final codigoGuardado = _manualCodeController.text;
+        final nombreGuardado = _manualTitleController.text;
+        final categoriaGuardada = _manualCategory;
+        
+        setState(() {
+          _showManualPilotage = false;
+          _manualCodeController.clear();
+          _manualTitleController.clear();
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Código guardado en favoritos'),
+            backgroundColor: Color(0xFF4CAF50),
+          ),
+        );
+
+        // Navegar al código para usarlo
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RepetitionSessionScreen(
+              codigo: codigoGuardado,
+              nombre: nombreGuardado,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: El código ya existe o no se pudo guardar'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildBuscandoConIAModal() {
@@ -2717,22 +3115,111 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // Botón de favorito con etiqueta
-                        FutureBuilder<bool>(
-                          future: BibliotecaSupabaseService.esFavorito(codigo.codigo),
-                          builder: (context, snapshot) {
-                            final isFavorite = snapshot.data ?? false;
+                        // Botón de favorito con etiqueta (usando caché)
+                        Builder(
+                          builder: (context) {
+                            final isFavorite = _esFavoritoCached(codigo.codigo);
+                            final etiqueta = _getEtiquetaCached(codigo.codigo);
+                            final isCustom = _esCodigoPersonalizado(codigo.codigo);
+                            
                             return Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
                                   onPressed: () async {
                                     if (isFavorite) {
-                                      // Si ya es favorito, removerlo directamente
+                                      // Si es código personalizado, mostrar advertencia
+                                      if (isCustom) {
+                                        final confirmar = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            backgroundColor: const Color(0xFF1C2541),
+                                            title: Text(
+                                              '⚠️ Advertencia',
+                                              style: GoogleFonts.inter(
+                                                color: Colors.orange,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            content: Text(
+                                              'Este código fue insertado manualmente. Si lo eliminas de favoritos, no podrás volver a verlo hasta que lo insertes nuevamente de forma manual.\n\n¿Deseas continuar?',
+                                              style: GoogleFonts.inter(color: Colors.white),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context, false),
+                                                child: Text(
+                                                  'Cancelar',
+                                                  style: GoogleFonts.inter(color: Colors.white70),
+                                                ),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () => Navigator.pop(context, true),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                                child: Text(
+                                                  'Eliminar',
+                                                  style: GoogleFonts.inter(color: Colors.white),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        
+                                        if (confirmar != true) {
+                                          return; // Usuario canceló
+                                        }
+                                        
+                                        // Eliminar código personalizado
+                                        try {
+                                          final customCodesService = UserCustomCodesService();
+                                          await customCodesService.deleteCustomCode(codigo.codigo);
+                                          
+                                          // Actualizar caché
+                                          _favoritosCache.remove(codigo.codigo);
+                                          _etiquetasCache.remove(codigo.codigo);
+                                          _customCodesCache.remove(codigo.codigo);
+                                          
+                                          // Actualizar estado
+                                          await _actualizarEstadoFavoritos();
+                                          
+                                          if (mounted) {
+                                            setState(() {});
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('❌ ${codigo.nombre} eliminado de favoritos'),
+                                                backgroundColor: Colors.red,
+                                                duration: const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          print('Error eliminando código personalizado: $e');
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Error: ${e.toString()}'),
+                                                backgroundColor: Colors.red,
+                                                duration: const Duration(seconds: 3),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      } else {
+                                        // Si ya es favorito (no personalizado), removerlo directamente
                                       try {
                                         await BibliotecaSupabaseService.toggleFavorito(codigo.codigo);
+                                          
+                                          // Actualizar caché
+                                          _favoritosCache.remove(codigo.codigo);
+                                          _etiquetasCache.remove(codigo.codigo);
+                                          
                                         // Actualizar estado de favoritos después de remover
                                         await _actualizarEstadoFavoritos();
+                                          
+                                          if (mounted) {
+                                            setState(() {});
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text('❌ ${codigo.nombre} removido de favoritos'),
@@ -2740,8 +3227,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                             duration: const Duration(seconds: 2),
                                           ),
                                         );
+                                          }
                                       } catch (e) {
                                         print('Error removiendo favorito: $e');
+                                          if (mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text('Error: ${e.toString()}'),
@@ -2749,6 +3238,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                             duration: const Duration(seconds: 3),
                                           ),
                                         );
+                                          }
+                                        }
                                       }
                                     } else {
                                       // Si no es favorito, mostrar modal para etiquetar
@@ -2762,13 +3253,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                   ),
                                 ),
                                 // Mostrar etiqueta si es favorito
-                                if (isFavorite)
-                                  FutureBuilder<String?>(
-                                    future: BibliotecaSupabaseService.getEtiquetaFavorito(codigo.codigo),
-                                    builder: (context, etiquetaSnapshot) {
-                                      final etiqueta = etiquetaSnapshot.data;
-                                      if (etiqueta != null && etiqueta.isNotEmpty) {
-                                        return Container(
+                                if (isFavorite && etiqueta != null && etiqueta.isNotEmpty)
+                                  Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFFFD700).withOpacity(0.2),
@@ -2788,10 +3274,6 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                        );
-                                      }
-                                      return const SizedBox.shrink();
-                                    },
                                   ),
                               ],
                             );
@@ -2866,15 +3348,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     
-                    // Títulos relacionados
-                    FutureBuilder<List<Map<String, dynamic>>>(
-                      future: SupabaseService.getTitulosRelacionados(codigo.codigo),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const SizedBox.shrink();
-                        }
-                        
-                        final titulosRelacionados = snapshot.data ?? [];
+                    // Títulos relacionados (usando cache para evitar consultas repetitivas)
+                    Builder(
+                      builder: (context) {
+                        // Usar cache en lugar de FutureBuilder para evitar consultas repetitivas durante scroll
+                        final titulosRelacionados = _getTitulosRelacionados(codigo.codigo);
                         
                         if (titulosRelacionados.isEmpty) {
                           return const SizedBox.shrink();
@@ -3285,8 +3763,16 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         onSave: (etiqueta) async {
           try {
             await BibliotecaSupabaseService.agregarFavoritoConEtiqueta(codigo.codigo, etiqueta);
+            
+            // Actualizar caché manualmente
+            _favoritosCache[codigo.codigo] = true;
+            _etiquetasCache[codigo.codigo] = etiqueta;
+            
             // Actualizar estado de favoritos después de agregar
             await _actualizarEstadoFavoritos();
+            
+            if (mounted) {
+              setState(() {});
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('❤️ ${codigo.nombre} agregado a favoritos con etiqueta: $etiqueta'),
@@ -3294,8 +3780,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 duration: const Duration(seconds: 2),
               ),
             );
+            }
           } catch (e) {
             print('Error agregando favorito con etiqueta: $e');
+            if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Error: ${e.toString()}'),
@@ -3303,6 +3791,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 duration: const Duration(seconds: 3),
               ),
             );
+            }
           }
         },
       ),

@@ -185,6 +185,10 @@ class UserProgressService {
 
       print('✅ Sesión registrada y progreso actualizado. Nivel: $nivel');
       
+      // NOTA: Ya no actualizamos user_code_history porque los datos están en user_actions
+      // La consulta de códigos explorados ahora lee directamente desde user_actions
+      // Esto evita duplicación de datos y mantiene una única fuente de verdad
+      
       // Verificar y otorgar recompensas por racha
       try {
         final rewardsService = RewardsService();
@@ -401,19 +405,56 @@ class UserProgressService {
     }
   }
 
-  /// Obtener códigos más usados
+  /// Obtener códigos más usados desde user_actions (fuente única de verdad)
   Future<List<Map<String, dynamic>>> getMostUsedCodes({int limit = 10}) async {
     if (!_authService.isLoggedIn) return [];
 
     try {
+      // Consultar directamente desde user_actions
       final response = await _supabase
-          .from('user_code_history')
-          .select()
+          .from('user_actions')
+          .select('action_data, recorded_at')
           .eq('user_id', _authService.currentUser!.id)
-          .order('usage_count', ascending: false)
-          .limit(limit);
+          .inFilter('action_type', ['sesionPilotaje', 'codigoRepetido', 'pilotajeCompartido'])
+          .order('recorded_at', ascending: false);
 
-      return List<Map<String, dynamic>>.from(response);
+      // Agrupar por código y contar usos
+      final codeCounts = <String, Map<String, dynamic>>{};
+      
+      for (final row in response) {
+        final actionData = row['action_data'] as Map<String, dynamic>?;
+        if (actionData != null) {
+          final codeId = actionData['codeId'] as String?;
+          final codeName = actionData['codeName'] as String?;
+          final duration = (actionData['duration'] as num?)?.toInt() ?? 0;
+          
+          if (codeId != null && codeId.isNotEmpty) {
+            if (codeCounts.containsKey(codeId)) {
+              codeCounts[codeId]!['usage_count'] = (codeCounts[codeId]!['usage_count'] as int) + 1;
+              codeCounts[codeId]!['total_time_minutes'] = (codeCounts[codeId]!['total_time_minutes'] as int) + duration;
+              final lastUsed = DateTime.parse(row['recorded_at'] as String);
+              final currentLastUsed = DateTime.parse(codeCounts[codeId]!['last_used'] as String);
+              if (lastUsed.isAfter(currentLastUsed)) {
+                codeCounts[codeId]!['last_used'] = row['recorded_at'];
+              }
+            } else {
+              codeCounts[codeId] = {
+                'code_id': codeId,
+                'code_name': codeName ?? codeId,
+                'usage_count': 1,
+                'total_time_minutes': duration,
+                'last_used': row['recorded_at'],
+              };
+            }
+          }
+        }
+      }
+
+      // Ordenar por usage_count y limitar
+      final sortedCodes = codeCounts.values.toList()
+        ..sort((a, b) => (b['usage_count'] as int).compareTo(a['usage_count'] as int));
+      
+      return sortedCodes.take(limit).toList();
     } catch (e) {
       print('Error obteniendo códigos más usados: $e');
       return [];

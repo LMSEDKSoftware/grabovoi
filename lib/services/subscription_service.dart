@@ -58,13 +58,15 @@ class SubscriptionService {
         return DateTime.parse(subscriptionData['transaction_date'] ?? subscriptionData['created_at']);
       }
       
-      // Si no hay suscripción activa, verificar período de prueba
-      final prefs = await SharedPreferences.getInstance();
-      final trialStartKey = 'free_trial_start_$userId';
-      final trialStartStr = prefs.getString(trialStartKey);
+      // Si no hay suscripción activa, usar fecha de creación de la cuenta
+      final userData = await _supabase
+          .from('users')
+          .select('created_at')
+          .eq('id', userId)
+          .maybeSingle();
       
-      if (trialStartStr != null) {
-        return DateTime.parse(trialStartStr);
+      if (userData != null && userData['created_at'] != null) {
+        return DateTime.parse(userData['created_at']);
       }
       
       return null;
@@ -174,6 +176,7 @@ class SubscriptionService {
   }
 
   // Obtener días restantes del período de prueba
+  // Usa la fecha de creación de la cuenta desde Supabase, no SharedPreferences
   Future<int?> getRemainingTrialDays() async {
     if (!_authService.isLoggedIn) {
       return null;
@@ -181,24 +184,34 @@ class SubscriptionService {
 
     try {
       final userId = _authService.currentUser!.id;
-      final prefs = await SharedPreferences.getInstance();
-      final trialStartKey = 'free_trial_start_$userId';
-      final trialStartStr = prefs.getString(trialStartKey);
-
-      if (trialStartStr == null) {
-        // Usuario nuevo - aún no ha iniciado período de prueba
+      
+      // Obtener fecha de creación de la cuenta desde Supabase
+      final userData = await _supabase
+          .from('users')
+          .select('created_at')
+          .eq('id', userId)
+          .maybeSingle();
+      
+      if (userData == null || userData['created_at'] == null) {
+        print('⚠️ No se encontró fecha de creación del usuario');
         return null;
       }
-
-      final trialStart = DateTime.parse(trialStartStr);
-      final trialEnd = trialStart.add(Duration(days: freeTrialDays));
+      
+      final accountCreatedAt = DateTime.parse(userData['created_at']);
+      final trialEnd = accountCreatedAt.add(Duration(days: freeTrialDays));
       final now = DateTime.now();
+
+      print('🔍 Fecha de creación de cuenta: $accountCreatedAt');
+      print('🔍 Período de prueba expira: $trialEnd');
+      print('🔍 Fecha actual: $now');
 
       if (now.isBefore(trialEnd)) {
         final remaining = trialEnd.difference(now).inDays;
+        print('✅ Días restantes de prueba: $remaining');
         return remaining >= 0 ? remaining : 0;
       } else {
         // Período de prueba expirado
+        print('⚠️ Período de prueba expirado');
         return 0;
       }
     } catch (e) {
@@ -208,6 +221,7 @@ class SubscriptionService {
   }
 
   // Verificar si el usuario está en período de prueba gratis
+  // Usa la fecha de creación de la cuenta desde Supabase, no SharedPreferences
   Future<void> _checkFreeTrialStatus() async {
     print('🔍 Verificando estado de período de prueba...');
     print('🔍 Usuario autenticado: ${_authService.isLoggedIn}');
@@ -225,30 +239,26 @@ class SubscriptionService {
       final userId = _authService.currentUser!.id;
       print('🔍 User ID: $userId');
       
-      final prefs = await SharedPreferences.getInstance();
-      final trialStartKey = 'free_trial_start_$userId';
-      final trialStartStr = prefs.getString(trialStartKey);
-
-      print('🔍 Clave de período de prueba: $trialStartKey');
-      print('🔍 Valor encontrado: $trialStartStr');
-
-      if (trialStartStr == null) {
-        // Usuario nuevo - iniciar período de prueba automáticamente
-        final now = DateTime.now();
-        await prefs.setString(trialStartKey, now.toIso8601String());
-        _isPremium = true;
-        _subscriptionExpiryDate = now.add(Duration(days: freeTrialDays));
-        _subscriptionStatusController.add(true);
-        print('✅ Período de prueba iniciado automáticamente. Expira: ${_subscriptionExpiryDate}');
-        print('✅ Usuario ahora tiene acceso premium: $_isPremium');
+      // Obtener fecha de creación de la cuenta desde Supabase
+      final userData = await _supabase
+          .from('users')
+          .select('created_at')
+          .eq('id', userId)
+          .maybeSingle();
+      
+      if (userData == null || userData['created_at'] == null) {
+        print('⚠️ No se encontró fecha de creación del usuario - usuario gratuito');
+        _isPremium = false;
+        _subscriptionExpiryDate = null;
+        _subscriptionStatusController.add(false);
         return;
       }
-
-      final trialStart = DateTime.parse(trialStartStr);
-      final trialEnd = trialStart.add(Duration(days: freeTrialDays));
+      
+      final accountCreatedAt = DateTime.parse(userData['created_at']);
+      final trialEnd = accountCreatedAt.add(Duration(days: freeTrialDays));
       final now = DateTime.now();
 
-      print('🔍 Período de prueba inició: $trialStart');
+      print('🔍 Fecha de creación de cuenta: $accountCreatedAt');
       print('🔍 Período de prueba expira: $trialEnd');
       print('🔍 Fecha actual: $now');
 

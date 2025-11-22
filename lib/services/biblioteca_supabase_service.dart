@@ -4,6 +4,7 @@ import '../repositories/codigos_repository.dart';
 import 'supabase_service.dart';
 import 'auth_service_simple.dart';
 import 'user_favorites_service.dart';
+import 'user_custom_codes_service.dart';
 import 'user_progress_service.dart';
 import 'daily_code_service.dart';
 import 'notification_scheduler.dart';
@@ -116,14 +117,14 @@ class BibliotecaSupabaseService {
     try {
       final favoritesWithDetails = await _favoritesService.getFavoritesWithDetails();
       return favoritesWithDetails.map((item) {
-        final codigoData = item['codigos_grabovoi'];
+        final codigoData = item['codigos_grabovoi'] as Map<String, dynamic>;
         return CodigoGrabovoi(
-          id: codigoData['id'],
-          codigo: codigoData['codigo'],
-          nombre: codigoData['nombre'],
-          descripcion: codigoData['descripcion'],
-          categoria: codigoData['categoria'],
-          color: codigoData['color'],
+          id: codigoData['id'] as String? ?? '',
+          codigo: codigoData['codigo'] as String? ?? '',
+          nombre: codigoData['nombre'] as String? ?? '',
+          descripcion: codigoData['descripcion'] as String? ?? '',
+          categoria: codigoData['categoria'] as String? ?? 'General',
+          color: codigoData['color'] as String? ?? '#FFD700',
         );
       }).toList();
     } catch (e) {
@@ -162,7 +163,49 @@ class BibliotecaSupabaseService {
 
   static Future<bool> esFavorito(String codigoId) async {
     if (!_authService.isLoggedIn) return false;
+    
+    // Verificar si es código personalizado (automáticamente es favorito)
+    try {
+      final customCodesService = UserCustomCodesService();
+      final isCustom = await customCodesService.isCustomCode(codigoId);
+      if (isCustom) {
+        return true;
+      }
+    } catch (e) {
+      print('⚠️ Error verificando código personalizado: $e');
+    }
+    
+    // Verificar en favoritos oficiales
     return await _favoritesService.isFavorite(codigoId);
+  }
+  
+  static Future<String?> getEtiquetaFavorito(String codigoId) async {
+    if (!_authService.isLoggedIn) return null;
+    
+    // Si es código personalizado, retornar "pilotaje manual"
+    try {
+      final customCodesService = UserCustomCodesService();
+      final isCustom = await customCodesService.isCustomCode(codigoId);
+      if (isCustom) {
+        return 'pilotaje manual';
+      }
+    } catch (e) {
+      print('⚠️ Error verificando código personalizado: $e');
+    }
+    
+    // Obtener etiqueta de favoritos oficiales
+    try {
+      final favoritesWithDetails = await _favoritesService.getFavoritesWithDetails();
+      final favorite = favoritesWithDetails.firstWhere(
+        (item) => (item['codigo_id'] as String? ?? 
+                   (item['codigos_grabovoi'] as Map?)?['codigo'] as String?) == codigoId,
+        orElse: () => <String, dynamic>{},
+      );
+      return favorite['etiqueta'] as String?;
+    } catch (e) {
+      print('Error obteniendo etiqueta de favorito: $e');
+      return null;
+    }
   }
 
   // ===== POPULARIDAD =====
@@ -375,28 +418,32 @@ class BibliotecaSupabaseService {
 
   static Future<List<CodigoGrabovoi>> getFavoritosPorEtiqueta(String etiqueta) async {
     try {
-      return await SupabaseService.getFavoritosPorEtiqueta(_getUserId() ?? '', etiqueta);
+      final List<CodigoGrabovoi> allFavorites = [];
+      
+      // Si la etiqueta es "pilotaje manual", incluir códigos personalizados
+      if (etiqueta.toLowerCase() == 'pilotaje manual') {
+        try {
+          final customCodesService = UserCustomCodesService();
+          final customCodes = await customCodesService.getUserCustomCodes();
+          allFavorites.addAll(customCodes);
+        } catch (e) {
+          print('⚠️ Error obteniendo códigos personalizados: $e');
+        }
+      }
+      
+      // Obtener favoritos oficiales por etiqueta
+      try {
+        final officialFavorites = await SupabaseService.getFavoritosPorEtiqueta(_getUserId() ?? '', etiqueta);
+        allFavorites.addAll(officialFavorites);
+      } catch (e) {
+        print('⚠️ Error obteniendo favoritos oficiales: $e');
+      }
+      
+      return allFavorites;
     } catch (e) {
       print('Error obteniendo favoritos por etiqueta: $e');
       return [];
     }
   }
 
-  static Future<String?> getEtiquetaFavorito(String codigoId) async {
-    if (!_authService.isLoggedIn) return null;
-    
-    try {
-      // Usar el servicio de favoritos para obtener la etiqueta
-      final favoritesWithDetails = await _favoritesService.getFavoritesWithDetails();
-      final favorite = favoritesWithDetails.firstWhere(
-        (item) => item['codigo_id'] == codigoId,
-        orElse: () => <String, dynamic>{},
-      );
-      
-      return favorite['etiqueta'] as String?;
-    } catch (e) {
-      print('Error obteniendo etiqueta del favorito: $e');
-      return null;
-    }
-  }
 }

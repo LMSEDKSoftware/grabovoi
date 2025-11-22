@@ -24,6 +24,8 @@ import '../../services/audio_manager_service.dart';
 import '../../services/pilotage_state_service.dart';
 import '../../widgets/sequencia_activada_modal.dart';
 import '../../services/rewards_service.dart';
+import '../../services/user_custom_codes_service.dart';
+import '../../services/user_favorites_service.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -67,12 +69,17 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   late AnimationController _colorBarController;
   late Animation<Offset> _colorBarAnimation;
   
+  // Estado de favorito
+  bool _esFavorito = false;
+  bool _esCodigoPersonalizado = false;
+  Future<void>? _favoritoFuture;
 
   @override
   void initState() {
     super.initState();
     _codigoInfoFuture = _loadCodigoInfo();
     _shareableDataFuture = _loadShareableData();
+    _favoritoFuture = _verificarFavorito();
     
     _pulseController = AnimationController(
       duration: const Duration(seconds: 3),
@@ -104,6 +111,14 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     
     // Iniciar automáticamente la repetición
     _startRepetition();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recargar estado de favoritos cuando la pantalla se vuelve visible
+    // Esto asegura que si se guardó un código personalizado, se muestre el botón de favoritos
+    _verificarFavorito();
   }
 
   @override
@@ -332,19 +347,75 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   }
 
   // Función helper para obtener la descripción del código desde la base de datos
+  // Primero busca en códigos personalizados, luego en la base central
   Future<String> _getCodigoDescription() async {
     try {
+      // 1. Buscar primero en códigos personalizados del usuario
+      final customCodesService = UserCustomCodesService();
+      final isCustom = await customCodesService.isCustomCode(widget.codigo);
+      
+      if (isCustom) {
+        final customCodes = await customCodesService.getUserCustomCodes();
+        final customCode = customCodes.firstWhere(
+          (c) => c.codigo == widget.codigo,
+          orElse: () => CodigoGrabovoi(
+            id: '',
+            codigo: widget.codigo,
+            nombre: '',
+            descripcion: '',
+            categoria: '',
+            color: '#FFD700',
+          ),
+        );
+        if (customCode.descripcion.isNotEmpty) {
+          return customCode.descripcion;
+        }
+      }
+      
+      // 2. Si no es personalizado o no tiene descripción, buscar en la base central
       return CodigosRepository().getDescripcionByCode(widget.codigo);
     } catch (e) {
+      // 3. Si falla, usar el nombre pasado como parámetro o texto por defecto
+      if (widget.nombre != null && widget.nombre!.isNotEmpty) {
+        return widget.nombre!;
+      }
       return 'Código sagrado para la manifestación y transformación energética.';
     }
   }
 
   // Función helper para obtener el título del código desde la base de datos
+  // Primero busca en códigos personalizados, luego en la base central
   Future<String> _getCodigoTitulo() async {
     try {
+      // 1. Buscar primero en códigos personalizados del usuario
+      final customCodesService = UserCustomCodesService();
+      final isCustom = await customCodesService.isCustomCode(widget.codigo);
+      
+      if (isCustom) {
+        final customCodes = await customCodesService.getUserCustomCodes();
+        final customCode = customCodes.firstWhere(
+          (c) => c.codigo == widget.codigo,
+          orElse: () => CodigoGrabovoi(
+            id: '',
+            codigo: widget.codigo,
+            nombre: '',
+            descripcion: '',
+            categoria: '',
+            color: '#FFD700',
+          ),
+        );
+        if (customCode.nombre.isNotEmpty) {
+          return customCode.nombre;
+        }
+      }
+      
+      // 2. Si no es personalizado o no tiene nombre, buscar en la base central
       return CodigosRepository().getTituloByCode(widget.codigo);
     } catch (e) {
+      // 3. Si falla, usar el nombre pasado como parámetro o texto por defecto
+      if (widget.nombre != null && widget.nombre!.isNotEmpty) {
+        return widget.nombre!;
+      }
       return 'Campo Energético';
     }
   }
@@ -624,6 +695,20 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                           IconButton(
                             onPressed: _shareImage,
                             icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
+                          ),
+                          // Botón de favoritos
+                          FutureBuilder<void>(
+                            future: _favoritoFuture,
+                            builder: (context, snapshot) {
+                              return IconButton(
+                                onPressed: _toggleFavorito,
+                                icon: Icon(
+                                  _esFavorito ? Icons.favorite : Icons.favorite_border,
+                                  color: _esFavorito ? Colors.red : const Color(0xFFFFD700),
+                                ),
+                                tooltip: _esFavorito ? 'Remover de favoritos' : 'Agregar a favoritos',
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -1676,6 +1761,140 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     } catch (e) {
       print('⚠️ Error al obtener categoría del código: $e');
       return 'General';
+    }
+  }
+
+  Future<void> _verificarFavorito() async {
+    try {
+      final customCodesService = UserCustomCodesService();
+      final esPersonalizado = await customCodesService.isCustomCode(widget.codigo);
+      
+      bool esFavorito = false;
+      if (esPersonalizado) {
+        // Los códigos personalizados siempre son favoritos
+        esFavorito = true;
+      } else {
+        // Verificar si está en favoritos oficiales
+        esFavorito = await BibliotecaSupabaseService.esFavorito(widget.codigo);
+      }
+      
+      if (mounted) {
+        setState(() {
+          _esFavorito = esFavorito;
+          _esCodigoPersonalizado = esPersonalizado;
+        });
+      }
+    } catch (e) {
+      print('Error verificando favorito: $e');
+    }
+  }
+
+  Future<void> _toggleFavorito() async {
+    try {
+      final customCodesService = UserCustomCodesService();
+      
+      if (_esCodigoPersonalizado) {
+        // Si es código personalizado, mostrar advertencia antes de eliminar
+        final confirmar = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1C2541),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+            ),
+            title: Text(
+              'Eliminar código personalizado',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              'Este código fue insertado manualmente, si lo eliminas de favoritos no lo podrás volver a ver, hasta que lo insertes nuevamente de forma manual.',
+              style: GoogleFonts.inter(
+                color: Colors.white70,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  'Cancelar',
+                  style: GoogleFonts.inter(color: Colors.white54),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                ),
+                child: Text(
+                  'Eliminar',
+                  style: GoogleFonts.inter(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirmar == true) {
+          // Eliminar código personalizado
+          await customCodesService.deleteCustomCode(widget.codigo);
+          if (mounted) {
+            setState(() {
+              _esFavorito = false;
+              _esCodigoPersonalizado = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Código eliminado de favoritos'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      } else if (_esFavorito) {
+        // Remover de favoritos oficiales
+        final favoritesService = UserFavoritesService();
+        await favoritesService.removeFromFavorites(widget.codigo);
+        if (mounted) {
+          setState(() {
+            _esFavorito = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Removido de favoritos'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        // Agregar a favoritos
+        final favoritesService = UserFavoritesService();
+        await favoritesService.addToFavorites(widget.codigo);
+        if (mounted) {
+          setState(() {
+            _esFavorito = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Agregado a favoritos'),
+              backgroundColor: Color(0xFF4CAF50),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error al cambiar favorito: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

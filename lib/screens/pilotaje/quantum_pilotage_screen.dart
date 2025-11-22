@@ -34,6 +34,8 @@ import '../../services/subscription_service.dart';
 import '../../widgets/subscription_required_modal.dart';
 import '../../services/rewards_service.dart';
 import '../../services/user_progress_service.dart';
+import '../../services/user_custom_codes_service.dart';
+import '../../models/supabase_models.dart';
 
 class QuantumPilotageScreen extends StatefulWidget {
   final String? codigoInicial;
@@ -67,6 +69,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   bool _isSphereMode = true;
   bool _isGuidedMode = true;
   String _intencionPersonal = '';
+  TextEditingController _intencionPersonalController = TextEditingController();
   
   // Estado del pilotaje
   QuantumPilotageStep _currentStep = QuantumPilotageStep.preparacion;
@@ -122,7 +125,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   bool _showManualPilotage = false;
   TextEditingController _manualCodeController = TextEditingController();
   TextEditingController _manualTitleController = TextEditingController();
-  String _manualCategory = 'Abundancia';
+  TextEditingController _manualDescriptionController = TextEditingController();
+  String _manualCategory = 'Abundancia y Prosperidad';
 
   // Control de audio y animaciones
   bool _isAudioPlaying = false;
@@ -133,6 +137,12 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   
   // Modo de concentración (pantalla completa)
   bool _isConcentrationMode = false;
+  
+  // Cache local para evitar consultas repetitivas durante el pilotaje
+  String? _cachedCodigoTitulo;
+  String? _cachedCodigoDescription;
+  String? _cachedCodigoForTitulo;
+  String? _cachedCodigoForDescription;
 
   @override
   void initState() {
@@ -1476,11 +1486,48 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   }
 
   // Función helper para obtener la descripción del código desde la base de datos
+  // Primero busca en códigos personalizados, luego en la base central
+  // Usa cache local para evitar consultas repetitivas durante el pilotaje
   Future<String> _getCodigoDescription() async {
     if (_codigoSeleccionado.isEmpty) return 'Código Grabovoi para la manifestación y transformación energética.';
     
+    // Usar cache si el código no ha cambiado
+    if (_cachedCodigoForDescription == _codigoSeleccionado && _cachedCodigoDescription != null) {
+      return _cachedCodigoDescription!;
+    }
+    
     try {
-      return CodigosRepository().getDescripcionByCode(_codigoSeleccionado);
+      // 1. Buscar primero en códigos personalizados del usuario
+      final customCodesService = UserCustomCodesService();
+      final isCustom = await customCodesService.isCustomCode(_codigoSeleccionado);
+      
+      if (isCustom) {
+        final customCodes = await customCodesService.getUserCustomCodes();
+        final customCode = customCodes.firstWhere(
+          (c) => c.codigo == _codigoSeleccionado,
+          orElse: () => CodigoGrabovoi(
+            id: '',
+            codigo: _codigoSeleccionado,
+            nombre: '',
+            descripcion: '',
+            categoria: '',
+            color: '#FFD700',
+          ),
+        );
+        if (customCode.descripcion.isNotEmpty) {
+          // Guardar en cache
+          _cachedCodigoDescription = customCode.descripcion;
+          _cachedCodigoForDescription = _codigoSeleccionado;
+          return customCode.descripcion;
+        }
+      }
+      
+      // 2. Si no es personalizado o no tiene descripción, buscar en la base central
+      final descripcion = await CodigosRepository().getDescripcionByCode(_codigoSeleccionado);
+      // Guardar en cache
+      _cachedCodigoDescription = descripcion;
+      _cachedCodigoForDescription = _codigoSeleccionado;
+      return descripcion;
     } catch (e) {
       print('Error al obtener descripción del código: $e');
       return 'Código Grabovoi para la manifestación y transformación energética.';
@@ -1488,11 +1535,48 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   }
 
   // Función helper para obtener el título del código desde la base de datos
+  // Primero busca en códigos personalizados, luego en la base central
+  // Usa cache local para evitar consultas repetitivas durante el pilotaje
   Future<String> _getCodigoTitulo() async {
     if (_codigoSeleccionado.isEmpty) return 'Campo Energético';
     
+    // Usar cache si el código no ha cambiado
+    if (_cachedCodigoForTitulo == _codigoSeleccionado && _cachedCodigoTitulo != null) {
+      return _cachedCodigoTitulo!;
+    }
+    
     try {
-      return CodigosRepository().getTituloByCode(_codigoSeleccionado);
+      // 1. Buscar primero en códigos personalizados del usuario
+      final customCodesService = UserCustomCodesService();
+      final isCustom = await customCodesService.isCustomCode(_codigoSeleccionado);
+      
+      if (isCustom) {
+        final customCodes = await customCodesService.getUserCustomCodes();
+        final customCode = customCodes.firstWhere(
+          (c) => c.codigo == _codigoSeleccionado,
+          orElse: () => CodigoGrabovoi(
+            id: '',
+            codigo: _codigoSeleccionado,
+            nombre: '',
+            descripcion: '',
+            categoria: '',
+            color: '#FFD700',
+          ),
+        );
+        if (customCode.nombre.isNotEmpty) {
+          // Guardar en cache
+          _cachedCodigoTitulo = customCode.nombre;
+          _cachedCodigoForTitulo = _codigoSeleccionado;
+          return customCode.nombre;
+        }
+      }
+      
+      // 2. Si no es personalizado o no tiene nombre, buscar en la base central
+      final titulo = await CodigosRepository().getTituloByCode(_codigoSeleccionado);
+      // Guardar en cache
+      _cachedCodigoTitulo = titulo;
+      _cachedCodigoForTitulo = _codigoSeleccionado;
+      return titulo;
     } catch (e) {
       print('Error al obtener título del código: $e');
       return 'Campo Energético';
@@ -1525,32 +1609,75 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     }
 
     try {
-      final codigoManual = CodigoGrabovoi(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      final customCodesService = UserCustomCodesService();
+      
+      // Guardar código personalizado
+      final success = await customCodesService.saveCustomCode(
         codigo: _manualCodeController.text,
         nombre: _manualTitleController.text,
-        descripcion: 'Código personalizado del usuario',
         categoria: _manualCategory,
-        color: _getCategoryColor(_manualCategory).value.toRadixString(16),
+        descripcion: _manualDescriptionController.text.isNotEmpty 
+            ? _manualDescriptionController.text 
+            : 'Código personalizado del usuario',
       );
 
-      // TODO: Implementar guardado en tabla de favoritos del usuario
-      
-      setState(() {
-        _codigoSeleccionado = codigoManual.codigo;
-        _categoriaActual = codigoManual.categoria;
-        _colorVibracional = _getCategoryColor(_categoriaActual);
-        _showManualPilotage = false;
-        _manualCodeController.clear();
-        _manualTitleController.clear();
-      });
+      if (success) {
+        // Guardar valores antes de limpiar
+        final codigoGuardado = _manualCodeController.text;
+        final nombreGuardado = _manualTitleController.text;
+        final descripcionGuardada = _manualDescriptionController.text.isNotEmpty 
+            ? _manualDescriptionController.text 
+            : 'Código personalizado del usuario';
+        final categoriaGuardada = _manualCategory;
+        
+        // Invalidar cache local y del servicio
+        _cachedCodigoTitulo = null;
+        _cachedCodigoDescription = null;
+        _cachedCodigoForTitulo = null;
+        _cachedCodigoForDescription = null;
+        
+        // Invalidar cache del servicio y forzar recarga
+        customCodesService.invalidateCache();
+        await customCodesService.getUserCustomCodes(forceRefresh: true);
+        
+        // Actualizar cache local con los nuevos valores
+        _cachedCodigoTitulo = nombreGuardado;
+        _cachedCodigoDescription = descripcionGuardada;
+        _cachedCodigoForTitulo = codigoGuardado;
+        _cachedCodigoForDescription = codigoGuardado;
+        
+        setState(() {
+          // Invalidar cache local cuando cambia el código
+          if (_codigoSeleccionado != codigoGuardado) {
+            _cachedCodigoTitulo = null;
+            _cachedCodigoDescription = null;
+            _cachedCodigoForTitulo = null;
+            _cachedCodigoForDescription = null;
+          }
+          
+          _codigoSeleccionado = codigoGuardado;
+          _categoriaActual = categoriaGuardada;
+          _colorVibracional = _getCategoryColor(_categoriaActual);
+          _showManualPilotage = false;
+          _manualCodeController.clear();
+          _manualTitleController.clear();
+          _manualDescriptionController.clear();
+        });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Código guardado en favoritos'),
-          backgroundColor: Color(0xFF4CAF50),
-        ),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Código guardado en favoritos'),
+            backgroundColor: Color(0xFF4CAF50),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: El código ya existe o no se pudo guardar'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1592,6 +1719,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     _searchController.dispose();
     _manualCodeController.dispose();
     _manualTitleController.dispose();
+    _manualDescriptionController.dispose();
+    _intencionPersonalController.dispose();
     _pilotageTimer?.cancel();
     super.dispose();
   }
@@ -2302,6 +2431,45 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                           ),
                           textAlign: TextAlign.center,
                         ),
+                        // Mostrar intención personal si existe
+                        if (_intencionPersonal.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _colorVibracional.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _colorVibracional.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Intención Personal',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: _colorVibracional,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _intencionPersonal,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: Colors.white.withOpacity(0.9),
+                                    height: 1.4,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   );
@@ -2460,6 +2628,13 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   return InkWell(
                     onTap: () {
                       setState(() {
+                        // Invalidar cache cuando cambia el código seleccionado
+                        if (_codigoSeleccionado != codigo.codigo) {
+                          _cachedCodigoTitulo = null;
+                          _cachedCodigoDescription = null;
+                          _cachedCodigoForTitulo = null;
+                          _cachedCodigoForDescription = null;
+                        }
                         _codigoSeleccionado = codigo.codigo;
                         _categoriaActual = codigo.categoria;
                         _colorVibracional = categoryColor;
@@ -2766,11 +2941,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                         // Campo de texto para el paso de intención
                         if (currentStepData['hasTextField'] == true) ...[
                           TextField(
-                            onChanged: (value) {
-                              setState(() {
-                                _intencionPersonal = value;
-                              });
-                            },
+                            controller: _intencionPersonalController,
                             style: GoogleFonts.inter(color: Colors.white),
                             decoration: InputDecoration(
                               hintText: 'Escribe tu intención aquí...',
@@ -2985,11 +3156,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
           
           // Campo de intención personal
           TextField(
-            onChanged: (value) {
-              setState(() {
-                _intencionPersonal = value;
-              });
-            },
+            controller: _intencionPersonalController,
             style: GoogleFonts.inter(color: Colors.white),
             decoration: InputDecoration(
               hintText: '¿Qué deseas armonizar con este código?',
@@ -3356,6 +3523,13 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
   }
 
   Future<void> _nextStep() async {
+    // Si estamos en el paso de intención personal (índice 5), guardar la intención antes de continuar
+    if (_currentStepIndex == 5) {
+      setState(() {
+        _intencionPersonal = _intencionPersonalController.text;
+      });
+    }
+    
     if (_currentStepIndex < 5) {
       // Animación de salida hacia la izquierda
       setState(() {
@@ -4092,6 +4266,22 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   ),
                 ),
                 const SizedBox(height: 16),
+                TextField(
+                  controller: _manualDescriptionController,
+                  decoration: InputDecoration(
+                    labelText: 'Descripción',
+                    hintText: 'Ej: Descripción del código personalizado',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFFFD700)),
+                    ),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _manualCategory,
                   decoration: InputDecoration(
@@ -4104,7 +4294,15 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                       borderSide: const BorderSide(color: Color(0xFFFFD700)),
                     ),
                   ),
-                  items: ['Abundancia', 'Salud', 'Amor', 'Reprogramación'].map((cat) {
+                  items: [
+                    'Abundancia y Prosperidad',
+                    'Amor y Relaciones',
+                    'Conciencia Espiritual',
+                    'Liberación Emocional',
+                    'Limpieza y Reconexión',
+                    'Protección Energética',
+                    'Salud y Regeneración',
+                  ].map((cat) {
                     return DropdownMenuItem(
                       value: cat,
                       child: Text(cat),
@@ -4112,7 +4310,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   }).toList(),
                   onChanged: (value) {
                     setState(() {
-                      _manualCategory = value ?? 'Abundancia';
+                      _manualCategory = value ?? 'Abundancia y Prosperidad';
                     });
                   },
                 ),
@@ -4827,6 +5025,45 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                             ),
                         ],
                       ),
+                      // Mostrar intención personal si existe
+                      if (_intencionPersonal.isNotEmpty) ...[
+                        const SizedBox(height: 40),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 40),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _colorVibracional.withOpacity(0.5),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'Intención Personal',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: _colorVibracional,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _intencionPersonal,
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  color: Colors.white.withOpacity(0.9),
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   );
                 } else {

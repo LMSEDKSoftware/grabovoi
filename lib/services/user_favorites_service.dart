@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart' as app_models;
 import 'auth_service_simple.dart';
+import 'user_custom_codes_service.dart';
+import '../models/supabase_models.dart';
 
 class UserFavoritesService {
   static final UserFavoritesService _instance = UserFavoritesService._internal();
@@ -115,29 +117,71 @@ class UserFavoritesService {
   }
 
   /// Obtener favoritos con información completa
+  /// Incluye códigos oficiales de usuario_favoritos y códigos personalizados de user_custom_codes
   Future<List<Map<String, dynamic>>> getFavoritesWithDetails() async {
     if (!_authService.isLoggedIn) return [];
 
     try {
-      final response = await _supabase
-          .from('usuario_favoritos')
-          .select('''
-            codigo_id,
-            created_at,
-            etiqueta,
-            codigos_grabovoi!inner(
-              id,
-              codigo,
-              nombre,
-              descripcion,
-              categoria,
-              color
-            )
-          ''')
-          .eq('user_id', _authService.currentUser!.id)
-          .order('created_at', ascending: false);
+      final List<Map<String, dynamic>> allFavorites = [];
+      
+      // 1. Obtener favoritos oficiales desde usuario_favoritos
+      try {
+        final response = await _supabase
+            .from('usuario_favoritos')
+            .select('''
+              codigo_id,
+              created_at,
+              etiqueta,
+              codigos_grabovoi!inner(
+                id,
+                codigo,
+                nombre,
+                descripcion,
+                categoria,
+                color
+              )
+            ''')
+            .eq('user_id', _authService.currentUser!.id)
+            .order('created_at', ascending: false);
 
-      return List<Map<String, dynamic>>.from(response);
+        allFavorites.addAll(List<Map<String, dynamic>>.from(response));
+      } catch (e) {
+        print('⚠️ Error obteniendo favoritos oficiales: $e');
+      }
+      
+      // 2. Obtener códigos personalizados (automáticamente son favoritos con etiqueta "pilotaje manual")
+      try {
+        final customCodesService = UserCustomCodesService();
+        final customCodes = await customCodesService.getUserCustomCodes();
+        
+        for (final customCode in customCodes) {
+          allFavorites.add({
+            'codigo_id': customCode.codigo,
+            'created_at': DateTime.now().toIso8601String(),
+            'etiqueta': 'pilotaje manual',
+            'codigos_grabovoi': {
+              'id': customCode.id,
+              'codigo': customCode.codigo,
+              'nombre': customCode.nombre,
+              'descripcion': customCode.descripcion,
+              'categoria': customCode.categoria,
+              'color': customCode.color,
+            },
+            'is_custom': true, // Marca para identificar códigos personalizados
+          });
+        }
+      } catch (e) {
+        print('⚠️ Error obteniendo códigos personalizados: $e');
+      }
+      
+      // 3. Ordenar por fecha de creación (más recientes primero)
+      allFavorites.sort((a, b) {
+        final dateA = DateTime.parse(a['created_at'] as String);
+        final dateB = DateTime.parse(b['created_at'] as String);
+        return dateB.compareTo(dateA);
+      });
+      
+      return allFavorites;
     } catch (e) {
       print('Error obteniendo favoritos con detalles: $e');
       return [];
@@ -180,32 +224,25 @@ class UserFavoritesService {
   }
 
   /// Obtener favoritos por categoría
+  /// Incluye códigos oficiales y códigos personalizados
   Future<Map<String, List<Map<String, dynamic>>>> getFavoritesByCategory() async {
     if (!_authService.isLoggedIn) return {};
 
     try {
-      final response = await _supabase
-          .from('usuario_favoritos')
-          .select('''
-            codigo_id,
-            created_at,
-            etiqueta,
-            codigos_grabovoi!inner(
-              id,
-              codigo,
-              nombre,
-              descripcion,
-              categoria,
-              color
-            )
-          ''')
-          .eq('user_id', _authService.currentUser!.id)
-          .order('created_at', ascending: false);
-
+      // Obtener todos los favoritos (oficiales + personalizados)
+      final allFavorites = await getFavoritesWithDetails();
+      
       final Map<String, List<Map<String, dynamic>>> favoritesByCategory = {};
       
-      for (final item in response) {
-        final categoria = item['codigos_grabovoi']['categoria'] as String;
+      for (final item in allFavorites) {
+        // Obtener categoría desde codigos_grabovoi o desde el código personalizado
+        String categoria;
+        if (item['is_custom'] == true) {
+          categoria = item['codigos_grabovoi']['categoria'] as String;
+        } else {
+          categoria = item['codigos_grabovoi']['categoria'] as String;
+        }
+        
         if (!favoritesByCategory.containsKey(categoria)) {
           favoritesByCategory[categoria] = [];
         }

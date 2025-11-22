@@ -95,12 +95,13 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
       _loadUserData();
-      // Refrescar códigos explorados si el caché expiró
-      _loadExploredCodesCount();
+      // Refrescar códigos explorados forzando actualización
+      _loadExploredCodesCount(forceRefresh: true);
     }
   }
 
-  // Obtener conteo de códigos explorados desde la BD con caché
+  // Obtener conteo de códigos explorados desde user_actions (fuente única de verdad)
+  // Consulta directamente desde user_actions para evitar duplicación de datos
   Future<int> _getExploredCodesCount({bool forceRefresh = false}) async {
     if (!_authService.isLoggedIn) {
       return 0;
@@ -118,19 +119,23 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
       final supabase = Supabase.instance.client;
       final userId = _authService.currentUser!.id;
       
-      // Contar códigos únicos en user_code_history
-      // Optimizado: solo traer code_id para reducir transferencia de datos
+      // Consultar directamente desde user_actions (fuente única de verdad)
+      // Filtrar solo acciones que involucran códigos
       final response = await supabase
-          .from('user_code_history')
-          .select('code_id')
-          .eq('user_id', userId);
+          .from('user_actions')
+          .select('action_data')
+          .eq('user_id', userId)
+          .inFilter('action_type', ['sesionPilotaje', 'codigoRepetido', 'pilotajeCompartido']);
       
-      // Obtener códigos únicos
+      // Obtener códigos únicos desde action_data
       final uniqueCodes = <String>{};
       for (final row in response) {
-        final codeId = row['code_id'] as String?;
-        if (codeId != null && codeId.isNotEmpty) {
-          uniqueCodes.add(codeId);
+        final actionData = row['action_data'] as Map<String, dynamic>?;
+        if (actionData != null) {
+          final codeId = actionData['codeId'] as String?;
+          if (codeId != null && codeId.isNotEmpty) {
+            uniqueCodes.add(codeId);
+          }
         }
       }
       
@@ -140,6 +145,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
       _cachedExploredCodesCount = count;
       _cacheTimestamp = DateTime.now();
       
+      print('✅ Códigos explorados encontrados: $count (desde user_actions)');
       return count;
     } catch (e) {
       print('❌ Error obteniendo códigos explorados: $e');
@@ -152,8 +158,8 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   }
   
   // Cargar códigos explorados una vez al iniciar
-  Future<void> _loadExploredCodesCount() async {
-    final count = await _getExploredCodesCount();
+  Future<void> _loadExploredCodesCount({bool forceRefresh = false}) async {
+    final count = await _getExploredCodesCount(forceRefresh: forceRefresh);
     if (mounted) {
       setState(() {
         _cachedExploredCodesCount = count;

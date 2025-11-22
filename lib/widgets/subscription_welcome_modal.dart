@@ -66,18 +66,25 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
   }
 
   void _navigateToSubscription() {
+    // Cerrar el modal primero
     Navigator.of(context, rootNavigator: true).pop();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const SubscriptionScreen(),
-      ),
-    );
+    
+    // Navegar al perfil (tab index 5) y luego abrir la sección de suscripciones
+    // Usar un pequeño delay para asegurar que el modal se cierre primero
+    Future.delayed(const Duration(milliseconds: 300), () {
+      // Navegar a SubscriptionScreen directamente
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const SubscriptionScreen(),
+        ),
+      );
+    });
   }
 
-  void _closeModal() {
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
+  void _navigateToHome() {
+    // Cerrar el modal - el usuario ya está en la app y puede usar la navegación
+    // El modal se cierra y el usuario queda en la pantalla actual (que debería ser inicio)
+    Navigator.of(context, rootNavigator: true).pop();
   }
 
   @override
@@ -158,10 +165,14 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.15),
+                    color: _remainingDays != null && _remainingDays! > 0
+                        ? const Color(0xFFFFD700).withOpacity(0.15)
+                        : Colors.red.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFFFFD700).withOpacity(0.3),
+                      color: _remainingDays != null && _remainingDays! > 0
+                          ? const Color(0xFFFFD700).withOpacity(0.3)
+                          : Colors.red.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
@@ -169,19 +180,23 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                     children: [
                       Row(
                         children: [
-                          const Icon(
-                            Icons.celebration,
-                            color: Color(0xFFFFD700),
+                          Icon(
+                            _remainingDays != null && _remainingDays! > 0
+                                ? Icons.celebration
+                                : Icons.warning_amber_rounded,
+                            color: _remainingDays != null && _remainingDays! > 0
+                                ? const Color(0xFFFFD700)
+                                : Colors.red,
                             size: 24,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               _isLoading
-                                  ? 'Tienes 7 días GRATIS con acceso completo a todas las funciones premium'
+                                  ? 'Cargando información...'
                                   : _remainingDays != null && _remainingDays! > 0
                                       ? 'Tienes $_remainingDays ${_remainingDays == 1 ? 'día' : 'días'} GRATIS con acceso completo a todas las funciones premium'
-                                      : 'Tienes 7 días GRATIS con acceso completo a todas las funciones premium',
+                                      : 'No tienes acceso a funciones premium. Actualiza tu plan para continuar disfrutando de todas las características.',
                               style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -238,37 +253,36 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Mensual',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Mensual',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Acceso completo por 1 mes',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      color: Colors.white70,
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Acceso completo por 1 mes',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: Colors.white70,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 12),
                               Text(
-                                _remainingDays != null && _remainingDays! > 0
-                                    ? 'Gratis durante prueba'
-                                    : '\$88.00',
+                                '\$88.00',
                                 style: GoogleFonts.inter(
-                                  fontSize: _remainingDays != null && _remainingDays! > 0 ? 14 : 22,
+                                  fontSize: 22,
                                   fontWeight: FontWeight.bold,
-                                  color: _remainingDays != null && _remainingDays! > 0
-                                      ? Colors.green
-                                      : const Color(0xFFFFD700),
+                                  color: const Color(0xFFFFD700),
                                 ),
                               ),
                             ],
@@ -364,28 +378,48 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                 ),
                 const SizedBox(height: 24),
 
-                // Botón Continuar y Aprovechar mi Prueba Gratis
+                // Botón según estado de días restantes
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _closeModal,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFD700),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 8,
-                    ),
-                    child: Text(
-                      'Continuar y Aprovechar mi Prueba Gratis',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  child: _remainingDays != null && _remainingDays! > 0
+                      ? ElevatedButton(
+                          onPressed: _navigateToHome,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 8,
+                          ),
+                          child: Text(
+                            'Continuar y Aprovechar mi Prueba Gratis',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      : ElevatedButton(
+                          onPressed: _navigateToSubscription,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 8,
+                          ),
+                          child: Text(
+                            'SIN ACCESO A PREMIUM, ACTUALIZA tu plan',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),
