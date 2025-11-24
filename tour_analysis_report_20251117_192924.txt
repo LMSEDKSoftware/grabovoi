@@ -1,0 +1,5 @@
+Reporte de Análisis del Tour - Mon Nov 17 19:29:24 CST 2025
+Errores: 0
+Advertencias: 3
+
+Para más detalles, ejecuta este script nuevamente.

@@ -66,6 +66,10 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
       // Verificar y actualizar racha al cargar la pantalla
       final challengeService = ChallengeService();
       final trackingService = ChallengeTrackingService();
+      
+      // Sincronizar progreso desde Supabase para asegurar que el estado del día sea correcto
+      await trackingService.syncProgressFromSupabase(_challenge.id);
+      
       await trackingService.verificarYActualizarRacha(_challenge.id);
       // Recargar el desafío actualizado
       final updatedChallenge = challengeService.getChallenge(_challenge.id);
@@ -73,6 +77,11 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
         setState(() {
           _challenge = updatedChallenge;
         });
+      }
+      
+      // Forzar actualización de la UI después de cargar progreso
+      if (mounted) {
+        setState(() {});
       }
     } catch (e) {
       print('Error inicializando el rastreador de progreso: $e');
@@ -150,7 +159,22 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
 
   Widget _buildProgressCard() {
     final color = Color(int.parse(_challenge.color.replaceAll('#', '0xFF')));
-    final progress = _challenge.currentDay / _challenge.durationDays;
+    
+    // Calcular progreso basado en días COMPLETADOS, no en el día actual
+    int completedDays = 0;
+    final trackingService = ChallengeTrackingService();
+    final challengeProgress = trackingService.getChallengeProgress(_challenge.id);
+    
+    if (challengeProgress != null) {
+      // Contar cuántos días están marcados como completados
+      completedDays = challengeProgress.dayProgress.values
+          .where((dayProg) => dayProg.isCompleted)
+          .length;
+    }
+    
+    final progress = _challenge.durationDays > 0 
+        ? completedDays / _challenge.durationDays 
+        : 0.0;
     
     return Container(
       padding: const EdgeInsets.all(20),

@@ -418,11 +418,11 @@ class NotificationService {
       }
       
       await scheduleNotification(
-        title: '🌅 Tu Código Grabovoi de Hoy',
-        body: 'Tu código de hoy espera por ti. ¡Recuerda que tu energía se eleva con cada pilotaje consciente!',
-        scheduledDate: scheduledDate,
-        type: NotificationType.dailyCodeReminder,
-      );
+      title: '✨ ¡Nuevo Código Diario Disponible!',
+      body: 'Descúbrelo ahora y eleva tu energía con tu sesión de repetición diaria. ¡Toca para comenzar!',
+      scheduledDate: scheduledDate,
+      type: NotificationType.dailyCodeReminder,
+    );
     }
 
     // Recordatorio matutino - hora preferida
@@ -501,8 +501,52 @@ class NotificationService {
 
   // ===== NOTIFICACIONES ESPECÍFICAS =====
 
+  /// Verificar si se debe notificar sobre el estado de la racha (evitar duplicados diarios)
+  Future<bool> _shouldNotifyStreakStatus(String statusType) async {
+    if (!_authService.isLoggedIn) return false;
+    
+    try {
+      final userId = _authService.currentUser!.id;
+      final today = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD
+      
+      // Verificar si ya se envió una notificación de este tipo hoy
+      final existing = await _supabase
+          .from('user_notifications_sent')
+          .select()
+          .eq('user_id', userId)
+          .eq('notification_type', statusType)
+          .gte('sent_at', '$today 00:00:00')
+          .maybeSingle();
+          
+      if (existing != null) {
+        return false; // Ya se notificó hoy
+      }
+      
+      // Registrar que se va a enviar
+      await _supabase.from('user_notifications_sent').insert({
+        'user_id': userId,
+        'notification_type': statusType,
+        'action_type': 'system_alert',
+        'sent_at': DateTime.now().toIso8601String(),
+      });
+      
+      return true;
+    } catch (e) {
+      print('❌ Error verificando estado de notificación de racha: $e');
+      // En caso de error, permitir la notificación para no perder alertas críticas,
+      // pero intentar usar caché local como fallback
+      return !_isStreakAlreadyNotified(statusType);
+    }
+  }
+
   /// Notificación de racha en riesgo (12 horas)
   Future<void> notifyStreakAtRisk(String userName, int streakDays) async {
+    // Verificar persistencia para evitar duplicados
+    if (!await _shouldNotifyStreakStatus('streak_at_risk')) {
+      print('⏭️ Notificación de racha en riesgo omitida: ya enviada hoy');
+      return;
+    }
+
     await showNotification(
       title: '⚠️ Racha en Riesgo',
       body: 'Atención $userName: Tu racha de $streakDays días está en riesgo. ¡Hay tiempo aún! Realiza tu pilotaje de hoy para mantenerla viva.',
@@ -512,6 +556,12 @@ class NotificationService {
 
   /// Notificación de racha perdida
   Future<void> notifyStreakLost(String userName, int streakDays) async {
+    // Verificar persistencia para evitar duplicados
+    if (!await _shouldNotifyStreakStatus('streak_lost')) {
+      print('⏭️ Notificación de racha perdida omitida: ya enviada hoy');
+      return;
+    }
+
     await showNotification(
       title: '😔 Racha Interrumpida',
       body: 'Tu racha de $streakDays días se ha interrumpido, pero es solo un nuevo comienzo. El Piloto Consciente persevera. ¡Comienza de nuevo hoy!',

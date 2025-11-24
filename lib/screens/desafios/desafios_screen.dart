@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../services/challenge_service.dart';
+import '../../services/challenge_tracking_service.dart';
 import '../../models/challenge_model.dart';
 import 'challenge_progress_screen.dart';
 import '../../services/subscription_service.dart';
@@ -51,9 +52,17 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
     // Inicializar desafíos en el servicio
     await _challengeService.initializeChallenges();
     
+    final userChallenges = _challengeService.getUserChallenges();
+    
+    // Sincronizar progreso de cada desafío activo
+    final trackingService = ChallengeTrackingService();
+    for (final challenge in userChallenges) {
+      await trackingService.syncProgressFromSupabase(challenge.id);
+    }
+    
     setState(() {
       _availableChallenges = _challengeService.getAvailableChallenges();
-      _userChallenges = _challengeService.getUserChallenges();
+      _userChallenges = userChallenges;
       _isLoading = false;
     });
   }
@@ -120,28 +129,9 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
   Widget _buildChallengeCard(Challenge challenge) {
     final color = Color(int.parse(challenge.color.replaceAll('#', '0xFF')));
     
-    // Verificar si el desafío anterior está completado
-    final challengeIndex = _challengeService.availableChallenges.indexWhere((c) => c.id == challenge.id);
-    final challengeOrder = ['iniciacion_energetica', 'armonizacion_intermedia', 'luz_dorada_avanzada', 'maestro_abundancia'];
-    final currentIndex = challengeOrder.indexOf(challenge.id);
-    bool isLocked = false;
-    String? lockMessage;
-    
-    if (currentIndex > 0) {
-      final previousChallengeId = challengeOrder[currentIndex - 1];
-      final previousChallenge = _challengeService.getUserChallenges().firstWhere(
-        (c) => c.id == previousChallengeId,
-        orElse: () => challenge, // Si no existe, usar el actual como fallback
-      );
-      
-      // Verificar si el desafío anterior está completado
-      if (previousChallenge.id != challenge.id) {
-        isLocked = previousChallenge.status != ChallengeStatus.completado;
-        if (isLocked) {
-          lockMessage = 'Completa primero: ${previousChallenge.title}';
-        }
-      }
-    }
+    // Bloquear todos los desafíos excepto el de 7 días (iniciación energética)
+    bool isLocked = challenge.id != 'iniciacion_energetica';
+    String? lockMessage = isLocked ? 'Este desafío está bloqueado' : null;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -257,18 +247,13 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                         ],
                       ),
                     ),
-                    if (isLocked)
-                      const Icon(
-                        Icons.lock,
-                        color: Colors.grey,
-                        size: 24,
-                      )
-                    else
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.white54,
-                        size: 16,
-                      ),
+                      // Mostrar flecha solo si está desbloqueado; si está bloqueado, no mostrar nada (el ícono de candado ya está en la esquina superior derecha)
+                      if (!isLocked)
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white54,
+                          size: 16,
+                        ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -316,7 +301,22 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
 
   Widget _buildActiveChallengeCard(Challenge challenge) {
     final color = Color(int.parse(challenge.color.replaceAll('#', '0xFF')));
-    final progress = challenge.currentDay / challenge.durationDays;
+    
+    // Calcular progreso basado en días COMPLETADOS, no en el día actual
+    int completedDays = 0;
+    final trackingService = ChallengeTrackingService();
+    final challengeProgress = trackingService.getChallengeProgress(challenge.id);
+    
+    if (challengeProgress != null) {
+      // Contar cuántos días están marcados como completados
+      completedDays = challengeProgress.dayProgress.values
+          .where((dayProg) => dayProg.isCompleted)
+          .length;
+    }
+    
+    final progress = challenge.durationDays > 0 
+        ? completedDays / challenge.durationDays 
+        : 0.0;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),

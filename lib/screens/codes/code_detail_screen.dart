@@ -258,10 +258,8 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
             widget.codigo,
           );
           
-          // Registrar en el nuevo sistema de progreso
-          final progressTracker = ChallengeProgressTracker();
-          progressTracker.trackCodePiloted();
-          progressTracker.trackCodeRepeated();
+          // NOTA: NO llamar a progressTracker.trackCodePiloted() ni trackCodeRepeated()
+          // porque ya se registran arriba y causaría conteo duplicado/cuádruple
 
           // Actualizar progreso global (usuario_progreso)
           await BibliotecaSupabaseService.registrarPilotaje(

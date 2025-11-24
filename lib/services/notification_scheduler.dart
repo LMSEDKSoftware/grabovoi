@@ -74,23 +74,28 @@ class NotificationScheduler {
     if (userProgress == null) return;
     
     final consecutiveDays = userProgress['consecutive_days'] ?? 0;
-    final lastSessionDate = userProgress['last_session_date'];
+    final lastSessionDateStr = userProgress['last_session_date'];
     final now = DateTime.now();
     
     // Si tiene racha, verificar si está en riesgo
-    if (consecutiveDays >= 3) {
-      if (lastSessionDate != null) {
-        final lastSession = DateTime.parse(lastSessionDate);
+    if (consecutiveDays >= 1) { // Cambiado de 3 a 1 para alertar a principiantes también
+      if (lastSessionDateStr != null) {
+        final lastSession = DateTime.parse(lastSessionDateStr);
         final hoursSinceLastSession = now.difference(lastSession).inHours;
         
-        // Si han pasado más de 12 horas sin practicar (y son las 6 PM)
-        if (hoursSinceLastSession >= 12 && now.hour == 18 && now.minute < 30) {
+        // Racha en riesgo: Han pasado más de 20 horas (aviso antes de las 24h)
+        // O si es tarde en el día (después de las 6 PM) y no ha practicado hoy
+        final isLateAndNoPractice = now.hour >= 18 && 
+                                    (lastSession.day != now.day || lastSession.month != now.month || lastSession.year != now.year);
+                                    
+        if ((hoursSinceLastSession >= 20 && hoursSinceLastSession < 24) || isLateAndNoPractice) {
           final userName = _authService.currentUser?.name ?? 'Piloto Consciente';
           await _notificationService.notifyStreakAtRisk(userName, consecutiveDays);
         }
         
-        // Si han pasado más de 24 horas, la racha se perdió
-        if (hoursSinceLastSession >= 24) {
+        // Racha perdida: Han pasado más de 24 horas (y un poco más de margen, ej. 26h para no ser tan estricto inmediatamente)
+        // O si ya es el día siguiente y no practicó ayer
+        if (hoursSinceLastSession >= 26) {
           final userName = _authService.currentUser?.name ?? 'Piloto Consciente';
           await _notificationService.notifyStreakLost(userName, consecutiveDays);
         }

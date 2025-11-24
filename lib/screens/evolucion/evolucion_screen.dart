@@ -270,7 +270,11 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
                 _buildEnergyLevelCard(),
                 const SizedBox(height: 20),
 
-                // Progreso General
+                // Estadísticas (ahora primero)
+                _buildStatsCard(),
+                const SizedBox(height: 20),
+
+                // Progreso General (sin duplicados)
                 _buildProgressCard(),
                 const SizedBox(height: 20),
 
@@ -285,9 +289,6 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
                   _buildCompletedChallengesCard(),
                   const SizedBox(height: 20),
                 ],
-
-                // Estadísticas
-                _buildStatsCard(),
                     ],
                   ),
                 ),
@@ -334,12 +335,28 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Nivel Energético',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          'Nivel Energético',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () => _showHelpDialog(
+                            'Nivel Energético',
+                            'Tu nivel energético refleja tu progreso espiritual basado en:\n\n• Días consecutivos de práctica\n• Total de sesiones de pilotaje\n• Constancia en tu práctica\n• Desafíos completados\n\nCada acción eleva tu frecuencia vibracional, aumentando tu nivel de 1 a 10.',
+                          ),
+                          child: Icon(
+                            Icons.help_outline,
+                            size: 16,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       '$nivel/10',
@@ -373,18 +390,32 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Progreso General',
-            style: GoogleFonts.inter(
-              color: const Color(0xFFFFD700),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Text(
+                'Progreso General',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _showHelpDialog(
+                  'Progreso General',
+                  '• Total Pilotajes: Número de sesiones de pilotaje completadas. Cada vez que practicas un código, cuenta como un pilotaje.\n\n• Códigos Explorados: Total de códigos únicos que has practicado al menos una vez. Muestra la variedad de tu práctica.',
+                ),
+                child: Icon(
+                  Icons.help_outline,
+                  size: 18,
+                  color: const Color(0xFFFFD700).withOpacity(0.6),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          _buildProgressRow('Días Consecutivos', dias, Icons.calendar_today),
           _buildProgressRow('Total Pilotajes', total, Icons.play_circle),
-          _buildProgressRow('Desafíos Completados', '${completedChallenges.length}', Icons.emoji_events),
           _buildProgressRow('Códigos Explorados', '${_cachedExploredCodesCount ?? 0}', Icons.explore),
         ],
       ),
@@ -443,6 +474,18 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _showHelpDialog(
+                  'Desafío Activo',
+                  'Muestra el desafío que estás realizando actualmente y en qué día te encuentras.\n\nLos desafíos son retos de práctica constante que te ayudan a establecer hábitos energéticos y alcanzar objetivos específicos.',
+                ),
+                child: Icon(
+                  Icons.help_outline,
+                  size: 18,
+                  color: Colors.green.withOpacity(0.6),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -477,13 +520,29 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Desafíos Completados',
-            style: GoogleFonts.inter(
-              color: const Color(0xFFFFD700),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Text(
+                'Desafíos Completados',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _showHelpDialog(
+                  'Desafíos Completados',
+                  'Lista de desafíos que has terminado exitosamente.\n\nCompletar desafíos demuestra tu compromiso y constancia en la práctica de los códigos Grabovoi, elevando tu vibración energética.',
+                ),
+                child: Icon(
+                  Icons.help_outline,
+                  size: 18,
+                  color: const Color(0xFFFFD700).withOpacity(0.6),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           ...completedChallenges.take(3).map((challenge) => 
@@ -523,12 +582,35 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
     
     final horas = (totalMinutes ~/ 60);
     final mins = (totalMinutes % 60);
-    final tiempoStr = horas > 0 ? '${horas}h ${mins}m' : '${mins}m';
+    final dias = (horas ~/ 24);
     
-    // Formatear tiempo de sesión actual
-    final tiempoSesionStr = currentSessionHours > 0
-        ? '${currentSessionHours}h ${currentSessionMinutes % 60}m'
-        : '${currentSessionMinutes}m';
+    // Formatear tiempo total: M → H → D
+    String tiempoStr;
+    if (dias > 0) {
+      final horasRestantes = horas % 24;
+      tiempoStr = horasRestantes > 0 ? '${dias}d ${horasRestantes}h' : '${dias}d';
+    } else if (horas > 0) {
+      tiempoStr = mins > 0 ? '${horas}h ${mins}m' : '${horas}h';
+    } else {
+      tiempoStr = '${mins}m';
+    }
+    
+    // Formatear tiempo de sesión actual: M → H → D
+    final sessionDias = currentSessionHours ~/ 24;
+    String tiempoSesionStr;
+    if (sessionDias > 0) {
+      final sessionHorasRestantes = currentSessionHours % 24;
+      tiempoSesionStr = sessionHorasRestantes > 0 
+          ? '${sessionDias}d ${sessionHorasRestantes}h' 
+          : '${sessionDias}d';
+    } else if (currentSessionHours > 0) {
+      final sessionMinsRestantes = currentSessionMinutes % 60;
+      tiempoSesionStr = sessionMinsRestantes > 0
+          ? '${currentSessionHours}h ${sessionMinsRestantes}m'
+          : '${currentSessionHours}h';
+    } else {
+      tiempoSesionStr = '${currentSessionMinutes}m';
+    }
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -539,22 +621,38 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Estadísticas',
-            style: GoogleFonts.inter(
-              color: const Color(0xFFFFD700),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Text(
+                'Estadísticas',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _showHelpDialog(
+                  'Estadísticas',
+                  '• Racha: Días consecutivos practicando sin interrupción\n\n• Desafíos: Total de desafíos que has completado exitosamente\n\n• Tiempo total: Suma acumulada de todas tus sesiones de pilotaje\n\n• Tiempo sesión: Duración de tu sesión actual en la app',
+                ),
+                child: Icon(
+                  Icons.help_outline,
+                  size: 18,
+                  color: const Color(0xFFFFD700).withOpacity(0.6),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem('Tiempo sesión', tiempoSesionStr, Icons.timelapse),
-              _buildStatItem('Tiempo total', tiempoStr, Icons.timer),
-              _buildStatItem('Sesiones', totalSesiones, Icons.play_arrow),
               _buildStatItem('Racha', '$racha días', Icons.local_fire_department),
+              _buildStatItem('Desafíos', '${completedChallenges.length}', Icons.emoji_events),
+              _buildStatItem('Tiempo total', tiempoStr, Icons.timer),
+              _buildStatItem('Tiempo sesión', tiempoSesionStr, Icons.timelapse),
             ],
           ),
         ],
@@ -583,6 +681,89 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
           ),
         ),
       ],
+    );
+  }
+
+  void _showHelpDialog(String title, String explanation) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.help_outline,
+                      color: Color(0xFFFFD700),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.playfairDisplay(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                explanation,
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontSize: 15,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Entendido',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFFFD700),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

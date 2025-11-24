@@ -229,6 +229,11 @@ class AuthServiceSimple {
           print('⚠️ Error verificando suscripción después de registro: $e');
           // NO relanzar el error - el registro fue exitoso
         }
+        // Set flag to force login on next app start
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('force_login', true);
+        // Sign out to clear automatic session
+        await _supabase.auth.signOut();
       }
 
       return response;
@@ -269,6 +274,9 @@ class AuthServiceSimple {
         if (saveForBiometric) {
           await saveBiometricCredentials(email: email, password: password);
         }
+        // Clear force_login flag after successful login
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('force_login');
       }
 
       // IMPORTANTE: Verificar estado de suscripción después de login

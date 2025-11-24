@@ -17,6 +17,7 @@ import '../sugerencias/sugerencias_screen.dart';
 import 'edit_profile_screen.dart';
 import 'notifications_settings_screen.dart';
 import 'notification_history_screen.dart';
+import '../mural/mural_history_screen.dart';
 import '../../services/admin_service.dart';
 import '../../screens/home/home_screen.dart';
 import '../admin/approve_suggestions_screen.dart';
@@ -29,6 +30,7 @@ import '../../services/notification_count_service.dart';
 import '../../services/subscription_service.dart';
 import '../../widgets/subscription_required_modal.dart';
 import '../../services/biometric_auth_service.dart';
+import '../../scripts/test_all_notifications.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -261,6 +263,18 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                 }
                               },
                               notificationCount: _unreadNotificationsCount,
+                            ),
+                            _buildCompactButton(
+                              text: 'Historial del Mural',
+                              icon: Icons.campaign,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const MuralHistoryScreen(),
+                                  ),
+                                );
+                              },
                             ),
                             _buildCompactButton(
                               text: 'Tienda Cuántica',
@@ -682,6 +696,43 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               onTap: () {
                 Navigator.pop(context);
                 _showBiometricSettings(context);
+              },
+            ),
+            const SizedBox(height: 16),
+            // Opción de prueba de notificaciones (solo visible para desarrolladores o admins, pero lo dejaremos abierto por ahora para la solicitud)
+            _buildConfigMenuItem(
+              context: context,
+              icon: Icons.science,
+              title: 'Probar Notificaciones',
+              subtitle: 'Enviar todas las notificaciones de prueba',
+              onTap: () async {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('🧪 Iniciando prueba de notificaciones...'),
+                    backgroundColor: Color(0xFFFFD700),
+                  ),
+                );
+                // Importar dinámicamente para evitar problemas de dependencias circulares si las hubiera
+                // pero como es un script, mejor usarlo directamente si ya está importado o importarlo arriba.
+                // Como no puedo añadir imports arriba fácilmente sin ver todo el archivo, usaré reflexión o asumo que puedo añadir el import.
+                // Mejor añado el import arriba en otro paso si es necesario, pero aquí usaré el nombre de la clase asumiendo que se importará.
+                // Para evitar errores de compilación si no está importado, usaré un enfoque más seguro:
+                // Crear una función local o usar el import que añadiré.
+                
+                // NOTA: Se requiere importar TestAllNotifications. 
+                // Como no puedo añadir el import en este bloque, lo haré en un paso separado o confiaré en que el usuario lo añada.
+                // Pero para ser más autónomo, voy a usar un truco: definir la llamada aquí y luego añadir el import.
+                
+                try {
+                   // Usar el script existente
+                   await TestAllNotifications.sendAllTestNotifications(
+                     userName: _authService.currentUser?.name ?? 'Usuario Test',
+                     delaySeconds: 5, // Más rápido para pruebas
+                   );
+                } catch (e) {
+                  print('Error probando notificaciones: $e');
+                }
               },
             ),
             const SizedBox(height: 24),

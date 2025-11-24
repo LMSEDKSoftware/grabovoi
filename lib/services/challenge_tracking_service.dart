@@ -688,7 +688,7 @@ class ChallengeTrackingService extends ChangeNotifier {
     }
 
     // Verificar si el día está completado
-    final isDayCompleted = _checkDayCompletion(dayNumber, updatedActionCounts, updatedActionDurations);
+    final isDayCompleted = _checkDayCompletion(challengeId, dayNumber, updatedActionCounts, updatedActionDurations);
     
     final updatedDayProgress = dayProgress.copyWith(
       actionCounts: updatedActionCounts,
@@ -701,6 +701,20 @@ class ChallengeTrackingService extends ChangeNotifier {
     // Actualizar progreso del desafío
     final updatedDayProgressMap = Map<int, DayProgress>.from(progress.dayProgress);
     updatedDayProgressMap[dayNumber] = updatedDayProgress;
+
+    // Notificar si el día se completó y no estaba completado antes
+    if (isDayCompleted && !dayProgress.isCompleted) {
+      final challenge = ChallengeService().getChallenge(challengeId);
+      final userName = _authService.currentUser?.email?.split('@').first ?? 'Usuario';
+      final daysCompleted = updatedDayProgressMap.values.where((dp) => dp.isCompleted).length;
+
+      await _notificationService.showNotification(
+        title: '🎉 ¡DÍA COMPLETADO!',
+        body: '¡Felicidades, $userName! Has completado el día $dayNumber del desafío "${challenge?.title ?? 'Desafío'}". Llevas $daysCompleted días completados. ¡Sigue así!',
+        type: NotificationType.challengeDayCompleted,
+      );
+      print('📢 Notificación de día completado enviada para desafío $challengeId, día $dayNumber');
+    }
 
     final updatedProgress = progress.copyWith(
       dayProgress: updatedDayProgressMap,
@@ -717,10 +731,54 @@ class ChallengeTrackingService extends ChangeNotifier {
   }
 
   // Verificar si un día está completado
-  bool _checkDayCompletion(int dayNumber, Map<ActionType, int> actionCounts, Map<ActionType, Duration> actionDurations) {
-    // Aquí implementarías la lógica específica para cada desafío
-    // Por ejemplo, para un desafío de 7 días:
-    
+  bool _checkDayCompletion(String challengeId, int dayNumber, Map<ActionType, int> actionCounts, Map<ActionType, Duration> actionDurations) {
+    try {
+      final challengeService = ChallengeService();
+      final challenge = challengeService.getChallenge(challengeId);
+      
+      if (challenge == null) {
+        // Fallback a lógica por defecto si no se encuentra el desafío
+        return _checkDayCompletionDefault(dayNumber, actionCounts, actionDurations);
+      }
+      
+      // Verificar cada acción requerida definida en el desafío
+      for (final action in challenge.dailyActions) {
+        final type = action.type;
+        final requiredCount = action.requiredCount;
+        final requiredDuration = action.requiredDuration;
+        
+        // Verificar conteo
+        final currentCount = actionCounts[type] ?? 0;
+        if (currentCount < requiredCount) {
+          return false;
+        }
+        
+        // Verificar duración (solo para tiempo en app o sesiones)
+        if (requiredDuration != null && requiredDuration > Duration.zero) {
+          final currentDuration = actionDurations[type] ?? Duration.zero;
+          if (currentDuration < requiredDuration) {
+            return false;
+          }
+        }
+        
+        // Verificar código específico si aplica
+        if (action.specificCode != null) {
+          // Esta verificación requeriría acceso al detalle de las acciones, 
+          // que no tenemos en los mapas agregados.
+          // Por ahora asumimos que si el conteo de 'codigoEspecifico' es suficiente, se cumplió.
+          // TODO: Mejorar validación de código específico
+        }
+      }
+      
+      return true;
+    } catch (e) {
+      print('Error verificando completitud del día: $e');
+      return false;
+    }
+  }
+
+  // Lógica por defecto (legacy) para compatibilidad
+  bool _checkDayCompletionDefault(int dayNumber, Map<ActionType, int> actionCounts, Map<ActionType, Duration> actionDurations) {
     final codigosRepetidos = actionCounts[ActionType.codigoRepetido] ?? 0;
     final sesionesPilotaje = actionCounts[ActionType.sesionPilotaje] ?? 0;
     final pilotajesCompartidos = actionCounts[ActionType.pilotajeCompartido] ?? 0;
@@ -825,7 +883,6 @@ class ChallengeTrackingService extends ChangeNotifier {
       metadata: {'action': 'app_usage'},
     );
   }
-
   Future<void> recordSpecificCode(String codeId, String codeName) async {
     await recordUserAction(
       type: ActionType.codigoEspecifico,
@@ -833,6 +890,144 @@ class ChallengeTrackingService extends ChangeNotifier {
       codeName: codeName,
       metadata: {'action': 'specific_code'},
     );
+  }
+
+  // Sincronizar progreso desde Supabase (reconstruir estado desde acciones)
+  Future<void> syncProgressFromSupabase(String challengeId) async {
+    try {
+      if (!_authService.isLoggedIn) return;
+
+      final challengeService = ChallengeService();
+      final challenge = challengeService.getChallenge(challengeId);
+      if (challenge == null) return;
+
+      // Determinar fecha de inicio para buscar acciones
+      // Si el desafío tiene fecha de inicio, usarla. Si no, buscar desde hace 30 días por seguridad
+      final startDate = challenge.startDate ?? DateTime.now().subtract(const Duration(days: 30));
+      final startOfHistory = DateTime(startDate.year, startDate.month, startDate.day).toUtc();
+      final now = DateTime.now().toUtc();
+
+      // 1. Obtener TODAS las acciones desde el inicio del desafío hasta ahora
+      final response = await _supabase
+          .from('user_actions')
+          .select()
+          .eq('user_id', _authService.currentUser!.id)
+          .gte('recorded_at', startOfHistory.toIso8601String())
+          .lte('recorded_at', now.toIso8601String());
+
+      if (response == null) return;
+
+      // 2. Inicializar progreso
+      var progress = _challengesProgress[challengeId];
+      if (progress == null) {
+        progress = ChallengeProgress(
+          challengeId: challengeId,
+          currentDay: 1,
+          dayProgress: {},
+          totalActionsCompleted: 0,
+          totalTimeSpent: Duration.zero,
+          recentActions: [],
+          lastActivity: DateTime.now(),
+        );
+      }
+
+      // 3. Agrupar acciones por día del desafío
+      final Map<int, Map<ActionType, int>> dailyCounts = {};
+      final Map<int, Map<ActionType, Duration>> dailyDurations = {};
+
+      for (final row in response as List) {
+        final recordedAt = DateTime.parse(row['recorded_at'] as String).toLocal();
+        
+        // Calcular a qué día del desafío corresponde esta acción
+        // Usamos la misma lógica que _getDayNumber pero para la fecha de la acción
+        final daysSinceStart = recordedAt.difference(startDate).inDays;
+        final actionDayNumber = daysSinceStart + 1;
+        
+        if (actionDayNumber < 1 || actionDayNumber > challenge.durationDays) continue;
+
+        final typeStr = row['action_type'] as String;
+        final data = row['action_data'] as Map<String, dynamic>?;
+        
+        ActionType type;
+        switch (typeStr) {
+          case 'codigoRepetido': type = ActionType.codigoRepetido; break;
+          case 'sesionPilotaje': type = ActionType.sesionPilotaje; break;
+          case 'pilotajeCompartido': type = ActionType.pilotajeCompartido; break;
+          case 'tiempoEnApp': type = ActionType.tiempoEnApp; break;
+          case 'codigoEspecifico': type = ActionType.codigoEspecifico; break;
+          default: continue;
+        }
+
+        // Inicializar mapas para este día si no existen
+        dailyCounts.putIfAbsent(actionDayNumber, () => {});
+        dailyDurations.putIfAbsent(actionDayNumber, () => {});
+
+        // Actualizar contadores
+        dailyCounts[actionDayNumber]![type] = (dailyCounts[actionDayNumber]![type] ?? 0) + 1;
+
+        // Actualizar duraciones
+        if (type == ActionType.tiempoEnApp && data != null) {
+          // Revisar si es un registro de total acumulado o duración individual
+          if (data.containsKey('total_seconds')) {
+             final totalSeconds = data['total_seconds'] as int;
+             // Mantener el máximo tiempo registrado para ese día
+             final currentMax = dailyDurations[actionDayNumber]![type]?.inSeconds ?? 0;
+             if (totalSeconds > currentMax) {
+               dailyDurations[actionDayNumber]![type] = Duration(seconds: totalSeconds);
+             }
+          } else {
+             final durationMinutes = data['duration'] as int? ?? 0;
+             final currentDuration = dailyDurations[actionDayNumber]![type] ?? Duration.zero;
+             dailyDurations[actionDayNumber]![type] = currentDuration + Duration(minutes: durationMinutes);
+          }
+        } else if (type == ActionType.sesionPilotaje && data != null) {
+           final durationMinutes = data['duration'] as int? ?? 0;
+           final currentDuration = dailyDurations[actionDayNumber]![type] ?? Duration.zero;
+           dailyDurations[actionDayNumber]![type] = currentDuration + Duration(minutes: durationMinutes);
+        }
+      }
+
+      // 4. Reconstruir el mapa de progreso día por día
+      final updatedDayProgressMap = Map<int, DayProgress>.from(progress.dayProgress);
+      
+      // Iterar sobre los días que tienen acciones
+      for (final dayNum in dailyCounts.keys) {
+        final counts = dailyCounts[dayNum]!;
+        final durations = dailyDurations[dayNum]!;
+        
+        final isDayCompleted = _checkDayCompletion(challengeId, dayNum, counts, durations);
+        
+        // Preservar la fecha original si ya existía, o usar una aproximada
+        final existingDayProgress = updatedDayProgressMap[dayNum];
+        final date = existingDayProgress?.date ?? startDate.add(Duration(days: dayNum - 1));
+
+        updatedDayProgressMap[dayNum] = DayProgress(
+          day: dayNum,
+          date: date,
+          actionCounts: counts,
+          actionDurations: durations,
+          isCompleted: isDayCompleted,
+          completedAt: isDayCompleted ? (existingDayProgress?.completedAt ?? DateTime.now()) : null,
+          completedActions: [], // No necesitamos reconstruir la lista exacta de IDs por ahora
+        );
+      }
+
+      // 5. Actualizar el progreso general
+      final updatedProgress = progress.copyWith(
+        dayProgress: updatedDayProgressMap,
+        // Recalcular día actual basado en la fecha real
+        currentDay: _getDayNumber(progress, DateTime.now()),
+      );
+
+      _challengesProgress[challengeId] = updatedProgress;
+      _progressControllers[challengeId]?.add(updatedProgress);
+      
+      print('✅ Progreso HISTÓRICO sincronizado para desafío $challengeId');
+      print('   - Días con actividad: ${dailyCounts.keys.toList()}');
+
+    } catch (e) {
+      print('❌ Error sincronizando progreso histórico: $e');
+    }
   }
 
   @override

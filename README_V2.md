@@ -45,11 +45,11 @@
 
 | Métrica | v1.0 | v2.0 | Cambio |
 |---------|------|------|--------|
-| **Archivos .dart** | ~50 | ~15 | -70% (más simple) |
-| **Líneas de código** | ~12,000 | ~1,500 | -88% (más limpio) |
-| **Dependencias** | 23 | 14 | -39% (más ligero) |
-| **Tamaño APK** | 24.7 MB | 20.6 MB | -17% (optimizado) |
-| **Pantallas** | 24+ | 5 core | Enfocado |
+| **Archivos .dart** | ~50 | ~100+ | +100% (Crecimiento orgánico) |
+| **Líneas de código** | ~12,000 | ~15,000 | +25% (Más funcionalidad) |
+| **Dependencias** | 23 | 30+ | +30% (Más robusto) |
+| **Tamaño APK** | 24.7 MB | 20.6 MB | -17% (Optimizado) |
+| **Pantallas** | 24+ | 30+ | Completo |
 
 ### Arquitectura
 
@@ -83,13 +83,14 @@ lib/
 ```
 lib/
 ├── main.dart                  ← App principal con navegación
+├── config/                    ← Configuración (Supabase, Env)
 ├── data/                      ← Datos JSON
 │   ├── codigos_grabovoi.json  (6 códigos base)
 │   └── desafios.json          (3 desafíos)
 ├── models/                    ← Modelos de datos
 │   ├── code_model.dart
 │   └── challenge_model.dart
-├── services/                  ← Servicios (IA)
+├── services/                  ← Servicios (IA, Auth, Audio, etc.)
 │   └── ai_service.dart
 ├── screens/                   ← Pantallas
 │   ├── home/
@@ -101,6 +102,16 @@ lib/
     ├── glow_background.dart
     ├── custom_button.dart
     └── sacred_circle.dart
+
+### 📁 Organización del Proyecto
+```
+/
+├── docs/                      ← Documentación detallada (.md)
+├── database/                  ← Scripts SQL y esquemas
+├── scripts/                   ← Scripts de utilidad (.sh, .dart)
+├── lib/                       ← Código fuente Flutter
+└── android/ios/web            ← Plataformas nativas
+```
 ```
 
 ---

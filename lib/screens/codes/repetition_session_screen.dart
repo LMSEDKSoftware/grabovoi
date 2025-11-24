@@ -243,9 +243,9 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       widget.nombre ?? widget.codigo,
     );
     
-    // Registrar en el sistema de progreso
-    final progressTracker = ChallengeProgressTracker();
-    progressTracker.trackCodeRepeated();
+    // NOTA: NO llamar a progressTracker.trackCodeRepeated() aquí
+    // porque ya se registra en recordCodeRepetition() y causaría conteo duplicado
+
 
     // Ocultar la barra de colores después de 3 segundos
     _hideColorBarAfterDelay();

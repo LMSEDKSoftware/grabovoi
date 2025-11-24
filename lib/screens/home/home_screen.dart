@@ -8,20 +8,16 @@ import '../../widgets/golden_sphere.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/welcome_modal.dart';
 import '../../services/biblioteca_supabase_service.dart';
-import '../../services/supabase_service.dart';
 import '../../services/daily_code_service.dart';
 import '../../services/auth_service_simple.dart';
-import '../../models/supabase_models.dart';
 import '../../utils/code_formatter.dart';
-import '../pilotaje/pilotaje_screen.dart';
-import '../desafios/desafios_screen.dart';
 import '../codes/code_detail_screen.dart';
-import '../../main.dart';
 import '../../repositories/codigos_repository.dart';
 import '../../services/subscription_service.dart';
 import '../../widgets/subscription_required_modal.dart';
-import '../subscription/subscription_screen.dart';
 import '../../widgets/energy_stats_tab.dart';
+import '../../widgets/mural_modal.dart';
+import '../../services/mural_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -41,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   
   String _userName = '';
   final AuthServiceSimple _authService = AuthServiceSimple();
+  final MuralService _muralService = MuralService();
   
   // La esfera de inicio es solo decorativa, sin funcionalidades interactivas
 
@@ -50,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     WidgetsBinding.instance.addObserver(this);
     _cargarDatosHome();
     _cargarNombreUsuario();
+    _checkMuralMessages();
     _checkOnboarding();
     // Verificar si debe mostrar el modal de bienvenida
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -71,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     // Refrescar cuando la app vuelve a estar activa
     if (state == AppLifecycleState.resumed && mounted) {
       _cargarDatosHome();
+      _checkMuralMessages();
       // El EnergyStatsTab se refrescará automáticamente
     }
   }
@@ -113,6 +112,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     }
   }
 
+  Future<void> _checkMuralMessages() async {
+    try {
+      final count = await _muralService.getUnreadCount();
+      if (count > 0 && mounted) {
+        // Si hay mensajes no leídos, mostrar el modal automáticamente
+        // Usamos addPostFrameCallback para asegurar que el contexto esté listo si se llama desde initState
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showMuralModal();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error verificando mensajes del mural: $e');
+    }
+  }
+
+  void _showMuralModal() {
+    // Evitar abrir múltiples modales si ya hay uno abierto (opcional, pero buena práctica)
+    // Por simplicidad, confiamos en que _checkMuralMessages se llama controladamente
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => const MuralModal(),
+    ).then((_) {
+      // Al cerrar el modal, podríamos actualizar estado si fuera necesario
+      // pero como ya no hay botón con badge, no es crítico actualizar _unreadMuralMessages
+    });
+  }
+
   bool _hasCheckedModalThisSession = false;
   
   /// Verifica y muestra el modal de bienvenida
@@ -153,144 +180,144 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Portal Energético',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFFFD700),
-                        shadows: [
-                          Shadow(
-                            color: const Color(0xFFFFD700).withOpacity(0.5),
-                            blurRadius: 20,
-                          ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _datosHome['fraseMotivacional'],
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 30),
-                // Esfera con nombre del usuario sobre ella
-                Center(
-                  child: Stack(
-                    alignment: Alignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      GoldenSphere(
-                    size: 180,
-                    color: const Color(0xFFFFD700), // Color dorado fijo
-                    glowIntensity: 0.7,
-                    isAnimated: true,
-                      ),
-                      // Nombre del usuario sobre la esfera con estilo de código
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Bienvenid@',
-                            style: GoogleFonts.inter(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                              letterSpacing: 2,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.8),
-                                  blurRadius: 6.0,
-                                  offset: const Offset(2.0, 2.0),
-                                ),
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.6),
-                                  blurRadius: 3.0,
-                                  offset: const Offset(-1.0, -1.0),
-                                ),
-                                Shadow(
-                                  color: const Color(0xFFFFD700).withOpacity(1.0),
-                                  blurRadius: 30,
-                                  offset: const Offset(0, 0),
-                                ),
-                                Shadow(
-                                  color: Colors.white.withOpacity(0.8),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 0),
-                                ),
-                                Shadow(
-                                  color: const Color(0xFFFFD700).withOpacity(0.6),
-                                  blurRadius: 40,
-                                  offset: const Offset(0, 0),
-                                ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          if (_userName.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              _userName,
-                              style: GoogleFonts.playfairDisplay(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 2,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.8),
-                                    blurRadius: 6.0,
-                                    offset: const Offset(2.0, 2.0),
-                                  ),
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.6),
-                                    blurRadius: 3.0,
-                                    offset: const Offset(-1.0, -1.0),
-                                  ),
-                                  Shadow(
-                                    color: const Color(0xFFFFD700).withOpacity(1.0),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 0),
-                                  ),
-                                  Shadow(
-                                    color: Colors.white.withOpacity(0.8),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 0),
-                                  ),
-                                  Shadow(
-                                    color: const Color(0xFFFFD700).withOpacity(0.6),
-                                    blurRadius: 40,
-                                    offset: const Offset(0, 0),
-                                  ),
-                                ],
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                      Text(
+                        'Portal Energético',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFFFFD700).withOpacity(0.5),
+                              blurRadius: 20,
                             ),
                           ],
-                        ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _datosHome['fraseMotivacional'],
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.white70,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 30),
+                      // Esfera con nombre del usuario sobre ella
+                      Center(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            GoldenSphere(
+                              size: 180,
+                              color: const Color(0xFFFFD700), // Color dorado fijo
+                              glowIntensity: 0.7,
+                              isAnimated: true,
+                            ),
+                            // Nombre del usuario sobre la esfera con estilo de código
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Bienvenid@',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                    letterSpacing: 2,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.8),
+                                        blurRadius: 6.0,
+                                        offset: const Offset(2.0, 2.0),
+                                      ),
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.6),
+                                        blurRadius: 3.0,
+                                        offset: const Offset(-1.0, -1.0),
+                                      ),
+                                      Shadow(
+                                        color: const Color(0xFFFFD700).withOpacity(1.0),
+                                        blurRadius: 30,
+                                        offset: const Offset(0, 0),
+                                      ),
+                                      Shadow(
+                                        color: Colors.white.withOpacity(0.8),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 0),
+                                      ),
+                                      Shadow(
+                                        color: const Color(0xFFFFD700).withOpacity(0.6),
+                                        blurRadius: 40,
+                                        offset: const Offset(0, 0),
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                if (_userName.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _userName,
+                                    style: GoogleFonts.playfairDisplay(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 2,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.8),
+                                          blurRadius: 6.0,
+                                          offset: const Offset(2.0, 2.0),
+                                        ),
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.6),
+                                          blurRadius: 3.0,
+                                          offset: const Offset(-1.0, -1.0),
+                                        ),
+                                        Shadow(
+                                          color: const Color(0xFFFFD700).withOpacity(1.0),
+                                          blurRadius: 30,
+                                          offset: const Offset(0, 0),
+                                        ),
+                                        Shadow(
+                                          color: Colors.white.withOpacity(0.8),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 0),
+                                        ),
+                                        Shadow(
+                                          color: const Color(0xFFFFD700).withOpacity(0.6),
+                                          blurRadius: 40,
+                                          offset: const Offset(0, 0),
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      _buildEnergyCard('Tu Nivel Energético hoy', '${_datosHome['nivel']}/10', Icons.bolt),
+                      const SizedBox(height: 20),
+                      _buildCodeOfDay(context, _datosHome['codigoRecomendado']),
+                      const SizedBox(height: 20),
+                      _buildNextStep(_datosHome['proximoPaso']),
                     ],
                   ),
                 ),
-                const SizedBox(height: 30),
-                _buildEnergyCard('Tu Nivel Energético hoy', '${_datosHome['nivel']}/10', Icons.bolt),
-                const SizedBox(height: 20),
-                _buildCodeOfDay(context, _datosHome['codigoRecomendado']),
-                const SizedBox(height: 20),
-                _buildNextStep(_datosHome['proximoPaso']),
-                  ],
-                ),
               ),
-            ),
             // Solapa flotante de estadísticas de energía (esquina superior derecha)
             Positioned(
               top: 0,
@@ -555,25 +582,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     );
   }
 
-  Widget _buildInfoItem(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Text(
-            text,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.white,
-              height: 1.4,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
+
 
   // Función helper para obtener la descripción del código desde la base de datos
   Future<String> _getCodigoDescription(String codigo) async {

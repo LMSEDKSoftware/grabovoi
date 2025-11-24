@@ -153,7 +153,13 @@ class ChallengeProgressTracker extends ChangeNotifier {
     } else if (action.contains('🖼️')) {
       return counts['pilotages_shared'] ?? 0;
     } else if (action.contains('⏱️')) {
-      return (counts['app_usage_seconds'] ?? 0) ~/ 60; // Convertir a minutos
+      // Obtener el requerimiento de minutos
+      final requiredMinutes = getActionRequirement(action);
+      final currentMinutes = _totalAppUsageSeconds ~/ 60;
+      
+      // Si ya se cumplió el requerimiento, mostrar el requerimiento (ej: 15/15)
+      // en vez de seguir contando (ej: 20/15)
+      return currentMinutes >= requiredMinutes ? requiredMinutes : currentMinutes;
     }
     return 0;
   }
@@ -318,6 +324,19 @@ class ChallengeProgressTracker extends ChangeNotifier {
         if (pilotagesShared > 0) 'pilotages_shared': pilotagesShared,
         if (appUsageSeconds > 0) 'app_usage_seconds': appUsageSeconds,
       };
+
+      // IMPORTANTE: Actualizar las variables en memoria con los valores cargados
+      // para que persistan entre sesiones
+      _codesRepeatedToday = codesRepeated;
+      _codesPilotedToday = codesPiloted;
+      _pilotagesSharedToday = pilotagesShared;
+      _totalAppUsageSeconds = appUsageSeconds;
+      
+      print('✅ Progreso cargado desde Supabase:');
+      print('   - Códigos repetidos: $_codesRepeatedToday');
+      print('   - Códigos pilotados: $_codesPilotedToday');
+      print('   - Pilotajes compartidos: $_pilotagesSharedToday');
+      print('   - Tiempo de app: ${_totalAppUsageSeconds}s (${_totalAppUsageSeconds ~/ 60} min)');
 
       notifyListeners();
       return true;

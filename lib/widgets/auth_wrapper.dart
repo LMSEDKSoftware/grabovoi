@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service_simple.dart';
 import '../services/user_progress_service.dart';
 import '../services/subscription_service.dart';
@@ -21,6 +22,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _isLoading = true;
   bool _isAuthenticated = false;
   bool _needsAssessment = false;
+  bool _forceLogin = false;
 
   @override
   void initState() {
@@ -56,6 +58,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
       final isAuth = await _authService.checkAuthStatus();
       
       print('🔐 Estado de autenticación: $isAuth');
+        final prefs = await SharedPreferences.getInstance();
+        _forceLogin = prefs.getBool('force_login') ?? false;
       
       if (isAuth) {
         // Verificar si el usuario ya completó la evaluación
@@ -80,8 +84,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
         
         if (mounted) {
           setState(() {
-            _isAuthenticated = true;
-            _needsAssessment = needsAssessment;
+            if (_forceLogin) {
+              _isAuthenticated = false;
+              _needsAssessment = false;
+            } else {
+              _isAuthenticated = true;
+              _needsAssessment = needsAssessment;
+            }
             _isLoading = false;
           });
         }
@@ -191,10 +200,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
     } else if (_isAuthenticated && !_needsAssessment) {
       print('✅ Usuario autenticado con evaluación completa - Mostrando MainNavigation');
       return const MainNavigation();
-    } else {
-      // Mostrar onboarding comercial antes del login cada vez que esté desautenticado
-      print('❌ Mostrando Onboarding antes de Login - Usuario no autenticado');
-      return const OnboardingScreen();
-    }
+    } else if (_forceLogin) {
+        // Forzar pantalla de login después de registro
+        return const LoginScreen();
+      } else {
+        // Mostrar onboarding comercial antes del login cada vez que esté desautenticado
+        print('❌ Mostrando Onboarding antes de Login - Usuario no autenticado');
+        return const OnboardingScreen();
+      }
   }
 }

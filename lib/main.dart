@@ -274,6 +274,53 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
+
+  Future<void> _handleTabSelection(int index) async {
+    final subscriptionService = SubscriptionService();
+    
+    // Verificar si el usuario es gratuito (sin suscripción después de los 7 días)
+    final isFreeUser = subscriptionService.isFreeUser;
+    
+    // Permitir acceso solo a Inicio (index 0) y Perfil (index 5) para usuarios gratuitos
+    if (isFreeUser && index != 0 && index != 5) {
+      // Mostrar modal de suscripción requerida
+      if (mounted) {
+        SubscriptionRequiredModal.show(
+          context,
+          message: 'Esta función está disponible solo para usuarios Premium. Suscríbete para acceder a todas las funciones de la app.',
+          onDismiss: () {
+            // Mantener en la pantalla actual (Inicio) después de cerrar el modal
+            setState(() {
+              _currentIndex = 0; // Forzar volver a Inicio
+            });
+          },
+        );
+      }
+      return;
+    }
+    
+    // Interceptar cambio de tab si hay pilotaje activo
+    if (_currentIndex == 2 && index != 2) {
+      final pilotageService = PilotageStateService();
+      if (pilotageService.isAnyPilotageActive) {
+        final result = await _showPilotageActiveDialog();
+        if (result == false) {
+          // Usuario canceló, no cambiar de tab
+          return;
+        }
+      }
+    }
+    
+    setState(() {
+      _currentIndex = index;
+    });
+    
+    // Actualizar conteo de notificaciones cuando se cambia a la pestaña de Perfil
+    if (index == 5) {
+      _notificationCountService.updateCount();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -392,48 +439,7 @@ class _MainNavigationState extends State<MainNavigation> {
     final subscriptionService = SubscriptionService();
     
     return GestureDetector(
-      onTap: () async {
-        // Verificar si el usuario es gratuito (sin suscripción después de los 7 días)
-        final isFreeUser = subscriptionService.isFreeUser;
-        
-        // Permitir acceso solo a Inicio (index 0) y Perfil (index 5) para usuarios gratuitos
-        if (isFreeUser && index != 0 && index != 5) {
-          // Mostrar modal de suscripción requerida
-          SubscriptionRequiredModal.show(
-            context,
-            message: 'Esta función está disponible solo para usuarios Premium. Suscríbete para acceder a todas las funciones de la app.',
-            onDismiss: () {
-              // Mantener en la pantalla actual (Inicio) después de cerrar el modal
-              setState(() {
-                _currentIndex = 0; // Forzar volver a Inicio
-              });
-            },
-          );
-          return;
-        }
-        
-        // Interceptar cambio de tab si hay pilotaje activo
-        if (_currentIndex == 2 && index != 2) {
-          final pilotageService = PilotageStateService();
-          if (pilotageService.isAnyPilotageActive) {
-            final result = await _showPilotageActiveDialog();
-            if (result == false) {
-              // Usuario canceló, no cambiar de tab
-              return;
-            }
-          }
-        }
-        
-        setState(() {
-          _currentIndex = index;
-        });
-        // Actualizar conteo de notificaciones cuando se cambia a la pestaña de Perfil
-        if (index == 5) {
-          _notificationCountService.updateCount();
-        }
-        // Refrescar recompensas cuando se vuelve a la pantalla de inicio
-        // El HomeScreen se refrescará automáticamente mediante didChangeDependencies
-      },
+      onTap: () => _handleTabSelection(index),
       child: Tooltip(
         message: label,
         waitDuration: const Duration(milliseconds: 600),
