@@ -24,7 +24,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'screens/home/home_screen.dart';
 import 'widgets/auth_wrapper.dart';
 import 'widgets/glow_background.dart';
-import 'screens/biblioteca/static_biblioteca_screen.dart';
+import 'screens/biblioteca/biblioteca_screen.dart';
 import 'screens/pilotaje/quantum_pilotage_screen.dart';
 import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
@@ -85,17 +85,20 @@ void main() async {
     }
   }
   
-  // Configurar orientación
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  // Configurar pantalla completa inmersiva
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.immersiveSticky,
-    overlays: [],
-  );
+  // Configurar orientación y UI mode (solo en móviles, NO en web)
+  // En web, NO aplicar NINGUNA configuración de SystemChrome para permitir teclado
+  if (!kIsWeb) {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    
+    // Configurar pantalla completa inmersiva (solo en móviles)
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersiveSticky,
+      overlays: [],
+    );
+  }
   
   runApp(const MyApp());
 }
@@ -182,7 +185,7 @@ class _MainNavigationState extends State<MainNavigation> {
     super.initState();
     _screens = [
       HomeScreen(key: _homeScreenKey as Key?),
-      const StaticBibliotecaScreen(),
+      const BibliotecaScreen(),
       // const PilotajeScreen(), // Oculto según solicitud
       const QuantumPilotageScreen(),
       const DesafiosScreen(),
@@ -345,7 +348,7 @@ class _MainNavigationState extends State<MainNavigation> {
     }
     
     // Interceptar cambio de tab si hay pilotaje activo
-    if (_currentIndex == 2 && index != 2) { // Cuántico ahora es índice 2
+    if (_currentIndex == 2 && index != 2) { // Cuántico es índice 2
       final pilotageService = PilotageStateService();
       if (pilotageService.isAnyPilotageActive) {
         final result = await _showPilotageActiveDialog();
