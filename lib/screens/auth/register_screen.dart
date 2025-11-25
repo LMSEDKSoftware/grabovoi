@@ -7,6 +7,7 @@ import '../../services/auth_service_simple.dart';
 import '../../services/subscription_service.dart';
 import '../../services/challenge_service.dart';
 import '../../main.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -65,9 +66,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('¡Registro exitoso! Revisa tu email para confirmar tu cuenta.'),
+            content: Text('¡Registro exitoso! Revisa tu email para confirmar tu cuenta antes de iniciar sesión.'),
             backgroundColor: Color(0xFFFFD700),
-            duration: Duration(seconds: 5),
+            duration: Duration(seconds: 7),
           ),
         );
         
@@ -101,21 +102,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // No fallar el registro si esto falla
         }
         
-        // Verificar si debe mostrar el modal de bienvenida de suscripción
-        final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
-        
-        if (shouldShowModal) {
-          // Mostrar modal de bienvenida de suscripción
-          await showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const SubscriptionWelcomeModal(),
+        // Después del registro, siempre redirigir a Login
+        // El flujo correcto es: Registro → Login → 7 días gratis → Tour → Welcome → Tablero → App
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
           );
         }
-        
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
-        );
       }
     } catch (e) {
       setState(() {
@@ -170,21 +163,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // No fallar el registro si esto falla
         }
         
-        // Verificar si debe mostrar el modal de bienvenida de suscripción
-        final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
-        
-        if (shouldShowModal) {
-          // Mostrar modal de bienvenida de suscripción
-          await showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const SubscriptionWelcomeModal(),
+        // Después del registro, siempre redirigir a Login
+        // El flujo correcto es: Registro → Login → 7 días gratis → Tour → Welcome → Tablero → App
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
           );
         }
-        
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
-        );
       }
     } catch (e) {
       setState(() {

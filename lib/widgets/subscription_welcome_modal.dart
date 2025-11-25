@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/subscription/subscription_screen.dart';
 import '../services/auth_service_simple.dart';
 import '../services/subscription_service.dart';
+import 'auth_wrapper.dart';
 
 class SubscriptionWelcomeModal extends StatefulWidget {
   const SubscriptionWelcomeModal({super.key});
@@ -82,9 +83,13 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
   }
 
   void _navigateToHome() {
-    // Cerrar el modal - el usuario ya está en la app y puede usar la navegación
-    // El modal se cierra y el usuario queda en la pantalla actual (que debería ser inicio)
-    Navigator.of(context, rootNavigator: true).pop();
+    // Cerrar el modal primero, verificando que el widget esté montado
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+    
+    // La navegación a AuthWrapper se maneja desde LoginScreen
+    // No navegar aquí para evitar el error de contexto desmontado
   }
 
   @override

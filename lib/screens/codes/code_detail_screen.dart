@@ -377,8 +377,8 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         orElse: () => CodigoGrabovoi(
           id: '',
           codigo: widget.codigo,
-          nombre: 'Código Sagrado',
-          descripcion: 'Código sagrado para la manifestación y transformación energética.',
+          nombre: 'Código Cuántico',
+          descripcion: 'Código cuántico para la manifestación y transformación energética.',
           categoria: 'General',
           color: '#FFD700',
         ),
@@ -398,8 +398,8 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       );
     } catch (e) {
       // Fallback si hay error
-      final textToCopy = '''${widget.codigo} : Código Sagrado
-Código sagrado para la manifestación y transformación energética.
+      final textToCopy = '''${widget.codigo} : Código Cuántico
+Código cuántico para la manifestación y transformación energética.
 Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
       
       Clipboard.setData(ClipboardData(text: textToCopy));
@@ -616,7 +616,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     try {
       return CodigosRepository().getDescripcionByCode(widget.codigo);
     } catch (e) {
-      return 'Código sagrado para la manifestación y transformación energética.';
+      return 'Código cuántico para la manifestación y transformación energética.';
     }
   }
   
@@ -735,7 +735,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     try {
       return CodigosRepository().getDescripcionByCode(codigo);
     } catch (e) {
-      return 'Código sagrado para la manifestación y transformación energética.';
+      return 'Código cuántico para la manifestación y transformación energética.';
     }
   }
 

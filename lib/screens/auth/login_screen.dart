@@ -124,10 +124,12 @@ class _LoginScreenState extends State<LoginScreen> {
         
         // Navegar de vuelta a AuthWrapper para que detecte el login exitoso
         // y muestre la pantalla correcta (MainNavigation o UserAssessmentScreen)
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const AuthWrapper()),
-          (route) => false, // Eliminar todas las rutas anteriores
-        );
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const AuthWrapper()),
+            (route) => false, // Eliminar todas las rutas anteriores
+          );
+        }
       }
     } catch (e) {
       setState(() {
@@ -156,18 +158,21 @@ class _LoginScreenState extends State<LoginScreen> {
         final shouldShowModal = await SubscriptionWelcomeModal.shouldShowModal();
         
         if (shouldShowModal) {
-          // Mostrar modal de bienvenida de suscripción antes de navegar
+          // Mostrar modal de bienvenida de suscripción
+          // El modal navegará a MainNavigation después de cerrarse
           await showDialog(
             context: context,
             barrierDismissible: false,
             builder: (context) => const SubscriptionWelcomeModal(),
           );
+          // No navegar aquí, el modal se encarga de navegar
+        } else {
+          // Si no se muestra el modal, navegar directamente a AuthWrapper
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const AuthWrapper()),
+            (route) => false,
+          );
         }
-        
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const AuthWrapper()),
-          (route) => false,
-        );
       }
     } catch (e) {
       setState(() {
@@ -206,10 +211,12 @@ class _LoginScreenState extends State<LoginScreen> {
         
         // Navegar de vuelta a AuthWrapper para que detecte el login exitoso
         // y muestre la pantalla correcta (MainNavigation o UserAssessmentScreen)
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const AuthWrapper()),
-          (route) => false, // Eliminar todas las rutas anteriores
-        );
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const AuthWrapper()),
+            (route) => false, // Eliminar todas las rutas anteriores
+          );
+        }
       }
     } catch (e) {
       setState(() {

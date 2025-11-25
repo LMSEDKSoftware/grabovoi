@@ -331,7 +331,7 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
     try {
       return CodigosRepository().getDescripcionByCode(codigoMostrar);
     } catch (e) {
-      return 'Código sagrado para la manifestación y transformación energética.';
+      return 'Código cuántico para la manifestación y transformación energética.';
     }
   }
 
@@ -438,7 +438,7 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
                   }),
                   builder: (context, snapshot) {
                     final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                    final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                    final descripcion = snapshot.data?['descripcion'] ?? 'Código cuántico para la manifestación y transformación energética.';
                     
                     return Container(
                       width: double.infinity,

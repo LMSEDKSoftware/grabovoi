@@ -8,6 +8,8 @@ import '../../widgets/golden_sphere.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/welcome_modal.dart';
 import '../../services/biblioteca_supabase_service.dart';
+import '../../services/onboarding_service.dart';
+import '../../services/user_progress_service.dart';
 import '../../services/daily_code_service.dart';
 import '../../services/auth_service_simple.dart';
 import '../../utils/code_formatter.dart';
@@ -38,6 +40,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   String _userName = '';
   final AuthServiceSimple _authService = AuthServiceSimple();
   final MuralService _muralService = MuralService();
+  bool _muralModalShownThisSession = false; // Controlar que solo se muestre una vez por sesión
+  bool _shouldShowMuralAfterWelcome = false; // Flag para mostrar después del WelcomeModal
   
   // La esfera de inicio es solo decorativa, sin funcionalidades interactivas
 
@@ -47,14 +51,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     WidgetsBinding.instance.addObserver(this);
     _cargarDatosHome();
     _cargarNombreUsuario();
-    _checkMuralMessages();
+    // NO mostrar tablero automáticamente al inicio
+    // Se mostrará después del WelcomeModal si es necesario
     _checkOnboarding();
-    // Verificar si debe mostrar el modal de bienvenida
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (mounted) {
-        await _checkWelcomeModal();
-      }
-    });
+    // NO verificar WelcomeModal aquí - se verificará cuando sea necesario desde MainNavigation
   }
   
   @override
@@ -69,7 +69,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     // Refrescar cuando la app vuelve a estar activa
     if (state == AppLifecycleState.resumed && mounted) {
       _cargarDatosHome();
-      _checkMuralMessages();
+      // NO mostrar MuralModal automáticamente cuando la app vuelve a estar activa
+      // Solo se mostrará después del WelcomeModal en el flujo inicial
       // El EnergyStatsTab se refrescará automáticamente
     }
   }
@@ -78,6 +79,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   void didChangeDependencies() {
     super.didChangeDependencies();
     // El EnergyStatsTab se refrescará automáticamente mediante su propio mecanismo
+    // NO verificar WelcomeModal aquí - se verificará cuando sea necesario desde MainNavigation
+  }
+  
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // NO verificar WelcomeModal aquí - se verificará cuando sea necesario desde MainNavigation
   }
   
   Future<void> _checkOnboarding() async {
@@ -112,15 +120,45 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     }
   }
 
-  Future<void> _checkMuralMessages() async {
+  Future<void> _checkMuralMessages({bool onlyIfFirstTime = false}) async {
     try {
+      // Si solo debe mostrarse la primera vez y ya se mostró, no hacer nada
+      if (onlyIfFirstTime && _muralModalShownThisSession) {
+        print('ℹ️ MuralModal ya se mostró en esta sesión, omitiendo...');
+        return;
+      }
+      
+      print('🔍 Verificando mensajes del tablero...');
       final count = await _muralService.getUnreadCount();
+      print('📊 Mensajes no leídos: $count');
+      
       if (count > 0 && mounted) {
+        // Verificar si hay algún modal abierto antes de mostrar el MuralModal
+        // Esto evita que se muestre encima de otros modales como SequenciaActivadaModal
+        final navigator = Navigator.of(context, rootNavigator: true);
+        if (navigator.canPop()) {
+          print('⚠️ Hay un modal abierto, esperando a que se cierre antes de mostrar MuralModal');
+          // Esperar un momento y verificar de nuevo
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (!mounted) return;
+          // Verificar de nuevo si aún hay un modal
+          if (navigator.canPop()) {
+            print('⚠️ Aún hay un modal abierto, cancelando mostrar MuralModal');
+            return;
+          }
+        }
+        
+        print('✅ Mostrando MuralModal');
+        _muralModalShownThisSession = true;
         // Si hay mensajes no leídos, mostrar el modal automáticamente
-        // Usamos addPostFrameCallback para asegurar que el contexto esté listo si se llama desde initState
+        // Usamos addPostFrameCallback para asegurar que el contexto esté listo
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showMuralModal();
+          if (mounted) {
+            _showMuralModal();
+          }
         });
+      } else {
+        print('ℹ️ No hay mensajes del tablero para mostrar');
       }
     } catch (e) {
       debugPrint('Error verificando mensajes del mural: $e');
@@ -142,15 +180,50 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
   bool _hasCheckedModalThisSession = false;
   
+  /// Método público para activar la verificación del WelcomeModal y MuralModal
+  /// Puede ser llamado desde MainNavigation cuando el tour y la evaluación terminen
+  Future<void> triggerWelcomeAndMuralFlow() async {
+    await _checkWelcomeModal();
+  }
+  
+  /// Método público para activar la verificación del WelcomeModal
+  /// Puede ser llamado desde MainNavigation cuando el tour termine
+  Future<void> checkWelcomeModal() async {
+    await _checkWelcomeModal();
+  }
+  
   /// Verifica y muestra el modal de bienvenida
+  /// Solo se muestra después de que el tour y la evaluación terminen
   Future<void> _checkWelcomeModal() async {
     if (_hasCheckedModalThisSession) return;
 
     final prefs = await SharedPreferences.getInstance();
     final welcomeModalShown = prefs.getBool('welcome_modal_shown') ?? false;
+    
+    // Verificar si el tour ya terminó
+    final onboardingService = OnboardingService();
+    final tourCompleted = await onboardingService.hasSeenOnboarding();
+    
+    // Verificar si la evaluación está completa
+    final progressService = UserProgressService();
+    final assessment = await progressService.getUserAssessment();
+    final assessmentComplete = assessment != null && 
+                               (assessment['is_complete'] == true || 
+                                (assessment.containsKey('knowledge_level') && 
+                                 assessment.containsKey('goals') && 
+                                 assessment.containsKey('experience_level') && 
+                                 assessment.containsKey('time_available') && 
+                                 assessment.containsKey('preferences') && 
+                                 assessment.containsKey('motivation')));
 
-    // Mostrar solo si el modal nunca se mostró
-    if (!welcomeModalShown && mounted) {
+    print('🔍 Verificando WelcomeModal - tourCompleted: $tourCompleted, assessmentComplete: $assessmentComplete, welcomeModalShown: $welcomeModalShown');
+
+    // Mostrar solo si:
+    // 1. El tour ya terminó (tourCompleted == true)
+    // 2. La evaluación está completa (assessmentComplete == true)
+    // 3. El modal de bienvenida nunca se mostró
+    if (tourCompleted && assessmentComplete && !welcomeModalShown && mounted) {
+      print('✅ Mostrando WelcomeModal');
       _hasCheckedModalThisSession = true;
 
       // Pequeño delay para esperar que la UI esté lista
@@ -158,10 +231,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
       if (!mounted) return;
 
+      // Marcar que se debe mostrar el MuralModal después del WelcomeModal
+      _shouldShowMuralAfterWelcome = true;
+      
+      // Mostrar WelcomeModal
       await showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const WelcomeModal(),
+        builder: (context) => WelcomeModal(
+          onContinue: () async {
+            print('✅ WelcomeModal cerrado, verificando tablero...');
+            // Después de WelcomeModal, mostrar tablero si hay mensajes
+            // Solo si es el flujo inicial (después del tour)
+            if (_shouldShowMuralAfterWelcome && !_muralModalShownThisSession) {
+              await Future.delayed(const Duration(milliseconds: 500));
+              if (mounted) {
+                await _checkMuralMessages(onlyIfFirstTime: true);
+              }
+            }
+            _shouldShowMuralAfterWelcome = false;
+          },
+        ),
       );
 
       // Marcar como mostrado (solo una vez)
@@ -172,9 +262,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   @override
   Widget build(BuildContext context) {
 
-    return Scaffold(
-        body: GlowBackground(
-          child: Stack(
+    return GlowBackground(
+      child: Stack(
             children: [
               SafeArea(
                 child: SingleChildScrollView(
@@ -326,8 +415,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildEnergyCard(String title, String value, IconData icon) {
@@ -474,7 +562,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 }),
                 builder: (context, snapshot) {
                   final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                  final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                  final descripcion = snapshot.data?['descripcion'] ?? 'Código cuántico para la manifestación y transformación energética.';
                   
                   return Container(
                     width: double.infinity,
@@ -591,13 +679,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       // Esto ya busca en daily_codes y codigos_grabovoi
       final todayInfo = await DailyCodeService.getTodayCodeInfo();
       if (todayInfo != null && todayInfo['codigo'] == codigo) {
-        return todayInfo['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+        return todayInfo['descripcion'] ?? 'Código cuántico para la manifestación y transformación energética.';
       }
       
       // Si el código del día no coincide, buscar directamente en codigos_grabovoi
       return CodigosRepository().getDescripcionByCode(codigo);
     } catch (e) {
-      return 'Código sagrado para la manifestación y transformación energética.';
+      return 'Código cuántico para la manifestación y transformación energética.';
     }
   }
 

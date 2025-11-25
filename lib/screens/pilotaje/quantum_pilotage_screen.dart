@@ -1754,59 +1754,55 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       return _buildConcentrationMode();
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B132B),
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          GlowBackground(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, _showAudioController ? 120 : 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Encabezado Dinámico
-                  _buildDynamicHeader(),
-                  const SizedBox(height: 30),
-                  
-                  // Zona Central - Visualización del Código
-                  _buildCodeVisualization(),
-                ],
+    return Stack(
+      children: [
+        GlowBackground(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, 20, 20, _showAudioController ? 120 : 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Encabezado Dinámico
+                _buildDynamicHeader(),
+                const SizedBox(height: 30),
+                
+                // Zona Central - Visualización del Código
+                _buildCodeVisualization(),
+              ],
+            ),
+          ),
+        ),
+        // Sistema de Steps Secuenciales como Overlay Flotante
+        if (_showSequentialSteps) _buildSequentialStepCard(),
+        
+        // Modal de opciones cuando no se encuentra código
+        if (_showOptionsModal) _buildOptionsModal(),
+        
+        // Modal de selección de códigos encontrados por IA
+        if (_mostrarSeleccionCodigos) _buildSeleccionCodigosModal(),
+        
+        // Modal de pilotaje manual
+        if (_showManualPilotage) _buildManualPilotageModal(),
+        
+        // Widget para capturar (completamente fuera de la vista pero renderizado)
+        Positioned(
+          left: -1000,
+          top: -1000,
+          child: IgnorePointer(
+            ignoring: true,
+            child: SizedBox(
+              width: 800,
+              height: 800,
+              child: Screenshot(
+                controller: _screenshotController,
+                child: _buildShareableResonanceImage(),
               ),
             ),
           ),
-                 // Sistema de Steps Secuenciales como Overlay Flotante
-                 if (_showSequentialSteps) _buildSequentialStepCard(),
-                 
-                 // Modal de opciones cuando no se encuentra código
-                 if (_showOptionsModal) _buildOptionsModal(),
-                 
-                 // Modal de selección de códigos encontrados por IA
-                 if (_mostrarSeleccionCodigos) _buildSeleccionCodigosModal(),
-                 
-                 // Modal de pilotaje manual
-                 if (_showManualPilotage) _buildManualPilotageModal(),
-                 
-                 // Widget para capturar (completamente fuera de la vista pero renderizado)
-                 Positioned(
-                   left: -1000,
-                   top: -1000,
-                   child: IgnorePointer(
-                     ignoring: true,
-                     child: SizedBox(
-                       width: 800,
-                       height: 800,
-                       child: Screenshot(
-                         controller: _screenshotController,
-                         child: _buildShareableResonanceImage(),
-                       ),
-                     ),
-                   ),
-                 ),
-               ],
-             ),
-           );
-         }
+        ),
+      ],
+    );
+  }
 
   // Método para copiar código al portapapeles con contexto
   void _copyToClipboard() async {
@@ -1829,8 +1825,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         orElse: () => CodigoGrabovoi(
           id: '',
           codigo: codigoId,
-          nombre: 'Código Sagrado',
-          descripcion: 'Código sagrado para la manifestación y transformación energética.',
+          nombre: 'Código Cuántico',
+          descripcion: 'Código cuántico para la manifestación y transformación energética.',
           categoria: 'General',
           color: '#FFD700',
         ),
@@ -1851,8 +1847,8 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     } catch (e) {
       // Fallback si hay error
       final codigoId = _codigoSeleccionado.isNotEmpty ? _codigoSeleccionado : widget.codigoInicial ?? '';
-      final textToCopy = '''$codigoId : Código Sagrado
-Código sagrado para la manifestación y transformación energética.
+      final textToCopy = '''$codigoId : Código Cuántico
+Código cuántico para la manifestación y transformación energética.
 Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
       
       Clipboard.setData(ClipboardData(text: textToCopy));

@@ -5,3 +5,7 @@ SB_SERVICE_ROLE_KEY=
 ENV=dev
 ; Copia este archivo a .env en la raíz y rellena las claves.
 
+
+SENDGRID_API_KEY=
+SENDGRID_FROM_EMAIL=noreply@manigrab.com
+SENDGRID_FROM_NAME=ManiGrab

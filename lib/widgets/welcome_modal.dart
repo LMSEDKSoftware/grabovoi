@@ -4,7 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/permissions_service.dart';
 
 class WelcomeModal extends StatefulWidget {
-  const WelcomeModal({super.key});
+  final VoidCallback? onContinue;
+  
+  const WelcomeModal({super.key, this.onContinue});
 
   @override
   State<WelcomeModal> createState() => _WelcomeModalState();
@@ -14,6 +16,7 @@ class _WelcomeModalState extends State<WelcomeModal> {
   bool _dontShowAgain = false;
   final ScrollController _scrollController = ScrollController();
   bool _showScrollIndicator = false;
+  bool _isProcessing = false; // Flag para evitar múltiples ejecuciones
 
   @override
   void initState() {
@@ -58,7 +61,13 @@ class _WelcomeModalState extends State<WelcomeModal> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () async {
+            onPressed: _isProcessing ? null : () async {
+              // Evitar múltiples ejecuciones
+              if (_isProcessing) return;
+              setState(() {
+                _isProcessing = true;
+              });
+              
               if (_dontShowAgain) {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('welcome_modal_shown', true);
@@ -73,6 +82,12 @@ class _WelcomeModalState extends State<WelcomeModal> {
               // (pequeño delay para que el modal se cierre completamente)
               await Future.delayed(const Duration(milliseconds: 300));
               await PermissionsService().requestInitialPermissions();
+              
+              // Llamar al callback si existe (para mostrar tablero después)
+              // Solo una vez
+              if (widget.onContinue != null && mounted) {
+                widget.onContinue!();
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFD700),

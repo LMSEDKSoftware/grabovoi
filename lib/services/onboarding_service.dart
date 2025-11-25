@@ -1,19 +1,23 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 class OnboardingService {
-  // Variable en memoria que se resetea cada vez que se cierra la app
-  static bool _onboardingSkipped = false;
-  
-  /// Verifica si el usuario saltó el onboarding en esta sesión
-  static bool isOnboardingSkipped() {
-    return _onboardingSkipped;
+  static const String _onboardingSeenKey = 'has_seen_onboarding_v2';
+
+  // Verificar si el usuario ya vio el onboarding
+  Future<bool> hasSeenOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_onboardingSeenKey) ?? false;
+  }
+
+  // Marcar el onboarding como visto
+  Future<void> markOnboardingAsSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardingSeenKey, true);
   }
   
-  /// Marca el onboarding como saltado (solo para esta sesión)
-  static void markOnboardingSkipped() {
-    _onboardingSkipped = true;
-  }
-  
-  /// Resetea el estado del onboarding (se llama automáticamente al iniciar la app)
-  static void resetOnboarding() {
-    _onboardingSkipped = false;
+  // Resetear onboarding (para pruebas)
+  Future<void> resetOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_onboardingSeenKey);
   }
 }

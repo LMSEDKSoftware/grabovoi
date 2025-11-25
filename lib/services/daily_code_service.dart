@@ -178,7 +178,7 @@ class DailyCodeService {
             return {
               'codigo': codigo,
               'nombre': (codigoInfo['nombre'] as String?) ?? nombre ?? 'Código Diario',
-              'descripcion': (codigoInfo['descripcion'] as String?) ?? descripcion ?? 'Código sagrado para la manifestación y transformación energética.',
+              'descripcion': (codigoInfo['descripcion'] as String?) ?? descripcion ?? 'Código cuántico para la manifestación y transformación energética.',
             };
           }
         }
@@ -206,7 +206,7 @@ class DailyCodeService {
       return {
         'codigo': codigo,
         'nombre': 'Código Diario',
-        'descripcion': 'Código sagrado para la manifestación y transformación energética.',
+        'descripcion': 'Código cuántico para la manifestación y transformación energética.',
       };
     } catch (e) {
       print('❌ Error obteniendo información del código del día: $e');
@@ -223,7 +223,7 @@ class DailyCodeService {
           return {
             'codigo': codigo,
             'nombre': (codigoInfo['nombre'] as String?) ?? 'Código Diario',
-            'descripcion': (codigoInfo['descripcion'] as String?) ?? 'Código sagrado para la manifestación y transformación energética.',
+            'descripcion': (codigoInfo['descripcion'] as String?) ?? 'Código cuántico para la manifestación y transformación energética.',
           };
         }
       } catch (_) {}

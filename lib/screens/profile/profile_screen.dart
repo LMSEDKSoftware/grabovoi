@@ -151,15 +151,24 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SizedBox.expand(
+    // Ocultar el teclado cuando se construye la pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).unfocus();
+    });
+    
+    return GestureDetector(
+      onTap: () {
+        // Ocultar el teclado cuando se toca fuera de cualquier campo
+        FocusScope.of(context).unfocus();
+      },
+      child: SizedBox.expand(
         child: _buildQuantumBackground(
-          child: SafeArea(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
+            child: SafeArea(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const SizedBox(height: 10),

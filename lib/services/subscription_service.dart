@@ -198,17 +198,27 @@ class SubscriptionService {
       }
       
       final accountCreatedAt = DateTime.parse(userData['created_at']);
-      final trialEnd = accountCreatedAt.add(Duration(days: freeTrialDays));
+      // Normalizar fechas a medianoche para comparación correcta
+      final accountCreatedAtMidnight = DateTime(accountCreatedAt.year, accountCreatedAt.month, accountCreatedAt.day);
       final now = DateTime.now();
+      final nowMidnight = DateTime(now.year, now.month, now.day);
+      
+      // Calcular días transcurridos desde la creación (0 = mismo día, 1 = día siguiente, etc.)
+      final daysSinceCreation = nowMidnight.difference(accountCreatedAtMidnight).inDays;
+      
+      // El período de prueba es de 7 días completos
+      // Si es el mismo día (días transcurridos = 0), debe mostrar 7 días
+      // Si pasó 1 día completo, muestra 6 días, etc.
+      final remaining = freeTrialDays - daysSinceCreation;
+      
+      print('🔍 Fecha de creación de cuenta: $accountCreatedAtMidnight');
+      print('🔍 Fecha actual: $nowMidnight');
+      print('🔍 Días transcurridos desde creación: $daysSinceCreation');
+      print('🔍 Días restantes de prueba: $remaining');
 
-      print('🔍 Fecha de creación de cuenta: $accountCreatedAt');
-      print('🔍 Período de prueba expira: $trialEnd');
-      print('🔍 Fecha actual: $now');
-
-      if (now.isBefore(trialEnd)) {
-        final remaining = trialEnd.difference(now).inDays;
+      if (remaining > 0) {
         print('✅ Días restantes de prueba: $remaining');
-        return remaining >= 0 ? remaining : 0;
+        return remaining;
       } else {
         // Período de prueba expirado
         print('⚠️ Período de prueba expirado');

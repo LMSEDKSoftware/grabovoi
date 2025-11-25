@@ -100,7 +100,7 @@ class CodigosRepository {
         color: '#FFD700',
       ),
     );
-    return codigoEncontrado?.descripcion ?? 'Código sagrado para la manifestación y transformación energética.';
+    return codigoEncontrado?.descripcion ?? 'Código cuántico para la manifestación y transformación energética.';
   }
 
   String getTituloByCode(String codigo) {
