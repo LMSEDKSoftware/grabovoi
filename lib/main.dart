@@ -325,8 +325,9 @@ class _MainNavigationState extends State<MainNavigation> {
     // Verificar si el usuario es gratuito (sin suscripción después de los 7 días)
     final isFreeUser = subscriptionService.isFreeUser;
     
-    // Permitir acceso solo a Inicio (index 0) y Perfil (index 4) para usuarios gratuitos
-    if (isFreeUser && index != 0 && index != 4) {
+    // Permitir acceso a Inicio (index 0) y Perfil (index 5) siempre
+    // Solo restringir otras pestañas para usuarios gratuitos
+    if (isFreeUser && index != 0 && index != 5) {
       // Mostrar modal de suscripción requerida
       if (mounted) {
         SubscriptionRequiredModal.show(
@@ -360,7 +361,7 @@ class _MainNavigationState extends State<MainNavigation> {
     });
     
     // Actualizar conteo de notificaciones cuando se cambia a la pestaña de Perfil
-    if (index == 4) { // Perfil ahora es índice 4
+    if (index == 5) { // Perfil ahora es índice 5
       _notificationCountService.updateCount();
     }
   }

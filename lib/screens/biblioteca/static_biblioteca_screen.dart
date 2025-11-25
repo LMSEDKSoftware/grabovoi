@@ -1804,17 +1804,57 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Contador de códigos (solo texto, sin recuadro)
-                  Text(
-                    'Total de códigos: ${visible.length}',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: const Color(0xFFFFD700),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.left,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // Contador de códigos y botón de favoritos activo en una sola fila
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Total de códigos: ${visible.length}',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: const Color(0xFFFFD700),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.left,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Botón de Favoritos activo (solo cuando se muestran favoritos)
+                      if (mostrarFavoritos)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: FilterChip(
+                            avatar: Icon(
+                              Icons.favorite,
+                              size: 18,
+                              color: const Color(0xFF0B132B),
+                            ),
+                            label: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('Favoritos'),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: const Color(0xFF0B132B).withOpacity(0.7),
+                                ),
+                              ],
+                            ),
+                            selected: true,
+                            onSelected: (_) {
+                              _toggleFavoritos();
+                            },
+                            selectedColor: const Color(0xFFFFD700),
+                            backgroundColor: Colors.white.withOpacity(0.08),
+                            labelStyle: const TextStyle(
+                              color: Color(0xFF0B132B),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   
@@ -1945,65 +1985,25 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                     ),
                   ],
                   
-                  // Botón de Favoritos y filtros de etiquetas (solo cuando se muestran favoritos)
+                  // Filtros de etiquetas (solo cuando se muestran favoritos)
                   if (mostrarFavoritos) ...[
                     const SizedBox(height: 12),
-                    // Botón de Favoritos (siempre visible cuando está activo) con indicador de cerrar
+                    // "Filtrar por etiqueta:" y etiquetas en una sola fila
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              avatar: Icon(
-                                Icons.favorite,
-                                size: 18,
-                                color: const Color(0xFF0B132B),
-                              ),
-                              label: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text('Favoritos'),
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: const Color(0xFF0B132B).withOpacity(0.7),
-                                  ),
-                                ],
-                              ),
-                              selected: true,
-                              onSelected: (_) {
-                                _toggleFavoritos();
-                              },
-                              selectedColor: const Color(0xFFFFD700),
-                              backgroundColor: Colors.white.withOpacity(0.08),
-                              labelStyle: const TextStyle(
-                                color: Color(0xFF0B132B),
-                                fontWeight: FontWeight.w600,
-                              ),
+                          Text(
+                            'Filtrar por etiqueta:',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Filtrar por etiqueta:',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
+                          const SizedBox(width: 12),
                           // Botón "Todas"
                           GestureDetector(
                             onTap: () async {
