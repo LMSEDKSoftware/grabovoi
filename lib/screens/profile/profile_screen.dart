@@ -153,11 +153,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    // Ocultar el teclado cuando se construye la pantalla
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      FocusScope.of(context).unfocus();
-    });
-    
     return GestureDetector(
       onTap: () {
         // Ocultar el teclado cuando se toca fuera de cualquier campo
