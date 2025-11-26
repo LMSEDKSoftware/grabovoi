@@ -19,6 +19,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   String? _selectedProductId;
   bool _hasPremiumAccess = false;
   DateTime? _trialExpiryDate;
+  int? _remainingDays;
 
   @override
   void initState() {
@@ -33,6 +34,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     
     // Verificar si el usuario tiene acceso premium (período de prueba o suscripción activa)
     _hasPremiumAccess = _subscriptionService.hasPremiumAccess;
+    
+    // Obtener días restantes del trial
+    _remainingDays = await _subscriptionService.getRemainingTrialDays();
     
     if (mounted) {
       setState(() {});
@@ -209,7 +213,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               const SizedBox(width: 12),
                               Flexible(
                                 child: Text(
-                                  _hasPremiumAccess ? 'Tienes 7 Días Premium' : '7 Días Premium GRATIS',
+                                  _remainingDays != null && _remainingDays! > 0
+                                      ? '${_remainingDays} ${_remainingDays == 1 ? 'Día' : 'Días'} Premium GRATIS'
+                                      : '0 Días Premium GRATIS',
                                   style: GoogleFonts.inter(
                                     color: const Color(0xFFFFD700),
                                     fontSize: isCompact ? 20 : 24,

@@ -770,33 +770,40 @@ class _TourOverlayState extends State<_TourOverlay> {
             bottom: 90, // Espacio para el menú inferior
             left: 0,
             right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.9),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _tourData[_currentPage]['title']!,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFD700),
+            child: Stack(
+              children: [
+                // Gradiente de fondo
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.9),
+                        Colors.transparent,
+                      ],
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
-                  _buildTourDescription(_currentPage),
-                  const SizedBox(height: 32),
+                ),
+                // Contenido del texto encima del gradiente
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _tourData[_currentPage]['title']!,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTourDescription(_currentPage),
+                      const SizedBox(height: 32),
                   
                   // Indicador de páginas
                   SmoothPageIndicator(
@@ -846,6 +853,8 @@ class _TourOverlayState extends State<_TourOverlay> {
                   ),
                 ],
               ),
+            ),
+              ],
             ),
           ),
         ],

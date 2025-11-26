@@ -31,6 +31,8 @@ import '../../services/subscription_service.dart';
 import '../../widgets/subscription_required_modal.dart';
 import '../../services/biometric_auth_service.dart';
 import '../../scripts/test_all_notifications.dart';
+import '../../services/legal_links_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -351,6 +353,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       color: Colors.orange,
                       onPressed: _signOut,
                     ),
+                    const SizedBox(height: 30),
+                    // Sección de links legales
+                    _buildLegalSection(),
+                    const SizedBox(height: 20),
+                    // Créditos
+                    Text(
+                      'Creado por: Iván Fernández',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.white54,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -658,9 +673,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Container(
               width: 40,
               height: 4,
@@ -708,13 +724,14 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               },
             ),
             const SizedBox(height: 16),
-            // Opción de prueba de notificaciones (solo visible para desarrolladores o admins, pero lo dejaremos abierto por ahora para la solicitud)
-            _buildConfigMenuItem(
-              context: context,
-              icon: Icons.science,
-              title: 'Probar Notificaciones',
-              subtitle: 'Enviar todas las notificaciones de prueba',
-              onTap: () async {
+            // Opción de prueba de notificaciones (solo visible para administradores)
+            if (_isAdmin)
+              _buildConfigMenuItem(
+                context: context,
+                icon: Icons.science,
+                title: 'Probar Notificaciones',
+                subtitle: 'Enviar todas las notificaciones de prueba',
+                onTap: () async {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -743,9 +760,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   print('Error probando notificaciones: $e');
                 }
               },
-            ),
+              ),
             const SizedBox(height: 24),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1747,6 +1765,101 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLegalSection() {
+    return FutureBuilder<Map<String, String>>(
+      future: LegalLinksService.getLegalLinks(),
+      builder: (context, snapshot) {
+        final links = snapshot.data ?? {};
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Información Legal',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildLegalLink(
+                'Política de Privacidad',
+                links['privacy_policy'] ?? LegalLinksService.defaultLinks['privacy_policy']!,
+                Icons.privacy_tip,
+              ),
+              const SizedBox(height: 8),
+              _buildLegalLink(
+                'Términos y Condiciones',
+                links['terms'] ?? LegalLinksService.defaultLinks['terms']!,
+                Icons.description,
+              ),
+              const SizedBox(height: 8),
+              _buildLegalLink(
+                'Política de Cookies',
+                links['cookies'] ?? LegalLinksService.defaultLinks['cookies']!,
+                Icons.cookie,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLegalLink(String title, String url, IconData icon) {
+    return InkWell(
+      onTap: () async {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('No se pudo abrir el enlace: $url'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFFFFD700), size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.white70,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.open_in_new,
+              color: Colors.white54,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -54,12 +54,14 @@ class LegalLinksService {
   }
 
   /// Links por defecto (se pueden configurar desde la DB después)
-  static const Map<String, String> _defaultLinks = {
+  static const Map<String, String> defaultLinks = {
     'privacy_policy': 'https://example.com/privacy-policy',
     'terms': 'https://example.com/terms',
     'cookies': 'https://example.com/cookies',
     'data_usage': 'https://example.com/data-usage',
     'credits': 'https://example.com/credits',
   };
+  
+  static const Map<String, String> _defaultLinks = defaultLinks;
 }
 

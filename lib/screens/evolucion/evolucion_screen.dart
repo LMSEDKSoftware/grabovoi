@@ -2,9 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../widgets/glow_background.dart';
-import '../../widgets/custom_button.dart';
-import '../../services/ai_service.dart';
 import '../../services/challenge_service.dart';
 import '../../services/user_progress_service.dart';
 import '../../services/auth_service_simple.dart';
@@ -20,7 +17,7 @@ class EvolucionScreen extends StatefulWidget {
   State<EvolucionScreen> createState() => _EvolucionScreenState();
 }
 
-class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingObserver {
+class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingObserver, TickerProviderStateMixin {
   final UserProgressService _progressService = UserProgressService();
   final AuthServiceSimple _authService = AuthServiceSimple();
   final ChallengeService _challengeService = ChallengeService();
@@ -36,6 +33,10 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   int? _cachedExploredCodesCount;
   DateTime? _cacheTimestamp;
   static const _cacheDuration = Duration(minutes: 5);
+  
+  // Animación de flama
+  late AnimationController _flameController;
+  late Animation<double> _flameAnimation;
 
   @override
   void initState() {
@@ -43,6 +44,27 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
     WidgetsBinding.instance.addObserver(this);
     _appTimeTracker.addListener(_updateSessionTime);
     _startSessionTimeTimer();
+    
+    // Inicializar animación de flama (movimiento de fuego más realista)
+    _flameController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    )..repeat();
+    
+    _flameAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: -0.12, end: 0.08).chain(
+        CurveTween(curve: Curves.easeInOut),
+      ), weight: 1),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.08, end: -0.1).chain(
+        CurveTween(curve: Curves.easeInOut),
+      ), weight: 1),
+      TweenSequenceItem(tween: Tween<double>(begin: -0.1, end: 0.12).chain(
+        CurveTween(curve: Curves.easeInOut),
+      ), weight: 1),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.12, end: -0.12).chain(
+        CurveTween(curve: Curves.easeInOut),
+      ), weight: 1),
+    ]).animate(_flameController);
     
     // Verificar si el usuario es gratuito después de los 7 días
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -68,6 +90,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
     WidgetsBinding.instance.removeObserver(this);
     _appTimeTracker.removeListener(_updateSessionTime);
     _sessionTimeUpdateTimer?.cancel();
+    _flameController.dispose();
     super.dispose();
   }
 
@@ -242,53 +265,51 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Título de la sección
-              Text(
-                'Evolución Energética',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFFD700),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tu progreso vibracional',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 30),
+                  Text(
+                    'Evolución Energética',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFD700),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tu progreso vibracional',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
 
               // Contenido con scroll
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Nivel Energético
-                _buildEnergyLevelCard(),
-                const SizedBox(height: 20),
+                      // Racha Actual - Círculo con flama
+                      const SizedBox(height: 20), // Espacio superior para evitar corte
+                      _buildStreakCircle(),
+                      const SizedBox(height: 30),
 
-                // Estadísticas (ahora primero)
-                _buildStatsCard(),
-                const SizedBox(height: 20),
+                      // Estadísticas en grid de 6 cuadros
+                      _buildStatsGrid(),
+                      const SizedBox(height: 20),
 
-                // Progreso General (sin duplicados)
-                _buildProgressCard(),
-                const SizedBox(height: 20),
+                      // Desafío Activo
+                      if (activeChallenge != null) ...[
+                        _buildActiveChallengeCard(),
+                        const SizedBox(height: 20),
+                      ],
 
-                // Desafío Activo
-                if (activeChallenge != null) ...[
-                  _buildActiveChallengeCard(),
-                  const SizedBox(height: 20),
-                ],
-
-                // Desafíos Completados
-                if (completedChallenges.isNotEmpty) ...[
-                  _buildCompletedChallengesCard(),
-                  const SizedBox(height: 20),
-                ],
+                      // Desafíos Completados
+                      if (completedChallenges.isNotEmpty) ...[
+                        _buildCompletedChallengesCard(),
+                        const SizedBox(height: 20),
+                      ],
                     ],
                   ),
                 ),
@@ -297,158 +318,6 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
           ),
         ),
       );
-  }
-
-  Widget _buildEnergyLevelCard() {
-    final nivel = userProgress?['nivel'] ?? userProgress?['nivel_energetico'] ?? 1;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFFFD700).withOpacity(0.2),
-            const Color(0xFFFFD700).withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFD700), width: 2),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.bolt,
-                  color: Color(0xFFFFD700),
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Nivel Energético',
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () => _showHelpDialog(
-                            'Nivel Energético',
-                            'Tu nivel energético refleja tu progreso espiritual basado en:\n\n• Días consecutivos de práctica\n• Total de sesiones de pilotaje\n• Constancia en tu práctica\n• Desafíos completados\n\nCada acción eleva tu frecuencia vibracional, aumentando tu nivel de 1 a 10.',
-                          ),
-                          child: Icon(
-                            Icons.help_outline,
-                            size: 16,
-                            color: Colors.white.withOpacity(0.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '$nivel/10',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressCard() {
-    final dias = (userProgress?['dias_consecutivos'] ?? 0).toString();
-    final total = (userProgress?['total_pilotajes'] ?? 0).toString();
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Progreso General',
-                style: GoogleFonts.inter(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => _showHelpDialog(
-                  'Progreso General',
-                  '• Total Pilotajes: Número de sesiones de pilotaje completadas. Cada vez que practicas un código, cuenta como un pilotaje.\n\n• Códigos Explorados: Total de códigos únicos que has practicado al menos una vez. Muestra la variedad de tu práctica.',
-                ),
-                child: Icon(
-                  Icons.help_outline,
-                  size: 18,
-                  color: const Color(0xFFFFD700).withOpacity(0.6),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildProgressRow('Total Pilotajes', total, Icons.play_circle),
-          _buildProgressRow('Códigos Explorados', '${_cachedExploredCodesCount ?? 0}', Icons.explore),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressRow(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFFFFD700), size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                color: Colors.white70,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildActiveChallengeCard() {
@@ -545,65 +414,179 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
             ],
           ),
           const SizedBox(height: 12),
-          ...completedChallenges.take(3).map((challenge) => 
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
+          if (completedChallenges.isEmpty)
+            // Estado vacío: mostrar copa centrada
+            Center(
+              child: Column(
                 children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      challenge['title'] ?? '',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
+                  const SizedBox(height: 20),
+                  Icon(
+                    Icons.emoji_events,
+                    color: const Color(0xFFFFD700).withOpacity(0.5),
+                    size: 48,
                   ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No tienes desafíos completados',
+                    style: GoogleFonts.inter(
+                      color: Colors.white54,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
+            )
+          else
+            // Listado de desafíos completados
+            ...completedChallenges.take(3).map((challenge) => 
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        challenge['title'] ?? '',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildStatsCard() {
-    final totalSesiones = (userProgress?['total_pilotajes'] ?? 0).toString();
+  Widget _buildStreakCircle() {
     final racha = (userProgress?['dias_consecutivos'] ?? 0).toString();
+    
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Contenedor con padding asimétrico: más arriba para la flama que sale
+          Padding(
+            padding: const EdgeInsets.only(
+              top: 35, // Más espacio arriba para la flama que sale del círculo
+              bottom: 25, // Espacio abajo para evitar overflow
+              left: 20,
+              right: 20,
+            ),
+            child: Stack(
+              alignment: Alignment.topCenter,
+              clipBehavior: Clip.none,
+              children: [
+                // Círculo principal
+                SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFFFD700).withOpacity(0.15),
+                      border: Border.all(color: const Color(0xFFFFD700), width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFFD700).withOpacity(0.5),
+                          blurRadius: 20,
+                          spreadRadius: 3,
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 20.0, bottom: 8.0, left: 8.0, right: 8.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 20), // Espacio para la flama que está fuera
+                          SizedBox(
+                            height: 24,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                racha,
+                                style: GoogleFonts.inter(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Flama grande posicionada arriba (media dentro, media fuera)
+                Positioned(
+                  top: -20, // Media flama fuera del círculo
+                  child: AnimatedBuilder(
+                    animation: _flameAnimation,
+                    builder: (context, child) {
+                      // Movimiento de fuego: rotación + ligera escala
+                      final rotation = _flameAnimation.value;
+                      final scale = 1.0 + (0.08 * (rotation.abs() / 0.12));
+                      return Transform(
+                        transform: Matrix4.identity()
+                          ..rotateZ(rotation)
+                          ..scale(scale),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.local_fire_department,
+                          color: Color(0xFFFFD700),
+                          size: 48, // Casi el doble del tamaño del número (22px * 2 = 44px, usamos 48px)
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Días en Racha',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsGrid() {
     final totalMinutes = (userProgress?['total_minutes'] ?? 0) as int;
-    
-    // Usar el tiempo de la sesión actual desde AppTimeTracker
-    final currentSessionDuration = _appTimeTracker.getCurrentSessionTime();
-    final currentSessionMinutes = currentSessionDuration.inMinutes;
-    final currentSessionHours = currentSessionDuration.inHours;
-    
     final horas = (totalMinutes ~/ 60);
     final mins = (totalMinutes % 60);
-    final dias = (horas ~/ 24);
     
-    // Formatear tiempo total: M → H → D
+    // Formatear tiempo total
     String tiempoStr;
-    if (dias > 0) {
-      final horasRestantes = horas % 24;
-      tiempoStr = horasRestantes > 0 ? '${dias}d ${horasRestantes}h' : '${dias}d';
-    } else if (horas > 0) {
+    if (horas > 0) {
       tiempoStr = mins > 0 ? '${horas}h ${mins}m' : '${horas}h';
     } else {
       tiempoStr = '${mins}m';
     }
     
-    // Formatear tiempo de sesión actual: M → H → D
-    final sessionDias = currentSessionHours ~/ 24;
+    // Tiempo de sesión actual
+    final currentSessionDuration = _appTimeTracker.getCurrentSessionTime();
+    final currentSessionMinutes = currentSessionDuration.inMinutes;
+    final currentSessionHours = currentSessionDuration.inHours;
+    
     String tiempoSesionStr;
-    if (sessionDias > 0) {
-      final sessionHorasRestantes = currentSessionHours % 24;
-      tiempoSesionStr = sessionHorasRestantes > 0 
-          ? '${sessionDias}d ${sessionHorasRestantes}h' 
-          : '${sessionDias}d';
-    } else if (currentSessionHours > 0) {
+    if (currentSessionHours > 0) {
       final sessionMinsRestantes = currentSessionMinutes % 60;
       tiempoSesionStr = sessionMinsRestantes > 0
           ? '${currentSessionHours}h ${sessionMinsRestantes}m'
@@ -611,49 +594,56 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
     } else {
       tiempoSesionStr = '${currentSessionMinutes}m';
     }
+    
+    final nivel = userProgress?['nivel'] ?? userProgress?['nivel_energetico'] ?? 1;
+    final totalPilotajes = (userProgress?['total_pilotajes'] ?? 0).toString();
+    final totalSesiones = (userProgress?['total_sesiones'] ?? 0).toString();
+    
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 15,
+      mainAxisSpacing: 15,
+      childAspectRatio: 1.5,
+      children: [
+        _buildStatCard('Tiempo Total', tiempoStr, Icons.timer),
+        _buildStatCard('Códigos Explorados', '${_cachedExploredCodesCount ?? 0}', Icons.numbers),
+        _buildStatCard('Total Pilotajes', totalPilotajes, Icons.psychology),
+        _buildStatCard('Tiempo Sesión', tiempoSesionStr, Icons.timelapse),
+        _buildStatCard('Sesiones', totalSesiones, Icons.play_circle),
+        _buildStatCard('Nivel', '$nivel', Icons.star),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Text(
-                'Estadísticas',
-                style: GoogleFonts.inter(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => _showHelpDialog(
-                  'Estadísticas',
-                  '• Racha: Días consecutivos practicando sin interrupción\n\n• Desafíos: Total de desafíos que has completado exitosamente\n\n• Tiempo total: Suma acumulada de todas tus sesiones de pilotaje\n\n• Tiempo sesión: Duración de tu sesión actual en la app',
-                ),
-                child: Icon(
-                  Icons.help_outline,
-                  size: 18,
-                  color: const Color(0xFFFFD700).withOpacity(0.6),
-                ),
-              ),
-            ],
+          Icon(icon, color: const Color(0xFFFFD700), size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem('Racha', '$racha días', Icons.local_fire_department),
-              _buildStatItem('Desafíos', '${completedChallenges.length}', Icons.emoji_events),
-              _buildStatItem('Tiempo total', tiempoStr, Icons.timer),
-              _buildStatItem('Tiempo sesión', tiempoSesionStr, Icons.timelapse),
-            ],
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: Colors.white54,
+            ),
           ),
         ],
       ),
