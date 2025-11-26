@@ -40,15 +40,13 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final keyboardHeight = mediaQuery.viewInsets.bottom;
-    
-    return AnimatedPadding(
-      padding: EdgeInsets.only(bottom: keyboardHeight),
-      duration: const Duration(milliseconds: 100),
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      alignment: Alignment.center,
+      child: MediaQuery.removeViewInsets(
+        removeBottom: true,
+        context: context,
         child: SingleChildScrollView(
           child: Container(
             padding: const EdgeInsets.all(24),
