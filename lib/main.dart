@@ -28,6 +28,8 @@ import 'screens/biblioteca/static_biblioteca_screen.dart';
 import 'screens/pilotaje/quantum_pilotage_screen.dart';
 import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
+import 'screens/auth/auth_callback_screen.dart';
+import 'screens/auth/recovery_set_password_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'repositories/codigos_repository.dart';
 import 'models/notification_history_item.dart';
@@ -35,7 +37,9 @@ import 'services/notification_count_service.dart';
 import 'services/subscription_service.dart';
 import 'widgets/subscription_required_modal.dart';
 import 'services/auth_service_simple.dart';
+import 'screens/auth/auth_callback_screen.dart';
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -153,7 +157,96 @@ class MyApp extends StatelessWidget {
             child: child!,
           );
         },
-        home: const AuthWrapper(),
+        // Manejar rutas web para callbacks de autenticación y recovery
+        onGenerateRoute: (settings) {
+          // En web, capturar la ruta /auth/callback
+          if (kIsWeb && settings.name == '/auth/callback') {
+            return MaterialPageRoute(
+              builder: (context) => const AuthCallbackScreen(),
+              settings: settings,
+            );
+          }
+          // En web, capturar la ruta /recovery para cambio de contraseña
+          // IMPORTANTE: Verificar tanto el path como si la URL contiene /recovery
+          final isRecoveryRoute = kIsWeb && (
+            settings.name == '/recovery' || 
+            settings.name?.startsWith('/recovery') == true ||
+            (settings.name == null && Uri.base.path == '/recovery')
+          );
+          
+          if (isRecoveryRoute) {
+            final uri = Uri.base;
+            
+            String? accessToken;
+            String? refreshToken;
+            String? type;
+            
+            // PRIORIDAD 1: Los tokens vienen en el HASH (después de #)
+            // Supabase redirige a: https://manigrab.app/recovery#access_token=...
+            if (uri.hasFragment) {
+              final fragment = uri.fragment;
+              final hashParams = Uri.splitQueryString(fragment);
+              accessToken = hashParams['access_token'];
+              refreshToken = hashParams['refresh_token'];
+              type = hashParams['type'];
+              print('🔍 Recovery route - Tokens encontrados en HASH:');
+            }
+            
+            // PRIORIDAD 2: Si no están en hash, intentar query params (por si acaso)
+            if (accessToken == null) {
+              accessToken = uri.queryParameters['access_token'];
+              refreshToken = uri.queryParameters['refresh_token'];
+              type = uri.queryParameters['type'];
+              print('🔍 Recovery route - Tokens encontrados en QUERY PARAMS:');
+            }
+            
+            print('   URL completa: ${uri.toString()}');
+            print('   Path: ${uri.path}');
+            print('   Fragment presente: ${uri.hasFragment}');
+            if (uri.hasFragment) {
+              print('   Fragment (primeros 100 chars): ${uri.fragment.substring(0, uri.fragment.length > 100 ? 100 : uri.fragment.length)}...');
+            }
+            print('   Access Token: ${accessToken != null ? "✅ presente (${accessToken.substring(0, 20)}...)" : "❌ ausente"}');
+            print('   Refresh Token: ${refreshToken != null ? "✅ presente" : "❌ ausente"}');
+            print('   Type: $type');
+            
+            return MaterialPageRoute(
+              builder: (context) => RecoverySetPasswordScreen(
+                accessToken: accessToken,
+                refreshToken: refreshToken,
+              ),
+              settings: settings,
+            );
+          }
+          // Para otras rutas, usar el comportamiento por defecto (home)
+          return null;
+        },
+        // Verificar si estamos en /recovery al iniciar (para manejar hash en URL)
+        home: kIsWeb && Uri.base.path == '/recovery' && Uri.base.hasFragment
+          ? Builder(
+              builder: (context) {
+                final uri = Uri.base;
+                String? accessToken;
+                String? refreshToken;
+                
+                if (uri.hasFragment) {
+                  final fragment = uri.fragment;
+                  final hashParams = Uri.splitQueryString(fragment);
+                  accessToken = hashParams['access_token'];
+                  refreshToken = hashParams['refresh_token'];
+                  print('🔍 Recovery detectado en home - Tokens en HASH');
+                }
+                
+                if (accessToken != null) {
+                  return RecoverySetPasswordScreen(
+                    accessToken: accessToken,
+                    refreshToken: refreshToken,
+                  );
+                }
+                return const AuthWrapper();
+              },
+            )
+          : const AuthWrapper(),
       ),
     );
   }
@@ -679,7 +772,7 @@ class _TourOverlayState extends State<_TourOverlay> {
   
   Widget _buildTourDescription(int pageIndex) {
     if (pageIndex == 0) {
-      // Primera página con explicación ampliada sobre luz cuántica y cristales como texto complementario
+      // Primera página con tarjetas profesionales para Luz Cuántica y Cristales
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -692,27 +785,115 @@ class _TourOverlayState extends State<_TourOverlay> {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          // Explicación de Luz Cuántica como texto complementario
-          Text(
-            '✨ **Luz Cuántica**: Energía que acumulas con cada acción consciente. Se mide como porcentaje que crece con pilotajes, repeticiones y desafíos completados.',
-            style: GoogleFonts.lato(
-              fontSize: 14,
-              color: Colors.white70,
-              height: 1.6,
+          const SizedBox(height: 24),
+          // Tarjeta de Luz Cuántica
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.3),
+                width: 1,
+              ),
             ),
-            textAlign: TextAlign.center,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    color: Color(0xFFFFD700),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Luz Cuántica',
+                        style: GoogleFonts.lato(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Energía que acumulas con cada acción consciente. Crece con pilotajes, repeticiones y desafíos.',
+                        style: GoogleFonts.lato(
+                          fontSize: 13,
+                          color: Colors.white70,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          // Explicación de Cristales como texto complementario
-          Text(
-            '💎 **Cristales**: Recompensas que ganas al completar sesiones. Úsalos para desbloquear funciones especiales y potenciar tu experiencia.',
-            style: GoogleFonts.lato(
-              fontSize: 14,
-              color: Colors.white70,
-              height: 1.6,
+          // Tarjeta de Cristales
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.3),
+                width: 1,
+              ),
             ),
-            textAlign: TextAlign.center,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.diamond,
+                    color: Color(0xFFFFD700),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cristales',
+                        style: GoogleFonts.lato(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Recompensas que ganas al completar sesiones. Úsalos para desbloquear funciones especiales.',
+                        style: GoogleFonts.lato(
+                          fontSize: 13,
+                          color: Colors.white70,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       );
@@ -748,113 +929,124 @@ class _TourOverlayState extends State<_TourOverlay> {
             children: _pages,
           ),
 
-          // Capa oscura para resaltar el texto
+          // Capa sutil para mejorar contraste sin ocultar el contenido
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.3),
+                  Colors.black.withOpacity(0.1),
                   Colors.transparent,
-                  Colors.black.withOpacity(0.8),
+                  Colors.black.withOpacity(0.4),
                 ],
-                stops: const [0.0, 0.5, 0.8],
+                stops: const [0.0, 0.4, 0.9],
               ),
             ),
           ),
 
-          // Contenido del Tour (Texto y Botones)
-          // Ajustar bottom para que no cubra el menú inferior (aprox 90px de altura)
+          // Contenido del Tour (Texto y Botones) - Diseño profesional integrado
           Positioned(
-            bottom: 90, // Espacio para el menú inferior
+            bottom: 0,
             left: 0,
             right: 0,
-            child: Stack(
-              children: [
-                // Gradiente de fondo
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.9),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.95),
+                  ],
+                  stops: const [0.0, 0.3, 1.0],
                 ),
-                // Contenido del texto encima del gradiente
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Título
                       Text(
                         _tourData[_currentPage]['title']!,
                         style: GoogleFonts.playfairDisplay(
-                          fontSize: 28,
+                          fontSize: 32,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFFFFD700),
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 16),
-                      _buildTourDescription(_currentPage),
+                      const SizedBox(height: 20),
+                      // Descripción con contenido mejorado
+                      Flexible(
+                        child: SingleChildScrollView(
+                          child: _buildTourDescription(_currentPage),
+                        ),
+                      ),
                       const SizedBox(height: 32),
-                  
-                  // Indicador de páginas
-                  SmoothPageIndicator(
-                    controller: _controller,
-                    count: _pages.length,
-                    effect: const ExpandingDotsEffect(
-                      activeDotColor: Color(0xFFFFD700),
-                      dotColor: Colors.white24,
-                      dotHeight: 8,
-                      dotWidth: 8,
-                      expansionFactor: 4,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Botón Siguiente / Comenzar (centrado, sin botón Saltar)
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_isLastPage) {
-                          _finishTour();
-                        } else {
-                          _controller.nextPage(
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFD700),
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        elevation: 5,
-                      ),
-                      child: Text(
-                        _isLastPage ? 'Comenzar' : 'Siguiente',
-                        style: GoogleFonts.lato(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      // Indicador de páginas
+                      SmoothPageIndicator(
+                        controller: _controller,
+                        count: _pages.length,
+                        effect: const ExpandingDotsEffect(
+                          activeDotColor: Color(0xFFFFD700),
+                          dotColor: Colors.white24,
+                          dotHeight: 8,
+                          dotWidth: 8,
+                          expansionFactor: 4,
+                          spacing: 8,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 24),
+                      // Botón Siguiente / Comenzar
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (_isLastPage) {
+                              _finishTour();
+                            } else {
+                              _controller.nextPage(
+                                duration: const Duration(milliseconds: 500),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 8,
+                            shadowColor: const Color(0xFFFFD700).withOpacity(0.5),
+                          ),
+                          child: Text(
+                            _isLastPage ? 'Comenzar' : 'Siguiente',
+                            style: GoogleFonts.lato(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-              ],
             ),
           ),
         ],

@@ -35,8 +35,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
     _checkAuthStatus();
     
     // Escuchar cambios de autenticación (para OAuth/Google)
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       if (data.event == AuthChangeEvent.signedIn && mounted) {
+        // Verificar si estamos en modo recuperación - NO redirigir en ese caso
+        final prefs = await SharedPreferences.getInstance();
+        final isRecoveryMode = prefs.getBool('is_recovery_mode') ?? false;
+        
+        if (isRecoveryMode) {
+          print('🚩 Modo recuperación activo - ignorando evento de autenticación para evitar redirección al tour');
+          return;
+        }
+        
         print('🔄 Cambio de autenticación detectado (OAuth/Google), verificando estado...');
         _checkAuthStatus();
       }

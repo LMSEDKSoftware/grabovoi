@@ -64,14 +64,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (mounted) {
+        // El correo de bienvenida/confirmación se envía vía Edge Function (SendGrid)
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('¡Registro exitoso! Revisa tu email para confirmar tu cuenta antes de iniciar sesión.'),
+            content: Text('¡Registro exitoso! Revisa tu email para activar tu cuenta.'),
             backgroundColor: Color(0xFFFFD700),
             duration: Duration(seconds: 7),
           ),
         );
-        
+
         // IMPORTANTE: Asegurar que el período de prueba se inicie antes de verificar el modal
         final subscriptionService = SubscriptionService();
         await subscriptionService.checkSubscriptionStatus();
@@ -111,9 +112,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = _getErrorMessage(e.toString());
-      });
+      final errorString = e.toString();
+
+      // Error controlado desde AuthServiceSimple cuando falla la Edge Function de correo
+      if (errorString.contains('email_send_failed')) {
+        setState(() {
+          _errorMessage = 'Ocurrió un error enviando el correo. Intenta nuevamente.';
+        });
+      } else {
+        setState(() {
+          _errorMessage = _getErrorMessage(errorString);
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -193,10 +203,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return 'Por favor ingresa un email válido.';
     } else if (error.contains('Signup is disabled')) {
       return 'El registro está temporalmente deshabilitado.';
-    } else if (error.contains('rate limit') || error.contains('429') || error.contains('over_email_send_rate_limit')) {
-      return 'Se han enviado demasiados correos. Por favor espera unos minutos antes de intentar nuevamente.';
-    } else if (error.contains('sending confirmation email') || error.contains('Error sending email') || error.contains('SMTP') || (error.contains('500') && error.contains('email'))) {
-      return 'Error al enviar email de confirmación. Por favor, configura SMTP en Supabase Dashboard o contacta al administrador.';
     } else {
       return 'Error al registrarse. Inténtalo nuevamente.';
     }

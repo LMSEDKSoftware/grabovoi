@@ -162,16 +162,20 @@ class AuthServiceSimple {
     required String name,
   }) async {
     try {
-      // Configurar emailRedirectTo según la plataforma para evitar errores de envío de email
+      // Mantener la llamada actual a signUp (aunque Supabase ya no envíe correos)
+      // Usar URLs sin puerto específico para que funcione con cualquier puerto dinámico de Flutter Web
       String? emailRedirectTo;
       if (kIsWeb) {
-        // En web, usar la URL de callback de Supabase
-        emailRedirectTo = '${SupabaseConfig.url}/auth/v1/callback';
+        // Detectar si estamos en producción o desarrollo usando Uri.base (funciona en todas las plataformas)
+        final hostname = Uri.base.host;
+        final isProduction = !hostname.contains('localhost') && !hostname.contains('127.0.0.1');
+        emailRedirectTo = isProduction
+            ? 'https://manigrab.app/auth/callback'
+            : 'http://localhost/auth/callback';
       } else {
-        // En móvil, usar deep link
         emailRedirectTo = 'com.manifestacion.grabovoi://login-callback';
       }
-      
+
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
@@ -179,78 +183,111 @@ class AuthServiceSimple {
         emailRedirectTo: emailRedirectTo,
       );
 
-      if (response.user != null) {
-        print('✅ Usuario registrado en auth.users');
-        
-        // Esperar un momento para que el trigger se ejecute
-        await Future.delayed(const Duration(seconds: 2));
-        
-        // Intentar cargar el usuario desde la tabla users
-        try {
-          final userData = await _supabase
-              .from('users')
-              .select()
-              .eq('id', response.user!.id)
-              .single();
-          
+      final user = response.user;
+      if (user == null) {
+        throw Exception('No se pudo crear el usuario');
+      }
+
+      print('✅ Usuario registrado en auth.users');
+
+      // Crear / cargar usuario en tabla users
+      try {
+        // Esperar un instante por triggers
+        await Future.delayed(const Duration(seconds: 1));
+        final userData = await _supabase
+            .from('users')
+            .select()
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (userData != null) {
           _currentUser = app_models.User.fromJson(userData);
           print('✅ Usuario cargado desde tabla users');
-        } catch (e) {
+        } else {
           print('⚠️ Usuario no encontrado en tabla users, creando manualmente...');
-          // Crear usuario manualmente
           final newUser = app_models.User(
-            id: response.user!.id,
+            id: user.id,
             email: email,
             name: name,
             createdAt: DateTime.now(),
             isEmailVerified: false,
           );
-
-          try {
-            await _supabase.from('users').insert(newUser.toJson());
-            _currentUser = newUser;
-            print('✅ Usuario creado manualmente en tabla users');
-          } catch (insertError) {
-            print('❌ Error creando usuario manualmente: $insertError');
-            _currentUser = newUser;
-            print('⚠️ Usuario creado solo localmente');
-          }
+          await _supabase.from('users').insert(newUser.toJson());
+          _currentUser = newUser;
+          print('✅ Usuario creado manualmente en tabla users');
         }
-        
-        await _saveUserToLocal(_currentUser!);
-        
-        // IMPORTANTE: Verificar estado de suscripción después de registro
-        // Esto asegura que usuarios nuevos obtengan su período de prueba de 7 días
-        // NO hacer que el registro falle si esto falla
-        try {
-          await SubscriptionService().checkSubscriptionStatus();
-          print('✅ Estado de suscripción verificado después de registro');
-        } catch (e) {
-          print('⚠️ Error verificando suscripción después de registro: $e');
-          // NO relanzar el error - el registro fue exitoso
-        }
-        // Set flag to force login on next app start
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('force_login', true);
-        // Sign out to clear automatic session
-        await _supabase.auth.signOut();
+      } catch (e) {
+        print('⚠️ Error manejando usuario en tabla users: $e');
+        final fallbackUser = app_models.User(
+          id: user.id,
+          email: email,
+          name: name,
+          createdAt: DateTime.now(),
+          isEmailVerified: false,
+        );
+        _currentUser = fallbackUser;
       }
+
+      if (_currentUser != null) {
+        await _saveUserToLocal(_currentUser!);
+      }
+
+      // Verificar estado de suscripción (no debe romper el registro)
+      try {
+        await SubscriptionService().checkSubscriptionStatus();
+        print('✅ Estado de suscripción verificado después de registro');
+      } catch (e) {
+        print('⚠️ Error verificando suscripción después de registro: $e');
+      }
+
+      // Enviar email de bienvenida/confirmación vía Edge Function (SendGrid)
+      try {
+        print('📧 Invocando send-email para $email');
+        
+        // Construir action_url para el correo de bienvenida
+        String? actionUrl;
+        if (kIsWeb) {
+          final hostname = Uri.base.host;
+          final isProduction = !hostname.contains('localhost') && !hostname.contains('127.0.0.1');
+          actionUrl = isProduction
+              ? 'https://manigrab.app/auth/callback'
+              : 'http://localhost/auth/callback';
+        } else {
+          actionUrl = 'com.manifestacion.grabovoi://login-callback';
+        }
+        
+        final res = await _supabase.functions.invoke('send-email', body: {
+          'to': email,
+          'template': 'welcome_or_confirm',
+          'userId': user.id,
+          'name': name,
+          'actionUrl': actionUrl,
+        });
+
+        dynamic data = res.data;
+        if (data is String) {
+          try {
+            data = jsonDecode(data);
+          } catch (_) {}
+        }
+        if (data is Map && data['ok'] != true) {
+          throw Exception('email_send_failed');
+        }
+      } catch (e) {
+        print('❌ Error enviando correo de bienvenida/confirmación: $e');
+        // Propagar un error controlado para que la UI muestre mensaje genérico
+        throw Exception('email_send_failed');
+      }
+
+      // Set flag to force login on next app start y cerrar sesión automática
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('force_login', true);
+      await _supabase.auth.signOut();
 
       return response;
     } catch (e) {
       print('❌ Error en registro: $e');
       print('❌ Tipo de error: ${e.runtimeType}');
-      
-      // Si el error es específicamente sobre envío de email, proporcionar mensaje más útil
-      final errorString = e.toString().toLowerCase();
-      if (errorString.contains('sending confirmation email') || 
-          errorString.contains('error sending email') ||
-          errorString.contains('unexpected_failure') ||
-          (errorString.contains('500') && errorString.contains('email'))) {
-        print('⚠️ Error relacionado con envío de email - probablemente falta SMTP en Supabase');
-        throw Exception('Error al enviar email de confirmación. Por favor, configura SMTP en Supabase Dashboard o contacta al administrador.');
-      }
-      
       rethrow;
     }
   }
@@ -391,12 +428,15 @@ class AuthServiceSimple {
       print('🔐 Iniciando login con Google...');
       
       // Configurar redirect URL según la plataforma
+      // Usar URLs sin puerto específico para que funcione con cualquier puerto dinámico de Flutter Web
       String redirectTo;
       if (kIsWeb) {
-        // En web, usar la URL de callback de Supabase
-        // Esto permite que Supabase maneje el callback y luego redirija a nuestra app
-        final supabaseUrl = SupabaseConfig.url;
-        redirectTo = '$supabaseUrl/auth/v1/callback';
+        // Detectar si estamos en producción o desarrollo usando Uri.base (funciona en todas las plataformas)
+        final hostname = Uri.base.host;
+        final isProduction = !hostname.contains('localhost') && !hostname.contains('127.0.0.1');
+        redirectTo = isProduction
+            ? 'https://manigrab.app/auth/callback'
+            : 'http://localhost/auth/callback';
         print('🌐 Usando redirect para web: $redirectTo');
       } else {
         // En móvil, usar deep link
@@ -457,62 +497,184 @@ class AuthServiceSimple {
     }
   }
 
-  // Recuperar contraseña usando OTP (Edge Function)
+  // SOLUCIÓN: Usar Edge Function que envía email a través del servidor personalizado (whitelist)
   Future<void> resetPassword({required String email}) async {
     try {
-      print('📧 Solicitando OTP a send-otp para: $email');
+      print('📧 Solicitando recuperación de contraseña: $email');
+      print('   Usando Edge Function send-otp (envía email desde servidor personalizado)');
+      
+      // Determinar redirectTo según el entorno
+      String redirectTo;
+      if (kIsWeb) {
+        // Detectar si estamos en desarrollo (localhost) o producción
+        final currentUrl = Uri.base;
+        final isLocalhost = currentUrl.host == 'localhost' || 
+                           currentUrl.host == '127.0.0.1' ||
+                           currentUrl.host.isEmpty;
+        
+        if (isLocalhost) {
+          // En desarrollo, incluir el puerto actual para que el link funcione en Chrome
+          final port = currentUrl.hasPort ? ':${currentUrl.port}' : '';
+          redirectTo = 'http://localhost${port}/auth/callback';
+          print('   🔧 Modo desarrollo detectado - usando localhost${port}');
+        } else {
+          // En producción, usar el dominio de producción
+          redirectTo = 'https://manigrab.app/auth/callback';
+          print('   🌐 Modo producción detectado - usando manigrab.app');
+        }
+      } else {
+        // En móvil, usar deep link
+        redirectTo = 'com.manifestacion.grabovoi://login-callback';
+        print('   📱 Modo móvil detectado - usando deep link');
+      }
+      
+      print('   🔗 RedirectTo: $redirectTo');
+      
+      // Llamar a la Edge Function que genera el recovery link oficial y lo envía por email
       final res = await _supabase.functions.invoke('send-otp', body: {
         'email': email,
+        'redirectTo': redirectTo, // Pasar el redirectTo desde el cliente
       });
+      
+      dynamic data = res.data;
+      if (data is String) {
+        try {
+          data = jsonDecode(data);
+        } catch (e) {
+          print('   ⚠️ Error parseando JSON: $e');
+        }
+      }
+      
+      if (res.status != 200) {
+        final errorMsg = data is Map ? (data['error'] ?? 'Error desconocido') : 'Error en la solicitud';
+        print('❌ Error HTTP ${res.status}: $errorMsg');
+        // Por seguridad, no revelar si el email existe o no
+        print('⚠️  Error capturado, pero respondiendo éxito por seguridad');
+        return;
+      }
+      
+      if (data == null || (data is Map && data['ok'] != true)) {
+        final errorMsg = data is Map ? (data['error'] ?? 'No se pudo enviar el email') : 'Respuesta inválida';
+        print('❌ Error en respuesta: $errorMsg');
+        // Por seguridad, no revelar si el email existe o no
+        print('⚠️  Error capturado, pero respondiendo éxito por seguridad');
+        return;
+      }
+      
+      print('✅ Solicitud de recuperación enviada correctamente');
+      print('   Revisa tu email para obtener el link de recuperación');
+      
+    } catch (e, stackTrace) {
+      print('❌ Error solicitando recuperación: $e');
+      print('📚 Stack trace: $stackTrace');
+      // Por seguridad, siempre responder éxito aunque haya error
+      // (no revelar si el email existe o no)
+      print('⚠️  Error capturado, pero respondiendo éxito por seguridad');
+    }
+  }
+
+  // SISTEMA NUEVO: Actualizar contraseña usando flujo OFICIAL de Supabase
+  // Este método recibe un recovery_token del email y la nueva contraseña
+  // Usa el método estándar updateUser() que SIEMPRE funciona
+  Future<void> updatePasswordWithRecoveryToken({
+    required String recoveryToken,
+    required String newPassword,
+  }) async {
+    try {
+      print('🔐 Actualizando contraseña con token de recuperación...');
+      print('   Token: ${recoveryToken.substring(0, 20)}...');
+      print('   Nueva contraseña: ${newPassword.length} caracteres');
+      
+      // Usar el endpoint oficial que hace todo el proceso
+      final res = await _supabase.functions.invoke('auth-update-password', body: {
+        'recovery_token': recoveryToken,
+        'new_password': newPassword,
+      });
+      
       dynamic data = res.data;
       if (data is String) {
         try {
           data = jsonDecode(data);
         } catch (_) {}
       }
-      if (data == null || (data is Map && data['ok'] != true)) {
-        throw Exception('No se pudo generar el OTP');
+      
+      if (res.status != 200 || (data is Map && data['ok'] != true)) {
+        final err = (data is Map ? (data['error'] ?? 'Error actualizando contraseña') : 'Error actualizando contraseña');
+        final details = data is Map ? (data['details'] ?? '') : '';
+        print('❌ Error HTTP ${res.status}: $err');
+        if (details.isNotEmpty) {
+          print('   Detalles: $details');
+        }
+        throw Exception(err);
       }
-      // En desarrollo puede venir dev_otp
-      if (data is Map && data['dev_otp'] != null) {
-        print('🔧 OTP (dev): ${data['dev_otp']}');
-      }
-      print('✅ OTP solicitado correctamente');
-    } catch (e) {
-      print('❌ Error solicitando OTP: $e');
+      
+      print('✅ Contraseña actualizada exitosamente');
+      print('   La contraseña está lista para usar');
+      
+    } catch (e, stackTrace) {
+      print('❌ Error actualizando contraseña: $e');
+      print('📚 Stack trace: $stackTrace');
       rethrow;
     }
   }
 
-  // Verificar OTP (Edge Function) y actualizar contraseña desde el servidor
+  // NUEVO: Verificar OTP y obtener recovery_link (NO actualiza contraseña aquí)
+  Future<String> verifyOTPAndGetRecoveryLink({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      print('🔐 Verificando OTP para obtener recovery link...');
+      print('   Email: $email');
+      print('   Token OTP: ${token.substring(0, 3)}...');
+      
+      // Llamar a la Edge Function que verifica OTP y devuelve recovery_link
+      final res = await _supabase.functions.invoke('verify-otp', body: {
+        'email': email,
+        'otp_code': token,
+      });
+      
+      dynamic data = res.data;
+      if (data is String) {
+        try {
+          data = jsonDecode(data);
+        } catch (_) {}
+      }
+      
+      if (res.status != 200 || (data is Map && data['ok'] != true)) {
+        final err = (data is Map ? (data['error'] ?? 'Verificación OTP fallida') : 'Verificación OTP fallida');
+        throw Exception(err);
+      }
+      
+      // Nueva implementación: verificar continue_url (solución IVO)
+      final continueUrl = (data as Map)['continue_url'] as String?;
+      final recoveryLink = (data as Map)['recovery_link'] as String?; // Fallback para compatibilidad
+      
+      final urlToOpen = continueUrl ?? recoveryLink;
+      
+      if (urlToOpen == null || urlToOpen.isEmpty) {
+        throw Exception('Continue URL no recibida del servidor');
+      }
+      
+      print('✅ OTP verificado, continue URL obtenida: ${urlToOpen.substring(0, 50)}...');
+      return urlToOpen;
+      
+    } catch (e, stackTrace) {
+      print('❌ Error en verificación OTP: $e');
+      print('📚 Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  // DEPRECATED: Mantener por compatibilidad pero no usar
+  @Deprecated('Usar verifyOTPAndGetRecoveryLink en su lugar')
   Future<void> verifyOTPAndResetPassword({
     required String email,
     required String token,
     required String newPassword,
   }) async {
-    try {
-      print('🔐 Verificando OTP (verify-otp) para: $email');
-      final res = await _supabase.functions.invoke('verify-otp', body: {
-        'email': email,
-        'otp_code': token,
-        'new_password': newPassword,
-      });
-      dynamic data = res.data;
-      if (data is String) {
-        try {
-          data = jsonDecode(data);
-        } catch (_) {}
-      }
-      if (data == null || (data is Map && data['ok'] != true)) {
-        final err = (data is Map ? (data['error'] ?? 'Verificación OTP fallida') : 'Verificación OTP fallida');
-        throw Exception(err);
-      }
-      print('✅ Contraseña actualizada exitosamente (server)');
-      await _supabase.auth.signOut();
-    } catch (e) {
-      print('❌ Error verificando OTP o actualizando contraseña (server): $e');
-      rethrow;
-    }
+    // Este método ya no funciona con el nuevo flujo
+    throw Exception('Este método está deprecado. Usa verifyOTPAndGetRecoveryLink y luego updateUser con sesión de recovery');
   }
 
   // Actualizar perfil (nombre, avatar, zona horaria) en auth.users (metadata) y tabla users

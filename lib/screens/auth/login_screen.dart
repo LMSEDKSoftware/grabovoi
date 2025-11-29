@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
@@ -8,7 +10,6 @@ import '../../widgets/subscription_welcome_modal.dart';
 import '../../services/auth_service_simple.dart';
 import '../../services/biometric_auth_service.dart';
 import 'register_screen.dart';
-import '../../main.dart';
 import '../../widgets/auth_wrapper.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -351,14 +352,14 @@ class _LoginScreenState extends State<LoginScreen> {
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Código de verificación enviado. Revisa tu email.'),
-              backgroundColor: const Color(0xFFFFD700),
-              duration: const Duration(seconds: 3),
+            const SnackBar(
+              content: Text('Código OTP enviado. Revisa tu correo electrónico.'),
+              backgroundColor: Color(0xFFFFD700),
+              duration: Duration(seconds: 4),
             ),
           );
           
-          // Mostrar diálogo para ingresar token y nueva contraseña
+          // Mostrar diálogo para ingresar el código OTP
           await _showResetPasswordDialog(email);
         }
       } catch (e) {
@@ -380,12 +381,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // Diálogo para ingresar código OTP y verificar
   Future<void> _showResetPasswordDialog(String email) async {
     final tokenController = TextEditingController();
-    final passwordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-    bool obscurePassword = true;
-    bool obscureConfirmPassword = true;
     bool isLoading = false;
     
     await showDialog(
@@ -394,7 +392,7 @@ class _LoginScreenState extends State<LoginScreen> {
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF1a1a2e),
           title: Text(
-            'Restablecer Contraseña',
+            'Verificar Código',
             style: GoogleFonts.inter(
               color: const Color(0xFFFFD700),
               fontWeight: FontWeight.bold,
@@ -405,20 +403,46 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Ingresa el código que recibiste por email y tu nueva contraseña.',
+                  'Paso 1: Ingresa el código de 6 dígitos que recibiste por email.',
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                Text(
+                  'Puedes copiar y pegar el código desde tu correo.',
+                  style: GoogleFonts.inter(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
                 // Campo para el código/token
                 TextField(
                   controller: tokenController,
-                  style: GoogleFonts.inter(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  autofocus: true,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 28,
+                    letterSpacing: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                   decoration: InputDecoration(
-                    labelText: 'Código de verificación',
+                    labelText: 'Código OTP',
                     labelStyle: GoogleFonts.inter(color: Colors.white70),
+                    hintText: '123456',
+                    hintStyle: GoogleFonts.inter(
+                      color: Colors.white30,
+                      fontSize: 28,
+                      letterSpacing: 10,
+                    ),
                     prefixIcon: const Icon(Icons.vpn_key, color: Color(0xFFFFD700)),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.1),
@@ -434,80 +458,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Campo para nueva contraseña
-                TextField(
-                  controller: passwordController,
-                  obscureText: obscurePassword,
-                  style: GoogleFonts.inter(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Nueva contraseña',
-                    labelStyle: GoogleFonts.inter(color: Colors.white70),
-                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFFFD700)),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.white54,
-                      ),
-                      onPressed: () {
-                        setDialogState(() {
-                          obscurePassword = !obscurePassword;
-                        });
-                      },
-                    ),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.1),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Campo para confirmar contraseña
-                TextField(
-                  controller: confirmPasswordController,
-                  obscureText: obscureConfirmPassword,
-                  style: GoogleFonts.inter(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Confirmar contraseña',
-                    labelStyle: GoogleFonts.inter(color: Colors.white70),
-                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFFFD700)),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.white54,
-                      ),
-                      onPressed: () {
-                        setDialogState(() {
-                          obscureConfirmPassword = !obscureConfirmPassword;
-                        });
-                      },
-                    ),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.1),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
-                    ),
+                    counterText: '',
                   ),
                 ),
               ],
@@ -525,30 +476,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             ElevatedButton(
               onPressed: isLoading ? null : () async {
-                if (tokenController.text.isEmpty) {
+                if (tokenController.text.isEmpty || tokenController.text.length < 6) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Por favor ingresa el código de verificación'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-                
-                if (passwordController.text.length < 6) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('La contraseña debe tener al menos 6 caracteres'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-                
-                if (passwordController.text != confirmPasswordController.text) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Las contraseñas no coinciden'),
+                      content: Text('Por favor ingresa el código de 6 dígitos'),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -560,20 +491,96 @@ class _LoginScreenState extends State<LoginScreen> {
                 });
                 
                 try {
-                  await _authService.verifyOTPAndResetPassword(
+                  // Verificar el código OTP
+                  final recoveryLink = await _authService.verifyOTPAndGetRecoveryLink(
                     email: email,
                     token: tokenController.text,
-                    newPassword: passwordController.text,
                   );
                   
                   if (context.mounted) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('¡Contraseña actualizada exitosamente!'),
-                        backgroundColor: Color(0xFF4CAF50),
+                    // PASO 2: Mostrar mensaje de éxito "OTP correcto" EN EL DIÁLOGO
+                    setDialogState(() {
+                      isLoading = false;
+                    });
+                    
+                    // Mostrar diálogo de éxito antes de cerrar
+                    Navigator.of(context).pop(); // Cerrar diálogo de entrada de OTP
+                    
+                    // Mostrar diálogo de éxito
+                    await showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: const Color(0xFF1a1a2e),
+                        title: Row(
+                          children: [
+                            const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                            const SizedBox(width: 12),
+                            Text(
+                              'OTP Correcto',
+                              style: GoogleFonts.inter(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ],
+                        ),
+                        content: Text(
+                          'Tu código de verificación es válido. Te redirigiremos al siguiente paso para cambiar tu contraseña.',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                        actions: [
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFD700),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              'Continuar',
+                              style: GoogleFonts.inter(
+                                color: const Color(0xFF1a1a2e),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
+                    
+                    // Esperar un momento antes de abrir el link
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    
+                    // PASO 3: Abrir el link para cambiar contraseña
+                    final uri = Uri.parse(recoveryLink);
+                    
+                    print('🔗 Abriendo continue URL (página PHP): ${uri.toString().substring(0, 100)}...');
+                    
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                      
+                      // Mostrar mensaje final
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Abre tu navegador para cambiar tu contraseña'),
+                            backgroundColor: Color(0xFFFFD700),
+                            duration: Duration(seconds: 4),
+                          ),
+                        );
+                      }
+                    } else {
+                      throw Exception('No se pudo abrir el enlace de recuperación');
+                    }
                   }
                 } catch (e) {
                   if (context.mounted) {
@@ -583,9 +590,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         backgroundColor: Colors.red,
                       ),
                     );
-                  }
-                } finally {
-                  if (context.mounted) {
                     setDialogState(() {
                       isLoading = false;
                     });
@@ -608,7 +612,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     )
                   : Text(
-                      'Restablecer',
+                      'Verificar',
                       style: GoogleFonts.inter(
                         color: const Color(0xFF1a1a2e),
                         fontWeight: FontWeight.bold,

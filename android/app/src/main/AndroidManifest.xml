@@ -57,7 +57,7 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Deep link para callback de OAuth (Google Sign In) -->
+            <!-- Deep link para callback de OAuth (Google Sign In) y confirmación de email -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
