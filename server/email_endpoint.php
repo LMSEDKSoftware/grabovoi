@@ -54,18 +54,23 @@ if (file_exists($envFile)) {
     }
 }
 
-// Si no están en variables de entorno, usar valores por defecto
-// ⚠️ IMPORTANTE: Cambia estos valores o configura las variables de entorno
+// ⚠️ IMPORTANTE: Todas las variables deben configurarse como variables de entorno
+// No hardcodear valores sensibles en el código fuente
 $emailServerSecret = getenv('EMAIL_SERVER_SECRET');
 if (empty($emailServerSecret)) {
-    $emailServerSecret = 'REQUIRES_ENV_VAR_EMAIL_SERVER_SECRET';
-    putenv('EMAIL_SERVER_SECRET=' . $emailServerSecret);
+    http_response_code(500);
+    echo json_encode(['error' => 'Server configuration error: EMAIL_SERVER_SECRET not set. Please configure it as an environment variable.']);
+    exit;
 }
 
 $sendgridApiKey = getenv('SENDGRID_API_KEY');
 if (empty($sendgridApiKey)) {
-    $sendgridApiKey = 'REQUIRES_ENV_VAR_SENDGRID_API_KEY';
-    putenv('SENDGRID_API_KEY=' . $sendgridApiKey);
+    // ⚠️ SEGURIDAD: La clave de API debe configurarse como variable de entorno
+    // No hardcodear claves en el código fuente
+    // Configurar SENDGRID_API_KEY en el servidor o archivo .env
+    http_response_code(500);
+    echo json_encode(['error' => 'Server configuration error: SENDGRID_API_KEY not set. Please configure it as an environment variable.']);
+    exit;
 }
 
 $sendgridFromEmail = getenv('SENDGRID_FROM_EMAIL');
