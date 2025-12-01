@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
@@ -535,7 +537,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         actions: [
                           ElevatedButton(
-                            onPressed: () => Navigator.of(context).pop(),
+                            onPressed: () {
+                              // Cerrar el diálogo de éxito
+                              Navigator.of(context).pop();
+                              
+                              // PASO 3: Mostrar WebView dentro de la app para cambiar contraseña
+                              if (context.mounted) {
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => _PasswordResetWebViewDialog(
+                                    recoveryLink: recoveryLink,
+                                  ),
+                                );
+                              }
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFFD700),
                               shape: RoundedRectangleBorder(
@@ -553,34 +569,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     );
-                    
-                    // Esperar un momento antes de abrir el link
-                    await Future.delayed(const Duration(milliseconds: 500));
-                    
-                    // PASO 3: Abrir el link para cambiar contraseña
-                    final uri = Uri.parse(recoveryLink);
-                    
-                    print('🔗 Abriendo continue URL (página PHP): ${uri.toString().substring(0, 100)}...');
-                    
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                      
-                      // Mostrar mensaje final
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Abre tu navegador para cambiar tu contraseña'),
-                            backgroundColor: Color(0xFFFFD700),
-                            duration: Duration(seconds: 4),
-                          ),
-                        );
-                      }
-                    } else {
-                      throw Exception('No se pudo abrir el enlace de recuperación');
-                    }
                   }
                 } catch (e) {
                   if (context.mounted) {
@@ -622,6 +610,22 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // Widget para web: usar WebView (compatible con web)
+  Widget _buildWebViewWeb(String url, BuildContext context) {
+    return WebViewWidget(
+      controller: WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onPageFinished: (String loadedUrl) {
+              print('✅ Página cargada en web: $loadedUrl');
+            },
+          ),
+        )
+        ..loadRequest(Uri.parse(url)),
     );
   }
 
@@ -1078,6 +1082,112 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Widget separado para el diálogo del WebView que maneja mejor el teclado
+class _PasswordResetWebViewDialog extends StatefulWidget {
+  final String recoveryLink;
+  
+  const _PasswordResetWebViewDialog({
+    required this.recoveryLink,
+  });
+
+  @override
+  State<_PasswordResetWebViewDialog> createState() => _PasswordResetWebViewDialogState();
+}
+
+class _PasswordResetWebViewDialogState extends State<_PasswordResetWebViewDialog> {
+  late final WebViewController _webViewController;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Crear el controller una sola vez
+    _webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (String url) {
+            print('✅ Página cargada en WebView: $url');
+            if (!_isInitialized) {
+              setState(() {
+                _isInitialized = true;
+              });
+            }
+          },
+          onWebResourceError: (WebResourceError error) {
+            print('❌ Error en WebView: ${error.description}');
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.recoveryLink));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1a1a2e),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            // Barra superior con título y botón cerrar
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFFFD700), width: 2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Cambiar Contraseña',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            // WebView (móvil) o navegación directa (web)
+            Expanded(
+              child: kIsWeb 
+                ? WebViewWidget(
+                    controller: WebViewController()
+                      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                      ..setNavigationDelegate(
+                        NavigationDelegate(
+                          onPageFinished: (String loadedUrl) {
+                            print('✅ Página cargada en web: $loadedUrl');
+                          },
+                        ),
+                      )
+                      ..loadRequest(Uri.parse(widget.recoveryLink)),
+                  )
+                : WebViewWidget(
+                    controller: _webViewController,
+                  ),
+            ),
+          ],
         ),
       ),
     );
