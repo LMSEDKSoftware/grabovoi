@@ -19,6 +19,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   String? _selectedProductId;
   bool _hasPremiumAccess = false;
   DateTime? _trialExpiryDate;
+  DateTime? _subscriptionExpiryDate;
   int? _remainingDays;
 
   @override
@@ -34,6 +35,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     
     // Verificar si el usuario tiene acceso premium (período de prueba o suscripción activa)
     _hasPremiumAccess = _subscriptionService.hasPremiumAccess;
+    _subscriptionExpiryDate = _subscriptionService.subscriptionExpiryDate;
     
     // Obtener días restantes del trial
     _remainingDays = await _subscriptionService.getRemainingTrialDays();
@@ -151,6 +153,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final isCompact = mediaQuery.size.width < 360;
+    final now = DateTime.now();
+    final hasPaidSubscription = _hasPremiumAccess &&
+        (_subscriptionExpiryDate != null &&
+            _subscriptionExpiryDate!.isAfter(now) &&
+            (_remainingDays == null || _remainingDays! <= 0));
+    final expiryText = _subscriptionExpiryDate != null
+        ? DateFormat('dd/MM/yyyy').format(_subscriptionExpiryDate!)
+        : '-';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B132B),
@@ -182,121 +192,210 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Banner de prueba gratis
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFFFFD700).withOpacity(0.2),
-                            const Color(0xFFFFD700).withOpacity(0.1),
+                    // Banner de estado según tipo de acceso
+                    if (hasPaidSubscription)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1C2541),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFFFD700),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFD700).withOpacity(0.25),
+                              blurRadius: 16,
+                              spreadRadius: 1,
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFFFFD700).withOpacity(0.5),
-                          width: 2,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.star,
-                                color: Color(0xFFFFD700),
-                                size: 32,
-                              ),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: Text(
-                                  _remainingDays != null && _remainingDays! > 0
-                                      ? '${_remainingDays} ${_remainingDays == 1 ? 'Día' : 'Días'} Premium GRATIS'
-                                      : '0 Días Premium GRATIS',
-                                  style: GoogleFonts.inter(
-                                    color: const Color(0xFFFFD700),
-                                    fontSize: isCompact ? 20 : 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  overflow: TextOverflow.visible,
-                                  softWrap: true,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _hasPremiumAccess 
-                              ? 'Desde que te registraste, disfrutas de acceso completo a todas las funciones premium por 7 días.'
-                              : 'Al registrarte, disfrutarás de acceso completo a todas las funciones premium por 7 días.',
-                            style: GoogleFonts.inter(
-                              color: Colors.white70,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
+                        child: Column(
+                          children: [
+                            Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const Icon(
-                                  Icons.info_outline,
+                                  Icons.verified,
                                   color: Color(0xFFFFD700),
-                                  size: 18,
+                                  size: 32,
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
+                                const SizedBox(width: 12),
+                                Flexible(
                                   child: Text(
-                                    'Después del período de prueba, elige uno de los planes para continuar disfrutando de los beneficios.',
+                                    'Usuario Plan Pro',
                                     style: GoogleFonts.inter(
-                                      color: Colors.white70,
-                                      fontSize: 13,
+                                      color: Colors.white,
+                                      fontSize: isCompact ? 20 : 24,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                     textAlign: TextAlign.center,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: true,
                                   ),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Tu suscripción está activa.',
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.calendar_today,
+                                    color: Color(0xFFFFD700),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Válida hasta: $expiryText',
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white70,
+                                        fontSize: 13,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xFFFFD700).withOpacity(0.2),
+                              const Color(0xFFFFD700).withOpacity(0.1),
+                            ],
                           ),
-                        ],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFFFD700).withOpacity(0.5),
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.star,
+                                  color: Color(0xFFFFD700),
+                                  size: 32,
+                                ),
+                                const SizedBox(width: 12),
+                                Flexible(
+                                  child: Text(
+                                    _remainingDays != null && _remainingDays! > 0
+                                        ? '${_remainingDays} ${_remainingDays == 1 ? 'Día' : 'Días'} Premium GRATIS'
+                                        : '0 Días Premium GRATIS',
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFFFFD700),
+                                      fontSize: isCompact ? 20 : 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _hasPremiumAccess 
+                                ? 'Desde que te registraste, disfrutas de acceso completo a todas las funciones premium por 7 días.'
+                                : 'Al registrarte, disfrutarás de acceso completo a todas las funciones premium por 7 días.',
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.info_outline,
+                                    color: Color(0xFFFFD700),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Después del período de prueba, elige uno de los planes para continuar disfrutando de los beneficios.',
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white70,
+                                        fontSize: 13,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 32),
+                    // Solo mostrar planes si NO es usuario PRO pagado (mostrar durante trial o sin suscripción)
+                    if (!hasPaidSubscription) ...[
+                      const SizedBox(height: 32),
 
-                    // Título de planes
-                    Text(
-                      'Elige tu plan',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                      // Título de planes
+                      Text(
+                        'Elige tu plan',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Selecciona una opción para continuar después de tu período de prueba',
-                      style: GoogleFonts.inter(
-                        color: Colors.white54,
-                        fontSize: 14,
+                      const SizedBox(height: 8),
+                      Text(
+                        'Selecciona una opción para continuar después de tu período de prueba',
+                        style: GoogleFonts.inter(
+                          color: Colors.white54,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // Lista de productos
-                    if (_products.isEmpty)
+                      // Lista de productos
+                      if (_products.isEmpty)
                       Padding(
                         padding: const EdgeInsets.all(32),
                         child: Column(
@@ -497,59 +596,60 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         );
                       }),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // Información adicional
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.info_outline,
-                                color: Color(0xFFFFD700),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'La suscripción se renovará automáticamente',
-                                  style: GoogleFonts.inter(
-                                    color: Colors.white70,
-                                    fontSize: 12,
+                      // Información adicional
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: Color(0xFFFFD700),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'La suscripción se renovará automáticamente',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.cancel_outlined,
-                                color: Color(0xFFFFD700),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Cancela cuando quieras desde Google Play',
-                                  style: GoogleFonts.inter(
-                                    color: Colors.white70,
-                                    fontSize: 12,
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.cancel_outlined,
+                                  color: Color(0xFFFFD700),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Cancela cuando quieras desde Google Play',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

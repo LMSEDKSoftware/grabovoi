@@ -3885,8 +3885,9 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                   Text(
                     'La activación de los códigos ocurre por resonancia, no por acumulación de repeticiones.\n\n'
                     'Una sola repetición con total enfoque puede ser más efectiva que cientos realizadas de forma automática.\n\n'
-                    'Visualiza la secuencia dentro de una esfera de luz y repítela mentalmente hasta sentir que la energía se acomoda en armonía.\n\n'
-                    'Lo esencial no es cuántas veces repitas, sino la calidad de tu atención e intención.',
+                    'Visualiza la secuencia dentro de una esfera de luz y repítela mentalmente hasta sentir que la energía se acomoda en armonía. Con esta app puedes materializar esos números y esa esfera de manera más fácil, usando la visualización interactiva que te ofrece la pantalla. El modo "Concentración" permite ver solo la esfera y los códigos sin distracciones.\n\n'
+                    'Lo esencial no es cuántas veces repitas, sino la calidad de tu atención e intención.\n\n'
+                    'Para recibir los cristales de energía, debes "pilotar" 2 minutos seguidos con el código seleccionado. Si lo cancelas, los cristales no serán entregados.',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.white70,

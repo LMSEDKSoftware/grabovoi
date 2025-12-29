@@ -48,6 +48,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   
   bool _isRepetitionActive = false;
   int _secondsRemaining = 120; // 2 minutos en segundos
+  int _musicControllerKeySeed = 0;
 
   late Future<Map<String, dynamic>> _codigoInfoFuture;
   late Future<Map<String, String>> _shareableDataFuture;
@@ -73,6 +74,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   bool _esFavorito = false;
   bool _esCodigoPersonalizado = false;
   Future<void>? _favoritoFuture;
+
+  bool _hasStartedRepetition = false; // Bandera para evitar múltiples llamadas
 
   @override
   void initState() {
@@ -109,8 +112,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       curve: Curves.easeInOut,
     ));
     
-    // Iniciar automáticamente la repetición
-    _startRepetition();
+    // NO iniciar automáticamente - esperar a que el widget esté montado
   }
 
   @override
@@ -119,6 +121,17 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     // Recargar estado de favoritos cuando la pantalla se vuelve visible
     // Esto asegura que si se guardó un código personalizado, se muestre el botón de favoritos
     _verificarFavorito();
+    
+    // Iniciar la repetición directamente después de que el widget esté completamente montado
+    // Solo una vez, usando la bandera _hasStartedRepetition
+    if (!_hasStartedRepetition) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_hasStartedRepetition) {
+          _hasStartedRepetition = true;
+          _startRepetition();
+        }
+      });
+    }
   }
 
   @override
@@ -213,45 +226,58 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       }
     }
 
-    setState(() {
-      _isRepetitionActive = true;
-      _secondsRemaining = 120; // 2 minutos
-    });
-    
-    // Iniciar audio cuando la repetición comience
-    try {
-      final audioManager = AudioManagerService();
-      final tracks = [
-        'assets/audios/432hz_harmony.mp3',
-        'assets/audios/528hz_love.mp3',
-        'assets/audios/binaural_manifestation.mp3',
-        'assets/audios/crystal_bowls.mp3',
-        'assets/audios/forest_meditation.mp3',
-      ];
-      await audioManager.playTrack(tracks[0], autoPlay: true);
-    } catch (e) {
-      print('Error iniciando audio: $e');
+    // Iniciar la repetición directamente sin flujo paso a paso
+    if (mounted) {
+      setState(() {
+        _isRepetitionActive = true;
+        _secondsRemaining = 120; // 2 minutos
+        _musicControllerKeySeed++;
+      });
+      
+      // Esperar un frame para asegurar que el UI se actualice
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mounted) {
+          // Iniciar audio automáticamente
+          try {
+            final audioManager = AudioManagerService();
+            final tracks = [
+              'assets/audios/432hz_harmony.mp3',
+              'assets/audios/528hz_love.mp3',
+              'assets/audios/binaural_manifestation.mp3',
+              'assets/audios/crystal_bowls.mp3',
+              'assets/audios/forest_meditation.mp3',
+            ];
+            await audioManager.playTrack(tracks[0], autoPlay: true);
+            print('✅ Audio iniciado automáticamente');
+            
+            // Forzar rebuild para que StreamedMusicController detecte el audio
+            if (mounted) {
+              setState(() {});
+            }
+          } catch (e) {
+            print('❌ Error iniciando audio: $e');
+          }
+          
+          // Notificar al servicio global
+          PilotageStateService().setRepetitionActive(true);
+          
+          // Registrar repetición de código INMEDIATAMENTE al iniciar
+          final trackingService = ChallengeTrackingService();
+          trackingService.recordCodeRepetition(
+            widget.codigo,
+            widget.nombre ?? widget.codigo,
+          );
+          
+          // Ocultar la barra de colores después de 3 segundos
+          _hideColorBarAfterDelay();
+          // Iniciar el temporizador de 2 minutos
+          _startCountdown();
+        }
+      });
     }
-    
-    // Notificar al servicio global
-    PilotageStateService().setRepetitionActive(true);
-    
-    // Registrar repetición de código INMEDIATAMENTE al iniciar
-    final trackingService = ChallengeTrackingService();
-    trackingService.recordCodeRepetition(
-      widget.codigo,
-      widget.nombre ?? widget.codigo,
-    );
-    
-    // NOTA: NO llamar a progressTracker.trackCodeRepeated() aquí
-    // porque ya se registra en recordCodeRepetition() y causaría conteo duplicado
-
-
-    // Ocultar la barra de colores después de 3 segundos
-    _hideColorBarAfterDelay();
-    // Iniciar el temporizador de 2 minutos
-    _startCountdown();
   }
+  
+  
 
   void _startCountdown() {
     Future.delayed(const Duration(seconds: 1), () {
@@ -311,10 +337,24 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
 
       // Solo para móvil, web no soporta compartir imágenes
       if (!kIsWeb) {
-        final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/grabovoi_${widget.codigo.replaceAll(RegExp(r'[^\w\s-]'), '_')}.png');
+        // Guardar en directorio externo público para evitar FileProvider
+        final dir = await getExternalStorageDirectory();
+        if (dir == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Error: No se pudo acceder al almacenamiento'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+        final safeFileName = widget.codigo.replaceAll(RegExp(r'[^\w\s-]'), '_');
+        final file = File('${dir.path}/grabovoi_$safeFileName.png');
         await file.writeAsBytes(pngBytes);
 
+        // Usar shareXFiles con XFile desde ruta (archivos externos no requieren FileProvider)
         await Share.shareXFiles(
           [XFile(file.path)],
           text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
@@ -750,11 +790,12 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                 ),
                               ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   // Título principal
                                   Text(
                                     titulo,
+                                    textAlign: TextAlign.center,
                                     style: GoogleFonts.inter(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -765,6 +806,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                   // Descripción principal
                                   Text(
                                     descripcion,
+                                    textAlign: TextAlign.center,
                                     style: GoogleFonts.inter(
                                       fontSize: 14,
                                       color: Colors.white.withOpacity(0.9),
@@ -854,7 +896,11 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                       const SizedBox(height: 20),
                       
                       // Control de Música para sesión de repetición
-                      StreamedMusicController(autoPlay: _isRepetitionActive, isActive: true),
+                      StreamedMusicController(
+                        key: ValueKey(_musicControllerKeySeed),
+                        autoPlay: _isRepetitionActive,
+                        isActive: true,
+                      ),
                       
                       const SizedBox(height: 20),
                     ],
@@ -950,106 +996,120 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
 
   // ---- WIDGET PARA COMPARTIR (con app name, esfera, título y descripción) ----
   Widget _buildShareableImage(String codigoCrudo, String titulo, String descripcion) {
-    final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoCrudo);
-    final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo);
-
     return Container(
       width: 800,
       height: 800,
-      padding: const EdgeInsets.all(30),
       decoration: BoxDecoration(
-        color: Colors.black,
         borderRadius: BorderRadius.circular(20),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/ManiGrab-esfera.png'),
+          fit: BoxFit.cover,
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // 1) NOMBRE DE LA APP - Arriba
-          Text(
-            'ManiGrab - Manifestaciones Cuánticas Grabovoi',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFFD700),
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.5),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 25),
-          
-          // 2) ESFERA CON CÓDIGO - Centro
-          Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              // Esfera dorada (sin animación para captura)
-              GoldenSphere(
-                size: 280,
-                color: _getColorSeleccionado(),
-                glowIntensity: 0.8,
-                isAnimated: false,
-              ),
-              // Código iluminado superpuesto (sin animación)
-              IlluminatedCodeText(
-                code: codigoFormateado,
-                fontSize: fontSize,
-                color: _getColorSeleccionado(),
-                letterSpacing: 4,
-                isAnimated: false,
-              ),
-            ],
-          ),
-          const SizedBox(height: 25),
-          
-          // 3) TÍTULO Y DESCRIPCIÓN - Abajo
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFFFD700).withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  titulo,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
+      child: Container(
+        padding: const EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          // Gradiente eliminado para que la imagen base se vea sin sombra
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Espacio superior
+            const SizedBox(height: 140),
+            
+            // ⚡ CÓDIGO ENORME
+            Expanded(
+              child: Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.80,
+                  child: Text(
+                    codigoCrudo,
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    style: GoogleFonts.spaceMono(
+                      fontSize: 72,     // <<--- TAMAÑO REAL GRANDE
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 6,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.8),
+                          blurRadius: 6,
+                          offset: const Offset(2, 2),
+                        ),
+                        Shadow(
+                          color: Colors.white.withOpacity(0.8),
+                          blurRadius: 30,
+                          offset: Offset.zero,
+                        ),
+                      ],
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  descripcion,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.9),
-                    height: 1.3,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+            
+            // ⚡ TÍTULO + DESCRIPCIÓN GRANDES
+            Transform.translate(
+              offset: const Offset(0, -12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      titulo,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 32,            // <<-- ANTES 20
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFFD700),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.7),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      descripcion,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 20,          // <<-- ANTES 14
+                        height: 1.35,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.7),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -1222,26 +1282,26 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                   label: 'Biblioteca',
                   index: 1,
                 ),
-                _buildNavItem(
-                  icon: Icons.auto_awesome,
-                  label: 'Cuántico',
-                  index: 2,
-                  isCenter: true,
-                ),
+                // _buildNavItem(
+                //   icon: Icons.auto_awesome,
+                //   label: 'Cuántico',
+                //   index: 2,
+                //   isCenter: true,
+                // ), // Eliminado - se integró en biblioteca
                 _buildNavItem(
                   icon: Icons.emoji_events,
                   label: 'Desafíos',
-                  index: 3,
+                  index: 2,
                 ),
                 _buildNavItem(
                   icon: Icons.show_chart,
                   label: 'Evolución',
-                  index: 4,
+                  index: 3,
                 ),
                 _buildNavItem(
                   icon: Icons.person,
-                  label:    'Perfil',
-                  index: 5,
+                  label: 'Perfil',
+                  index: 4,
                 ),
               ],
             ),
@@ -1294,26 +1354,26 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                 label: 'Biblioteca',
                 index: 1,
               ),
-              _buildNavItem(
-                icon: Icons.auto_awesome,
-                label: 'Cuántico',
-                index: 2,
-                isCenter: true,
-              ),
+              // _buildNavItem(
+              //   icon: Icons.auto_awesome,
+              //   label: 'Cuántico',
+              //   index: 2,
+              //   isCenter: true,
+              // ), // Eliminado - se integró en biblioteca
               _buildNavItem(
                 icon: Icons.emoji_events,
                 label: 'Desafíos',
-                index: 3,
+                index: 2,
               ),
               _buildNavItem(
                 icon: Icons.show_chart,
                 label: 'Evolución',
-                index: 4,
+                index: 3,
               ),
               _buildNavItem(
                 icon: Icons.person,
                 label: 'Perfil',
-                index: 5,
+                index: 4,
               ),
             ],
           ),
@@ -1339,16 +1399,16 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
           case 1: // Biblioteca
             Navigator.of(context).pushNamed('/biblioteca');
             break;
-          case 2: // Cuántico
-            Navigator.of(context).pushNamed('/pilotage');
-            break;
-          case 3: // Desafíos
+          // case 2: // Cuántico - Eliminado
+          //   Navigator.of(context).pushNamed('/pilotage');
+          //   break;
+          case 2: // Desafíos
             Navigator.of(context).pushNamed('/desafios');
             break;
-          case 4: // Evolución
+          case 3: // Evolución
             Navigator.of(context).pushNamed('/evolucion');
             break;
-          case 5: // Perfil
+          case 4: // Perfil
             Navigator.of(context).pushNamed('/profile');
             break;
         }
@@ -2014,5 +2074,3 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     );
   }
 }
-
-

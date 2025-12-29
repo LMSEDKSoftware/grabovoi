@@ -497,21 +497,13 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     );
   }
 
-  Future<void> _shareCode() async {
+  Future<Uint8List?> _generateImageBytes() async {
     try {
-      if (!mounted) return;
+      if (!mounted) return null;
       
       // Verificar que el screenshot controller esté inicializado
       if (_screenshotController == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: El sistema de captura no está inicializado. Intenta nuevamente.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
+        return null;
       }
 
       // Esperar a que el widget se renderice completamente
@@ -524,10 +516,195 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
         await Future.delayed(const Duration(milliseconds: 200));
       }
       
-      if (!mounted) return;
+      if (!mounted) return null;
       
       // Capturar la imagen del widget oculto
       final Uint8List? pngBytes = await _screenshotController.capture(pixelRatio: 2.0);
+      
+      return pngBytes;
+    } catch (e) {
+      print('❌ Error generando imagen: $e');
+      return null;
+    }
+  }
+
+  Future<void> _previewImage() async {
+    try {
+      if (!mounted) return;
+      
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFFFFD700),
+          ),
+        ),
+      );
+
+      final pngBytes = await _generateImageBytes();
+      
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar indicador de carga
+      
+      if (pngBytes == null || pngBytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No se pudo generar la imagen. Intenta nuevamente.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Mostrar diálogo con la imagen
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(20),
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C2541),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFFFD700),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.image,
+                          color: Color(0xFFFFD700),
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Vista Previa de la Imagen',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Imagen
+                  Flexible(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white24,
+                          width: 1,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(
+                          pngBytes,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Botones
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(
+                            'Cerrar',
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _shareCode();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            'Compartir',
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFF1a1a2e),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error crítico al previsualizar imagen: $e');
+      print('Stack trace: $stackTrace');
+      if (mounted) {
+        Navigator.of(context).pop(); // Cerrar cualquier diálogo abierto
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar la vista previa. Por favor, intenta nuevamente.'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareCode() async {
+    try {
+      if (!mounted) return;
+      
+      final pngBytes = await _generateImageBytes();
       
       if (pngBytes == null || pngBytes.isEmpty) {
         if (mounted) {
@@ -621,106 +798,120 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
   }
   
   Widget _buildShareableImage(String codigoCrudo, String titulo, String descripcion) {
-    final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoCrudo);
-    final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo);
-
     return Container(
       width: 800,
       height: 800,
-      padding: const EdgeInsets.all(30),
       decoration: BoxDecoration(
-        color: Colors.black,
         borderRadius: BorderRadius.circular(20),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/ManiGrab-esfera.png'),
+          fit: BoxFit.cover,
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // 1) NOMBRE DE LA APP - Arriba
-          Text(
-            'ManiGrab - Manifestaciones Cuánticas Grabovoi',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFFD700),
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.5),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 25),
-          
-          // 2) ESFERA CON CÓDIGO - Centro
-          Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              // Esfera dorada (sin animación para captura)
-              GoldenSphere(
-                size: 280,
-                color: _getColorSeleccionado(),
-                glowIntensity: 0.8,
-                isAnimated: false,
-              ),
-              // Código iluminado superpuesto (sin animación)
-              IlluminatedCodeText(
-                code: codigoFormateado,
-                fontSize: fontSize,
-                color: _getColorSeleccionado(),
-                letterSpacing: 4,
-                isAnimated: false,
-              ),
-            ],
-          ),
-          const SizedBox(height: 25),
-          
-          // 3) TÍTULO Y DESCRIPCIÓN - Abajo
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFFFD700).withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  titulo,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
+      child: Container(
+        padding: const EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          // Gradiente eliminado para que la imagen base se vea sin sombra
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Espacio superior
+            const SizedBox(height: 140),
+            
+            // ⚡ CÓDIGO ENORME
+            Expanded(
+              child: Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.80,
+                  child: Text(
+                    codigoCrudo,
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    style: GoogleFonts.spaceMono(
+                      fontSize: 72,     // <<--- TAMAÑO REAL GRANDE
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 6,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.8),
+                          blurRadius: 6,
+                          offset: const Offset(2, 2),
+                        ),
+                        Shadow(
+                          color: Colors.white.withOpacity(0.8),
+                          blurRadius: 30,
+                          offset: Offset.zero,
+                        ),
+                      ],
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  descripcion,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.9),
-                    height: 1.3,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+            
+            // ⚡ TÍTULO + DESCRIPCIÓN GRANDES
+            Transform.translate(
+              offset: const Offset(0, -12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      titulo,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 32,            // <<-- ANTES 18
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFFD700),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.7),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      descripcion,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 20,          // <<-- ANTES 13
+                        height: 1.35,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.7),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -1024,6 +1215,13 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                       icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
                       tooltip: 'Copiar código',
                     ),
+                    // Botón de previsualizar imagen (solo para web)
+                    if (kIsWeb)
+                      IconButton(
+                        onPressed: _previewImage,
+                        icon: const Icon(Icons.preview, color: Color(0xFFFFD700)),
+                        tooltip: 'Vista previa de imagen',
+                      ),
                     // Botón de compartir
                     IconButton(
                       onPressed: _shareCode,
@@ -1087,7 +1285,7 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                             Text(
                               titulo,
                               style: GoogleFonts.inter(
-                                fontSize: 18,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFFFFD700),
                               ),
@@ -1097,9 +1295,9 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                             Text(
                               descripcion,
                               style: GoogleFonts.inter(
-                                fontSize: 14,
+                                fontSize: 17,
                                 color: Colors.white.withOpacity(0.9),
-                                height: 1.4,
+                                height: 1.45,
                               ),
                             ),
                             // Mostrar otros títulos relacionados si existen

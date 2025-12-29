@@ -265,6 +265,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
   Future<void> _loadCodigos() async {
     try {
+      // Refrescar el repositorio para asegurar que tenga los códigos más recientes
+      await CodigosRepository().refreshCodigos();
+      
       final codigos = CodigosRepository().codigos;
       // Eliminar duplicados basándose en el código
       final codigosUnicos = <String, CodigoGrabovoi>{};
@@ -341,6 +344,18 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   void _confirmarBusqueda() async {
     if (_queryBusqueda.isNotEmpty) {
       print('🔍 Confirmando búsqueda para: $_queryBusqueda');
+      
+      // Refrescar el repositorio antes de buscar para asegurar datos actualizados
+      await CodigosRepository().refreshCodigos();
+      // Recargar códigos después del refresh
+      final codigosActualizados = CodigosRepository().codigos;
+      final codigosUnicos = <String, CodigoGrabovoi>{};
+      for (final codigo in codigosActualizados) {
+        codigosUnicos[codigo.codigo] = codigo;
+      }
+      setState(() {
+        _codigos = codigosUnicos.values.toList();
+      });
       
       // 1. PRIMERO: Buscar coincidencias exactas
       final coincidenciasExactas = _codigos.where((codigo) {
@@ -1195,33 +1210,12 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   }
 
   // Mostrar mensaje cuando no se encuentran códigos válidos
+  // En lugar de mostrar SnackBar naranja, mostrar modal de opciones (igual que biblioteca)
   void _mostrarMensajeNoEncontrado() {
     setState(() {
-      _showOptionsModal = false;
+      _mostrarSeleccionCodigos = false;
+      _showOptionsModal = true;
     });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'No se encontraron códigos válidos para tu búsqueda. '
-          'Dado que no existe uno "oficial" para tu consulta específica, '
-          'puedes utilizar códigos de relaciones generales como:\n'
-          '• 619 734 218 — Armonización de relaciones\n'
-          '• 814 418 719 — Comprensión y perdón\n'
-          '• 714 319 — Amor y relaciones',
-          style: TextStyle(fontSize: 14),
-        ),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 8),
-        action: SnackBarAction(
-          label: 'Entendido',
-          textColor: Colors.white,
-          onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
-      ),
-    );
   }
 
   // Validar si un código existe en la base de datos real
@@ -1469,6 +1463,12 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   }
 
   void _iniciarPilotajeManual() {
+    // Prellenar el campo de código con el código buscado
+    final codigoParaPrellenar = _codigoNoEncontrado ?? _queryBusqueda ?? '';
+    if (codigoParaPrellenar.isNotEmpty) {
+      _manualCodeController.text = codigoParaPrellenar;
+    }
+    
     setState(() {
       _showManualPilotage = true;
       _showOptionsModal = false;
@@ -1999,10 +1999,22 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
 
       // Solo para móvil, web no soporta compartir imágenes
       if (!kIsWeb) {
-        final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/grabovoi_${codigoId.replaceAll(RegExp(r'[^\w\s-]'), '_')}.png');
+        // Guardar en directorio externo público para evitar FileProvider
+        final dir = await getExternalStorageDirectory();
+        if (dir == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No se pudo acceder al almacenamiento'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        final safeFileName = codigoId.replaceAll(RegExp(r'[^\w\s-]'), '_');
+        final file = File('${dir.path}/grabovoi_$safeFileName.png');
         await file.writeAsBytes(pngBytes);
 
+        // Usar shareXFiles con XFile desde ruta (archivos externos no requieren FileProvider)
         await Share.shareXFiles(
           [XFile(file.path)],
           text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
@@ -3365,10 +3377,21 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
 
       // Solo para móvil, web no soporta compartir imágenes
       if (!kIsWeb) {
-        final dir = await getTemporaryDirectory();
+        // Guardar en directorio externo público para evitar FileProvider
+        final dir = await getExternalStorageDirectory();
+        if (dir == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No se pudo acceder al almacenamiento'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
         final file = File('${dir.path}/resonancia_quantica.png');
         await file.writeAsBytes(pngBytes);
 
+        // Usar shareXFiles con XFile desde ruta (archivos externos no requieren FileProvider)
         await Share.shareXFiles(
           [XFile(file.path)],
           text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
@@ -3396,111 +3419,137 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
   }
   
   Widget _buildShareableResonanceImage() {
-    final String codigoFormateado = _codigoSeleccionado.isNotEmpty 
-        ? CodeFormatter.formatCodeForDisplay(_codigoSeleccionado)
-        : CodeFormatter.formatCodeForDisplay('5207418'); // Código por defecto
-    final double fontSize = CodeFormatter.calculateFontSize(_codigoSeleccionado.isNotEmpty 
-        ? _codigoSeleccionado 
-        : '5207418');
+    final codigoId = _codigoSeleccionado.isNotEmpty ? _codigoSeleccionado : widget.codigoInicial ?? '5207418';
 
-    return Container(
-      width: 800,
-      height: 800,
-      padding: const EdgeInsets.all(30),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // 1) NOMBRE DE LA APP - Arriba
-          Text(
-            'ManiGrab - Manifestaciones Cuánticas Grabovoi',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFFD700),
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.5),
-                  blurRadius: 10,
-                ),
-              ],
+    return FutureBuilder<Map<String, String>>(
+      future: Future.wait([
+        _getCodigoTitulo(),
+        _getCodigoDescription(),
+      ]).then((results) => {
+        'titulo': results[0],
+        'descripcion': results[1],
+      }),
+      builder: (context, snapshot) {
+        final titulo = snapshot.data?['titulo'] ?? 'Pilotaje Cuántico';
+        final descripcion = snapshot.data?['descripcion'] ?? 'Código cuántico para la manifestación y transformación energética.';
+
+        return Container(
+          width: 800,
+          height: 800,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            image: const DecorationImage(
+              image: AssetImage('assets/images/ManiGrab-esfera.png'),
+              fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(height: 25),
-          
-          // 2) ESFERA CON CÓDIGO - Centro
-          Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              // Esfera dorada (sin animación para captura)
-              GoldenSphere(
-                size: 280,
-                color: _colorVibracional,
-                glowIntensity: 0.8,
-                isAnimated: false,
-              ),
-              // Código iluminado superpuesto (sin animación)
-              IlluminatedCodeText(
-                code: codigoFormateado,
-                fontSize: fontSize,
-                color: _colorVibracional,
-                letterSpacing: 4,
-                isAnimated: false,
-              ),
-            ],
-          ),
-          const SizedBox(height: 25),
-          
-          // 3) TÍTULO Y DESCRIPCIÓN - Abajo
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
+          child: Container(
+            padding: const EdgeInsets.all(30),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFFFD700).withOpacity(0.3),
-                width: 1,
-              ),
+              borderRadius: BorderRadius.circular(20),
+              // Gradiente eliminado para que la imagen base se vea sin sombra
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  'Pilotaje Cuántico',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
+                // Espacio superior
+                const SizedBox(height: 140),
+                
+                // ⚡ CÓDIGO ENORME
+                Expanded(
+                  child: Center(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.80,
+                      child: Text(
+                        codigoId,
+                        textAlign: TextAlign.center,
+                        softWrap: true,
+                        style: GoogleFonts.spaceMono(
+                          fontSize: 72,     // <<--- TAMAÑO REAL GRANDE
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 6,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.8),
+                              blurRadius: 6,
+                              offset: const Offset(2, 2),
+                            ),
+                            Shadow(
+                              color: Colors.white.withOpacity(0.8),
+                              blurRadius: 30,
+                              offset: Offset.zero,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Resonancia: ${(_nivelResonancia * 100).toInt()}%',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.9),
-                    height: 1.3,
+                
+                // ⚡ TÍTULO + DESCRIPCIÓN GRANDES
+                Transform.translate(
+                  offset: const Offset(0, -12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.65),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFFFD700).withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          titulo,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 32,            // <<-- ANTES 20
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFFD700),
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.7),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          descripcion,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 20,          // <<-- ANTES 14
+                            height: 1.35,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.7),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -4149,34 +4198,92 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _busquedaProfunda(_codigoNoEncontrado),
-                        icon: const Icon(Icons.psychology, color: Colors.white),
-                        label: const Text('Búsqueda Profunda'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4CAF50),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
+                const SizedBox(height: 20),
+                // Opción 1: Búsqueda Profunda
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF4CAF50).withOpacity(0.3),
+                      width: 1,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _iniciarPilotajeManual,
-                        icon: const Icon(Icons.edit, color: Colors.white),
-                        label: const Text('Pilotaje Manual'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFD700),
-                          foregroundColor: const Color(0xFF0B132B),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _busquedaProfunda(_codigoNoEncontrado),
+                    icon: const Icon(Icons.psychology, color: Colors.white),
+                    label: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Búsqueda Profunda',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'La Inteligencia Cuántica Vibracional analiza y encuentra códigos relacionados con tu búsqueda',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.all(16),
+                      alignment: Alignment.centerLeft,
+                    ),
+                  ),
+                ),
+                // Opción 2: Pilotaje Manual
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: _iniciarPilotajeManual,
+                    icon: const Icon(Icons.edit, color: Color(0xFFFFD700)),
+                    label: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Pilotaje Manual',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFFD700),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Crea y guarda tu código personalizado con nombre, descripción y categoría',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.all(16),
+                      alignment: Alignment.centerLeft,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
@@ -4948,7 +5055,13 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       }
     }
     
-    // Actualizar estado
+    // Refrescar el repositorio para asegurar que el código nuevo esté disponible
+    await CodigosRepository().refreshCodigos();
+    
+    // Recargar códigos después del refresh
+    await _loadCodigos();
+    
+    // Actualizar estado y mostrar el código seleccionado
     setState(() {
       _codigoSeleccionado = codigo.codigo;
       _categoriaActual = codigo.categoria;
@@ -4956,9 +5069,14 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       _coloresDisponibles['categoria'] = _colorVibracional;
       _mostrarSeleccionCodigos = false;
       _codigosEncontrados = [];
-      _searchController.clear();
+      // Establecer el código en el campo de búsqueda para mostrarlo
+      _searchController.text = codigo.codigo;
+      _queryBusqueda = codigo.codigo;
       _mostrarResultados = false;
     });
+    
+    // Filtrar para mostrar solo el código seleccionado
+    _filtrarCodigos(codigo.codigo);
   }
 
 

@@ -59,6 +59,16 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
     if (widget.isActive && !oldWidget.isActive) {
       _showVolumeMessageOnFirstPlay();
       _loadAndMaybePlay(_index);
+    } else if (widget.isActive && widget.autoPlay && !oldWidget.autoPlay) {
+      // Si autoPlay cambió a true, iniciar reproducción
+      _showVolumeMessageOnFirstPlay();
+      _loadAndMaybePlay(_index);
+    } else if (widget.isActive && widget.autoPlay) {
+      // Si ya está activo y autoPlay es true, verificar si hay audio y reproducir
+      _syncWithExistingPlayback();
+      if (!_isPlaying && _audioManager.currentTrack != null) {
+        _loadAndMaybePlay(_index);
+      }
     }
   }
 

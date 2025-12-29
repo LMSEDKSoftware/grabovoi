@@ -183,6 +183,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   /// Método público para activar la verificación del WelcomeModal y MuralModal
   /// Puede ser llamado desde MainNavigation cuando el tour y la evaluación terminen
   Future<void> triggerWelcomeAndMuralFlow() async {
+    // Para usuarios nuevos, verificar mural primero si hay mensajes activos
+    // incluso si no se muestra el WelcomeModal
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstAccess = !(prefs.getBool('welcome_modal_shown') ?? false);
+    
+    if (isFirstAccess) {
+      // Verificar mural en primer acceso
+      await _checkMuralMessages(onlyIfFirstTime: true);
+    }
+    
     await _checkWelcomeModal();
   }
   

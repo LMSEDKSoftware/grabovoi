@@ -1,7 +1,7 @@
 name: manifestacion_numerica_grabovoi
 description: App espiritual basada en los códigos de Grigori Grabovoi
 publish_to: 'none'
-version: 2.1.12+23
+version: 2.2.2+37
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -46,6 +46,7 @@ dependencies:
   share_plus: ^10.0.2
   screenshot: ^3.0.0
   url_launcher: ^6.3.0
+  webview_flutter: ^4.10.0
   flutter_local_notifications: ^17.2.3
   flutter_dotenv: ^5.1.0
   timezone: ^0.9.0

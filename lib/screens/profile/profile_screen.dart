@@ -1817,15 +1817,55 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget _buildLegalLink(String title, String url, IconData icon) {
     return InkWell(
       onTap: () async {
-        final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
+        try {
+          // Asegurar que la URL tenga el protocolo https://
+          String finalUrl = url.trim();
+          if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+            finalUrl = 'https://$finalUrl';
+          }
+          
+          final uri = Uri.parse(finalUrl);
+          
+          // Intentar abrir con platformDefault primero (más compatible en Android)
+          try {
+            final launched = await launchUrl(
+              uri,
+              mode: LaunchMode.platformDefault,
+            );
+            
+            if (!launched) {
+              // Si falla, intentar con externalApplication
+              await launchUrl(
+                uri,
+                mode: LaunchMode.externalApplication,
+              );
+            }
+          } catch (launchError) {
+            // Si falla platformDefault, intentar externalApplication
+            try {
+              await launchUrl(
+                uri,
+                mode: LaunchMode.externalApplication,
+              );
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('No se pudo abrir el enlace. Verifica tu conexión a internet.'),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
+          }
+        } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('No se pudo abrir el enlace: $url'),
+                content: Text('Error al abrir el enlace. Verifica tu conexión a internet.'),
                 backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
               ),
             );
           }

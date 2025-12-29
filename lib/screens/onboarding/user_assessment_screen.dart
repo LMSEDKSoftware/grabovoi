@@ -4,6 +4,7 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../services/user_progress_service.dart';
 import '../../services/auth_service_simple.dart';
+import '../../services/permissions_service.dart';
 import '../../main.dart';
 
 class UserAssessmentScreen extends StatefulWidget {
@@ -460,6 +461,9 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
       await _progressService.saveUserAssessment(assessmentData);
 
       print('✅ Evaluación guardada exitosamente');
+
+      // Solicitar permisos antes de navegar a MainNavigation
+      await PermissionsService().requestInitialPermissions();
 
       // Después de completar la evaluación, navegar a MainNavigation
       // El WelcomeModal y MuralModal se mostrarán automáticamente desde HomeScreen

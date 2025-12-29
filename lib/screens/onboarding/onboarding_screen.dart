@@ -20,7 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<OnboardingSlide> _slides = [
     OnboardingSlide(
       title: 'Tu esfera de pilotaje',
-      description: 'No solo es un circulo, es una antena cuantica de proposito.\n\nAquí, el enfoque se convierte en dirección.\n\nEl número en vibración.',
+      description: 'No solo es un círculo, es una antena cuántica de propósito.\n\nAquí, el enfoque se convierte en dirección.\n\nEl número en vibración.',
       mentalShift: 'No estás enfocando la mente. Estás alineando tu campo.',
       icon: Icons.auto_awesome,
       color: const Color(0xFFFFD700),
@@ -70,12 +70,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingSlide(
       title: 'Comparte tu Vibración',
       description: 'Una imagen que lleva intención',
-      mentalShift: 'No estas mandando una imagen. Estas irradiando una activación',
+      mentalShift: 'No estás mandando una imagen. Estás irradiando una activación',
       icon: Icons.share,
       color: const Color(0xFF7E57C2),
     ),
     OnboardingSlide(
-      title: 'Inteligencia Cuantica Vibracional',
+      title: 'Inteligencia Cuántica Vibracional',
       description: 'El sistema reconoce si tu código existe, vibra o necesita otro camino.\n\nLa Inteligencia Cuántica Vibracional no reemplaza tu intención, la respalda.',
       mentalShift: 'No es un sistema que aprueba o rechaza. Es un oráculo digital que confirma tu frecuencia.',
       icon: Icons.verified,

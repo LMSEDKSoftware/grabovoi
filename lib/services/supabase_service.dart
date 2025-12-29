@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../models/supabase_models.dart';
 import '../models/codigo_titulo_relacionado_model.dart';
 import '../config/supabase_config.dart';
+import 'cache_service.dart';
 
 // Función helper para obtener el usuario actual
 String? _getCurrentUserId() {
@@ -350,26 +351,25 @@ class SupabaseService {
   }
 
   // Obtener todos los títulos relacionados de un código
+  // NOTA: Para múltiples códigos, usar CacheService.getTitulosRelacionadosBatch()
   static Future<List<Map<String, dynamic>>> getTitulosRelacionados(String codigo) async {
     try {
-      print('🔍 [GET_TITULOS_RELACIONADOS] Buscando títulos relacionados para código: $codigo');
-      final response = await _client
-          .from('codigos_titulos_relacionados')
-          .select()
-          .eq('codigo_existente', codigo)
-          .order('created_at', ascending: true);
-
-      final resultado = (response as List).cast<Map<String, dynamic>>();
-      print('✅ [GET_TITULOS_RELACIONADOS] Encontrados ${resultado.length} títulos relacionados para código $codigo');
-      if (resultado.isNotEmpty) {
-        print('📋 [GET_TITULOS_RELACIONADOS] Títulos: ${resultado.map((t) => t['titulo']).toList()}');
-      }
-      return resultado;
+      // Usar caché si está disponible
+      final cacheService = CacheService();
+      final batchResult = await cacheService.getTitulosRelacionadosBatch([codigo]);
+      return batchResult[codigo] ?? [];
     } catch (e) {
       print('❌ Error obteniendo títulos relacionados: $e');
-      print('❌ Stack trace: ${StackTrace.current}');
       return [];
     }
+  }
+  
+  // Obtener títulos relacionados para múltiples códigos en batch (optimizado)
+  static Future<Map<String, List<Map<String, dynamic>>>> getTitulosRelacionadosBatch(
+    List<String> codigos,
+  ) async {
+    final cacheService = CacheService();
+    return await cacheService.getTitulosRelacionadosBatch(codigos);
   }
 
   // Buscar códigos por título (incluyendo títulos relacionados)

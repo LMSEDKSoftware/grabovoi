@@ -418,7 +418,8 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                             elevation: 8,
                           ),
                           child: Text(
-                            'SIN ACCESO A PREMIUM, ACTUALIZA tu plan',
+                            'SIN ACCESO A PREMIUM, ACTUALIZA TU PLAN',
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

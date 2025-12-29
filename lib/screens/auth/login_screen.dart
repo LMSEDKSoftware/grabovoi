@@ -237,8 +237,8 @@ class _LoginScreenState extends State<LoginScreen> {
   String _getErrorMessage(String error) {
     if (error.contains('Invalid login credentials')) {
       return 'Credenciales inválidas. Verifica tu email y contraseña.';
-    } else if (error.contains('Email not confirmed')) {
-      return 'Por favor confirma tu email antes de iniciar sesión.';
+    } else if (error.contains('Email not confirmed') || error.contains('EMAIL_NOT_CONFIRMED')) {
+      return 'Por favor confirma tu email antes de iniciar sesión. Revisa tu correo y haz clic en el enlace de activación.';
     } else if (error.contains('Too many requests')) {
       return 'Demasiados intentos. Espera un momento antes de intentar nuevamente.';
     } else if (error.contains('not enabled') || error.contains('Unsupported provider')) {

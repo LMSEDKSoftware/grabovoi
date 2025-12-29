@@ -276,7 +276,6 @@ class _MainNavigationState extends State<MainNavigation> {
     _screens = [
       HomeScreen(key: _homeScreenKey as Key?),
       const StaticBibliotecaScreen(),
-      // const PilotajeScreen(), // Oculto según solicitud
       const QuantumPilotageScreen(),
       const DesafiosScreen(),
       const EvolucionScreen(),
@@ -438,7 +437,8 @@ class _MainNavigationState extends State<MainNavigation> {
     }
     
     // Interceptar cambio de tab si hay pilotaje activo
-    if (_currentIndex == 2 && index != 2) { // Cuántico ahora es índice 2
+    // Nota: El pilotaje ahora está integrado en biblioteca (índice 1)
+    if (_currentIndex == 1 && index != 1) { // Biblioteca ahora tiene el pilotaje
       final pilotageService = PilotageStateService();
       if (pilotageService.isAnyPilotageActive) {
         final result = await _showPilotageActiveDialog();
@@ -531,11 +531,6 @@ class _MainNavigationState extends State<MainNavigation> {
                           label: 'Biblioteca',
                           index: 1,
                         ),
-                        // _buildNavItem(
-                        //   icon: Icons.my_location,
-                        //   label: 'Pilotaje',
-                        //   index: 2,
-                        // ), // Oculto según solicitud
                         _buildNavItem(
                           icon: Icons.auto_awesome,
                           label: 'Cuántico',

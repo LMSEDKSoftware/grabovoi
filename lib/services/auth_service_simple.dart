@@ -87,10 +87,12 @@ class AuthServiceSimple {
 
       // Intentar insertar en la tabla users
       try {
-        await _supabase.from('users').insert(newUser.toJson());
+        final userJson = newUser.toJson();
+        userJson['confirmado-correo'] = false; // Inicializar como no confirmado
+        await _supabase.from('users').insert(userJson);
         _currentUser = newUser;
         await _saveUserToLocal(_currentUser!);
-        print('✅ Usuario creado en tabla users (OAuth/Google)');
+        print('✅ Usuario creado en tabla users (OAuth/Google) (confirmado-correo = FALSE)');
       } catch (insertError) {
         // Si falla por duplicado, intentar cargar el usuario existente
         if (insertError.toString().contains('duplicate') || insertError.toString().contains('unique')) {
@@ -212,9 +214,12 @@ class AuthServiceSimple {
             createdAt: DateTime.now(),
             isEmailVerified: false,
           );
-          await _supabase.from('users').insert(newUser.toJson());
+          // Insertar usuario con campo confirmado-correo = FALSE
+          final userJson = newUser.toJson();
+          userJson['confirmado-correo'] = false;
+          await _supabase.from('users').insert(userJson);
           _currentUser = newUser;
-          print('✅ Usuario creado manualmente en tabla users');
+          print('✅ Usuario creado manualmente en tabla users (confirmado-correo = FALSE)');
         }
       } catch (e) {
         print('⚠️ Error manejando usuario en tabla users: $e');
@@ -305,6 +310,30 @@ class AuthServiceSimple {
       );
 
       if (response.user != null) {
+        // Verificar si el usuario ha confirmado su correo
+        try {
+          final userData = await _supabase
+              .from('users')
+              .select('"confirmado-correo"')
+              .eq('id', response.user!.id)
+              .maybeSingle();
+          
+          final emailConfirmado = userData != null && 
+                                  userData['confirmado-correo'] == true;
+          
+          if (!emailConfirmado) {
+            // Cerrar sesión si el email no está confirmado
+            await _supabase.auth.signOut();
+            throw Exception('EMAIL_NOT_CONFIRMED');
+          }
+        } catch (e) {
+          if (e.toString().contains('EMAIL_NOT_CONFIRMED')) {
+            rethrow;
+          }
+          // Si hay error al verificar, continuar (no bloquear login por error de DB)
+          print('⚠️ Error verificando confirmado-correo: $e');
+        }
+        
         await _loadUserFromSession(response.session!);
         
         // Guardar credenciales de forma segura si se solicita
