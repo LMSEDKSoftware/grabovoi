@@ -153,8 +153,8 @@ class _DiarioScreenState extends State<DiarioScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
+                        Row(
+                          children: [
                                   Icon(
                                     Icons.info_outline,
                                     color: const Color(0xFFFFD700),
@@ -178,9 +178,9 @@ class _DiarioScreenState extends State<DiarioScreen> {
                                   fontSize: 13,
                                   color: Colors.white70,
                                   height: 1.5,
-                                ),
                               ),
-                            ],
+                            ),
+                          ],
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -214,7 +214,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.1),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                             ),
                             enabledBorder: OutlineInputBorder(
@@ -222,11 +222,11 @@ class _DiarioScreenState extends State<DiarioScreen> {
                               borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
-                            ),
+                                    ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
+                                  ),
                           style: GoogleFonts.inter(color: Colors.white),
                         ),
                       ],
@@ -234,7 +234,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   ),
                   
                   // Grid de secuencias agrupadas por código
-                  Expanded(
+                              Expanded(
                     child: _secuenciasFiltradas.isEmpty
                         ? _buildEmptyState()
                         : _buildSecuenciasGrid(),
@@ -283,7 +283,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
     return GestureDetector(
       onTap: () => _mostrarDetalleSecuencia(codigo: codigo, entradas: entradas),
       child: Container(
-        decoration: BoxDecoration(
+      decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -293,7 +293,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
             ],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
+        border: Border.all(
             color: const Color(0xFFFFD700).withOpacity(0.4),
             width: 1.5,
           ),
@@ -312,19 +312,23 @@ class _DiarioScreenState extends State<DiarioScreen> {
             children: [
               // Código destacado
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                constraints: const BoxConstraints(maxWidth: 120),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFD700).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                 child: Text(
                   codigo,
                   style: GoogleFonts.spaceMono(
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFFFFD700),
-                    letterSpacing: 1.5,
+                    letterSpacing: 1,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(width: 16),
@@ -332,14 +336,15 @@ class _DiarioScreenState extends State<DiarioScreen> {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Título del código
+                    // Título del código (abajo del código visualmente)
                     Text(
                       nombreCodigo.isNotEmpty && nombreCodigo != 'Campo Energético'
                           ? nombreCodigo
                           : 'Secuencia activa',
                       style: GoogleFonts.inter(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
@@ -356,11 +361,14 @@ class _DiarioScreenState extends State<DiarioScreen> {
                           color: const Color(0xFFFFD700),
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          '${entradas.length} ${entradas.length == 1 ? 'activación' : 'activaciones'}',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white70,
+                        Flexible(
+                          child: Text(
+                            '${entradas.length} ${entradas.length == 1 ? 'activación' : 'activaciones'}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (diasUnicos > 1) ...[
@@ -371,19 +379,22 @@ class _DiarioScreenState extends State<DiarioScreen> {
                             color: Colors.white70,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '$diasUnicos días',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.white70,
+                          Flexible(
+                            child: Text(
+                              '$diasUnicos días',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
               // Icono de flecha
               Icon(
                 Icons.arrow_forward_ios,
@@ -392,7 +403,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
               ),
             ],
           ),
-        ),
+              ),
       ),
     );
   }
@@ -416,10 +427,54 @@ class _DiarioScreenState extends State<DiarioScreen> {
     required String codigo,
     required List<Map<String, dynamic>> entradas,
   }) {
+    // Validar que hay entradas
+    if (entradas.isEmpty) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C2541),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(
+            color: const Color(0xFFFFD700).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            'No hay entradas para esta secuencia',
+              style: GoogleFonts.inter(
+              fontSize: 16,
+                color: Colors.white70,
+              ),
+          ),
+        ),
+      );
+    }
+
     // Agrupar entradas por fecha
     final entradasPorFecha = <String, List<Map<String, dynamic>>>{};
     for (final entrada in entradas) {
-      final fecha = entrada['fecha']?.toString() ?? 'sin_fecha';
+      String fecha;
+      if (entrada['fecha'] == null) {
+        fecha = 'sin_fecha';
+      } else {
+        // Manejar diferentes formatos de fecha
+        final fechaValue = entrada['fecha'];
+        if (fechaValue is DateTime) {
+          fecha = fechaValue.toIso8601String().split('T')[0];
+        } else if (fechaValue is String) {
+          // Si ya es string, intentar parsearlo para normalizarlo
+          try {
+            final parsed = DateTime.parse(fechaValue);
+            fecha = parsed.toIso8601String().split('T')[0];
+          } catch (e) {
+            fecha = fechaValue;
+          }
+        } else {
+          fecha = fechaValue.toString();
+        }
+      }
+      
       if (!entradasPorFecha.containsKey(fecha)) {
         entradasPorFecha[fecha] = [];
       }
@@ -427,7 +482,22 @@ class _DiarioScreenState extends State<DiarioScreen> {
     }
 
     final fechas = entradasPorFecha.keys.toList()
-      ..sort((a, b) => b.compareTo(a)); // Más reciente primero
+      ..sort((a, b) {
+        if (a == 'sin_fecha') return 1;
+        if (b == 'sin_fecha') return -1;
+        try {
+          return DateTime.parse(b).compareTo(DateTime.parse(a));
+        } catch (e) {
+          return b.compareTo(a);
+        }
+      }); // Más reciente primero
+
+    print('🔍 [DIARIO] Mostrando detalle de secuencia: $codigo');
+    print('🔍 [DIARIO] Total de entradas: ${entradas.length}');
+    for (var i = 0; i < entradas.length; i++) {
+      print('🔍 [DIARIO] Entrada $i: ${entradas[i]}');
+    }
+    print('🔍 [DIARIO] Fechas agrupadas: ${entradasPorFecha.keys.toList()}');
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -442,9 +512,9 @@ class _DiarioScreenState extends State<DiarioScreen> {
       child: Column(
         children: [
           // Header
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -458,11 +528,11 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   color: const Color(0xFFFFD700).withOpacity(0.3),
                   width: 1,
                 ),
+                ),
               ),
-            ),
-            child: Column(
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                children: [
                 Row(
                   children: [
                     Expanded(
@@ -480,25 +550,25 @@ class _DiarioScreenState extends State<DiarioScreen> {
                               codigo,
                               style: GoogleFonts.spaceMono(
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFD700),
                                 letterSpacing: 1.5,
-                              ),
-                            ),
+                    ),
+                  ),
                           ),
                           const SizedBox(height: 8),
                           // Título completo
-                          Text(
+                  Text(
                             CodigosRepository().getTituloByCode(codigo),
-                            style: GoogleFonts.inter(
+                    style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  ),
+                ],
+              ),
+            ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.close, color: Colors.white70),
@@ -510,7 +580,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                 ),
                 const SizedBox(height: 8),
                 Row(
-                  children: [
+                children: [
                     Icon(
                       Icons.repeat_one,
                       size: 14,
@@ -531,18 +601,73 @@ class _DiarioScreenState extends State<DiarioScreen> {
           ),
           // Lista de entradas por fecha
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: fechas.length,
-              itemBuilder: (context, index) {
-                final fecha = fechas[index];
-                final entradasDelDia = entradasPorFecha[fecha]!;
-                return _buildEntradaPorFechaCard(
-                  fecha: fecha,
-                  entradas: entradasDelDia,
-                );
-              },
+            child: fechas.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 64,
+                            color: const Color(0xFFFFD700).withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No hay entradas registradas',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Total de entradas recibidas: ${entradas.length}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.white54,
+              ),
             ),
+          ],
+        ),
+      ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: fechas.length,
+      itemBuilder: (context, index) {
+                      try {
+                        final fecha = fechas[index];
+                        final entradasDelDia = entradasPorFecha[fecha] ?? [];
+                        if (entradasDelDia.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return _buildEntradaPorFechaCard(
+          fecha: fecha,
+                          entradas: entradasDelDia,
+                        );
+                      } catch (e) {
+                        print('❌ [DIARIO] Error construyendo tarjeta de fecha: $e');
+    return Container(
+      padding: const EdgeInsets.all(16),
+                          margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.red.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            'Error mostrando entrada: $e',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.red,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
           ),
         ],
       ),
@@ -553,14 +678,25 @@ class _DiarioScreenState extends State<DiarioScreen> {
     required String fecha,
     required List<Map<String, dynamic>> entradas,
   }) {
-    final fechaFormateada = fecha != 'sin_fecha'
-        ? DateFormat('dd/MM/yyyy').format(DateTime.parse(fecha))
-        : 'Sin fecha';
+    String fechaFormateada;
+    String diaSemanaCapitalizado;
     
-    final fechaObj = fecha != 'sin_fecha' ? DateTime.parse(fecha) : DateTime.now();
-    final diaSemana = DateFormat('EEEE', 'es').format(fechaObj);
-    final diaSemanaCapitalizado = diaSemana[0].toUpperCase() + diaSemana.substring(1);
-
+    if (fecha == 'sin_fecha') {
+      fechaFormateada = 'Sin fecha';
+      diaSemanaCapitalizado = '';
+    } else {
+      try {
+        final fechaObj = DateTime.parse(fecha);
+        fechaFormateada = DateFormat('dd/MM/yyyy').format(fechaObj);
+        final diaSemana = DateFormat('EEEE', 'es').format(fechaObj);
+        diaSemanaCapitalizado = diaSemana[0].toUpperCase() + diaSemana.substring(1);
+      } catch (e) {
+        print('Error parseando fecha: $fecha - $e');
+        fechaFormateada = fecha;
+        diaSemanaCapitalizado = '';
+      }
+    }
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -580,9 +716,9 @@ class _DiarioScreenState extends State<DiarioScreen> {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             // Header de fecha
             Row(
               children: [
@@ -598,85 +734,98 @@ class _DiarioScreenState extends State<DiarioScreen> {
                     color: const Color(0xFFFFD700),
                   ),
                 ),
-                const SizedBox(width: 12),
+          const SizedBox(width: 12),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        fechaFormateada,
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
-                        ),
-                      ),
-                      Text(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                fechaFormateada,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
+                ),
+              ),
+              Text(
                         diaSemanaCapitalizado,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
                   ),
                 ),
                 if (entradas.length > 1)
-                  Container(
+                Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD700).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
                         Icon(
                           Icons.repeat,
                           size: 14,
                           color: const Color(0xFFFFD700),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
+                      const SizedBox(width: 4),
+                      Text(
                           '${entradas.length}',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFFFFD700),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Entradas del día
-            ...entradas.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final entrada = entry.value;
-              
-              return Column(
-                children: [
-                  if (idx > 0) ...[
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      height: 1,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.transparent,
-                            const Color(0xFFFFD700).withOpacity(0.3),
-                            Colors.transparent,
-                          ],
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
                         ),
                       ),
-                    ),
-                  ],
-                  _buildSingleEntryContent(entrada, idx: idx > 0 ? idx : null),
-                ],
-              );
-            }).toList(),
-          ],
+                    ],
+                  ),
+                ),
+            ],
+          ),
+            const SizedBox(height: 16),
+            // Entradas del día
+            if (entradas.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+              child: Text(
+                  'No hay detalles para este día',
+                style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white70,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              )
+            else
+          ...entradas.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final entrada = entry.value;
+            
+            return Column(
+              children: [
+                    if (idx > 0) ...[
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                    height: 1,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              const Color(0xFFFFD700).withOpacity(0.3),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    _buildSingleEntryContent(entrada, idx: idx > 0 ? idx : null),
+              ],
+            );
+          }).toList(),
+        ],
         ),
       ),
     );
@@ -790,52 +939,52 @@ class _DiarioScreenState extends State<DiarioScreen> {
         (entrada['gratitud'] != null && entrada['gratitud'].toString().isNotEmpty);
 
     if (!hasContent && idx == null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
+        border: Border.all(
             color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
+          width: 1,
         ),
-        child: Row(
-          children: [
+                  ),
+                  child: Row(
+                    children: [
             Icon(Icons.info_outline, size: 16, color: Colors.white70),
             const SizedBox(width: 8),
-            Text(
+                      Text(
               'Entrada registrada sin detalles adicionales',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.white70,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+              color: Colors.white70,
                 fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
+                        ),
+                      ),
+                    ],
+                  ),
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+            children: [
         if (idx != null && idx > 0) ...[
-          Container(
+            Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
+              decoration: BoxDecoration(
               color: const Color(0xFFFFD700).withOpacity(0.15),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
               'Repetición ${idx + 1}',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 color: const Color(0xFFFFD700),
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 12),
         ],
         // Intención (siempre mostrar si existe)
@@ -845,19 +994,9 @@ class _DiarioScreenState extends State<DiarioScreen> {
             label: 'Intención',
             value: entrada['intencion'].toString(),
             isMultiline: true,
-          ),
-          const SizedBox(height: 12),
-        ],
-        // Estado de ánimo
-        if (entrada['estado_animo'] != null && entrada['estado_animo'].toString().isNotEmpty) ...[
-          _buildInfoRow(
-            icon: Icons.mood,
-            label: 'Estado de ánimo',
-            value: entrada['estado_animo'].toString(),
-            isMultiline: false,
-          ),
-          const SizedBox(height: 12),
-        ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
         // Sensaciones
         if (entrada['sensaciones'] != null && entrada['sensaciones'].toString().isNotEmpty) ...[
           _buildInfoRow(
@@ -868,28 +1007,58 @@ class _DiarioScreenState extends State<DiarioScreen> {
           ),
           const SizedBox(height: 12),
         ],
-        // Horas de sueño y ejercicio en una fila
-        if (entrada['horas_sueno'] != null || entrada['hizo_ejercicio'] == true) ...[
+        // Estado de ánimo, Sueño y Ejercicio en una fila (siempre mostrar las tres columnas)
+        // Siempre mostrar esta fila para todas las entradas
+        ...[
           Row(
             children: [
-              if (entrada['horas_sueno'] != null)
-                Expanded(
-                  child: _buildInfoChip(
-                    icon: Icons.bedtime,
-                    label: 'Sueño',
-                    value: '${entrada['horas_sueno']}h',
-                  ),
-                ),
-              if (entrada['horas_sueno'] != null && entrada['hizo_ejercicio'] == true)
-                const SizedBox(width: 8),
-              if (entrada['hizo_ejercicio'] == true)
-                Expanded(
-                  child: _buildInfoChip(
-                    icon: Icons.fitness_center,
-                    label: 'Ejercicio',
-                    value: 'Sí',
-                  ),
-                ),
+              // Estado de ánimo
+              Expanded(
+                child: entrada['estado_animo'] != null && entrada['estado_animo'].toString().isNotEmpty
+                    ? _buildInfoChip(
+                        icon: Icons.mood,
+                        label: 'Estado',
+                        value: entrada['estado_animo'].toString(),
+                      )
+                    : _buildInfoChip(
+                        icon: Icons.mood,
+                        label: 'Estado',
+                        value: '-',
+                        isEmpty: true,
+                      ),
+              ),
+              const SizedBox(width: 8),
+              // Sueño
+              Expanded(
+                child: entrada['horas_sueno'] != null
+                    ? _buildInfoChip(
+                        icon: Icons.bedtime,
+                        label: 'Sueño',
+                        value: '${entrada['horas_sueno']}h',
+                      )
+                    : _buildInfoChip(
+                        icon: Icons.bedtime,
+                        label: 'Sueño',
+                        value: '-',
+                        isEmpty: true,
+                      ),
+              ),
+              const SizedBox(width: 8),
+              // Ejercicio (siempre mostrar "Sí" o "No")
+              Expanded(
+                child: entrada['hizo_ejercicio'] == true
+                    ? _buildInfoChip(
+                        icon: Icons.fitness_center,
+                        label: 'Ejercicio',
+                        value: 'Sí',
+                      )
+                    : _buildInfoChip(
+                        icon: Icons.fitness_center,
+                        label: 'Ejercicio',
+                        value: 'No',
+                        isEmpty: true,
+                      ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -931,38 +1100,38 @@ class _DiarioScreenState extends State<DiarioScreen> {
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
+            children: [
+                Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD700).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
             child: Icon(
               icon,
               size: 16,
-              color: const Color(0xFFFFD700),
-            ),
-          ),
+                      color: const Color(0xFFFFD700),
+                    ),
+                  ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+          Text(
                   label,
-                  style: GoogleFonts.inter(
+            style: GoogleFonts.inter(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white70,
+              fontWeight: FontWeight.w600,
+              color: Colors.white70,
                     letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
                   value,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
+            style: GoogleFonts.inter(
+              fontSize: 13,
                     color: isSpecial ? const Color(0xFFFFD700) : Colors.white,
                     fontStyle: isSpecial ? FontStyle.italic : FontStyle.normal,
                     height: isMultiline ? 1.4 : 1.2,
@@ -982,14 +1151,19 @@ class _DiarioScreenState extends State<DiarioScreen> {
     required IconData icon,
     required String label,
     required String value,
+    bool isEmpty = false,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: isEmpty 
+            ? Colors.white.withOpacity(0.03)
+            : Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: const Color(0xFFFFD700).withOpacity(0.2),
+          color: isEmpty
+              ? const Color(0xFFFFD700).withOpacity(0.1)
+              : const Color(0xFFFFD700).withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -998,7 +1172,9 @@ class _DiarioScreenState extends State<DiarioScreen> {
           Icon(
             icon,
             size: 14,
-            color: const Color(0xFFFFD700),
+            color: isEmpty
+                ? Colors.white54
+                : const Color(0xFFFFD700),
           ),
           const SizedBox(width: 6),
           Expanded(
@@ -1017,7 +1193,9 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: isEmpty
+                        ? Colors.white54
+                        : Colors.white,
                   ),
                 ),
               ],
