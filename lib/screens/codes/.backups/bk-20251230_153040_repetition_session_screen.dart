@@ -976,42 +976,46 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
                           IconButton(
                             onPressed: () async {
                               try {
-                                // Usar los datos ya cargados en _codigoInfoFuture (sin consultas adicionales)
-                                final codigoInfo = await _codigoInfoFuture;
-                                final titulo = codigoInfo['titulo'] as String? ?? widget.nombre ?? 'Código Cuántico';
-                                final descripcion = codigoInfo['descripcion'] as String? ?? 'Código cuántico para la manifestación y transformación energética.';
+                                // Buscar el código en la base de datos para obtener su información real
+                                final codigos = await SupabaseService.getCodigos();
+                                final codigoEncontrado = codigos.firstWhere(
+                                  (c) => c.codigo == widget.codigo,
+                                  orElse: () => CodigoGrabovoi(
+                                    id: '',
+                                    codigo: widget.codigo,
+                                    nombre: 'Código Cuántico',
+                                    descripcion: 'Código cuántico para la manifestación y transformación energética.',
+                                    categoria: 'General',
+                                    color: '#FFD700',
+                                  ),
+                                );
                                 
-                                final textToCopy = '''${widget.codigo} : $titulo
-$descripcion
+                                final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
+${codigoEncontrado.descripcion}
 Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
                                 
-                                await Clipboard.setData(ClipboardData(text: textToCopy));
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Código ${widget.codigo} copiado con descripción'),
-                                      backgroundColor: const Color(0xFFFFD700),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
+                                Clipboard.setData(ClipboardData(text: textToCopy));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Código ${widget.codigo} copiado con descripción'),
+                                    backgroundColor: const Color(0xFFFFD700),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
                               } catch (e) {
-                                // Fallback si hay error - usar datos básicos
-                                final titulo = widget.nombre ?? 'Código Cuántico';
-                                final textToCopy = '''${widget.codigo} : $titulo
-Este código ayuda a manifestar la abundancia de alimentos necesarios para una nutrición adecuada y equilibrada en la vida diaria.
-Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+                                // Fallback si hay error
+                                final textToCopy = '''${widget.codigo} : Código Cuántico
+Código cuántico para la manifestación y transformación energética.
+Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                 
-                                await Clipboard.setData(ClipboardData(text: textToCopy));
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Código ${widget.codigo} copiado'),
-                                      backgroundColor: const Color(0xFFFFD700),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
+                                Clipboard.setData(ClipboardData(text: textToCopy));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Código ${widget.codigo} copiado'),
+                                    backgroundColor: const Color(0xFFFFD700),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
                               }
                             },
                             icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),

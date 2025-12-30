@@ -2439,65 +2439,8 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        // Campo de texto de intención cuando estamos en el paso de intención
-                        if (_showSequentialSteps && _currentStepIndex == 5) ...[
-                          const SizedBox(height: 20),
-                          Text(
-                            '¿Qué deseas armonizar con este código?',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: _colorVibracional,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _intencionPersonalController,
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Escribe tu intención aquí...',
-                              hintStyle: GoogleFonts.inter(
-                                color: Colors.white.withOpacity(0.5),
-                                fontSize: 14,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.1),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: _colorVibracional.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: _colorVibracional.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: _colorVibracional,
-                                  width: 2,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                            maxLines: 3,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                        // Mostrar intención personal si existe (después de completar el paso)
-                        if (_intencionPersonal.isNotEmpty && (!_showSequentialSteps || _currentStepIndex != 5)) ...[
+                        // Mostrar intención personal si existe
+                        if (_intencionPersonal.isNotEmpty) ...[
                           const SizedBox(height: 16),
                           Container(
                             padding: const EdgeInsets.all(12),

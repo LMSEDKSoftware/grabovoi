@@ -79,13 +79,6 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
 
   bool _hasStartedRepetition = false; // Bandera para evitar múltiples llamadas
 
-  // Sistema de Steps Secuenciales (igual que en pilotaje)
-  bool _showSequentialSteps = false;
-  int _currentStepIndex = 0;
-  List<bool> _stepCompleted = [false, false, false, false, false, false];
-  String _intencionPersonal = '';
-  TextEditingController _intencionPersonalController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -148,7 +141,6 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     _pulseController.dispose();
     _rotationController.dispose();
     _colorBarController.dispose();
-    _intencionPersonalController.dispose();
     super.dispose();
   }
 
@@ -236,88 +228,58 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       }
     }
 
-    // Iniciar el flujo de Steps secuenciales antes de la repetición
+    // Iniciar la repetición directamente sin flujo paso a paso
     if (mounted) {
-      setState(() {
-        _showSequentialSteps = true;
-        _currentStepIndex = 0;
-        _stepCompleted = [false, false, false, false, false, false];
-      });
-    }
-  }
-  
-  
-
-  Future<void> _nextStep() async {
-    // Si estamos en el paso de intención personal (índice 5), guardar la intención antes de continuar
-    if (_currentStepIndex == 5) {
-      setState(() {
-        _intencionPersonal = _intencionPersonalController.text;
-      });
-    }
-    
-    if (_currentStepIndex < 5) {
-      // Avanzar al siguiente paso
-      setState(() {
-        _stepCompleted[_currentStepIndex] = true;
-        _currentStepIndex++;
-      });
-    } else {
-      // Completar el último paso y activar repetición
-      await _iniciarRepeticion();
-    }
-  }
-
-  Future<void> _iniciarRepeticion() async {
     setState(() {
-      _stepCompleted[_currentStepIndex] = true;
       _isRepetitionActive = true;
-      _showSequentialSteps = false;
       _secondsRemaining = 120; // 2 minutos
-      _musicControllerKeySeed++;
+        _musicControllerKeySeed++;
     });
     
-    // Esperar un frame para asegurar que el UI se actualice
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (mounted) {
-        // Iniciar audio automáticamente
-        try {
-          final audioManager = AudioManagerService();
-          final tracks = [
-            'assets/audios/432hz_harmony.mp3',
-            'assets/audios/528hz_love.mp3',
-            'assets/audios/binaural_manifestation.mp3',
-            'assets/audios/crystal_bowls.mp3',
-            'assets/audios/forest_meditation.mp3',
-          ];
-          await audioManager.playTrack(tracks[0], autoPlay: true);
-          print('✅ Audio iniciado automáticamente');
-          
-          // Forzar rebuild para que StreamedMusicController detecte el audio
-          if (mounted) {
-            setState(() {});
-          }
-        } catch (e) {
-          print('❌ Error iniciando audio: $e');
-        }
-        
-        // Notificar al servicio global
-        PilotageStateService().setRepetitionActive(true);
-        
-        // Registrar repetición de código INMEDIATAMENTE al iniciar
-        final trackingService = ChallengeTrackingService();
-        trackingService.recordCodeRepetition(
-          widget.codigo,
-          widget.nombre ?? widget.codigo,
-        );
+      // Esperar un frame para asegurar que el UI se actualice
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mounted) {
+          // Iniciar audio automáticamente
+    try {
+      final audioManager = AudioManagerService();
+      final tracks = [
+        'assets/audios/432hz_harmony.mp3',
+        'assets/audios/528hz_love.mp3',
+        'assets/audios/binaural_manifestation.mp3',
+        'assets/audios/crystal_bowls.mp3',
+        'assets/audios/forest_meditation.mp3',
+      ];
+      await audioManager.playTrack(tracks[0], autoPlay: true);
+            print('✅ Audio iniciado automáticamente');
+            
+            // Forzar rebuild para que StreamedMusicController detecte el audio
+            if (mounted) {
+              setState(() {});
+            }
+    } catch (e) {
+            print('❌ Error iniciando audio: $e');
+    }
+    
+    // Notificar al servicio global
+    PilotageStateService().setRepetitionActive(true);
+    
+    // Registrar repetición de código INMEDIATAMENTE al iniciar
+    final trackingService = ChallengeTrackingService();
+    trackingService.recordCodeRepetition(
+      widget.codigo,
+      widget.nombre ?? widget.codigo,
+    );
 
-        // Ocultar la barra de colores después de 3 segundos
-        _hideColorBarAfterDelay();
-        // Iniciar el temporizador de 2 minutos
-        _startCountdown();
-      }
-    });
+    // Ocultar la barra de colores después de 3 segundos
+    _hideColorBarAfterDelay();
+    // Iniciar el temporizador de 2 minutos
+    _startCountdown();
+        }
+      });
+    }
   }
+  
+  
 
   void _startCountdown() {
     Future.delayed(const Duration(seconds: 1), () {
@@ -744,205 +706,6 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   }
 
   @override
-  Widget _buildSequentialStepCard() {
-    final steps = [
-      {
-        'title': 'Preparación de la Conciencia',
-        'description': 'Cierra los ojos, respira... conecta con la Norma.',
-        'icon': Icons.self_improvement,
-        'color': Colors.green,
-      },
-      {
-        'title': 'Visualización Activa',
-        'description': 'Visualiza el código dentro de una esfera luminosa.',
-        'icon': Icons.visibility,
-        'color': Colors.blue,
-      },
-      {
-        'title': 'Emisión del Pensamiento Dirigido',
-        'description': 'Enfoca tu intención y emítela al campo cuántico.',
-        'icon': Icons.psychology,
-        'color': Colors.purple,
-      },
-      {
-        'title': 'Repetición Consciente',
-        'description': 'Repite el código 3 veces sintiendo la vibración.',
-        'icon': Icons.repeat,
-        'color': Colors.orange,
-      },
-      {
-        'title': 'Cierre Energético',
-        'description': 'Agradece y sella la intención en el campo cuántico.',
-        'icon': Icons.check_circle,
-        'color': Colors.teal,
-      },
-      {
-        'title': 'Intención Personal',
-        'description': '¿Qué deseas armonizar con este código?',
-        'icon': Icons.edit,
-        'color': Colors.amber,
-        'hasTextField': true,
-      },
-    ];
-
-    final currentStepData = steps[_currentStepIndex];
-    final isCompleted = _stepCompleted[_currentStepIndex];
-
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withOpacity(0.5), // Fondo semi-transparente
-        child: Center(
-          child: TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 600),
-            tween: Tween(begin: -1.0, end: 0.0),
-            curve: Curves.easeOutCubic,
-            builder: (context, slideValue, child) {
-              return Transform.translate(
-                offset: Offset(slideValue * MediaQuery.of(context).size.width, 0),
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 300),
-                  opacity: slideValue > -0.8 ? 1.0 : 0.0,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 40),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          currentStepData['color'] as Color,
-                          (currentStepData['color'] as Color).withOpacity(0.7),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (currentStepData['color'] as Color).withOpacity(0.3),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Icono del paso
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            currentStepData['icon'] as IconData,
-                            size: 32,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // Título del paso
-                        Text(
-                          currentStepData['title'] as String,
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // Descripción del paso
-                        Text(
-                          currentStepData['description'] as String,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        // Campo de texto para el paso de intención
-                        if (currentStepData['hasTextField'] == true) ...[
-                          TextField(
-                            controller: _intencionPersonalController,
-                            style: GoogleFonts.inter(color: Colors.white),
-                            decoration: InputDecoration(
-                              hintText: 'Escribe tu intención aquí...',
-                              hintStyle: GoogleFonts.inter(color: Colors.white54),
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.1),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Colors.white, width: 2),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            ),
-                            maxLines: 3,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                        
-                        // Botón de acción
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Indicador de progreso
-                            Row(
-                              children: List.generate(6, (index) {
-                                return Container(
-                                  margin: const EdgeInsets.only(right: 4),
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: index <= _currentStepIndex
-                                        ? Colors.white
-                                        : Colors.white.withOpacity(0.3),
-                                    shape: BoxShape.circle,
-                                  ),
-                                );
-                              }),
-                            ),
-                            
-                            // Botón de siguiente paso
-                            GestureDetector(
-                              onTap: _nextStep,
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.3),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Icon(
-                                  _currentStepIndex < 5 ? Icons.play_arrow : Icons.check,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget build(BuildContext context) {
     // Modo de concentración (pantalla completa)
     if (_isConcentrationMode) {
@@ -976,42 +739,46 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
                           IconButton(
                             onPressed: () async {
                               try {
-                                // Usar los datos ya cargados en _codigoInfoFuture (sin consultas adicionales)
-                                final codigoInfo = await _codigoInfoFuture;
-                                final titulo = codigoInfo['titulo'] as String? ?? widget.nombre ?? 'Código Cuántico';
-                                final descripcion = codigoInfo['descripcion'] as String? ?? 'Código cuántico para la manifestación y transformación energética.';
+                                // Buscar el código en la base de datos para obtener su información real
+                                final codigos = await SupabaseService.getCodigos();
+                                final codigoEncontrado = codigos.firstWhere(
+                                  (c) => c.codigo == widget.codigo,
+                                  orElse: () => CodigoGrabovoi(
+                                    id: '',
+                                    codigo: widget.codigo,
+                                    nombre: 'Código Cuántico',
+                                    descripcion: 'Código cuántico para la manifestación y transformación energética.',
+                                    categoria: 'General',
+                                    color: '#FFD700',
+                                  ),
+                                );
                                 
-                                final textToCopy = '''${widget.codigo} : $titulo
-$descripcion
+                                final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
+${codigoEncontrado.descripcion}
 Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
                                 
-                                await Clipboard.setData(ClipboardData(text: textToCopy));
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Código ${widget.codigo} copiado con descripción'),
-                                      backgroundColor: const Color(0xFFFFD700),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
+                                Clipboard.setData(ClipboardData(text: textToCopy));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Código ${widget.codigo} copiado con descripción'),
+                                    backgroundColor: const Color(0xFFFFD700),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
                               } catch (e) {
-                                // Fallback si hay error - usar datos básicos
-                                final titulo = widget.nombre ?? 'Código Cuántico';
-                                final textToCopy = '''${widget.codigo} : $titulo
-Este código ayuda a manifestar la abundancia de alimentos necesarios para una nutrición adecuada y equilibrada en la vida diaria.
-Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+                                // Fallback si hay error
+                                final textToCopy = '''${widget.codigo} : Código Cuántico
+Código cuántico para la manifestación y transformación energética.
+Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                 
-                                await Clipboard.setData(ClipboardData(text: textToCopy));
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Código ${widget.codigo} copiado'),
-                                      backgroundColor: const Color(0xFFFFD700),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
+                                Clipboard.setData(ClipboardData(text: textToCopy));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Código ${widget.codigo} copiado'),
+                                    backgroundColor: const Color(0xFFFFD700),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
                               }
                             },
                             icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
@@ -1103,102 +870,6 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                                       height: 1.4,
                                     ),
                                   ),
-                                  // Campo de texto de intención cuando estamos en el paso de intención
-                                  if (_showSequentialSteps && _currentStepIndex == 5) ...[
-                                    const SizedBox(height: 20),
-                                    Text(
-                                      '¿Qué deseas armonizar con este código?',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFFFFD700),
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    TextField(
-                                      controller: _intencionPersonalController,
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: 'Escribe tu intención aquí...',
-                                        hintStyle: GoogleFonts.inter(
-                                          color: Colors.white.withOpacity(0.5),
-                                          fontSize: 14,
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.white.withOpacity(0.1),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
-                                            color: const Color(0xFFFFD700).withOpacity(0.3),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
-                                            color: const Color(0xFFFFD700).withOpacity(0.3),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                            color: Color(0xFFFFD700),
-                                            width: 2,
-                                          ),
-                                        ),
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 12,
-                                        ),
-                                      ),
-                                      maxLines: 3,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                  // Mostrar intención personal si existe (después de completar el paso)
-                                  if (_intencionPersonal.isNotEmpty && (!_showSequentialSteps || _currentStepIndex != 5)) ...[
-                                    const SizedBox(height: 16),
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFD700).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: const Color(0xFFFFD700).withOpacity(0.3),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Text(
-                                            'Intención Personal',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFFFFD700),
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            _intencionPersonal,
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13,
-                                              color: Colors.white.withOpacity(0.9),
-                                              height: 1.4,
-                                              fontStyle: FontStyle.italic,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
                                   // Mostrar títulos relacionados si existen
                                   if (titulosRelacionados.isNotEmpty) ...[
                                     const SizedBox(height: 16),
@@ -1330,11 +1001,9 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                 ),
               ),
             ),
-            // Sistema de Steps Secuenciales como Overlay Flotante
-            if (_showSequentialSteps) _buildSequentialStepCard(),
         ],
       ),
-      bottomNavigationBar: null, // Ocultar menú inferior en sesión de repetición
+      bottomNavigationBar: _buildBottomNavigationBar(),
       ),
     );
   }
@@ -1635,8 +1304,67 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
           ),
         ],
       ),
-      // Ocultar menú inferior en modo de concentración
-      bottomNavigationBar: null,
+      // Usar el mismo menú inferior que la aplicación principal
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF0B132B),
+              Color(0xFF1C2541),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildNavItem(
+                  icon: Icons.home_filled,
+                  label: 'Inicio',
+                  index: 0,
+                ),
+                _buildNavItem(
+                  icon: Icons.menu_book,
+                  label: 'Biblioteca',
+                  index: 1,
+                ),
+                // _buildNavItem(
+                //   icon: Icons.auto_awesome,
+                //   label: 'Cuántico',
+                //   index: 2,
+                //   isCenter: true,
+                // ), // Eliminado - se integró en biblioteca
+                _buildNavItem(
+                  icon: Icons.emoji_events,
+                  label: 'Desafíos',
+                  index: 2,
+                ),
+                _buildNavItem(
+                  icon: Icons.show_chart,
+                  label: 'Evolución',
+                  index: 3,
+                ),
+                _buildNavItem(
+                  icon: Icons.person,
+                  label: 'Perfil',
+                  index: 4,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
