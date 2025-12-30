@@ -109,3 +109,7 @@ flutter_*.log
 # APK files
 *.apk
 @flutter-apk/
+
+# Documentación y servidor (contienen secretos)
+docs/
+server/
