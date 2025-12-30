@@ -26,8 +26,6 @@ import '../../widgets/sequencia_activada_modal.dart';
 import '../../services/rewards_service.dart';
 import '../../services/user_custom_codes_service.dart';
 import '../../services/user_favorites_service.dart';
-import '../diario/track_code_modal.dart';
-import '../diario/nueva_entrada_diario_screen.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -806,22 +804,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                 tooltip: _esFavorito ? 'Remover de favoritos' : 'Agregar a favoritos',
                               );
                             },
-                          ),
-                          // Botón de diario
-                          IconButton(
-                            onPressed: () {
-                              // Navegar directamente a crear entrada del diario con el código actual
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => NuevaEntradaDiarioScreen(
-                                    codigo: widget.codigo,
-                                    nombre: widget.nombre,
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.edit_note, color: Color(0xFFFFD700)),
-                            tooltip: 'Registrar en el diario',
                           ),
                         ],
                       ),
@@ -1745,35 +1727,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     }
   }
 
-  // Método para mostrar modal de seguimiento del diario
-  void _mostrarModalSeguimientoDiario() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => TrackCodeModal(
-        codigo: widget.codigo,
-        nombre: widget.nombre,
-        onAccept: () {
-          Navigator.of(context).pop();
-          // Navegar a la pantalla del diario para crear entrada
-          if (context.mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => NuevaEntradaDiarioScreen(
-                  codigo: widget.codigo,
-                  nombre: widget.nombre,
-                ),
-              ),
-            );
-          }
-        },
-        onSkip: () {
-          Navigator.of(context).pop();
-        },
-      ),
-    );
-  }
-
   // Método para mostrar el mensaje de finalización con códigos sincrónicos
   void _mostrarMensajeFinalizacion({
     int? cristalesGanados,
@@ -1787,10 +1740,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
       builder: (context) => SequenciaActivadaModal(
         onContinue: () {
           Navigator.of(context).pop();
-          // Mostrar modal de seguimiento del diario
-          if (context.mounted) {
-            _mostrarModalSeguimientoDiario();
-          }
         },
         buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
         mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de repeticiones.',

@@ -55,14 +55,11 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
   @override
   void didUpdateWidget(StreamedMusicController oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Resetear el flag cuando el widget se reactiva para mostrar el mensaje nuevamente
     if (widget.isActive && !oldWidget.isActive) {
-      _hasShownVolumeMessage = false;
       _showVolumeMessageOnFirstPlay();
       _loadAndMaybePlay(_index);
     } else if (widget.isActive && widget.autoPlay && !oldWidget.autoPlay) {
-      // Si autoPlay cambió a true, resetear flag e iniciar reproducción
-      _hasShownVolumeMessage = false;
+      // Si autoPlay cambió a true, iniciar reproducción
       _showVolumeMessageOnFirstPlay();
       _loadAndMaybePlay(_index);
     } else if (widget.isActive && widget.autoPlay) {

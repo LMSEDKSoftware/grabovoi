@@ -26,7 +26,6 @@ import 'widgets/auth_wrapper.dart';
 import 'widgets/glow_background.dart';
 import 'screens/biblioteca/static_biblioteca_screen.dart';
 import 'screens/pilotaje/quantum_pilotage_screen.dart';
-import 'screens/diario/diario_screen.dart';
 import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
 import 'screens/auth/auth_callback_screen.dart';
@@ -270,7 +269,6 @@ class _MainNavigationState extends State<MainNavigation> {
   final NotificationCountService _notificationCountService = NotificationCountService();
   bool _showTourOverlay = false;
   final GlobalKey _homeScreenKey = GlobalKey();
-  final GlobalKey _diarioScreenKey = GlobalKey();
 
   @override
   void initState() {
@@ -278,8 +276,7 @@ class _MainNavigationState extends State<MainNavigation> {
     _screens = [
       HomeScreen(key: _homeScreenKey as Key?),
       const StaticBibliotecaScreen(),
-      DiarioScreen(key: _diarioScreenKey), // Índice 2 - Diario (visualmente entre Biblioteca y Desafíos)
-      const QuantumPilotageScreen(), // Índice 3 - Oculto en menú
+      const QuantumPilotageScreen(),
       const DesafiosScreen(),
       const EvolucionScreen(),
       const ProfileScreen(),
@@ -420,9 +417,9 @@ class _MainNavigationState extends State<MainNavigation> {
     // Verificar si el usuario es gratuito (sin suscripción después de los 7 días)
     final isFreeUser = subscriptionService.isFreeUser;
     
-    // Permitir acceso a Inicio (index 0) y Perfil (index 6) siempre
+    // Permitir acceso a Inicio (index 0) y Perfil (index 5) siempre
     // Solo restringir otras pestañas para usuarios gratuitos
-    if (isFreeUser && index != 0 && index != 6) {
+    if (isFreeUser && index != 0 && index != 5) {
       // Mostrar modal de suscripción requerida
       if (mounted) {
         SubscriptionRequiredModal.show(
@@ -456,20 +453,8 @@ class _MainNavigationState extends State<MainNavigation> {
       _currentIndex = index;
     });
     
-    // Recargar diario cuando se cambia a la pestaña del Diario
-    if (index == 2) { // Diario está en índice 2
-      final diarioState = _diarioScreenKey.currentState;
-      if (diarioState != null) {
-        try {
-          (diarioState as dynamic).reloadDiario();
-        } catch (e) {
-          print('⚠️ Error recargando diario: $e');
-        }
-      }
-    }
-    
     // Actualizar conteo de notificaciones cuando se cambia a la pestaña de Perfil
-    if (index == 6) { // Perfil ahora es índice 6
+    if (index == 5) { // Perfil ahora es índice 5
       _notificationCountService.updateCount();
     }
   }
@@ -547,31 +532,25 @@ class _MainNavigationState extends State<MainNavigation> {
                           index: 1,
                         ),
                         _buildNavItem(
-                          icon: Icons.book,
-                          label: 'Diario',
+                          icon: Icons.auto_awesome,
+                          label: 'Cuántico',
                           index: 2,
+                          isCenter: true,
                         ),
-                        // Cuántico oculto (índice 3) - funcionalidad preservada pero no visible en menú
-                        // _buildNavItem(
-                        //   icon: Icons.auto_awesome,
-                        //   label: 'Cuántico',
-                        //   index: 3,
-                        //   isCenter: true,
-                        // ),
                         _buildNavItem(
                           icon: Icons.emoji_events,
                           label: 'Desafíos',
-                          index: 4,
+                          index: 3,
                         ),
                         _buildNavItem(
                           icon: Icons.show_chart,
                           label: 'Evolución',
-                          index: 5,
+                          index: 4,
                         ),
                         _buildNavItem(
                           icon: Icons.person,
                           label: 'Perfil',
-                          index: 6,
+                          index: 5,
                         ),
                       ],
                     ),
@@ -667,8 +646,8 @@ class _MainNavigationState extends State<MainNavigation> {
                         : Colors.white.withOpacity(0.5),
                     size: 22, // Tamaño uniforme para todos los iconos
                   ),
-                  // Burbuja de notificaciones solo para el icono de Perfil (index 6)
-                  if (index == 6)
+                  // Burbuja de notificaciones solo para el icono de Perfil (index 5)
+                  if (index == 5)
                     StreamBuilder<int>(
                       stream: _notificationCountService.countStream,
                       initialData: _notificationCountService.currentCount,

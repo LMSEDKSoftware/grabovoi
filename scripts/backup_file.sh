@@ -1,31 +1,48 @@
 #!/bin/bash
-# Script para hacer backup de archivos antes de modificarlos
-# Uso: ./backup_file.sh ruta/al/archivo
 
-if [ -z "$1" ]; then
-    echo "❌ Error: Debes proporcionar la ruta del archivo a respaldar"
-    exit 1
-fi
+# Script para crear backup de archivos antes de modificarlos
+# Uso: ./scripts/backup_file.sh <ruta_archivo>
 
 FILE_PATH="$1"
-BACKUP_DIR="backups/$(date +%Y%m%d_%H%M%S)"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-# Crear directorio de backup si no existe
-mkdir -p "$BACKUP_DIR"
-
-# Obtener el directorio del archivo
-FILE_DIR=$(dirname "$FILE_PATH")
-FILE_NAME=$(basename "$FILE_PATH")
-
-# Crear la estructura de directorios en el backup
-mkdir -p "$BACKUP_DIR/$FILE_DIR"
-
-# Copiar el archivo
-if [ -f "$FILE_PATH" ]; then
-    cp "$FILE_PATH" "$BACKUP_DIR/$FILE_PATH"
-    echo "✅ Backup creado: $BACKUP_DIR/$FILE_PATH"
-else
-    echo "⚠️  Archivo no encontrado: $FILE_PATH"
+if [ -z "$FILE_PATH" ]; then
+    echo "❌ Error: Debes proporcionar la ruta del archivo"
+    echo "Uso: ./scripts/backup_file.sh <ruta_archivo>"
     exit 1
 fi
 
+# Convertir a ruta absoluta si es relativa
+if [[ ! "$FILE_PATH" = /* ]]; then
+    FILE_PATH="$(pwd)/$FILE_PATH"
+fi
+
+# Verificar que el archivo existe
+if [ ! -f "$FILE_PATH" ]; then
+    echo "❌ Error: El archivo no existe: $FILE_PATH"
+    exit 1
+fi
+
+# Obtener directorio y nombre del archivo
+DIR=$(dirname "$FILE_PATH")
+FILENAME=$(basename "$FILE_PATH")
+BACKUP_DIR="$DIR/.backups"
+
+# Crear directorio de backups si no existe
+mkdir -p "$BACKUP_DIR"
+
+# Nombre del backup: bk-<timestamp>_<nombre_original>
+BACKUP_NAME="bk-${TIMESTAMP}_${FILENAME}"
+BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
+
+# Copiar el archivo
+cp "$FILE_PATH" "$BACKUP_PATH"
+
+if [ $? -eq 0 ]; then
+    echo "✅ Backup creado: $BACKUP_PATH"
+    # Mantener solo los últimos 10 backups
+    ls -t "$BACKUP_DIR"/bk-*_${FILENAME} 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null
+else
+    echo "❌ Error al crear backup"
+    exit 1
+fi

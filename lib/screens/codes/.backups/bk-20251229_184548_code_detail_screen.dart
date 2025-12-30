@@ -26,10 +26,6 @@ import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
 import '../../utils/code_formatter.dart';
 import '../pilotaje/pilotaje_screen.dart';
-import '../diario/track_code_modal.dart';
-import '../diario/nueva_entrada_diario_screen.dart';
-import '../../services/subscription_service.dart';
-import '../../widgets/subscription_required_modal.dart';
 
 class CodeDetailScreen extends StatefulWidget {
   final String codigo;
@@ -88,33 +84,9 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     _codigoInfoFuture = _loadCodigoInfo();
     _shareableDataFuture = _loadShareableData();
     
-    // Verificar acceso premium antes de iniciar
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final subscriptionService = SubscriptionService();
-      await subscriptionService.checkSubscriptionStatus();
-      
-      // Verificar si el usuario tiene acceso premium o días de trial restantes
-      final hasPremiumAccess = subscriptionService.hasPremiumAccess;
-      final remainingTrialDays = await subscriptionService.getRemainingTrialDays();
-      
-      if (!hasPremiumAccess && (remainingTrialDays == null || remainingTrialDays <= 0)) {
-        // Usuario sin acceso premium y sin días de trial - redirigir
-        if (mounted) {
-          SubscriptionRequiredModal.show(
-            context,
-            message: 'El Campo Energético está disponible solo para usuarios Premium o durante el período de prueba. Suscríbete para acceder a esta función.',
-            onDismiss: () {
-              Navigator.of(context).pop();
-            },
-          );
-        }
-        return;
-      }
-      
-      // Usuario con acceso premium o días de trial restantes - permitir acceso
-      if (mounted) {
-        _startPiloting();
-      }
+    // Iniciar pilotaje automáticamente al entrar a la pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startPiloting();
     });
   }
 
@@ -365,54 +337,6 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     }
   }
 
-  // Método para mostrar modal de seguimiento del diario (solo para usuarios Premium o con trial activo)
-  Future<void> _mostrarModalSeguimientoDiario() async {
-    // Verificar que el usuario tenga acceso premium o días de trial restantes
-    final subscriptionService = SubscriptionService();
-    await subscriptionService.checkSubscriptionStatus();
-    
-    final hasPremiumAccess = subscriptionService.hasPremiumAccess;
-    final remainingTrialDays = await subscriptionService.getRemainingTrialDays();
-    
-    // Solo mostrar el modal si el usuario tiene acceso premium o días de trial restantes
-    if (!hasPremiumAccess && (remainingTrialDays == null || remainingTrialDays <= 0)) {
-      // Usuario sin acceso - no mostrar modal del diario
-      return;
-    }
-    
-    // Obtener el nombre del código para mostrarlo en el modal
-    final codigosRepo = CodigosRepository();
-    final nombreCodigo = codigosRepo.getTituloByCode(widget.codigo);
-    
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => TrackCodeModal(
-          codigo: widget.codigo,
-          nombre: nombreCodigo,
-          onAccept: () {
-            Navigator.of(context).pop();
-            // Navegar a la pantalla del diario para crear entrada
-            if (context.mounted) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => NuevaEntradaDiarioScreen(
-                    codigo: widget.codigo,
-                    nombre: nombreCodigo,
-                  ),
-                ),
-              );
-            }
-          },
-          onSkip: () {
-            Navigator.of(context).pop();
-          },
-        ),
-      );
-    }
-  }
-
   // Método para mostrar el mensaje de finalización con códigos sincrónicos (igual que en repeticiones)
   void _mostrarMensajeFinalizacion({
     int? cristalesGanados,
@@ -433,10 +357,6 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       builder: (context) => SequenciaActivadaModal(
         onContinue: () {
           Navigator.of(context).pop();
-          // Mostrar modal de seguimiento del diario (solo para usuarios Premium o con trial activo)
-          if (context.mounted) {
-            _mostrarModalSeguimientoDiario();
-          }
         },
         buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
         mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de campo energético.',

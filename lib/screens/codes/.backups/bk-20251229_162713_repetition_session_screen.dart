@@ -26,8 +26,6 @@ import '../../widgets/sequencia_activada_modal.dart';
 import '../../services/rewards_service.dart';
 import '../../services/user_custom_codes_service.dart';
 import '../../services/user_favorites_service.dart';
-import '../diario/track_code_modal.dart';
-import '../diario/nueva_entrada_diario_screen.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -230,50 +228,50 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
 
     // Iniciar la repetición directamente sin flujo paso a paso
     if (mounted) {
-    setState(() {
-      _isRepetitionActive = true;
-      _secondsRemaining = 120; // 2 minutos
+      setState(() {
+        _isRepetitionActive = true;
+        _secondsRemaining = 120; // 2 minutos
         _musicControllerKeySeed++;
-    });
-    
+      });
+      
       // Esperar un frame para asegurar que el UI se actualice
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
           // Iniciar audio automáticamente
-    try {
-      final audioManager = AudioManagerService();
-      final tracks = [
-        'assets/audios/432hz_harmony.mp3',
-        'assets/audios/528hz_love.mp3',
-        'assets/audios/binaural_manifestation.mp3',
-        'assets/audios/crystal_bowls.mp3',
-        'assets/audios/forest_meditation.mp3',
-      ];
-      await audioManager.playTrack(tracks[0], autoPlay: true);
+          try {
+            final audioManager = AudioManagerService();
+            final tracks = [
+              'assets/audios/432hz_harmony.mp3',
+              'assets/audios/528hz_love.mp3',
+              'assets/audios/binaural_manifestation.mp3',
+              'assets/audios/crystal_bowls.mp3',
+              'assets/audios/forest_meditation.mp3',
+            ];
+            await audioManager.playTrack(tracks[0], autoPlay: true);
             print('✅ Audio iniciado automáticamente');
             
             // Forzar rebuild para que StreamedMusicController detecte el audio
             if (mounted) {
               setState(() {});
             }
-    } catch (e) {
+          } catch (e) {
             print('❌ Error iniciando audio: $e');
-    }
-    
-    // Notificar al servicio global
-    PilotageStateService().setRepetitionActive(true);
-    
-    // Registrar repetición de código INMEDIATAMENTE al iniciar
-    final trackingService = ChallengeTrackingService();
-    trackingService.recordCodeRepetition(
-      widget.codigo,
-      widget.nombre ?? widget.codigo,
-    );
-
-    // Ocultar la barra de colores después de 3 segundos
-    _hideColorBarAfterDelay();
-    // Iniciar el temporizador de 2 minutos
-    _startCountdown();
+          }
+          
+          // Notificar al servicio global
+          PilotageStateService().setRepetitionActive(true);
+          
+          // Registrar repetición de código INMEDIATAMENTE al iniciar
+          final trackingService = ChallengeTrackingService();
+          trackingService.recordCodeRepetition(
+            widget.codigo,
+            widget.nombre ?? widget.codigo,
+          );
+          
+          // Ocultar la barra de colores después de 3 segundos
+          _hideColorBarAfterDelay();
+          // Iniciar el temporizador de 2 minutos
+          _startCountdown();
         }
       });
     }
@@ -642,63 +640,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
             text: 'Entendido',
             onPressed: () {
               Navigator.of(context).pop();
-              // Después de cerrar este mensaje, mostrar el segundo mensaje
-              if (context.mounted) {
-                _mostrarMensajePuedeSalir();
-              }
             },
             color: const Color(0xFFFF6B6B),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarMensajePuedeSalir() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFFFD700), width: 2),
-        ),
-        title: Row(
-          children: [
-            const Icon(
-              Icons.info_outline,
-              color: Color(0xFFFFD700),
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Listo para Salir',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Ahora puedes salir de la sesión dando clic en el botón "Volver".',
-          style: GoogleFonts.inter(
-            color: Colors.white70,
-            fontSize: 16,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          CustomButton(
-            text: 'Entendido',
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            color: const Color(0xFFFFD700),
           ),
         ],
       ),
@@ -806,22 +749,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                 tooltip: _esFavorito ? 'Remover de favoritos' : 'Agregar a favoritos',
                               );
                             },
-                          ),
-                          // Botón de diario
-                          IconButton(
-                            onPressed: () {
-                              // Navegar directamente a crear entrada del diario con el código actual
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => NuevaEntradaDiarioScreen(
-                                    codigo: widget.codigo,
-                                    nombre: widget.nombre,
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.edit_note, color: Color(0xFFFFD700)),
-                            tooltip: 'Registrar en el diario',
                           ),
                         ],
                       ),
@@ -1745,35 +1672,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
     }
   }
 
-  // Método para mostrar modal de seguimiento del diario
-  void _mostrarModalSeguimientoDiario() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => TrackCodeModal(
-        codigo: widget.codigo,
-        nombre: widget.nombre,
-        onAccept: () {
-          Navigator.of(context).pop();
-          // Navegar a la pantalla del diario para crear entrada
-          if (context.mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => NuevaEntradaDiarioScreen(
-                  codigo: widget.codigo,
-                  nombre: widget.nombre,
-                ),
-              ),
-            );
-          }
-        },
-        onSkip: () {
-          Navigator.of(context).pop();
-        },
-      ),
-    );
-  }
-
   // Método para mostrar el mensaje de finalización con códigos sincrónicos
   void _mostrarMensajeFinalizacion({
     int? cristalesGanados,
@@ -1787,10 +1685,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
       builder: (context) => SequenciaActivadaModal(
         onContinue: () {
           Navigator.of(context).pop();
-          // Mostrar modal de seguimiento del diario
-          if (context.mounted) {
-            _mostrarModalSeguimientoDiario();
-          }
         },
         buildSincronicosSection: ({void Function(String)? onCodeCopied}) => _buildSincronicosSection(onCodeCopied: onCodeCopied),
         mensajeCompletado: '¡Excelente trabajo! Has completado tu sesión de repeticiones.',

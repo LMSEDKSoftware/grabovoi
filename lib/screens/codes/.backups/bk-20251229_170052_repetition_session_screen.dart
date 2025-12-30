@@ -27,7 +27,6 @@ import '../../services/rewards_service.dart';
 import '../../services/user_custom_codes_service.dart';
 import '../../services/user_favorites_service.dart';
 import '../diario/track_code_modal.dart';
-import '../diario/nueva_entrada_diario_screen.dart';
 
 
 class RepetitionSessionScreen extends StatefulWidget {
@@ -806,22 +805,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                                 tooltip: _esFavorito ? 'Remover de favoritos' : 'Agregar a favoritos',
                               );
                             },
-                          ),
-                          // Botón de diario
-                          IconButton(
-                            onPressed: () {
-                              // Navegar directamente a crear entrada del diario con el código actual
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => NuevaEntradaDiarioScreen(
-                                    codigo: widget.codigo,
-                                    nombre: widget.nombre,
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.edit_note, color: Color(0xFFFFD700)),
-                            tooltip: 'Registrar en el diario',
                           ),
                         ],
                       ),
@@ -1755,17 +1738,12 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
         nombre: widget.nombre,
         onAccept: () {
           Navigator.of(context).pop();
-          // Navegar a la pantalla del diario para crear entrada
-          if (context.mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => NuevaEntradaDiarioScreen(
-                  codigo: widget.codigo,
-                  nombre: widget.nombre,
-                ),
-              ),
-            );
-          }
+          // TODO: Navegar a la pantalla del diario para crear entrada
+          // Navigator.of(context).push(
+          //   MaterialPageRoute(
+          //     builder: (context) => NuevaEntradaDiarioScreen(codigo: widget.codigo, nombre: widget.nombre),
+          //   ),
+          // );
         },
         onSkip: () {
           Navigator.of(context).pop();

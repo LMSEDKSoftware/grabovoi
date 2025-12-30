@@ -341,9 +341,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       },
                     ),
                     const SizedBox(height: 20),
-                    // Sección de links legales
-                    _buildLegalSection(),
-                    const SizedBox(height: 20),
                     // Botón de cerrar sesión (ancho completo)
                     _buildButton(
                       text: 'Cerrar Sesión',
@@ -351,6 +348,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       color: Colors.orange,
                       onPressed: _signOut,
                     ),
+                    const SizedBox(height: 30),
+                    // Sección de links legales
+                    _buildLegalSection(),
                     const SizedBox(height: 20),
                     // Créditos
                     Text(
