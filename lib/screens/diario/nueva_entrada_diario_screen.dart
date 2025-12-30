@@ -29,7 +29,6 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
   final _horasSuenoController = TextEditingController(text: '8');
   
   // Estado del formulario
-  String? _codigoSeleccionado;
   String? _estadoAnimo;
   bool _hizoEjercicio = false;
   bool _isLoading = false;
@@ -50,7 +49,6 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
   @override
   void initState() {
     super.initState();
-    _codigoSeleccionado = widget.codigo; // Pre-seleccionar el código usado
     _loadCodigos();
   }
 
@@ -99,11 +97,13 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
       setState(() {
         _codigosDisponibles = codigosUnicos;
         _codigosConTitulos = codigosConTitulosUnicos;
-        // Asegurar que el valor seleccionado exista en la lista
-        if (widget.codigo.isNotEmpty && _codigoSeleccionado == widget.codigo) {
-          if (!_codigosDisponibles.contains(_codigoSeleccionado)) {
-            _codigoSeleccionado = widget.codigo;
-          }
+        // Si el código del widget no está en la lista, agregarlo para mostrar su título
+        if (widget.codigo.isNotEmpty && !_codigosConTitulos.containsKey(widget.codigo)) {
+          final codigoEncontrado = codigos.firstWhere(
+            (c) => c.codigo == widget.codigo,
+            orElse: () => codigos.isNotEmpty ? codigos.first : codigos.first,
+          );
+          _codigosConTitulos[widget.codigo] = codigoEncontrado.nombre;
         }
       });
     } catch (e) {
@@ -131,7 +131,7 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
     try {
       final diarioService = DiarioService();
       await diarioService.guardarEntrada(
-        codigo: _codigoSeleccionado == 'Ninguno' ? null : _codigoSeleccionado,
+        codigo: widget.codigo.isNotEmpty ? widget.codigo : null,
         intencion: _intencionController.text.trim(),
         estadoAnimo: _estadoAnimo,
         sensaciones: _sensacionesController.text.trim().isEmpty 
@@ -215,7 +215,7 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Código Utilizado (opcional)
+                // Código Utilizado (solo lectura - viene de la sesión terminada)
                 Row(
                   children: [
                     Expanded(
@@ -223,7 +223,7 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Código Utilizado (opcional)',
+                            'Código Utilizado',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -231,53 +231,39 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            value: _codigoSeleccionado != null && _codigosDisponibles.contains(_codigoSeleccionado)
-                                ? _codigoSeleccionado
-                                : (_codigosDisponibles.isNotEmpty ? _codigosDisponibles[0] : null),
-                            selectedItemBuilder: (BuildContext context) {
-                              return _codigosDisponibles.map((codigo) {
-                                final displayText = _getDisplayTextForCodigo(codigo);
-                                return Text(
-                                  displayText,
-                                  style: GoogleFonts.inter(color: Colors.white),
-                                  overflow: TextOverflow.ellipsis,
-                                );
-                              }).toList();
-                            },
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.1),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
                               ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             ),
-                            dropdownColor: const Color(0xFF1C2541),
-                            style: GoogleFonts.inter(color: Colors.white),
-                            items: _codigosDisponibles.map((codigo) {
-                              final displayText = _codigosConTitulos.containsKey(codigo) && _codigosConTitulos[codigo]!.isNotEmpty
-                                  ? '$codigo - ${_codigosConTitulos[codigo]}'
-                                  : codigo;
-                              return DropdownMenuItem(
-                                value: codigo,
-                                child: Text(displayText),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _codigoSeleccionado = value;
-                              });
-                            },
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.tag,
+                                  color: const Color(0xFFFFD700),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    widget.codigo.isNotEmpty
+                                        ? (_codigosConTitulos.containsKey(widget.codigo) && _codigosConTitulos[widget.codigo]!.isNotEmpty
+                                            ? '${widget.codigo} - ${_codigosConTitulos[widget.codigo]}'
+                                            : widget.codigo)
+                                        : 'Sin código',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),

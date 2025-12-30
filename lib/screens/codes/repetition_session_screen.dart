@@ -807,22 +807,6 @@ Obtuve esta información en la app: Manifestación Numérica Grabovoi''';
                               );
                             },
                           ),
-                          // Botón de diario
-                          IconButton(
-                            onPressed: () {
-                              // Navegar directamente a crear entrada del diario con el código actual
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => NuevaEntradaDiarioScreen(
-                                    codigo: widget.codigo,
-                                    nombre: widget.nombre,
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.edit_note, color: Color(0xFFFFD700)),
-                            tooltip: 'Registrar en el diario',
-                          ),
                         ],
                       ),
                       const SizedBox(height: 10),

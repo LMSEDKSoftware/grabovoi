@@ -241,6 +241,42 @@ class DiarioService {
     }
   }
 
+  /// Obtener secuencias en seguimiento agrupadas por código
+  /// Retorna un mapa donde la clave es el código y el valor es la lista de entradas
+  Future<Map<String, List<Map<String, dynamic>>>> getSecuenciasEnSeguimiento() async {
+    if (!_authService.isLoggedIn) {
+      return {};
+    }
+
+    final userId = _authService.currentUser!.id;
+
+    try {
+      final entradas = await _supabase
+          .from('diario_entradas')
+          .select()
+          .eq('user_id', userId)
+          .not('codigo', 'is', null)
+          .order('fecha', ascending: false);
+
+      // Agrupar por código
+      final agrupadas = <String, List<Map<String, dynamic>>>{};
+      for (final entrada in entradas) {
+        final codigo = entrada['codigo'] as String?;
+        if (codigo != null && codigo.isNotEmpty) {
+          if (!agrupadas.containsKey(codigo)) {
+            agrupadas[codigo] = [];
+          }
+          agrupadas[codigo]!.add(entrada);
+        }
+      }
+
+      return agrupadas;
+    } catch (e) {
+      print('❌ Error obteniendo secuencias en seguimiento: $e');
+      return {};
+    }
+  }
+
   /// Eliminar una entrada del diario
   Future<void> eliminarEntrada(String id) async {
     if (!_authService.isLoggedIn) {

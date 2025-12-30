@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/glow_background.dart';
 import '../../services/diario_service.dart';
+import '../../repositories/codigos_repository.dart';
 
 class DiarioScreen extends StatefulWidget {
   const DiarioScreen({super.key});
@@ -17,13 +18,48 @@ class _DiarioScreenState extends State<DiarioScreen> {
   String? _filtroCodigo;
   DateTime? _fechaDesde;
   DateTime? _fechaHasta;
-  int _diasConsecutivos = 0;
-  Map<String, int> _codigosMasUsados = {};
+  Map<String, List<Map<String, dynamic>>> _secuenciasEnSeguimiento = {};
+  final TextEditingController _searchController = TextEditingController();
+  Map<String, List<Map<String, dynamic>>> _secuenciasFiltradas = {};
 
   @override
   void initState() {
     super.initState();
     _loadDiario();
+    _searchController.addListener(_filtrarSecuencias);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filtrarSecuencias() {
+    final query = _searchController.text.toLowerCase().trim();
+    if (query.isEmpty) {
+      setState(() {
+        _secuenciasFiltradas = _secuenciasEnSeguimiento;
+      });
+      return;
+    }
+
+    final filtradas = <String, List<Map<String, dynamic>>>{};
+    for (final entry in _secuenciasEnSeguimiento.entries) {
+      final codigo = entry.key.toLowerCase();
+      final nombreCodigo = CodigosRepository().getTituloByCode(entry.key).toLowerCase();
+      
+      // Buscar en código, título o palabras clave
+      if (codigo.contains(query) || 
+          nombreCodigo.contains(query) ||
+          entry.key.contains(query)) {
+        filtradas[entry.key] = entry.value;
+      }
+    }
+
+    setState(() {
+      _secuenciasFiltradas = filtradas;
+    });
   }
 
   Future<void> _loadDiario() async {
@@ -38,8 +74,8 @@ class _DiarioScreenState extends State<DiarioScreen> {
         fechaDesde: _fechaDesde,
         fechaHasta: _fechaHasta,
       );
-      _diasConsecutivos = await diarioService.getDiasConsecutivos();
-      _codigosMasUsados = await diarioService.getCodigosMasUsados();
+      _secuenciasEnSeguimiento = await diarioService.getSecuenciasEnSeguimiento();
+      _secuenciasFiltradas = _secuenciasEnSeguimiento;
     } catch (e) {
       print('Error cargando diario: $e');
       if (mounted) {
@@ -103,75 +139,105 @@ class _DiarioScreenState extends State<DiarioScreen> {
                         ),
                         const SizedBox(height: 20),
                         
-                        // Estadísticas rápidas
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildStatCard(
-                                'Días Consecutivos',
-                                '$_diasConsecutivos',
-                                Icons.calendar_today,
-                              ),
+                        // Texto explicativo
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD700).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFFFD700).withOpacity(0.3),
+                              width: 1,
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildStatCard(
-                                'Entradas',
-                                '${_entradas.length}',
-                                Icons.book,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    color: const Color(0xFFFFD700),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '¿Qué puedes ver aquí?',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFFFD700),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 12),
+                              Text(
+                                'Visualiza todas las secuencias que estás siguiendo. Cada una muestra el código activado y el detalle de cada día con tus intenciones, sensaciones y resultados.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: Colors.white70,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 16),
                         
-                        // Filtros
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _mostrarFiltros,
-                                icon: const Icon(Icons.filter_list, size: 18),
-                                label: const Text('Filtros'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white.withOpacity(0.1),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                                  ),
-                                ),
-                              ),
+                        // Total de secuencias en seguimiento
+                        Text(
+                          'Secuencias en seguimiento: ${_secuenciasFiltradas.length}',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFFFD700),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Búsqueda
+                        TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Buscar por código, título o palabra clave...',
+                            hintStyle: GoogleFonts.inter(color: Colors.white54),
+                            prefixIcon: const Icon(Icons.search, color: Color(0xFFFFD700)),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, color: Colors.white70),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                    },
+                                  )
+                                : null,
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                             ),
-                            const SizedBox(width: 12),
-                            if (_filtroCodigo != null || _fechaDesde != null)
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: _limpiarFiltros,
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  label: const Text('Limpiar'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFFF6B6B).withOpacity(0.2),
-                                    foregroundColor: const Color(0xFFFF6B6B),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                          style: GoogleFonts.inter(color: Colors.white),
                         ),
                       ],
                     ),
                   ),
                   
-                  // Lista de entradas agrupadas por fecha y código
+                  // Grid de secuencias agrupadas por código
                   Expanded(
-                    child: _entradas.isEmpty
+                    child: _secuenciasFiltradas.isEmpty
                         ? _buildEmptyState()
-                        : _buildGroupedEntries(),
+                        : _buildSecuenciasGrid(),
                   ),
                 ],
               ),
@@ -179,42 +245,439 @@ class _DiarioScreenState extends State<DiarioScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon) {
+  Widget _buildSecuenciasGrid() {
+    final codigos = _secuenciasFiltradas.keys.toList()
+      ..sort((a, b) {
+        // Ordenar por fecha más reciente primero
+        final entradasA = _secuenciasFiltradas[a]!;
+        final entradasB = _secuenciasFiltradas[b]!;
+        if (entradasA.isEmpty) return 1;
+        if (entradasB.isEmpty) return -1;
+        final fechaA = DateTime.parse(entradasA.first['fecha']);
+        final fechaB = DateTime.parse(entradasB.first['fecha']);
+        return fechaB.compareTo(fechaA);
+      });
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      itemCount: codigos.length,
+      itemBuilder: (context, index) {
+        final codigo = codigos[index];
+        final entradas = _secuenciasFiltradas[codigo]!;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _buildSecuenciaCard(codigo: codigo, entradas: entradas),
+        );
+      },
+    );
+  }
+
+  Widget _buildSecuenciaCard({
+    required String codigo,
+    required List<Map<String, dynamic>> entradas,
+  }) {
+    // Obtener el nombre del código desde el repositorio
+    final nombreCodigo = CodigosRepository().getTituloByCode(codigo);
+    final diasUnicos = entradas.map((e) => e['fecha']).toSet().length;
+
+    return GestureDetector(
+      onTap: () => _mostrarDetalleSecuencia(codigo: codigo, entradas: entradas),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFFFFD700).withOpacity(0.15),
+              const Color(0xFFFFD700).withOpacity(0.05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFFFD700).withOpacity(0.4),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withOpacity(0.2),
+              blurRadius: 12,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              // Código destacado
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  codigo,
+                  style: GoogleFonts.spaceMono(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFD700),
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Título e información
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Título del código
+                    Text(
+                      nombreCodigo.isNotEmpty && nombreCodigo != 'Campo Energético'
+                          ? nombreCodigo
+                          : 'Secuencia activa',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    // Información de entradas
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.repeat_one,
+                          size: 14,
+                          color: const Color(0xFFFFD700),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${entradas.length} ${entradas.length == 1 ? 'activación' : 'activaciones'}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        if (diasUnicos > 1) ...[
+                          const SizedBox(width: 12),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$diasUnicos días',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Icono de flecha
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: const Color(0xFFFFD700),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _mostrarDetalleSecuencia({
+    required String codigo,
+    required List<Map<String, dynamic>> entradas,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildDetalleSecuenciaModal(
+        codigo: codigo,
+        entradas: entradas,
+      ),
+    );
+  }
+
+  Widget _buildDetalleSecuenciaModal({
+    required String codigo,
+    required List<Map<String, dynamic>> entradas,
+  }) {
+    // Agrupar entradas por fecha
+    final entradasPorFecha = <String, List<Map<String, dynamic>>>{};
+    for (final entrada in entradas) {
+      final fecha = entrada['fecha']?.toString() ?? 'sin_fecha';
+      if (!entradasPorFecha.containsKey(fecha)) {
+        entradasPorFecha[fecha] = [];
+      }
+      entradasPorFecha[fecha]!.add(entrada);
+    }
+
+    final fechas = entradasPorFecha.keys.toList()
+      ..sort((a, b) => b.compareTo(a)); // Más reciente primero
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF1C2541),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         border: Border.all(
           color: const Color(0xFFFFD700).withOpacity(0.3),
           width: 1,
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(icon, color: const Color(0xFFFFD700), size: 24),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFFD700),
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFFFFD700).withOpacity(0.15),
+                  const Color(0xFFFFD700).withOpacity(0.05),
+                ],
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: const Color(0xFFFFD700).withOpacity(0.3),
+                  width: 1,
                 ),
               ),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.white70,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Código completo
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              codigo,
+                              style: GoogleFonts.spaceMono(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Título completo
+                          Text(
+                            CodigosRepository().getTituloByCode(codigo),
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.repeat_one,
+                      size: 14,
+                      color: Colors.white70,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${entradas.length} ${entradas.length == 1 ? 'activación registrada' : 'activaciones registradas'}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Lista de entradas por fecha
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: fechas.length,
+              itemBuilder: (context, index) {
+                final fecha = fechas[index];
+                final entradasDelDia = entradasPorFecha[fecha]!;
+                return _buildEntradaPorFechaCard(
+                  fecha: fecha,
+                  entradas: entradasDelDia,
+                );
+              },
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEntradaPorFechaCard({
+    required String fecha,
+    required List<Map<String, dynamic>> entradas,
+  }) {
+    final fechaFormateada = fecha != 'sin_fecha'
+        ? DateFormat('dd/MM/yyyy').format(DateTime.parse(fecha))
+        : 'Sin fecha';
+    
+    final fechaObj = fecha != 'sin_fecha' ? DateTime.parse(fecha) : DateTime.now();
+    final diaSemana = DateFormat('EEEE', 'es').format(fechaObj);
+    final diaSemanaCapitalizado = diaSemana[0].toUpperCase() + diaSemana.substring(1);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFFFD700).withOpacity(0.1),
+            Colors.white.withOpacity(0.03),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header de fecha
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.calendar_today,
+                    size: 18,
+                    color: const Color(0xFFFFD700),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fechaFormateada,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                        ),
+                      ),
+                      Text(
+                        diaSemanaCapitalizado,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (entradas.length > 1)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.repeat,
+                          size: 14,
+                          color: const Color(0xFFFFD700),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${entradas.length}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFFD700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Entradas del día
+            ...entradas.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final entrada = entry.value;
+              
+              return Column(
+                children: [
+                  if (idx > 0) ...[
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      height: 1,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            const Color(0xFFFFD700).withOpacity(0.3),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  _buildSingleEntryContent(entrada, idx: idx > 0 ? idx : null),
+                ],
+              );
+            }).toList(),
+          ],
+        ),
       ),
     );
   }
@@ -318,352 +781,248 @@ class _DiarioScreenState extends State<DiarioScreen> {
     );
   }
 
-  // Agrupar entradas por fecha y código
-  Map<String, List<Map<String, dynamic>>> _groupEntriesByDateAndCode() {
-    final grouped = <String, List<Map<String, dynamic>>>{};
-    
-    for (final entrada in _entradas) {
-      final fecha = entrada['fecha'] != null 
-          ? entrada['fecha'].toString()
-          : 'sin_fecha';
-      final codigo = entrada['codigo']?.toString() ?? 'sin_codigo';
-      final key = '$fecha|$codigo';
-      
-      if (!grouped.containsKey(key)) {
-        grouped[key] = [];
-      }
-      grouped[key]!.add(entrada);
-    }
-    
-    return grouped;
-  }
+  Widget _buildSingleEntryContent(Map<String, dynamic> entrada, {int? idx}) {
+    final hasContent = entrada['intencion'] != null ||
+        entrada['estado_animo'] != null ||
+        (entrada['sensaciones'] != null && entrada['sensaciones'].toString().isNotEmpty) ||
+        entrada['horas_sueno'] != null ||
+        entrada['hizo_ejercicio'] == true ||
+        (entrada['gratitud'] != null && entrada['gratitud'].toString().isNotEmpty);
 
-  Widget _buildGroupedEntries() {
-    final grouped = _groupEntriesByDateAndCode();
-    final sortedKeys = grouped.keys.toList()
-      ..sort((a, b) {
-        // Ordenar por fecha (más reciente primero), luego por código
-        final fechaA = a.split('|')[0];
-        final fechaB = b.split('|')[0];
-        final comparacionFecha = fechaB.compareTo(fechaA);
-        if (comparacionFecha != 0) return comparacionFecha;
-        return a.split('|')[1].compareTo(b.split('|')[1]);
-      });
-    
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      itemCount: sortedKeys.length,
-      itemBuilder: (context, index) {
-        final key = sortedKeys[index];
-        final entradasDelGrupo = grouped[key]!;
-        final fecha = key.split('|')[0];
-        final codigo = key.split('|')[1];
-        
-        return _buildGroupedEntryCard(
-          fecha: fecha,
-          codigo: codigo == 'sin_codigo' ? null : codigo,
-          entradas: entradasDelGrupo,
-        );
-      },
-    );
-  }
-
-  Widget _buildGroupedEntryCard({
-    required String fecha,
-    String? codigo,
-    required List<Map<String, dynamic>> entradas,
-  }) {
-    final fechaFormateada = fecha != 'sin_fecha' 
-        ? DateFormat('dd/MM/yyyy').format(DateTime.parse(fecha))
-        : 'Sin fecha';
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFFD700).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Encabezado: Fecha y Código
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                fechaFormateada,
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFFD700),
-                ),
-              ),
-              if (codigo != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.tag, size: 14, color: const Color(0xFFFFD700)),
-                      const SizedBox(width: 4),
-                      Text(
-                        codigo,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+    if (!hasContent && idx == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
           ),
-          
-          // Contador de repeticiones
-          if (entradas.length > 1) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '${entradas.length} repeticiones',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  color: const Color(0xFFFFD700).withOpacity(0.9),
-                  fontWeight: FontWeight.w600,
-                ),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, size: 16, color: Colors.white70),
+            const SizedBox(width: 8),
+            Text(
+              'Entrada registrada sin detalles adicionales',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.white70,
+                fontStyle: FontStyle.italic,
               ),
             ),
           ],
-          
-          const SizedBox(height: 12),
-          
-          // Lista de entradas del grupo (expandible)
-          ...entradas.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final entrada = entry.value;
-            final isLast = idx == entradas.length - 1;
-            
-            return Column(
-              children: [
-                _buildSingleEntryContent(entrada, idx: idx),
-                if (!isLast) ...[
-                  const SizedBox(height: 12),
-                  Divider(
-                    color: const Color(0xFFFFD700).withOpacity(0.2),
-                    height: 1,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ],
-            );
-          }).toList(),
-        ],
-      ),
-    );
-  }
+        ),
+      );
+    }
 
-  Widget _buildSingleEntryContent(Map<String, dynamic> entrada, {int? idx}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (idx != null && idx > 0) ...[
-          Text(
-            'Repetición ${idx + 1}',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white70,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'Repetición ${idx + 1}',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFFFFD700),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
         ],
-        if (entrada['intencion'] != null) ...[
-          Text(
-            'Intención:',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white70,
-            ),
+        // Intención (siempre mostrar si existe)
+        if (entrada['intencion'] != null && entrada['intencion'].toString().isNotEmpty) ...[
+          _buildInfoRow(
+            icon: Icons.flag,
+            label: 'Intención',
+            value: entrada['intencion'].toString(),
+            isMultiline: true,
           ),
-          const SizedBox(height: 4),
-          Text(
-            entrada['intencion'],
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
         ],
-        if (entrada['estado_animo'] != null) ...[
-          Text(
-            'Estado de ánimo: ${entrada['estado_animo']}',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: Colors.white70,
-            ),
+        // Estado de ánimo
+        if (entrada['estado_animo'] != null && entrada['estado_animo'].toString().isNotEmpty) ...[
+          _buildInfoRow(
+            icon: Icons.mood,
+            label: 'Estado de ánimo',
+            value: entrada['estado_animo'].toString(),
+            isMultiline: false,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
         ],
+        // Sensaciones
         if (entrada['sensaciones'] != null && entrada['sensaciones'].toString().isNotEmpty) ...[
-          Text(
-            'Sensaciones:',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white70,
-            ),
+          _buildInfoRow(
+            icon: Icons.wb_sunny,
+            label: 'Sensaciones y resultados',
+            value: entrada['sensaciones'].toString(),
+            isMultiline: true,
           ),
-          const SizedBox(height: 4),
-          Text(
-            entrada['sensaciones'],
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
         ],
-        if (entrada['horas_sueno'] != null) ...[
-          Text(
-            'Horas de sueño: ${entrada['horas_sueno']}',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-        if (entrada['hizo_ejercicio'] == true) ...[
+        // Horas de sueño y ejercicio en una fila
+        if (entrada['horas_sueno'] != null || entrada['hizo_ejercicio'] == true) ...[
           Row(
             children: [
-              Icon(Icons.check_circle, size: 16, color: const Color(0xFFFFD700)),
-              const SizedBox(width: 6),
-              Text(
-                'Ejercicio realizado',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: Colors.white70,
+              if (entrada['horas_sueno'] != null)
+                Expanded(
+                  child: _buildInfoChip(
+                    icon: Icons.bedtime,
+                    label: 'Sueño',
+                    value: '${entrada['horas_sueno']}h',
+                  ),
                 ),
-              ),
+              if (entrada['horas_sueno'] != null && entrada['hizo_ejercicio'] == true)
+                const SizedBox(width: 8),
+              if (entrada['hizo_ejercicio'] == true)
+                Expanded(
+                  child: _buildInfoChip(
+                    icon: Icons.fitness_center,
+                    label: 'Ejercicio',
+                    value: 'Sí',
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
         ],
+        // Gratitud
         if (entrada['gratitud'] != null && entrada['gratitud'].toString().isNotEmpty) ...[
-          Text(
-            'Gratitud:',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            entrada['gratitud'],
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: Colors.white70,
-              fontStyle: FontStyle.italic,
-            ),
+          _buildInfoRow(
+            icon: Icons.favorite,
+            label: 'Gratitud',
+            value: entrada['gratitud'].toString(),
+            isMultiline: true,
+            isSpecial: true,
           ),
         ],
       ],
     );
   }
 
-  Widget _buildEntradaCard(Map<String, dynamic> entrada) {
-    final fecha = entrada['fecha'] != null 
-        ? DateFormat('dd/MM/yyyy').format(DateTime.parse(entrada['fecha']))
-        : 'Sin fecha';
-    
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isMultiline,
+    bool isSpecial = false,
+  }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
+        color: isSpecial
+            ? const Color(0xFFFFD700).withOpacity(0.1)
+            : Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: const Color(0xFFFFD700).withOpacity(0.3),
+          color: isSpecial
+              ? const Color(0xFFFFD700).withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
           width: 1,
         ),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                fecha,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFFD700),
-                ),
-              ),
-              if (entrada['codigo'] != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    entrada['codigo'],
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFD700),
-                    ),
-                  ),
-                ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: 16,
+              color: const Color(0xFFFFD700),
+            ),
           ),
-          if (entrada['intencion'] != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Intención:',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.white70,
-              ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white70,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: isSpecial ? const Color(0xFFFFD700) : Colors.white,
+                    fontStyle: isSpecial ? FontStyle.italic : FontStyle.normal,
+                    height: isMultiline ? 1.4 : 1.2,
+                  ),
+                  maxLines: isMultiline ? 3 : 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              entrada['intencion'],
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.white,
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: const Color(0xFFFFD700),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: Colors.white70,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
-          ],
-          if (entrada['estado_animo'] != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Estado de ánimo: ${entrada['estado_animo']}',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: Colors.white70,
-              ),
-            ),
-          ],
+          ),
         ],
       ),
     );
