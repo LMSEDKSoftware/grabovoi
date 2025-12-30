@@ -20,6 +20,10 @@ import '../../widgets/subscription_required_modal.dart';
 import '../../widgets/energy_stats_tab.dart';
 import '../../widgets/mural_modal.dart';
 import '../../services/mural_service.dart';
+import '../../widgets/update_available_dialog.dart';
+import '../../services/in_app_update_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -55,6 +59,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     // Se mostrará después del WelcomeModal si es necesario
     _checkOnboarding();
     // NO verificar WelcomeModal aquí - se verificará cuando sea necesario desde MainNavigation
+    // Verificar actualizaciones después de que la pantalla esté lista
+    _checkForUpdates();
+  }
+  
+  /// Verifica si hay actualizaciones disponibles
+  Future<void> _checkForUpdates() async {
+    // Solo verificar en Android, no en web ni iOS
+    if (kIsWeb || !Platform.isAndroid) {
+      return;
+    }
+
+    // Esperar un poco para que la pantalla se cargue completamente
+    await Future.delayed(const Duration(seconds: 3));
+    
+    if (!mounted) return;
+
+    try {
+      // Verificar actualizaciones y mostrar diálogo si hay una disponible
+      await UpdateAvailableDialog.showIfUpdateAvailable(context);
+    } catch (e) {
+      print('⚠️ Error verificando actualizaciones en HomeScreen: $e');
+    }
   }
   
   @override

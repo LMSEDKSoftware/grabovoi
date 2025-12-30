@@ -59,9 +59,6 @@ dependencies:
   # Suscripciones y Pagos
   in_app_purchase: ^3.1.11
   local_auth: ^2.2.0
-  
-  # Actualizaciones In-App
-  in_app_update: ^4.2.5
 
 dev_dependencies:
   flutter_test:

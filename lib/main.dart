@@ -38,6 +38,7 @@ import 'services/notification_count_service.dart';
 import 'services/subscription_service.dart';
 import 'widgets/subscription_required_modal.dart';
 import 'services/auth_service_simple.dart';
+import 'services/in_app_update_service.dart';
 import 'screens/auth/auth_callback_screen.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -88,6 +89,20 @@ void main() async {
     } catch (e) {
       print('⚠️ Error inicializando SubscriptionService: $e');
     }
+  }
+  
+  // Verificar actualizaciones in-app (solo en Android)
+  // Se hace en segundo plano para no bloquear el inicio de la app
+  if (!kIsWeb) {
+    Future.delayed(const Duration(seconds: 2), () {
+      try {
+        InAppUpdateService().checkAndUpdate().catchError((e) {
+          print('⚠️ Error verificando actualizaciones: $e');
+        });
+      } catch (e) {
+        print('⚠️ Error inicializando InAppUpdateService: $e');
+      }
+    });
   }
   
   // Configurar orientación

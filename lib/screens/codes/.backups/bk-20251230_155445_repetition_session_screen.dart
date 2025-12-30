@@ -766,7 +766,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       },
       {
         'title': 'Repetición Consciente',
-        'description': 'Repite el código 3 veces sintiendo la vibración. Recuerda que 2 minutos continuos con intención son de gran ayuda para el pilotaje cuántico.',
+        'description': 'Repite el código 3 veces sintiendo la vibración.',
         'icon': Icons.repeat,
         'color': Colors.orange,
       },

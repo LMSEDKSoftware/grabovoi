@@ -1239,61 +1239,8 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
             text: 'Entendido',
             onPressed: () {
               Navigator.of(context).pop();
-              // Mostrar segundo diálogo con indicación de salida
-              _mostrarDialogoListoParaSalir();
             },
             color: const Color(0xFFFF6B6B),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarDialogoListoParaSalir() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFFFD700), width: 2),
-        ),
-        title: Row(
-          children: [
-            const Icon(
-              Icons.info_outline,
-              color: Color(0xFFFFD700),
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Listo para Salir',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Ahora puedes salir de la sesión dando clic en el botón "Volver".',
-          style: GoogleFonts.inter(
-            color: Colors.white70,
-            fontSize: 16,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          CustomButton(
-            text: 'Entendido',
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            color: const Color(0xFFFFD700),
           ),
         ],
       ),
