@@ -178,7 +178,7 @@ class _WelcomeModalState extends State<WelcomeModal> {
             
             // Texto principal
             Text(
-              'Los Códigos Numéricos de Grigori Grabovoi son secuencias que vibran en frecuencias específicas, capaces de armonizar tu cuerpo, tu mente y tu realidad.\n\nCada número actúa como una llave energética que abre caminos hacia la Norma: ese estado perfecto en el que todo vuelve al equilibrio natural del Creador.',
+              'Las Secuencias Numéricas de Grigori Grabovoi son secuencias que vibran en frecuencias específicas, capaces de armonizar tu cuerpo, tu mente y tu realidad.\n\nCada número actúa como una llave energética que abre caminos hacia la Norma: ese estado perfecto en el que todo vuelve al equilibrio natural del Creador.',
               style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 14,
@@ -205,9 +205,9 @@ class _WelcomeModalState extends State<WelcomeModal> {
             ),
             const SizedBox(height: 12),
             
-              _buildInstruction('1.', 'Conéctate con tu intención', 'Antes de repetir el código, ten claro qué deseas armonizar o manifestar.'),
+              _buildInstruction('1.', 'Conéctate con tu intención', 'Antes de repetir la secuencia, ten claro qué deseas armonizar o manifestar.'),
             const SizedBox(height: 8),
-              _buildInstruction('2.', 'Pronuncia número por número', 'Ejemplo: "uno… cuatro… siete" en lugar de "ciento cuarenta y siete".\nSi el código tiene espacios, haz una pequeña pausa consciente entre ellos.'),
+              _buildInstruction('2.', 'Pronuncia número por número', 'Ejemplo: "uno… cuatro… siete" en lugar de "ciento cuarenta y siete".\nSi la secuencia tiene espacios, haz una pequeña pausa consciente entre ellos.'),
             const SizedBox(height: 8),
               _buildInstruction('3.', 'Visualiza una esfera de luz', 'Imagina la secuencia flotando dentro de una esfera blanca o dorada. Con esta app puedes materializar esos números y esa esfera de manera más fácil, usando la visualización interactiva que te ofrece la pantalla.'),
             const SizedBox(height: 8),
@@ -268,7 +268,7 @@ class _WelcomeModalState extends State<WelcomeModal> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. Siempre consulta con profesionales de la salud para cualquier condición médica. Estos códigos son herramientas complementarias de bienestar.',
+                        'Las secuencias numéricas de Grabovoi NO sustituyen la atención médica profesional. Siempre consulta con profesionales de la salud para cualquier condición médica. Estas secuencias son herramientas complementarias de bienestar.',
                         style: GoogleFonts.inter(
                           color: Colors.white70,
                           fontSize: 13,

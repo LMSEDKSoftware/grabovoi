@@ -751,7 +751,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             duracionMs: duracion,
             tokensUsados: _tokensUsadosOpenAI,
             costoEstimado: _costoEstimadoOpenAI,
-            errorMessage: 'No se encontró información sobre el código',
+            errorMessage: 'No se encontró información sobre la secuencia',
           );
           
           await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
@@ -760,7 +760,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('No se encontró información sobre el código $codigo'),
+            content: Text('No se encontró información sobre la secuencia $codigo'),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 3),
           ),
@@ -992,7 +992,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   print('✅ CÓDIGO VÁLIDO CONFIRMADO: $codigoNumero');
                   
                   final categoriaRaw = codigoData['categoria']?.toString() ?? '';
-                  final nombreCodigo = codigoData['nombre']?.toString() ?? 'Código encontrado por IA';
+                  final nombreCodigo = codigoData['nombre']?.toString() ?? 'Secuencia encontrada por IA';
                   // Validar y corregir categoría: si es "codigo" o vacía, usar _determinarCategoria
                   final categoria = (categoriaRaw.isEmpty || categoriaRaw.toLowerCase() == 'codigo') 
                       ? _determinarCategoria(nombreCodigo) 
@@ -1001,7 +1001,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                     id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
                     codigo: codigoNumero,
                     nombre: nombreCodigo,
-                    descripcion: codigoData['descripcion']?.toString() ?? 'Código encontrado mediante búsqueda profunda con IA',
+                    descripcion: codigoData['descripcion']?.toString() ?? 'Secuencia encontrada mediante búsqueda profunda con IA',
                     categoria: categoria,
                     color: codigoData['color']?.toString() ?? _getCategoryColor(categoria).value.toRadixString(16).substring(2).toUpperCase(),
                   ));
@@ -1144,7 +1144,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           final validacion = await _validarCodigoConSugerencia(
             codigoConGuiones, 
             nombre, 
-            'Código sugerido para relaciones familiares'
+            'Secuencia sugerida para relaciones familiares'
           );
           
           if (validacion['existe'] == true) {
@@ -1163,7 +1163,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
                 codigo: codigoConGuiones,
                 nombre: nombre,
-                descripcion: 'Código sugerido para relaciones familiares (sugerencia creada)',
+                descripcion: 'Secuencia sugerida para relaciones familiares (sugerencia creada)',
                 categoria: 'Relaciones familiares',
                 color: '#FFD700',
               ));
@@ -1174,7 +1174,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
                 codigo: codigoConGuiones,
                 nombre: nombre,
-                descripcion: 'Código sugerido para relaciones familiares',
+                descripcion: 'Secuencia sugerida para relaciones familiares',
                 categoria: 'Relaciones familiares',
                 color: '#FFD700',
               ));
@@ -1396,7 +1396,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         id: '111',
         codigo: '111',
         nombre: 'Manifestación Pura',
-        descripcion: 'Código para manifestación y creación consciente',
+        descripcion: 'Secuencia para manifestación y creación consciente',
         categoria: 'Manifestacion',
         color: '#FF8C00',
       ),
@@ -1467,6 +1467,12 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     final codigoParaPrellenar = _codigoNoEncontrado ?? _queryBusqueda ?? '';
     if (codigoParaPrellenar.isNotEmpty) {
       _manualCodeController.text = codigoParaPrellenar;
+      
+      // Si el código buscado parece ser un título (no contiene solo números y guiones bajos),
+      // prellenar también el título
+      if (!RegExp(r'^[0-9_\s]+$').hasMatch(codigoParaPrellenar)) {
+        _manualTitleController.text = codigoParaPrellenar;
+      }
     }
     
     setState(() {
@@ -1489,7 +1495,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   // Primero busca en códigos personalizados, luego en la base central
   // Usa cache local para evitar consultas repetitivas durante el pilotaje
   Future<String> _getCodigoDescription() async {
-    if (_codigoSeleccionado.isEmpty) return 'Código Grabovoi para la manifestación y transformación energética.';
+    if (_codigoSeleccionado.isEmpty) return 'Secuencia Grabovoi para la manifestación y transformación energética.';
     
     // Usar cache si el código no ha cambiado
     if (_cachedCodigoForDescription == _codigoSeleccionado && _cachedCodigoDescription != null) {
@@ -1530,7 +1536,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       return descripcion;
     } catch (e) {
       print('Error al obtener descripción del código: $e');
-      return 'Código Grabovoi para la manifestación y transformación energética.';
+      return 'Secuencia Grabovoi para la manifestación y transformación energética.';
     }
   }
 
@@ -1611,14 +1617,14 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     try {
       final customCodesService = UserCustomCodesService();
       
-      // Guardar código personalizado
+      // Guardar secuencia personalizada
       final success = await customCodesService.saveCustomCode(
         codigo: _manualCodeController.text,
         nombre: _manualTitleController.text,
         categoria: _manualCategory,
         descripcion: _manualDescriptionController.text.isNotEmpty 
             ? _manualDescriptionController.text 
-            : 'Código personalizado del usuario',
+            : 'Secuencia personalizada del usuario',
       );
 
       if (success) {
@@ -1666,14 +1672,14 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Código guardado en favoritos'),
+            content: Text('Secuencia guardada en favoritos'),
             backgroundColor: Color(0xFF4CAF50),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Error: El código ya existe o no se pudo guardar'),
+            content: Text('Error: La secuencia ya existe o no se pudo guardar'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1811,7 +1817,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       if (codigoId.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('No hay código seleccionado'),
+            content: Text('No hay secuencia seleccionada'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -1825,8 +1831,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         orElse: () => CodigoGrabovoi(
           id: '',
           codigo: codigoId,
-          nombre: 'Código Cuántico',
-          descripcion: 'Código cuántico para la manifestación y transformación energética.',
+          nombre: 'Secuencia Cuántica',
+          descripcion: 'Secuencia cuántica para la manifestación y transformación energética.',
           categoria: 'General',
           color: '#FFD700',
         ),
@@ -1839,7 +1845,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       Clipboard.setData(ClipboardData(text: textToCopy));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Código ${codigoId} copiado con descripción'),
+          content: Text('Secuencia ${codigoId} copiada con descripción'),
           backgroundColor: const Color(0xFFFFD700),
           duration: const Duration(seconds: 2),
         ),
@@ -1854,7 +1860,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       Clipboard.setData(ClipboardData(text: textToCopy));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Código $codigoId copiado'),
+          content: Text('Secuencia $codigoId copiada'),
           backgroundColor: const Color(0xFFFFD700),
           duration: const Duration(seconds: 2),
         ),
@@ -1953,7 +1959,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       if (codigoId.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('No hay código seleccionado'),
+            content: Text('No hay secuencia seleccionada'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -2404,7 +2410,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                 }),
                 builder: (context, snapshot) {
                   final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                  final descripcion = snapshot.data?['descripcion'] ?? 'Código Grabovoi para la manifestación y transformación energética.';
+                  final descripcion = snapshot.data?['descripcion'] ?? 'Secuencia Grabovoi para la manifestación y transformación energética.';
                   
                   return Container(
                     width: double.infinity,
@@ -2559,7 +2565,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     return Column(
       children: [
         Text(
-          'Código Cuántico Seleccionado',
+          'Secuencia Cuántica Seleccionada',
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -2895,7 +2901,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       },
       {
         'title': 'Visualización Activa',
-        'description': 'Visualiza el código dentro de una esfera luminosa.',
+        'description': 'Visualiza la secuencia dentro de una esfera luminosa.',
         'icon': Icons.visibility,
         'color': Colors.blue,
       },
@@ -2907,7 +2913,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       },
       {
         'title': 'Repetición Consciente',
-        'description': 'Repite el código 3 veces sintiendo la vibración.',
+        'description': 'Repite la secuencia 3 veces sintiendo la vibración.',
         'icon': Icons.repeat,
         'color': Colors.orange,
       },
@@ -2919,7 +2925,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       },
       {
         'title': 'Intención Personal',
-        'description': '¿Qué deseas armonizar con este código?',
+        'description': '¿Qué deseas armonizar con esta secuencia?',
         'icon': Icons.edit,
         'color': Colors.amber,
         'hasTextField': true,
@@ -3488,7 +3494,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       }),
       builder: (context, snapshot) {
         final titulo = snapshot.data?['titulo'] ?? 'Pilotaje Cuántico';
-        final descripcion = snapshot.data?['descripcion'] ?? 'Código cuántico para la manifestación y transformación energética.';
+        final descripcion = snapshot.data?['descripcion'] ?? 'Secuencia cuántica para la manifestación y transformación energética.';
 
         return Container(
           width: 800,
@@ -4231,7 +4237,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Código no encontrado',
+                  'Secuencia no encontrada',
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -4326,7 +4332,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Crea y guarda tu código personalizado con nombre, descripción y categoría',
+                          'Crea y guarda tu secuencia personalizada con nombre, descripción y categoría',
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: Colors.white70,
@@ -4389,7 +4395,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ingresa tu código personalizado',
+                  'Ingresa tu secuencia personalizada',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: Colors.white70,
@@ -4399,7 +4405,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                 TextField(
                   controller: _manualCodeController,
                   decoration: InputDecoration(
-                    labelText: 'Código',
+                    labelText: 'Secuencia',
                     hintText: 'Ej: 123_456_789',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -4415,7 +4421,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   controller: _manualTitleController,
                   decoration: InputDecoration(
                     labelText: 'Título',
-                    hintText: 'Ej: Mi código personalizado',
+                    hintText: 'Ej: Mi secuencia personalizada',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -4430,7 +4436,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   controller: _manualDescriptionController,
                   decoration: InputDecoration(
                     labelText: 'Descripción',
-                    hintText: 'Ej: Descripción del código personalizado',
+                    hintText: 'Ej: Descripción de la secuencia personalizada',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -4542,17 +4548,17 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Códigos encontrados',
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFFFFD700),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+                      Text(
+                        'Secuencias encontradas',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFFFFD700),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Selecciona el código que mejor se adapte a tu necesidad:',
+                      const SizedBox(height: 8),
+                      Text(
+                        'Selecciona la secuencia que mejor se adapte a tu necesidad:',
                       style: GoogleFonts.inter(
                         color: Colors.white70,
                         fontSize: 15,
@@ -4784,7 +4790,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
                   codigo: codigoStr,
                   nombre: nombre,
-                  descripcion: 'Código sugerido para $nombre (sugerencia creada)',
+                  descripcion: 'Secuencia sugerida para $nombre (sugerencia creada)',
                   categoria: categoria,
                   color: '#FFD700',
                 ));
@@ -4794,7 +4800,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
                   codigo: codigoStr,
                   nombre: nombre,
-                  descripcion: 'Código encontrado en la base de datos',
+                  descripcion: 'Secuencia encontrada en la base de datos',
                   categoria: codigoExistente.categoria, // Usar categoría original
                   color: '#FFD700',
                 ));
@@ -4949,7 +4955,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
   // Genera una descripción basada en el nombre del código
   String _generarDescripcionDesdeNombre(String nombre) {
     if (nombre.isEmpty) {
-      return 'Código de manifestación numérica para transformación positiva.';
+      return 'Secuencia de manifestación numérica para transformación positiva.';
     }
     
     // Generar descripciones basadas en el nombre
@@ -4974,7 +4980,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       return 'Atrae estabilidad financiera y oportunidades de prosperidad económica.';
     } else {
       // Descripción genérica pero útil basada en el nombre
-      return 'Código de manifestación para ${nombre.toLowerCase()}. Activa procesos de transformación positiva relacionados con este propósito.';
+      return 'Secuencia de manifestación para ${nombre.toLowerCase()}. Activa procesos de transformación positiva relacionados con este propósito.';
     }
   }
 
@@ -5048,7 +5054,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     final codigoExiste = await _validarCodigoEnBaseDatos(codigo.codigo);
     
     if (!codigoExiste) {
-      // CASO 2: Código NO existe - Agregarlo a la BD
+      // CASO: Código NO existe - Agregarlo a la BD
       print('💾 Agregando código nuevo a la BD: ${codigo.codigo}');
       try {
         final codigoId = await _guardarCodigoEnBaseDatos(codigo);
@@ -5058,21 +5064,31 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
           // Actualizar codigo_guardado en busquedas_profundas
           await _actualizarRespuestaIaSeleccionada(codigo, true);
           
+          // 1. Actualizar lista de códigos para que el contador se actualice
           await _actualizarListaCodigos();
+          
+          // 2. Refrescar el repositorio para asegurar que el código nuevo esté disponible
+          await CodigosRepository().refreshCodigos();
+          
+          // 3. Recargar códigos después del refresh para actualizar el contador en el front
+          await _loadCodigos();
+          
+          print('✅ Contador de secuencias actualizado: ${_codigos.length} códigos disponibles');
           // NO mostrar mensaje aquí porque _guardarCodigoEnBaseDatos ya lo muestra
         }
       } catch (e) {
         print('⚠️ Error al guardar código nuevo: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error al guardar código: $e'),
+            content: Text('❌ Error al guardar secuencia: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
         );
+        return; // Salir si hay error
       }
     } else {
-      // CASO 1: Código EXISTE - Verificar si es una sugerencia
+      // CASO: Código EXISTE - Verificar si es una sugerencia
       print('🔍 Código existe en BD, verificando tema...');
       
       // Actualizar codigo_guardado en busquedas_profundas (el código ya existe, así que está guardado)
@@ -5103,20 +5119,18 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ Código seleccionado: ${codigo.nombre}'),
+              content: Text('✅ Secuencia seleccionada: ${codigo.nombre}'),
               backgroundColor: const Color(0xFF4CAF50),
               duration: const Duration(seconds: 3),
             ),
           );
         }
       }
+      
+      // Recargar códigos para asegurar que estén actualizados
+      await CodigosRepository().refreshCodigos();
+      await _loadCodigos();
     }
-    
-    // Refrescar el repositorio para asegurar que el código nuevo esté disponible
-    await CodigosRepository().refreshCodigos();
-    
-    // Recargar códigos después del refresh
-    await _loadCodigos();
     
     // Actualizar estado y mostrar el código seleccionado
     setState(() {
@@ -5132,7 +5146,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       _mostrarResultados = false;
     });
     
-    // Filtrar para mostrar solo el código seleccionado
+    // 3. Filtrar para mostrar solo el código seleccionado (recientemente agregado)
     _filtrarCodigos(codigo.codigo);
   }
 

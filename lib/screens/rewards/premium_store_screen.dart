@@ -7,7 +7,7 @@ import '../../models/rewards_model.dart';
 import '../../services/rewards_service.dart';
 import '../../config/supabase_config.dart';
 
-/// Pantalla de tienda premium con códigos especiales y meditaciones
+/// Pantalla de tienda premium con secuencias especiales y meditaciones
 class PremiumStoreScreen extends StatefulWidget {
   const PremiumStoreScreen({super.key});
 
@@ -101,7 +101,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
     if (_rewards!.codigosPremiumDesbloqueados.contains(codigo.id)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ Este código ya está desbloqueado'),
+          content: Text('✅ Esta secuencia ya está desbloqueada'),
           backgroundColor: Colors.green,
         ),
       );

@@ -419,7 +419,7 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
                       builder: (_) => ChallengeCongratsScreen(
                         title: 'Desafío de Iniciación Energética',
                         imageUrl: publicUrl,
-                        description: 'Comienza tu viaje de manifestación con los códigos básicos. Has completado con éxito este desafío de iniciación usando los códigos cuánticos de Grigori Grabovoi.',
+                        description: 'Comienza tu viaje de manifestación con las secuencias básicas. Has completado con éxito este desafío de iniciación usando las secuencias cuánticas de Grigori Grabovoi.',
                       ),
                     ),
                   );

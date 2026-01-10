@@ -20,8 +20,8 @@ import '../../widgets/subscription_required_modal.dart';
 import '../../widgets/energy_stats_tab.dart';
 import '../../widgets/mural_modal.dart';
 import '../../services/mural_service.dart';
-import '../../widgets/update_available_dialog.dart';
-import '../../services/in_app_update_service.dart';
+// import '../../widgets/update_available_dialog.dart'; // Widget no disponible
+// import '../../services/in_app_update_service.dart'; // Servicio no disponible
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 
@@ -65,22 +65,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   
   /// Verifica si hay actualizaciones disponibles
   Future<void> _checkForUpdates() async {
+    // COMENTADO: Servicios de actualización no disponibles actualmente
     // Solo verificar en Android, no en web ni iOS
-    if (kIsWeb || !Platform.isAndroid) {
-      return;
-    }
+    // if (kIsWeb || !Platform.isAndroid) {
+    //   return;
+    // }
 
-    // Esperar un poco para que la pantalla se cargue completamente
-    await Future.delayed(const Duration(seconds: 3));
+    // // Esperar un poco para que la pantalla se cargue completamente
+    // await Future.delayed(const Duration(seconds: 3));
     
-    if (!mounted) return;
+    // if (!mounted) return;
 
-    try {
-      // Verificar actualizaciones y mostrar diálogo si hay una disponible
-      await UpdateAvailableDialog.showIfUpdateAvailable(context);
-    } catch (e) {
-      print('⚠️ Error verificando actualizaciones en HomeScreen: $e');
-    }
+    // try {
+    //   // Verificar actualizaciones y mostrar diálogo si hay una disponible
+    //   await UpdateAvailableDialog.showIfUpdateAvailable(context);
+    // } catch (e) {
+    //   print('⚠️ Error verificando actualizaciones en HomeScreen: $e');
+    // }
   }
   
   @override
@@ -577,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           ),
           child: Column(
             children: [
-              Text('Tu código diario', style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
+              Text('Tu secuencia diaria', style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
               const SizedBox(height: 12),
               IlluminatedCodeText(
                 code: codigo,
@@ -721,7 +722,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       // Si el código del día no coincide, buscar directamente en codigos_grabovoi
       return CodigosRepository().getDescripcionByCode(codigo);
     } catch (e) {
-      return 'Código cuántico para la manifestación y transformación energética.';
+      return 'Secuencia cuántica para la manifestación y transformación energética.';
     }
   }
 
@@ -732,13 +733,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       // Esto ya busca en daily_codes y codigos_grabovoi
       final todayInfo = await DailyCodeService.getTodayCodeInfo();
       if (todayInfo != null && todayInfo['codigo'] == codigo) {
-        return todayInfo['nombre'] ?? 'Código Diario';
+        return todayInfo['nombre'] ?? 'Secuencia Diaria';
       }
       
       // Si el código del día no coincide, buscar directamente en codigos_grabovoi
       return CodigosRepository().getTituloByCode(codigo);
     } catch (e) {
-      return 'Código Diario';
+      return 'Secuencia Diaria';
     }
   }
 }
@@ -901,7 +902,7 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                       const SizedBox(height: 8),
                       _buildInfoItem('• Completar desafíos aumenta el nivel'),
                       const SizedBox(height: 8),
-                      _buildInfoItem('• Practicar códigos regularmente mejora el nivel'),
+                      _buildInfoItem('• Practicar secuencias regularmente mejora el nivel'),
                     ],
                   ),
                 ),
@@ -909,7 +910,7 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                 
                 // Mensaje final
                 Text(
-                  '"El sistema está diseñado para crecer contigo mientras usas la app y practicas los códigos de Grabovoi."',
+                  '"El sistema está diseñado para crecer contigo mientras usas la app y practicas las secuencias de Grabovoi."',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: Colors.white70,

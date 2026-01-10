@@ -109,7 +109,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       if (subscriptionService.isFreeUser && mounted) {
         SubscriptionRequiredModal.show(
           context,
-          message: 'La Biblioteca Cuántica está disponible solo para usuarios Premium. Suscríbete para acceder a todos los códigos.',
+          message: 'La Biblioteca Cuántica está disponible solo para usuarios Premium. Suscríbete para acceder a todas las secuencias.',
           onDismiss: () {
             // Redirigir a Inicio después de cerrar el modal
             Navigator.of(context).popUntil((route) => route.isFirst);
@@ -257,7 +257,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Códigos actualizados correctamente'),
+            content: Text('✅ Secuencias actualizadas correctamente'),
             backgroundColor: Color(0xFFFFD700),
             duration: Duration(seconds: 2),
           ),
@@ -1137,10 +1137,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   // Siempre agregamos el código sugerido, aunque no esté en BD
                   // Esto permite mostrar opciones relacionadas al usuario
                   final codigoExiste = await _validarCodigoEnBaseDatos(codigoNumero);
-                  final nombre = codigoData['nombre']?.toString() ?? 'Código relacionado';
+                  final nombre = codigoData['nombre']?.toString() ?? 'Secuencia relacionada';
                   // Usar la descripción real de la IA, o generar una basada en el nombre
                   String descripcionReal = codigoData['descripcion']?.toString() ?? '';
-                  if (descripcionReal.isEmpty || descripcionReal.contains('Código sugerido por IA')) {
+                  if (descripcionReal.isEmpty || descripcionReal.contains('Secuencia sugerida por IA')) {
                     // Si no hay descripción o es genérica, generar una basada en el nombre
                     descripcionReal = _generarDescripcionDesdeNombre(nombre);
                   }
@@ -1296,17 +1296,23 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         final codigoId = await _guardarCodigoEnBaseDatos(codigo);
         if (codigoId != null) {
           print('✅ Código nuevo guardado con ID: $codigoId');
+          
+          // 1. Actualizar lista de códigos para que el contador se actualice
+          await _load();
+          
+          print('✅ Contador de secuencias actualizado: ${_codigos.length} códigos disponibles');
           // El modal de confirmación ya se muestra en _guardarCodigoEnBaseDatos
         }
       } catch (e) {
         print('⚠️ Error al guardar código nuevo: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error al guardar código: $e'),
+            content: Text('❌ Error al guardar secuencia: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
         );
+        return; // Salir si hay error
       }
     } else {
       // CASO 2: El código EXISTE en Supabase → Verificar si tiene diferente descripción
@@ -1353,7 +1359,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           print('✅ Código existe con la misma descripción');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ Código seleccionado: ${codigo.nombre}'),
+              content: Text('✅ Secuencia seleccionada: ${codigo.nombre}'),
               backgroundColor: const Color(0xFF4CAF50),
               duration: const Duration(seconds: 3),
             ),
@@ -1362,17 +1368,22 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       }
     }
     
+    // Actualizar estado y precargar el código seleccionado
     setState(() {
       _mostrarSeleccionCodigos = false;
       _codigosEncontrados = [];
-      _searchController.clear();
+      // Precargar el código en el campo de búsqueda para mostrarlo
+      _searchController.text = codigo.codigo;
+      _queryBusqueda = codigo.codigo;
+      query = codigo.codigo;
       _mostrarResultados = false;
-      _queryBusqueda = '';
-      query = '';
     });
     
     // Recargar códigos para mostrar el nuevo código en la lista
     await _load();
+    
+    // Filtrar para mostrar solo el código seleccionado (recientemente agregado)
+    _filtrarCodigos(codigo.codigo);
   }
 
   Future<void> _crearSugerencia(CodigoGrabovoi codigoExistente, String temaSugerido, String descripcionSugerida) async {
@@ -1571,7 +1582,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   // Genera una descripción basada en el nombre del código
   String _generarDescripcionDesdeNombre(String nombre) {
     if (nombre.isEmpty) {
-      return 'Código de manifestación numérica para transformación positiva.';
+      return 'Secuencia de manifestación numérica para transformación positiva.';
     }
     
     // Generar descripciones basadas en el nombre
@@ -1596,7 +1607,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       return 'Atrae estabilidad financiera y oportunidades de prosperidad económica.';
     } else {
       // Descripción genérica pero útil basada en el nombre
-      return 'Código de manifestación para ${nombre.toLowerCase()}. Activa procesos de transformación positiva relacionados con este propósito.';
+      return 'Secuencia de manifestación para ${nombre.toLowerCase()}. Activa procesos de transformación positiva relacionados con este propósito.';
     }
   }
 
@@ -1794,7 +1805,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Códigos numéricos de manifestación',
+                    'Secuencias numéricas de manifestación',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: Colors.white70,
@@ -1875,7 +1886,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                           },
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            hintText: 'Buscar código, intención o categoría...',
+                            hintText: 'Buscar secuencia, intención o categoría...',
                             hintStyle: const TextStyle(color: Colors.white54),
                             prefixIcon: const Icon(Icons.search, color: Colors.white54),
                             suffixIcon: query.isNotEmpty
@@ -2180,7 +2191,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Código no encontrado',
+                  'Secuencia no encontrada',
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -2207,39 +2218,97 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
+                const SizedBox(height: 20),
+                // Opción 1: Búsqueda Profunda
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF4CAF50).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: ElevatedButton.icon(
                     onPressed: () {
                       setState(() {
                         _showOptionsModal = false;
                       });
                       _busquedaProfunda(_codigoNoEncontrado ?? _queryBusqueda);
                     },
-                        icon: const Icon(Icons.psychology, color: Colors.white),
-                        label: const Text('Búsqueda Profunda'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4CAF50),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                    icon: const Icon(Icons.psychology, color: Colors.white),
+                    label: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Búsqueda Profunda',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _iniciarPilotajeManual,
-                        icon: const Icon(Icons.edit, color: Colors.white),
-                        label: const Text('Pilotaje Manual'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFD700),
-                          foregroundColor: const Color(0xFF0B132B),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        const SizedBox(height: 4),
+                        Text(
+                          'La Inteligencia Cuántica Vibracional analiza y encuentra códigos relacionados con tu búsqueda',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.all(16),
+                      alignment: Alignment.centerLeft,
+                    ),
+                  ),
+                ),
+                // Opción 2: Pilotaje Manual
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: _iniciarPilotajeManual,
+                    icon: const Icon(Icons.edit, color: Color(0xFFFFD700)),
+                    label: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Pilotaje Manual',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFFD700),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Crea y guarda tu secuencia personalizada con nombre, descripción y categoría',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.all(16),
+                      alignment: Alignment.centerLeft,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
@@ -2262,6 +2331,18 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   }
 
   void _iniciarPilotajeManual() {
+    // Prellenar el campo de código con el código buscado
+    final codigoParaPrellenar = _codigoNoEncontrado ?? _queryBusqueda ?? query ?? '';
+    if (codigoParaPrellenar.isNotEmpty) {
+      _manualCodeController.text = codigoParaPrellenar;
+      
+      // Si el código buscado parece ser un título (no contiene solo números y guiones bajos),
+      // prellenar también el título
+      if (!RegExp(r'^[0-9_\s]+$').hasMatch(codigoParaPrellenar)) {
+        _manualTitleController.text = codigoParaPrellenar;
+      }
+    }
+    
     setState(() {
       _showManualPilotage = true;
       _showOptionsModal = false;
@@ -2309,7 +2390,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Ingresa tu código personalizado',
+                    'Ingresa tu secuencia personalizada',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: Colors.white70,
@@ -2319,7 +2400,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   TextField(
                     controller: _manualCodeController,
                     decoration: InputDecoration(
-                      labelText: 'Código',
+                      labelText: 'Secuencia',
                       hintText: 'Ej: 123_456_789',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -2335,7 +2416,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                     controller: _manualTitleController,
                     decoration: InputDecoration(
                       labelText: 'Título',
-                      hintText: 'Ej: Mi código personalizado',
+                      hintText: 'Ej: Mi secuencia personalizada',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -2350,7 +2431,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                     controller: _manualDescriptionController,
                     decoration: InputDecoration(
                       labelText: 'Descripción',
-                      hintText: 'Ej: Descripción del código personalizado',
+                      hintText: 'Ej: Descripción de la secuencia personalizada',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -2439,14 +2520,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     try {
       final customCodesService = UserCustomCodesService();
       
-      // Guardar código personalizado
+      // Guardar secuencia personalizada
       final success = await customCodesService.saveCustomCode(
         codigo: _manualCodeController.text,
         nombre: _manualTitleController.text,
         categoria: _manualCategory,
         descripcion: _manualDescriptionController.text.isNotEmpty 
             ? _manualDescriptionController.text 
-            : 'Código personalizado del usuario',
+            : 'Secuencia personalizada del usuario',
       );
 
       if (success) {
@@ -2463,7 +2544,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Código guardado en favoritos'),
+            content: Text('Secuencia guardada en favoritos'),
             backgroundColor: Color(0xFF4CAF50),
           ),
         );
@@ -2481,7 +2562,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Error: El código ya existe o no se pudo guardar'),
+            content: Text('Error: La secuencia ya existe o no se pudo guardar'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2602,7 +2683,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Código Guardado',
+                  'Secuencia Guardada',
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -2614,7 +2695,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _codigoGuardadoNombre ?? 'Código guardado exitosamente',
+                  _codigoGuardadoNombre ?? 'Secuencia guardada exitosamente',
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     color: Colors.white70,
@@ -2698,7 +2779,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Códigos encontrados',
+                        'Secuencias encontradas',
                         style: GoogleFonts.inter(
                           color: const Color(0xFFFFD700),
                           fontSize: 22,
@@ -2709,7 +2790,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Selecciona el código que mejor se adapte a tu necesidad:',
+                        'Selecciona la secuencia que mejor se adapte a tu necesidad:',
                         style: GoogleFonts.inter(
                           color: Colors.white70,
                           fontSize: 15,
@@ -2896,7 +2977,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Cargando códigos desde CDN...'),
+            Text('Cargando secuencias desde CDN...'),
             SizedBox(height: 8),
             Text('Esto puede tomar unos segundos', style: TextStyle(color: Colors.grey)),
           ],
@@ -2911,7 +2992,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           children: [
             const Icon(Icons.error, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Error al cargar los códigos:', 
+            Text('Error al cargar las secuencias:', 
                  style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             Padding(
@@ -2976,7 +3057,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           children: [
             Icon(Icons.search_off, size: 64, color: Colors.grey),
             SizedBox(height: 16),
-            Text('No hay códigos disponibles.'),
+            Text('No hay secuencias disponibles.'),
             Text('Intenta cambiar los filtros o recargar.'),
           ],
         ),
@@ -3128,7 +3209,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                 IconButton(
                                   onPressed: () async {
                                     if (isFavorite) {
-                                      // Si es código personalizado, mostrar advertencia
+                                      // Si es secuencia personalizada, mostrar advertencia
                                       if (isCustom) {
                                         final confirmar = await showDialog<bool>(
                                           context: context,
@@ -3171,7 +3252,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                           return; // Usuario canceló
                                         }
                                         
-                                        // Eliminar código personalizado
+                                        // Eliminar secuencia personalizada
                                         try {
                                           final customCodesService = UserCustomCodesService();
                                           await customCodesService.deleteCustomCode(codigo.codigo);
@@ -3195,7 +3276,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                                             );
                                           }
                                         } catch (e) {
-                                          print('Error eliminando código personalizado: $e');
+                                          print('Error eliminando secuencia personalizada: $e');
                                           if (mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
@@ -3324,7 +3405,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                             Clipboard.setData(ClipboardData(text: codigo.codigo));
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Código ${codigo.codigo} copiado al portapapeles'),
+                                content: Text('Secuencia ${codigo.codigo} copiada al portapapeles'),
                                 duration: const Duration(seconds: 2),
                                 backgroundColor: const Color(0xFFFFD700).withOpacity(0.9),
                                 behavior: SnackBarBehavior.floating,
@@ -3523,7 +3604,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             
             // Número del código
             Text(
-              'Código:',
+              'Secuencia:',
               style: GoogleFonts.inter(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
@@ -3547,7 +3628,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             // Opciones de botones para el motivo del reporte (se envían directamente al presionar)
             _buildReportReasonButton(
               codigo,
-              'Código incorrecto',
+              'Secuencia incorrecta',
               'codigo_incorrecto',
             ),
             const SizedBox(height: 8),

@@ -130,7 +130,7 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
 
   void _showCopiedMessage(String codigo) {
     setState(() {
-      _copiedCodeMessage = '✅ Código copiado: $codigo';
+      _copiedCodeMessage = '✅ Secuencia copiada: $codigo';
     });
     
     // Ocultar el mensaje después de 2 segundos

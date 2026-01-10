@@ -55,6 +55,8 @@ dependencies:
   permission_handler: ^11.2.0
   cached_network_image: ^3.3.1
   package_info_plus: ^8.0.0
+  video_player: ^2.8.2
+  chewie: ^1.7.4
   
   # Suscripciones y Pagos
   in_app_purchase: ^3.1.11

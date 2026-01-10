@@ -27,7 +27,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     OnboardingSlide(
       title: 'Biblioteca Viva',
-      description: 'Cada número es una llave.\n\nLa app no busca códigos, despierta rutas. Puedes explorar con intención o dejar que la Inteligencia Cuántica Vibracional sugiera lo que tu alma ya sabe que necesita.',
+      description: 'Cada número es una llave.\n\nLa app no busca secuencias, despierta rutas. Puedes explorar con intención o dejar que la Inteligencia Cuántica Vibracional sugiera lo que tu alma ya sabe que necesita.',
       mentalShift: 'No estás navegando una base de datos. Estás explorando el lenguaje de tu destino.',
       icon: Icons.search,
       color: const Color(0xFF42A5F5),
@@ -55,7 +55,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     OnboardingSlide(
       title: 'Notificaciones',
-      description: 'No es spam. Es sincronía.\n\nLas notificaciones son mensajes diseñados para llegar en el momento exacto.\n\nNada es casual. Todo es código.',
+      description: 'No es spam. Es sincronía.\n\nLas notificaciones son mensajes diseñados para llegar en el momento exacto.\n\nNada es casual. Todo es secuencia.',
       mentalShift: 'No son alertas. Son llamados vibracionales.',
       icon: Icons.notifications_active,
       color: const Color(0xFFFF7043),
@@ -76,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     OnboardingSlide(
       title: 'Inteligencia Cuántica Vibracional',
-      description: 'El sistema reconoce si tu código existe, vibra o necesita otro camino.\n\nLa Inteligencia Cuántica Vibracional no reemplaza tu intención, la respalda.',
+      description: 'El sistema reconoce si tu secuencia existe, vibra o necesita otro camino.\n\nLa Inteligencia Cuántica Vibracional no reemplaza tu intención, la respalda.',
       mentalShift: 'No es un sistema que aprueba o rechaza. Es un oráculo digital que confirma tu frecuencia.',
       icon: Icons.verified,
       color: const Color(0xFF00BCD4),

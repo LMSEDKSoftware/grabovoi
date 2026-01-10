@@ -355,7 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Código OTP enviado. Revisa tu correo electrónico.'),
+              content: Text('Secuencia OTP enviada. Revisa tu correo electrónico.'),
               backgroundColor: Color(0xFFFFD700),
               duration: Duration(seconds: 4),
             ),
@@ -437,7 +437,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textAlign: TextAlign.center,
                   decoration: InputDecoration(
-                    labelText: 'Código OTP',
+                    labelText: 'Secuencia OTP',
                     labelStyle: GoogleFonts.inter(color: Colors.white70),
                     hintText: '123456',
                     hintStyle: GoogleFonts.inter(
@@ -481,7 +481,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (tokenController.text.isEmpty || tokenController.text.length < 6) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Por favor ingresa el código de 6 dígitos'),
+                      content: Text('Por favor ingresa la secuencia de 6 dígitos'),
                       backgroundColor: Colors.red,
                     ),
                   );

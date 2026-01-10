@@ -32,32 +32,32 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
   final List<Map<String, dynamic>> _pages = [
     {
       'title': 'Conocimiento sobre Grabovoi',
-      'subtitle': '¿Cuál es tu nivel de conocimiento sobre los códigos de Grigori Grabovoi?',
+      'subtitle': '¿Cuál es tu nivel de conocimiento sobre las secuencias de Grigori Grabovoi?',
       'type': 'single_choice',
       'options': [
         {
           'value': 'principiante',
           'text': 'Principiante',
-          'description': 'Nunca he usado códigos de Grabovoi o los conozco muy poco',
+          'description': 'Nunca he usado secuencias de Grabovoi o las conozco muy poco',
           'icon': Icons.eco,
         },
         {
           'value': 'intermedio',
           'text': 'Intermedio',
-          'description': 'He usado algunos códigos y conozco los conceptos básicos',
+          'description': 'He usado algunas secuencias y conozco los conceptos básicos',
           'icon': Icons.auto_awesome,
         },
         {
           'value': 'avanzado',
           'text': 'Avanzado',
-          'description': 'Tengo experiencia significativa con los códigos de Grabovoi',
+          'description': 'Tengo experiencia significativa con las secuencias de Grabovoi',
           'icon': Icons.star,
         },
       ],
     },
     {
       'title': 'Objetivos Personales',
-      'subtitle': '¿Qué te gustaría lograr con los códigos de Grabovoi?',
+      'subtitle': '¿Qué te gustaría lograr con las secuencias de Grabovoi?',
       'type': 'multiple_choice',
       'options': [
         {
@@ -99,32 +99,32 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
       ],
     },
     {
-      'title': 'Experiencia con Códigos',
-      'subtitle': '¿Has trabajado antes con códigos numéricos o sistemas similares?',
+      'title': 'Experiencia con Secuencias',
+      'subtitle': '¿Has trabajado antes con secuencias numéricas o sistemas similares?',
       'type': 'single_choice',
       'options': [
         {
           'value': 'nunca',
           'text': 'Nunca',
-          'description': 'Esta es mi primera experiencia con códigos numéricos',
+          'description': 'Esta es mi primera experiencia con secuencias numéricas',
           'icon': Icons.new_releases,
         },
         {
           'value': 'poco',
           'text': 'Muy poco',
-          'description': 'He probado algunos códigos ocasionalmente',
+          'description': 'He probado algunas secuencias ocasionalmente',
           'icon': Icons.touch_app,
         },
         {
           'value': 'regular',
           'text': 'Regularmente',
-          'description': 'Uso códigos numéricos de forma regular',
+          'description': 'Uso secuencias numéricas de forma regular',
           'icon': Icons.schedule,
         },
         {
           'value': 'experto',
           'text': 'Soy experto',
-          'description': 'Tengo amplia experiencia con códigos numéricos',
+          'description': 'Tengo amplia experiencia con secuencias numéricas',
           'icon': Icons.psychology,
         },
       ],
@@ -205,7 +205,7 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
     },
     {
       'title': 'Motivación Principal',
-      'subtitle': '¿Qué te motiva más a usar los códigos de Grabovoi?',
+      'subtitle': '¿Qué te motiva más a usar las secuencias de Grabovoi?',
       'type': 'single_choice',
       'options': [
         {
@@ -313,7 +313,7 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Esta evaluación es OBLIGATORIA para personalizar tu experiencia con los códigos de Grabovoi.',
+                        'Esta evaluación es OBLIGATORIA para personalizar tu experiencia con las secuencias de Grabovoi.',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: const Color(0xFFFFD700),
@@ -338,7 +338,7 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
                 'Personaliza tu experiencia según tu nivel de conocimiento',
               ),
               _buildModalBulletPoint(
-                'Recomienda códigos y prácticas adecuadas para ti',
+                'Recomienda secuencias y prácticas adecuadas para ti',
               ),
               _buildModalBulletPoint(
                 'Ajusta el contenido según tus objetivos personales',
@@ -502,7 +502,7 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
           ),
         ),
         content: Text(
-          'Por favor completa todas las preguntas antes de continuar. Esta evaluación es necesaria para personalizar tu experiencia con los códigos de Grabovoi.',
+          'Por favor completa todas las preguntas antes de continuar. Esta evaluación es necesaria para personalizar tu experiencia con las secuencias de Grabovoi.',
           style: GoogleFonts.inter(color: Colors.white),
         ),
         actions: [

@@ -68,7 +68,7 @@ class StaticHomeScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            'Código del Día',
+                            'Secuencia del Día',
                             style: GoogleFonts.lato(
                               fontSize: 14,
                               color: const Color(0xFFFFD700),

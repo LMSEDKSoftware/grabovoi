@@ -38,7 +38,7 @@ import 'services/notification_count_service.dart';
 import 'services/subscription_service.dart';
 import 'widgets/subscription_required_modal.dart';
 import 'services/auth_service_simple.dart';
-import 'services/in_app_update_service.dart';
+// import 'services/in_app_update_service.dart'; // Servicio no disponible
 import 'screens/auth/auth_callback_screen.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -93,17 +93,18 @@ void main() async {
   
   // Verificar actualizaciones in-app (solo en Android)
   // Se hace en segundo plano para no bloquear el inicio de la app
-  if (!kIsWeb) {
-    Future.delayed(const Duration(seconds: 2), () {
-      try {
-        InAppUpdateService().checkAndUpdate().catchError((e) {
-          print('⚠️ Error verificando actualizaciones: $e');
-        });
-      } catch (e) {
-        print('⚠️ Error inicializando InAppUpdateService: $e');
-      }
-    });
-  }
+  // COMENTADO: Servicio no disponible actualmente
+  // if (!kIsWeb) {
+  //   Future.delayed(const Duration(seconds: 2), () {
+  //     try {
+  //       InAppUpdateService().checkAndUpdate().catchError((e) {
+  //         print('⚠️ Error verificando actualizaciones: $e');
+  //       });
+  //     } catch (e) {
+  //       print('⚠️ Error inicializando InAppUpdateService: $e');
+  //     }
+  //   });
+  // }
   
   // Configurar orientación
   SystemChrome.setPreferredOrientations([
@@ -774,11 +775,11 @@ class _TourOverlayState extends State<_TourOverlay> {
   final List<Map<String, String>> _tourData = [
     {
       'title': 'Bienvenido al Portal',
-      'description': 'Tu espacio cuántico para la transformación personal a través de los códigos de Grabovoi.',
+      'description': 'Tu espacio cuántico para la transformación personal a través de las secuencias de Grabovoi.',
     },
     {
-      'title': 'Encuentra tu Código',
-      'description': 'Explora nuestra biblioteca de códigos para salud, abundancia, amor y protección.',
+      'title': 'Encuentra tu Secuencia',
+      'description': 'Explora nuestra biblioteca de secuencias para salud, abundancia, amor y protección.',
     },
     {
       'title': 'Desafíos Vibracionales',

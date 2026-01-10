@@ -85,7 +85,7 @@ class _QuantumPilotageModalState extends State<QuantumPilotageModal> {
             ),
             const SizedBox(height: 8),
             Text(
-              '• Los códigos numéricos actúan como frecuencias vibratorias específicas\n• Al repetirlos conscientemente, sincronizas tu campo energético\n• Esto crea resonancia con las frecuencias deseadas en el campo cuántico\n• El resultado es la manifestación de cambios en tu realidad física',
+              '• Las secuencias numéricas actúan como frecuencias vibratorias específicas\n• Al repetirlas conscientemente, sincronizas tu campo energético\n• Esto crea resonancia con las frecuencias deseadas en el campo cuántico\n• El resultado es la manifestación de cambios en tu realidad física',
               style: GoogleFonts.inter(
                 color: Colors.white70,
                 fontSize: 13,

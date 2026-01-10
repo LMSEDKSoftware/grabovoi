@@ -650,15 +650,17 @@ class SupabaseService {
   /// Sube un avatar al bucket 'images' y retorna la URL pública
   static Future<String> uploadAvatar(String userId, XFile imageFile) async {
     try {
-      final fileName = 'avatar_$userId.jpg';
+      // Usar una ruta específica del usuario para evitar problemas de RLS
+      // La estructura avatars/{userId}/avatar.jpg permite políticas RLS más específicas
+      final filePath = 'avatars/$userId/avatar.jpg';
       
       // Crear un archivo temporal y convertir XFile a File
       final file = File(imageFile.path);
       
-      // Subir al bucket 'images'
+      // Subir al bucket 'images' con la ruta específica del usuario
       await _client.storage
           .from('images')
-          .upload(fileName, file, fileOptions: FileOptions(
+          .upload(filePath, file, fileOptions: FileOptions(
             upsert: true, // Sobrescribir si existe
             contentType: 'image/jpeg',
           ));
@@ -666,7 +668,7 @@ class SupabaseService {
       // Obtener URL pública
       final url = _client.storage
           .from('images')
-          .getPublicUrl(fileName);
+          .getPublicUrl(filePath);
       
       print('✅ Avatar subido exitosamente: $url');
       return url;
@@ -686,10 +688,26 @@ class SupabaseService {
         return avatarFileName;
       }
       
-      // Si es solo el nombre del archivo, construir la URL
-      return _client.storage
-          .from('images')
-          .getPublicUrl(avatarFileName);
+      // Si es solo el nombre del archivo (formato antiguo: avatar_userId.jpg),
+      // intentar construir la URL con el formato antiguo primero
+      // Si no funciona, intentar con el nuevo formato (avatars/userId/avatar.jpg)
+      if (avatarFileName.startsWith('avatar_')) {
+        // Formato antiguo: avatar_userId.jpg
+        return _client.storage
+            .from('images')
+            .getPublicUrl(avatarFileName);
+      } else if (avatarFileName.contains('/')) {
+        // Ya es una ruta completa (avatars/userId/avatar.jpg)
+        return _client.storage
+            .from('images')
+            .getPublicUrl(avatarFileName);
+      } else {
+        // Intentar extraer userId del nombre del archivo si es formato antiguo
+        // o construir con el nuevo formato si tenemos el userId
+        return _client.storage
+            .from('images')
+            .getPublicUrl(avatarFileName);
+      }
     } catch (e) {
       print('⚠️ Error obteniendo URL del avatar: $e');
       return null;

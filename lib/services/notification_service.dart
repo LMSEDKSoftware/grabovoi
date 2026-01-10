@@ -418,7 +418,7 @@ class NotificationService {
       }
       
       await scheduleNotification(
-      title: '✨ ¡Nuevo Código Diario Disponible!',
+      title: '✨ ¡Nueva Secuencia Diaria Disponible!',
       body: 'Descúbrelo ahora y eleva tu energía con tu sesión de repetición diaria. ¡Toca para comenzar!',
       scheduledDate: scheduledDate,
       type: NotificationType.dailyCodeReminder,
@@ -799,7 +799,7 @@ class NotificationService {
   /// Notificación de código recomendado
   Future<void> notifyPersonalizedCode(String code, String userName) async {
     await showNotification(
-      title: '✨ Código Personalizado para Ti',
+      title: '✨ Secuencia Personalizada para Ti',
       body: 'Basado en tu actividad, este código podría ser perfecto para ti hoy: $code',
       type: NotificationType.personalizedCodeRecommendation,
     );

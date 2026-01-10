@@ -280,7 +280,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🔍 Buscando códigos relacionados con "$consulta"...'),
+            content: Text('🔍 Buscando secuencias relacionadas con "$consulta"...'),
             backgroundColor: const Color(0xFFFFD700),
             duration: const Duration(seconds: 3),
           ),
@@ -296,7 +296,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
             final codigos = resultado['codigos'] as List<CodigoGrabovoi>;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✅ ${resultado['mensaje']} (${codigos.length} códigos encontrados)'),
+                content: Text('✅ ${resultado['mensaje']} (${codigos.length} secuencias encontradas)'),
                 backgroundColor: const Color(0xFF4CAF50),
                 duration: const Duration(seconds: 4),
               ),
@@ -307,7 +307,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
             final codigos = resultado['codigos'] as List<CodigoGrabovoi>;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✅ ${resultado['mensaje']} (${codigos.length} códigos agregados)'),
+                content: Text('✅ ${resultado['mensaje']} (${codigos.length} secuencias agregadas)'),
                 backgroundColor: const Color(0xFF2196F3),
                 duration: const Duration(seconds: 4),
               ),
@@ -1001,7 +1001,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                         _aplicarFiltros();
                       },
                       decoration: InputDecoration(
-                        hintText: 'Buscar código, intención o categoría...',
+                        hintText: 'Buscar secuencia, intención o categoría...',
                         hintStyle: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
                         prefixIcon: const Icon(Icons.search, color: Colors.white70),
                         filled: true,

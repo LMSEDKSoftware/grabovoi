@@ -167,7 +167,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
             ],
           ),
           content: Text(
-            'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.\n\n¿Deseas continuar?',
+            'Ya recibiste cristales por esta secuencia hoy. Puedes seguir usándola, pero no recibirás más recompensas.\n\n¿Deseas continuar?',
             style: GoogleFonts.inter(
               color: Colors.white70,
               fontSize: 16,
@@ -453,7 +453,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       // Usar los datos ya cargados en _codigoInfoFuture (sin consultas adicionales)
       final codigoInfo = await _codigoInfoFuture;
       final titulo = codigoInfo['titulo'] as String? ?? 'Campo Energético';
-      final descripcion = codigoInfo['descripcion'] as String? ?? 'Código cuántico para la manifestación y transformación energética.';
+      final descripcion = codigoInfo['descripcion'] as String? ?? 'Secuencia cuántica para la manifestación y transformación energética.';
       
       final textToCopy = '''${widget.codigo} : $titulo
 $descripcion
@@ -463,7 +463,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Código ${widget.codigo} copiado con descripción'),
+            content: Text('Secuencia ${widget.codigo} copiada con descripción'),
             backgroundColor: const Color(0xFFFFD700),
             duration: const Duration(seconds: 2),
           ),
@@ -479,7 +479,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Código ${widget.codigo} copiado'),
+            content: Text('Secuencia ${widget.codigo} copiada'),
             backgroundColor: const Color(0xFFFFD700),
             duration: const Duration(seconds: 2),
           ),

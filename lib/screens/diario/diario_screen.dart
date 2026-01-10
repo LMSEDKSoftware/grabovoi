@@ -200,7 +200,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                         TextField(
                           controller: _searchController,
                           decoration: InputDecoration(
-                            hintText: 'Buscar por código, título o palabra clave...',
+                            hintText: 'Buscar por secuencia, título o palabra clave...',
                             hintStyle: GoogleFonts.inter(color: Colors.white54),
                             prefixIcon: const Icon(Icons.search, color: Color(0xFFFFD700)),
                             suffixIcon: _searchController.text.isNotEmpty

@@ -55,6 +55,23 @@ class NotificationHistory {
     final prefs = await SharedPreferences.getInstance();
     final history = await getHistory();
 
+    // Verificar si ya existe una notificación idéntica en los últimos 5 minutos
+    final now = DateTime.now();
+    final duplicateThreshold = const Duration(minutes: 5);
+    
+    final isDuplicate = history.any((item) {
+      final timeDifference = now.difference(item.timestamp);
+      return item.title == title &&
+             item.body == body &&
+             item.type == type &&
+             timeDifference < duplicateThreshold;
+    });
+
+    if (isDuplicate) {
+      print('⚠️ Notificación duplicada detectada y omitida: $title');
+      return;
+    }
+
     final item = NotificationHistoryItem(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,

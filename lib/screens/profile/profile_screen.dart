@@ -24,6 +24,7 @@ import '../admin/approve_suggestions_screen.dart';
 import '../admin/view_reports_screen.dart';
 import '../rewards/premium_store_screen.dart';
 import '../rewards/mantras_screen.dart';
+import '../resources/resources_screen.dart';
 import '../subscription/subscription_screen.dart';
 import '../../models/notification_history_item.dart';
 import '../../services/notification_count_service.dart';
@@ -296,13 +297,13 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                             ),
                             _buildSubscriptionButton(context),
                             _buildCompactButton(
-                              text: 'Mis Mantras',
-                              icon: Icons.auto_awesome,
+                              text: 'Recursos',
+                              icon: Icons.library_books,
                               onPressed: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const MantrasScreen(),
+                                    builder: (context) => const ResourcesScreen(),
                                   ),
                                 );
                               },

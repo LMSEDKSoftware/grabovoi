@@ -116,7 +116,7 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
               children: [
                 // Título
                 Text(
-                  'Código Personalizado',
+                  'Secuencia Personalizada',
                   style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -134,7 +134,7 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
                     letterSpacing: 2,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Ingresa tu código...',
+                    hintText: 'Ingresa tu secuencia...',
                     hintStyle: GoogleFonts.inter(
                       color: Colors.white54,
                       fontSize: 16,
@@ -162,7 +162,7 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
                   children: [
                     Expanded(
                       child: CustomButton(
-                        text: 'Usar Código',
+                        text: 'Usar Secuencia',
                         onPressed: () {
                           setState(() {
                             _codigoPersonalizado = controller.text.trim();
@@ -230,9 +230,9 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInstructionItem('1', 'Enfoca tu atención en el código'),
+                    _buildInstructionItem('1', 'Enfoca tu atención en la secuencia'),
                     const SizedBox(height: 16),
-                    _buildInstructionItem('2', 'Visualiza el código brillando en dorado'),
+                    _buildInstructionItem('2', 'Visualiza la secuencia brillando en dorado'),
                     const SizedBox(height: 16),
                     _buildInstructionItem('3', 'Siente la energía fluyendo a través de ti'),
                     const SizedBox(height: 16),
@@ -331,7 +331,7 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
     try {
       return CodigosRepository().getDescripcionByCode(codigoMostrar);
     } catch (e) {
-      return 'Código cuántico para la manifestación y transformación energética.';
+      return 'Secuencia cuántica para la manifestación y transformación energética.';
     }
   }
 
@@ -438,7 +438,7 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
                   }),
                   builder: (context, snapshot) {
                     final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                    final descripcion = snapshot.data?['descripcion'] ?? 'Código cuántico para la manifestación y transformación energética.';
+                    final descripcion = snapshot.data?['descripcion'] ?? 'Secuencia cuántica para la manifestación y transformación energética.';
                     
                     return Container(
                       width: double.infinity,
@@ -485,7 +485,7 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
               
               // Botones de Acción
               CustomButton(
-                text: 'Ingresar Código Personalizado',
+                text: 'Ingresar Secuencia Personalizada',
                 onPressed: () {
                   _showCodigoPersonalizadoDialog();
                 },
@@ -498,7 +498,7 @@ class _PilotajeScreenState extends State<PilotajeScreen> with TickerProviderStat
                   if (_codigoPersonalizado.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Por favor ingresa un código personalizado primero'),
+                        content: Text('Por favor ingresa una secuencia personalizada primero'),
                         backgroundColor: const Color(0xFFFFD700),
                         duration: const Duration(seconds: 2),
                       ),

@@ -122,7 +122,7 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Código: ${widget.codigo}',
+                      'Secuencia: ${widget.codigo}',
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

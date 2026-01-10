@@ -97,8 +97,8 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                   _buildSectionTitle('Recordatorios Diarios'),
                   const SizedBox(height: 16),
                   _buildToggle(
-                    title: 'Código del Día',
-                    subtitle: 'Recibe el código Grabovoi diario a las 9:00 AM',
+                    title: 'Secuencia del Día',
+                    subtitle: 'Recibe la secuencia Grabovoi diaria a las 9:00 AM',
                     value: _preferences.dailyCodeReminders,
                     onChanged: (val) => _updatePreferences(_preferences.copyWith(dailyCodeReminders: val)),
                   ),

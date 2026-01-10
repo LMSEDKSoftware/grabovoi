@@ -192,7 +192,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
             ],
           ),
           content: Text(
-            'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.\n\n¿Deseas continuar?',
+            'Ya recibiste cristales por esta secuencia hoy. Puedes seguir usándola, pero no recibirás más recompensas.\n\n¿Deseas continuar?',
             style: GoogleFonts.inter(
               color: Colors.white70,
               fontSize: 16,
@@ -459,7 +459,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       if (widget.nombre != null && widget.nombre!.isNotEmpty) {
         return widget.nombre!;
       }
-      return 'Código cuántico para la manifestación y transformación energética.';
+      return 'Secuencia cuántica para la manifestación y transformación energética.';
     }
   }
 
@@ -754,7 +754,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       },
       {
         'title': 'Visualización Activa',
-        'description': 'Visualiza el código dentro de una esfera luminosa.',
+        'description': 'Visualiza la secuencia dentro de una esfera luminosa.',
         'icon': Icons.visibility,
         'color': Colors.blue,
       },
@@ -766,7 +766,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       },
       {
         'title': 'Repetición Consciente',
-        'description': 'Repite el código 3 veces sintiendo la vibración. Recuerda que 2 minutos continuos con intención son de gran ayuda para el pilotaje cuántico.',
+        'description': 'Repite la secuencia 3 veces sintiendo la vibración. Recuerda que 2 minutos continuos con intención son de gran ayuda para el pilotaje cuántico.',
         'icon': Icons.repeat,
         'color': Colors.orange,
       },
@@ -778,7 +778,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       },
       {
         'title': 'Intención Personal',
-        'description': '¿Qué deseas armonizar con este código?',
+        'description': '¿Qué deseas armonizar con esta secuencia?',
         'icon': Icons.edit,
         'color': Colors.amber,
         'hasTextField': true,
@@ -978,8 +978,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
                               try {
                                 // Usar los datos ya cargados en _codigoInfoFuture (sin consultas adicionales)
                                 final codigoInfo = await _codigoInfoFuture;
-                                final titulo = codigoInfo['titulo'] as String? ?? widget.nombre ?? 'Código Cuántico';
-                                final descripcion = codigoInfo['descripcion'] as String? ?? 'Código cuántico para la manifestación y transformación energética.';
+                                final titulo = codigoInfo['titulo'] as String? ?? widget.nombre ?? 'Secuencia Cuántica';
+                                final descripcion = codigoInfo['descripcion'] as String? ?? 'Secuencia cuántica para la manifestación y transformación energética.';
                                 
                                 final textToCopy = '''${widget.codigo} : $titulo
 $descripcion
@@ -989,7 +989,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Código ${widget.codigo} copiado con descripción'),
+                                      content: Text('Secuencia ${widget.codigo} copiada con descripción'),
                                       backgroundColor: const Color(0xFFFFD700),
                                       behavior: SnackBarBehavior.floating,
                                     ),
@@ -997,16 +997,16 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                                 }
                               } catch (e) {
                                 // Fallback si hay error - usar datos básicos
-                                final titulo = widget.nombre ?? 'Código Cuántico';
+                                final titulo = widget.nombre ?? 'Secuencia Cuántica';
                                 final textToCopy = '''${widget.codigo} : $titulo
-Este código ayuda a manifestar la abundancia de alimentos necesarios para una nutrición adecuada y equilibrada en la vida diaria.
+Esta secuencia ayuda a manifestar la abundancia de alimentos necesarios para una nutrición adecuada y equilibrada en la vida diaria.
 Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
                                 
                                 await Clipboard.setData(ClipboardData(text: textToCopy));
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Código ${widget.codigo} copiado'),
+                                      content: Text('Secuencia ${widget.codigo} copiada'),
                                       backgroundColor: const Color(0xFFFFD700),
                                       behavior: SnackBarBehavior.floating,
                                     ),
@@ -1064,7 +1064,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                           future: _codigoInfoFuture,
                           builder: (context, snapshot) {
                             final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                            final descripcion = snapshot.data?['descripcion'] ?? 'Código cuántico para la manifestación y transformación energética.';
+                            final descripcion = snapshot.data?['descripcion'] ?? 'Secuencia cuántica para la manifestación y transformación energética.';
                             final titulosRelacionados = snapshot.data?['titulosRelacionados'] as List<Map<String, dynamic>>? ?? [];
                             
                             return Container(
@@ -2270,7 +2270,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
             });
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Código eliminado de favoritos'),
+                content: Text('Secuencia eliminada de favoritos'),
                 backgroundColor: Colors.orange,
               ),
             );

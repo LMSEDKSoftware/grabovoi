@@ -16,7 +16,7 @@ class StaticSearchScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Biblioteca de Códigos',
+                  'Biblioteca de Secuencias',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

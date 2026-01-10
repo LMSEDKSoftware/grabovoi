@@ -16,7 +16,7 @@ class StreamedMusicController extends StatefulWidget {
 class _StreamedMusicControllerState extends State<StreamedMusicController> with SingleTickerProviderStateMixin {
   final List<Map<String, String>> _tracks = const [
     {'title': 'Frecuencia 432Hz - Armonía Universal', 'file': 'assets/audios/432hz_harmony.mp3'},
-    {'title': 'Códigos Solfeggio 528Hz - Amor', 'file': 'assets/audios/528hz_love.mp3'},
+    {'title': 'Secuencias Solfeggio 528Hz - Amor', 'file': 'assets/audios/528hz_love.mp3'},
     {'title': 'Binaural Beats - Manifestación', 'file': 'assets/audios/binaural_manifestation.mp3'},
     {'title': 'Crystal Bowls - Chakra Healing', 'file': 'assets/audios/crystal_bowls.mp3'},
     {'title': 'Nature Sounds - Forest Meditation', 'file': 'assets/audios/forest_meditation.mp3'},
