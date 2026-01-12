@@ -74,7 +74,7 @@ class LegalLinksService {
   /// Links por defecto (se pueden configurar desde la DB después)
   static const Map<String, String> defaultLinks = {
     'privacy_policy': 'https://manigrab.app/politica-privacidad.html',
-    'terms': 'https://manigrab.app/terminos.html',
+    'terms': 'https://manigrab.app/terminos-condiciones.html',
     'cookies': 'https://manigrab.app/politica-cookies.html',
     'data_usage': 'https://example.com/data-usage',
     'credits': 'https://example.com/credits',

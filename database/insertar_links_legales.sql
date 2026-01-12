@@ -13,22 +13,21 @@
 -- );
 
 -- Insertar o actualizar links legales
--- IMPORTANTE: Reemplaza las URLs de ejemplo con tus URLs reales
 
 INSERT INTO public.app_config (key, value, description) VALUES
   (
     'legal_privacy_policy_url',
-    'https://example.com/privacy-policy',  -- ⚠️ REEMPLAZAR con tu URL real
+    'https://manigrab.app/politica-privacidad.html',
     'URL de la Política de Privacidad'
   ),
   (
     'legal_terms_url',
-    'https://example.com/terms',  -- ⚠️ REEMPLAZAR con tu URL real
+    'https://manigrab.app/terminos-condiciones.html',
     'URL de los Términos y Condiciones'
   ),
   (
     'legal_cookies_url',
-    'https://example.com/cookies',  -- ⚠️ REEMPLAZAR con tu URL real
+    'https://manigrab.app/politica-cookies.html',
     'URL de la Política de Cookies'
   ),
   (
@@ -61,6 +60,5 @@ ORDER BY key;
 DO $$
 BEGIN
   RAISE NOTICE '✅ Links legales insertados/actualizados correctamente';
-  RAISE NOTICE '📝 Recuerda reemplazar las URLs de ejemplo con tus URLs reales';
 END $$;
 

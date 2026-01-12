@@ -51,9 +51,9 @@ CREATE TRIGGER trigger_update_app_config_updated_at
 -- Insertar valores por defecto para links legales
 -- Estos pueden ser modificados desde el dashboard de Supabase o desde la app (si eres admin)
 INSERT INTO public.app_config (key, value, description) VALUES
-  ('legal_privacy_policy_url', 'https://example.com/privacy-policy', 'URL de la Política de Privacidad'),
-  ('legal_terms_url', 'https://example.com/terms', 'URL de los Términos y Condiciones'),
-  ('legal_cookies_url', 'https://example.com/cookies', 'URL de la Política de Cookies'),
+  ('legal_privacy_policy_url', 'https://manigrab.app/politica-privacidad.html', 'URL de la Política de Privacidad'),
+  ('legal_terms_url', 'https://manigrab.app/terminos-condiciones.html', 'URL de los Términos y Condiciones'),
+  ('legal_cookies_url', 'https://manigrab.app/politica-cookies.html', 'URL de la Política de Cookies'),
   ('legal_data_usage_url', 'https://example.com/data-usage', 'URL de la Política de Uso de Datos'),
   ('legal_credits_url', 'https://example.com/credits', 'URL de Créditos y Reconocimientos')
 ON CONFLICT (key) DO NOTHING;

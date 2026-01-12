@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glow_background.dart';
+import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/welcome_modal.dart';
@@ -18,8 +20,10 @@ import '../../widgets/subscription_required_modal.dart';
 import '../../widgets/energy_stats_tab.dart';
 import '../../widgets/mural_modal.dart';
 import '../../services/mural_service.dart';
-// import '../../widgets/update_available_dialog.dart'; // Widget no disponible
-// import '../../services/in_app_update_service.dart'; // Servicio no disponible
+import '../../widgets/update_available_dialog.dart';
+import '../../services/in_app_update_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -61,23 +65,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   
   /// Verifica si hay actualizaciones disponibles
   Future<void> _checkForUpdates() async {
-    // COMENTADO: Servicios de actualización no disponibles actualmente
     // Solo verificar en Android, no en web ni iOS
-    // if (kIsWeb || !Platform.isAndroid) {
-    //   return;
-    // }
+    if (kIsWeb || !Platform.isAndroid) {
+      return;
+    }
 
-    // // Esperar un poco para que la pantalla se cargue completamente
-    // await Future.delayed(const Duration(seconds: 3));
+    // Esperar un poco para que la pantalla se cargue completamente
+    await Future.delayed(const Duration(seconds: 3));
     
-    // if (!mounted) return;
+    if (!mounted) return;
 
-    // try {
-    //   // Verificar actualizaciones y mostrar diálogo si hay una disponible
-    //   await UpdateAvailableDialog.showIfUpdateAvailable(context);
-    // } catch (e) {
-    //   print('⚠️ Error verificando actualizaciones en HomeScreen: $e');
-    // }
+    try {
+      // Verificar actualizaciones y mostrar diálogo si hay una disponible
+      await UpdateAvailableDialog.showIfUpdateAvailable(context);
+    } catch (e) {
+      print('⚠️ Error verificando actualizaciones en HomeScreen: $e');
+    }
   }
   
   @override
@@ -574,7 +577,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           ),
           child: Column(
             children: [
-              Text('Tu secuencia diaria', style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
+              Text('Tu código diario', style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
               const SizedBox(height: 12),
               IlluminatedCodeText(
                 code: codigo,
@@ -718,7 +721,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       // Si el código del día no coincide, buscar directamente en codigos_grabovoi
       return CodigosRepository().getDescripcionByCode(codigo);
     } catch (e) {
-      return 'Secuencia cuántica para la manifestación y transformación energética.';
+      return 'Código cuántico para la manifestación y transformación energética.';
     }
   }
 
@@ -729,13 +732,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
       // Esto ya busca en daily_codes y codigos_grabovoi
       final todayInfo = await DailyCodeService.getTodayCodeInfo();
       if (todayInfo != null && todayInfo['codigo'] == codigo) {
-        return todayInfo['nombre'] ?? 'Secuencia Diaria';
+        return todayInfo['nombre'] ?? 'Código Diario';
       }
       
       // Si el código del día no coincide, buscar directamente en codigos_grabovoi
       return CodigosRepository().getTituloByCode(codigo);
     } catch (e) {
-      return 'Secuencia Diaria';
+      return 'Código Diario';
     }
   }
 }
@@ -790,6 +793,8 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
               color: Colors.white,
               height: 1.4,
             ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -801,9 +806,9 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
-            margin: const EdgeInsets.all(16),
+            margin: const EdgeInsets.all(20),
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
             decoration: BoxDecoration(
               color: const Color(0xFF1C2541),
@@ -820,7 +825,7 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
               children: [
                 SingleChildScrollView(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -857,10 +862,12 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                 Text(
                   'Es un sistema de puntuación que representa el estado energético/vibracional del usuario, basado en su evaluación inicial y actividades en la app.',
                   style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white70,
+                    fontSize: 16,
+                    color: Colors.white,
                     height: 1.5,
                   ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 20),
                 
@@ -894,7 +901,7 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                       const SizedBox(height: 8),
                       _buildInfoItem('• Completar desafíos aumenta el nivel'),
                       const SizedBox(height: 8),
-                      _buildInfoItem('• Practicar secuencias regularmente mejora el nivel'),
+                      _buildInfoItem('• Practicar códigos regularmente mejora el nivel'),
                     ],
                   ),
                 ),
@@ -902,43 +909,31 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                 
                 // Mensaje final
                 Text(
-                  '"El sistema está diseñado para crecer contigo mientras usas la app y practicas las secuencias de Grabovoi."',
+                  '"El sistema está diseñado para crecer contigo mientras usas la app y practicas los códigos de Grabovoi."',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: Colors.white70,
                     fontStyle: FontStyle.italic,
                     height: 1.4,
                   ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 24),
                 
-                // Botón de cerrar con estilo igual al de "Comenzar Repetición"
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFD700),
-                      foregroundColor: const Color(0xFF0B132B),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                    ),
-                    child: Text(
-                      'Entendido',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                // Botón de cerrar
+                CustomButton(
+                  text: 'Entendido',
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  icon: Icons.check,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 ],
               ),
             ),
-            // Mensaje "Desliza hacia arriba" cuando hay contenido scrolleable (igual que en el modal de referencia)
+            // Mensaje "Desliza hacia arriba" cuando hay contenido scrolleable
             if (_showScrollIndicator)
               Positioned(
                 bottom: 0,

@@ -25,7 +25,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   
   Map<String, dynamic>? userProgress;
   Map<String, dynamic>? activeChallenge;
-  List<Challenge> completedChallenges = [];
+  List<Map<String, dynamic>> completedChallenges = [];
   bool isLoading = true;
   Timer? _sessionTimeUpdateTimer;
   
@@ -223,7 +223,6 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
           'nivel': progress?['nivel_energetico'] ?? 1,
           'dias_consecutivos': progress?['dias_consecutivos'] ?? 0,
           'total_pilotajes': progress?['total_pilotajes'] ?? 0,
-          'total_sesiones': sessionHistory.length, // Calcular desde historial de sesiones
           'total_minutes': totalMinutes,
           // last_session_minutes ya no se usa, se obtiene directamente de AppTimeTracker
         };
@@ -232,7 +231,11 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
           'title': activeChallenges.first.title,
           'status': activeChallenges.first.status.toString(),
         } : null;
-        this.completedChallenges = completedChallenges; // Guardar objetos Challenge completos
+        this.completedChallenges = completedChallenges.map((c) => {
+          'id': c.id,
+          'title': c.title,
+          'status': c.status.toString(),
+        }).toList();
         isLoading = false;
       });
     } catch (e) {
@@ -376,17 +379,17 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   }
 
   Widget _buildCompletedChallengesCard() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-          ),
-          child: Row(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
               Text(
                 'Desafíos Completados',
@@ -410,18 +413,10 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 16),
-        if (completedChallenges.isEmpty)
-          // Estado vacío: mostrar copa centrada
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-            ),
-            child: Center(
+          const SizedBox(height: 12),
+          if (completedChallenges.isEmpty)
+            // Estado vacío: mostrar copa centrada
+            Center(
               child: Column(
                 children: [
                   const SizedBox(height: 20),
@@ -442,122 +437,30 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
                   const SizedBox(height: 20),
                 ],
               ),
-            ),
-          )
-        else
-          // Grid de desafíos completados (2 por fila)
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: completedChallenges.length,
-            itemBuilder: (context, index) {
-              return _buildCompletedChallengeCard(completedChallenges[index]);
-            },
-          ),
-      ],
-    );
-  }
-
-  Widget _buildCompletedChallengeCard(Challenge challenge) {
-    final color = Color(int.parse(challenge.color.replaceAll('#', '0xFF')));
-    
-    // Obtener fecha de finalización
-    String fechaCompletado = 'Sin fecha';
-    if (challenge.endDate != null) {
-      final date = challenge.endDate!;
-      fechaCompletado = '${date.day}/${date.month}/${date.year}';
-    } else if (challenge.dayProgress.isNotEmpty) {
-      // Si no hay endDate, buscar el último día completado
-      final lastCompletedDay = challenge.dayProgress.entries
-          .where((e) => e.value.isCompleted && e.value.completedAt != null)
-          .toList()
-        ..sort((a, b) => (b.value.completedAt ?? DateTime.now())
-            .compareTo(a.value.completedAt ?? DateTime.now()));
-      if (lastCompletedDay.isNotEmpty && lastCompletedDay.first.value.completedAt != null) {
-        final date = lastCompletedDay.first.value.completedAt!;
-        fechaCompletado = '${date.day}/${date.month}/${date.year}';
-      }
-    }
-    
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.15),
-            color.withOpacity(0.08),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.5), width: 2),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Primera fila: Icono centrado
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.3),
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                challenge.icon,
-                style: const TextStyle(fontSize: 32),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Segunda fila: "Completado"
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                const SizedBox(width: 4),
-                Text(
-                  'Completado',
-                  style: GoogleFonts.inter(
-                    color: Colors.green,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+            )
+          else
+            // Listado de desafíos completados
+            ...completedChallenges.take(3).map((challenge) => 
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        challenge['title'] ?? '',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Tercera fila: Título del desafío
-            Text(
-              challenge.title,
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 8),
-            // Cuarta fila: Fecha en letra pequeña
-            Text(
-              fechaCompletado,
-              style: GoogleFonts.inter(
-                color: Colors.white60,
-                fontSize: 11,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -652,43 +555,12 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Días en Racha',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () => _showHelpDialog(
-                  'Días en Racha',
-                  'La racha representa los días consecutivos que has usado la aplicación realizando al menos una actividad (repetición, pilotaje o compartido).\n\n'
-                  '¿Cómo funciona?\n'
-                  '• Se incrementa cada día que realizas al menos una actividad\n'
-                  '• Cuenta los días consecutivos desde tu último uso\n'
-                  '• Una racha más larga contribuye a tu nivel energético\n\n'
-                  '¿Cuándo se reinicia?\n'
-                  '• Si no usas la app durante un día completo, la racha se reinicia a 1\n'
-                  '• Si pasan más de 24 horas sin actividad, la racha vuelve a comenzar\n\n'
-                  '¿Cómo salvar la racha con Ancla de Continuidad?\n'
-                  '• Las Anclas de Continuidad te permiten salvar tu racha si olvidaste usar la app un día\n'
-                  '• Puedes comprar Anclas en la Tienda Premium con 200 cristales de energía\n'
-                  '• Puedes tener máximo 2 anclas a la vez\n'
-                  '• Se usan automáticamente cuando detectamos que perdiste un día en un desafío activo\n'
-                  '• Una ancla salva un día, permitiéndote mantener tu racha sin interrupciones',
-                ),
-                child: Icon(
-                  Icons.help_outline,
-                  size: 18,
-                  color: const Color(0xFFFFD700).withOpacity(0.6),
-                ),
-              ),
-            ],
+          Text(
+            'Días en Racha',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              color: Colors.white70,
+            ),
           ),
         ],
       ),
@@ -735,53 +607,17 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
       mainAxisSpacing: 15,
       childAspectRatio: 1.5,
       children: [
-        _buildStatCard(
-          'Tiempo Total',
-          tiempoStr,
-          Icons.timer,
-          'Tiempo Total',
-          'Es la suma acumulada de todos los minutos que has dedicado a practicar secuencias, realizar pilotajes y repeticiones de códigos Grabovoi.',
-        ),
-        _buildStatCard(
-          'Códigos Explorados',
-          '${_cachedExploredCodesCount ?? 0}',
-          Icons.numbers,
-          'Códigos Explorados',
-          'Representa la cantidad única de códigos Grabovoi que has utilizado al menos una vez en tus sesiones de repetición, pilotaje o compartido.',
-        ),
-        _buildStatCard(
-          'Total Pilotajes',
-          totalPilotajes,
-          Icons.psychology,
-          'Total Pilotajes',
-          'Es el número total de sesiones de pilotaje cuántico que has completado. Cada pilotaje contribuye a tu evolución energética.',
-        ),
-        _buildStatCard(
-          'Tiempo Sesión',
-          tiempoSesionStr,
-          Icons.timelapse,
-          'Tiempo Sesión',
-          'Muestra el tiempo acumulado de la sesión actual de la app. Se reinicia cada vez que cierras y abres la aplicación.',
-        ),
-        _buildStatCard(
-          'Sesiones',
-          totalSesiones,
-          Icons.play_circle,
-          'Sesiones',
-          'Es el número total de sesiones registradas (repeticiones de códigos, pilotajes y compartidos) que has completado en la aplicación.',
-        ),
-        _buildStatCard(
-          'Nivel',
-          '$nivel',
-          Icons.star,
-          'Nivel Energético',
-          'Es tu nivel de energía vibracional (del 1 al 10), calculado según tu evaluación inicial, días consecutivos de uso, pilotajes completados y práctica constante.',
-        ),
+        _buildStatCard('Tiempo Total', tiempoStr, Icons.timer),
+        _buildStatCard('Códigos Explorados', '${_cachedExploredCodesCount ?? 0}', Icons.numbers),
+        _buildStatCard('Total Pilotajes', totalPilotajes, Icons.psychology),
+        _buildStatCard('Tiempo Sesión', tiempoSesionStr, Icons.timelapse),
+        _buildStatCard('Sesiones', totalSesiones, Icons.play_circle),
+        _buildStatCard('Nivel', '$nivel', Icons.star),
       ],
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, String helpTitle, String helpExplanation) {
+  Widget _buildStatCard(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -802,27 +638,12 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
               color: Colors.white,
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: Colors.white54,
-                ),
-              ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () => _showHelpDialog(helpTitle, helpExplanation),
-                child: Icon(
-                  Icons.help_outline,
-                  size: 18,
-                  color: const Color(0xFFFFD700).withOpacity(0.6),
-                ),
-              ),
-            ],
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: Colors.white54,
+            ),
           ),
         ],
       ),
@@ -856,7 +677,83 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   void _showHelpDialog(String title, String explanation) {
     showDialog(
       context: context,
-      builder: (context) => _HelpDialogModal(title: title, explanation: explanation),
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.help_outline,
+                      color: Color(0xFFFFD700),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.playfairDisplay(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                explanation,
+                style: GoogleFonts.inter(
+                  color: Colors.white70,
+                  fontSize: 15,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Entendido',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFFFD700),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -897,198 +794,6 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HelpDialogModal extends StatefulWidget {
-  final String title;
-  final String explanation;
-
-  const _HelpDialogModal({
-    required this.title,
-    required this.explanation,
-  });
-
-  @override
-  State<_HelpDialogModal> createState() => _HelpDialogModalState();
-}
-
-class _HelpDialogModalState extends State<_HelpDialogModal> {
-  final ScrollController _scrollController = ScrollController();
-  bool _showScrollIndicator = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_checkScrollPosition);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkScrollPosition();
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _checkScrollPosition() {
-    if (_scrollController.hasClients) {
-      final maxScroll = _scrollController.position.maxScrollExtent;
-      final currentScroll = _scrollController.position.pixels;
-      final canScroll = maxScroll > 0;
-      final shouldShow = canScroll && currentScroll < maxScroll - 50;
-      if (_showScrollIndicator != shouldShow) {
-        setState(() {
-          _showScrollIndicator = shouldShow;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        margin: const EdgeInsets.all(16),
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
-        ),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1C2541),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFD700).withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.help_outline,
-                          color: Color(0xFFFFD700),
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          widget.title,
-                          style: GoogleFonts.inter(
-                            color: const Color(0xFFFFD700),
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(
-                          Icons.close,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    widget.explanation,
-                    style: GoogleFonts.inter(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFD700),
-                        foregroundColor: const Color(0xFF0B132B),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                      ),
-                      child: Text(
-                        'Entendido',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            ),
-            // Mensaje "Desliza hacia arriba" cuando hay contenido scrolleable
-            if (_showScrollIndicator)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: IgnorePointer(
-                  ignoring: true,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          const Color(0xFF1C2541).withOpacity(0.95),
-                          const Color(0xFF1C2541),
-                        ],
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.keyboard_arrow_up,
-                          color: const Color(0xFFFFD700),
-                          size: 28,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Desliza hacia arriba',
-                          style: GoogleFonts.inter(
-                            color: const Color(0xFFFFD700),
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }
