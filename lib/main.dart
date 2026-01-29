@@ -11,6 +11,9 @@ import 'services/pilotage_state_service.dart';
 import 'services/audio_service.dart';
 import 'services/audio_manager_service.dart';
 import 'services/notification_scheduler.dart';
+import 'services/notification_service.dart';
+import 'services/permissions_service.dart';
+import 'dart:io' show Platform;
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/onboarding/user_assessment_screen.dart';
 import 'screens/onboarding/app_tour_screen.dart';
@@ -77,18 +80,29 @@ void main() async {
   if (!kIsWeb) {
     try {
       await NotificationScheduler().initialize();
+      // También inicializar NotificationService para solicitar permisos en iOS
+      // Esto asegura que los permisos se soliciten automáticamente
+      try {
+        final notificationService = NotificationService();
+        await notificationService.initialize();
+        print('✅ NotificationService inicializado en main');
+      } catch (e) {
+        print('⚠️ Error inicializando NotificationService en main: $e');
+      }
     } catch (e) {
       print('⚠️ Error inicializando NotificationScheduler: $e');
     }
+    
+    // NOTA: Los permisos NO se solicitan automáticamente aquí
+    // Se solicitarán después del login mediante un modal amigable
   }
   
-  // Inicializar servicio de suscripciones (solo en Android/iOS)
-  if (!kIsWeb) {
-    try {
-      await SubscriptionService().initialize();
-    } catch (e) {
-      print('⚠️ Error inicializando SubscriptionService: $e');
-    }
+  // Inicializar servicio de suscripciones (todas las plataformas, incluida web)
+  // En web no hay IAP pero sí se debe cargar estado desde Supabase para restringir pestañas igual que en app
+  try {
+    await SubscriptionService().initialize();
+  } catch (e) {
+    print('⚠️ Error inicializando SubscriptionService: $e');
   }
   
   // Verificar actualizaciones in-app (solo en Android)

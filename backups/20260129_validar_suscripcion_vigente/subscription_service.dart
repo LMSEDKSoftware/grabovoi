@@ -503,7 +503,7 @@ class SubscriptionService {
       }
 
       if (existing != null) {
-        // 2a) Ya existe un registro para este purchase_id: actualizarlo y dejar solo uno activo
+        // 2a) Ya existe un registro: actualizarlo y dejar solo uno activo
         final existingId = existing['id'] as String;
         await _supabase
             .from('user_subscriptions')
@@ -528,32 +528,7 @@ class SubscriptionService {
         return;
       }
 
-      // 2b) No existe este purchase_id: validar que no haya ya una suscripción vigente
-      // Si ya hay una vigente (expires_at > now), no insertar ni sobrescribir con otra
-      final now = DateTime.now();
-      Map<String, dynamic>? validSubscription;
-      try {
-        validSubscription = await _supabase
-            .from('user_subscriptions')
-            .select('id, product_id, expires_at')
-            .eq('user_id', userId)
-            .gt('expires_at', now.toIso8601String())
-            .order('expires_at', ascending: false)
-            .limit(1)
-            .maybeSingle();
-      } catch (e) {
-        print('⚠️ Error buscando suscripción vigente: $e');
-      }
-
-      if (validSubscription != null) {
-        final vigenteProduct = validSubscription['product_id'] as String?;
-        final vigenteExpira = validSubscription['expires_at'] as String?;
-        print('⏭️ Usuario ya tiene suscripción vigente ($vigenteProduct hasta $vigenteExpira). No se inserta ni se sobrescribe con $productId.');
-        _applySubscriptionState(vigenteProduct ?? monthlyProductId, vigenteExpira != null ? DateTime.parse(vigenteExpira) : expiryDate, userId);
-        return;
-      }
-
-      // 2c) No hay suscripción vigente: reutilizar registro existente (expirado) o insertar uno nuevo
+      // 2b) No existe: si el usuario ya tiene algún registro previo, reutilizarlo
       Map<String, dynamic>? anyExisting;
       try {
         anyExisting = await _supabase
