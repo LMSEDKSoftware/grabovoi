@@ -34,10 +34,8 @@ import '../../widgets/subscription_required_modal.dart';
 
 class CodeDetailScreen extends StatefulWidget {
   final String codigo;
-  /// Si true, es la secuencia diaria (Portal Energético): acceso permitido sin premium.
-  final bool isDailySequence;
 
-  const CodeDetailScreen({super.key, required this.codigo, this.isDailySequence = false});
+  const CodeDetailScreen({super.key, required this.codigo});
 
   @override
   State<CodeDetailScreen> createState() => _CodeDetailScreenState();
@@ -91,19 +89,17 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     _codigoInfoFuture = _loadCodigoInfo();
     _shareableDataFuture = _loadShareableData();
     
-    // Secuencia diaria (Portal Energético): siempre permitir acceso. Resto: verificar premium.
+    // Verificar acceso premium antes de iniciar
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (widget.isDailySequence) {
-        if (mounted) _startPiloting();
-        return;
-      }
       final subscriptionService = SubscriptionService();
       await subscriptionService.checkSubscriptionStatus();
       
+      // Verificar si el usuario tiene acceso premium o días de trial restantes
       final hasPremiumAccess = subscriptionService.hasPremiumAccess;
       final remainingTrialDays = await subscriptionService.getRemainingTrialDays();
       
       if (!hasPremiumAccess && (remainingTrialDays == null || remainingTrialDays <= 0)) {
+        // Usuario sin acceso premium y sin días de trial - redirigir
         if (mounted) {
           SubscriptionRequiredModal.show(
             context,
@@ -116,6 +112,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         return;
       }
       
+      // Usuario con acceso premium o días de trial restantes - permitir acceso
       if (mounted) {
         _startPiloting();
       }

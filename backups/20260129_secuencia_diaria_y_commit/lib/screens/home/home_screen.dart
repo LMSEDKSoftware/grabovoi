@@ -13,6 +13,8 @@ import '../../services/auth_service_simple.dart';
 import '../../utils/code_formatter.dart';
 import '../codes/code_detail_screen.dart';
 import '../../repositories/codigos_repository.dart';
+import '../../services/subscription_service.dart';
+import '../../widgets/subscription_required_modal.dart';
 import '../../widgets/energy_stats_tab.dart';
 import '../../widgets/mural_modal.dart';
 import '../../services/mural_service.dart';
@@ -531,13 +533,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   Widget _buildCodeOfDay(BuildContext context, String codigo) {
     // En la pantalla de inicio, mostrar el código original con _ sin formateo multilínea
     final fontSize = CodeFormatter.calculateFontSize(codigo);
-    // La secuencia diaria (Portal Energético) siempre es accesible, con o sin premium
+    final subscriptionService = SubscriptionService();
+    
     return Center(
       child: GestureDetector(
         onTap: () async {
+          // Verificar si el usuario es gratuito (sin suscripción después de los 7 días)
+          if (subscriptionService.isFreeUser) {
+            // Usuario gratuito - redirigir a suscripciones
+            SubscriptionRequiredModal.show(
+              context,
+              message: 'El pilotaje cuántico está disponible solo para usuarios Premium. Suscríbete para acceder a esta función.',
+            );
+            return;
+          }
+          
+          // Usuario premium - permitir acceso normal
           await Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => CodeDetailScreen(codigo: codigo, isDailySequence: true),
+              builder: (context) => CodeDetailScreen(codigo: codigo),
             ),
           );
           // Al volver de la sesión/código, refrescar nivel y datos
