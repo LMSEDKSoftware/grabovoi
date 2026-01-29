@@ -10,6 +10,7 @@ import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/onboarding/user_assessment_screen.dart';
 import '../screens/onboarding/app_tour_screen.dart';
 import '../main.dart';
+import 'permissions_request_modal.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -232,11 +233,32 @@ class _AuthWrapperState extends State<AuthWrapper> {
     } else if (_isAuthenticated && _needsAssessment) {
       // Después del tour, mostrar evaluación si es necesaria
       print('📋 Mostrando UserAssessmentScreen - Evaluación necesaria (después del tour)');
+      
+      // Mostrar modal de permisos después de la evaluación
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Esperar un poco para que la evaluación se muestre primero
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _showPermissionsModalIfNeeded();
+            }
+          });
+        }
+      });
+      
       return const UserAssessmentScreen();
     } else if (_isAuthenticated && !_needsAssessment) {
       // Usuario autenticado sin tour ni evaluación pendiente
       // Mostrar MainNavigation y activar WelcomeModal/MuralModal
       print('✅ Usuario autenticado - Mostrando MainNavigation (sin tour, sin evaluación)');
+      
+      // Mostrar modal de permisos después de que se construya la pantalla
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showPermissionsModalIfNeeded();
+        }
+      });
+      
       return MainNavigation(showTour: false);
     } else if (_forceLogin) {
         // Forzar pantalla de login después de registro
@@ -246,5 +268,21 @@ class _AuthWrapperState extends State<AuthWrapper> {
         print('❌ Mostrando Onboarding antes de Login - Usuario no autenticado');
         return const OnboardingScreen();
       }
+  }
+
+  /// Mostrar modal de permisos si es necesario
+  Future<void> _showPermissionsModalIfNeeded() async {
+    try {
+      final shouldShow = await PermissionsRequestModal.shouldShowModal();
+      if (shouldShow && mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const PermissionsRequestModal(),
+        );
+      }
+    } catch (e) {
+      print('⚠️ Error mostrando modal de permisos: $e');
+    }
   }
 }

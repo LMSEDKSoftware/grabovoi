@@ -29,7 +29,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   bool isLoading = true;
   Timer? _sessionTimeUpdateTimer;
   
-  // Caché para códigos explorados
+  // Caché para secuencias exploradas
   int? _cachedExploredCodesCount;
   DateTime? _cacheTimestamp;
   static const _cacheDuration = Duration(minutes: 5);
@@ -118,12 +118,12 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
       _loadUserData();
-      // Refrescar códigos explorados forzando actualización
+      // Refrescar secuencias exploradas forzando actualización
       _loadExploredCodesCount(forceRefresh: true);
     }
   }
 
-  // Obtener conteo de códigos explorados desde user_actions (fuente única de verdad)
+  // Obtener conteo de secuencias exploradas desde user_actions (fuente única de verdad)
   // Consulta directamente desde user_actions para evitar duplicación de datos
   Future<int> _getExploredCodesCount({bool forceRefresh = false}) async {
     if (!_authService.isLoggedIn) {
@@ -143,14 +143,14 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
       final userId = _authService.currentUser!.id;
       
       // Consultar directamente desde user_actions (fuente única de verdad)
-      // Filtrar solo acciones que involucran códigos
+      // Filtrar solo acciones que involucran secuencias
       final response = await supabase
           .from('user_actions')
           .select('action_data')
           .eq('user_id', userId)
           .inFilter('action_type', ['sesionPilotaje', 'codigoRepetido', 'pilotajeCompartido']);
       
-      // Obtener códigos únicos desde action_data
+      // Obtener secuencias únicas desde action_data
       final uniqueCodes = <String>{};
       for (final row in response) {
         final actionData = row['action_data'] as Map<String, dynamic>?;
@@ -168,10 +168,10 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
       _cachedExploredCodesCount = count;
       _cacheTimestamp = DateTime.now();
       
-      print('✅ Códigos explorados encontrados: $count (desde user_actions)');
+      print('✅ Secuencias exploradas encontradas: $count (desde user_actions)');
       return count;
     } catch (e) {
-      print('❌ Error obteniendo códigos explorados: $e');
+      print('❌ Error obteniendo secuencias exploradas: $e');
       // Si hay error pero tenemos caché, usar el valor en caché
       if (_cachedExploredCodesCount != null) {
         return _cachedExploredCodesCount!;
@@ -180,7 +180,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
     }
   }
   
-  // Cargar códigos explorados una vez al iniciar
+  // Cargar secuencias exploradas una vez al iniciar
   Future<void> _loadExploredCodesCount({bool forceRefresh = false}) async {
     final count = await _getExploredCodesCount(forceRefresh: forceRefresh);
     if (mounted) {
@@ -400,7 +400,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
               GestureDetector(
                 onTap: () => _showHelpDialog(
                   'Desafíos Completados',
-                  'Lista de desafíos que has terminado exitosamente.\n\nCompletar desafíos demuestra tu compromiso y constancia en la práctica de los códigos Grabovoi, elevando tu vibración energética.',
+                  'Lista de desafíos que has terminado exitosamente.\n\nCompletar desafíos demuestra tu compromiso y constancia en la práctica de las secuencias de Grabovoi, elevando tu vibración energética.',
                 ),
                 child: Icon(
                   Icons.help_outline,
@@ -740,14 +740,14 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
           tiempoStr,
           Icons.timer,
           'Tiempo Total',
-          'Es la suma acumulada de todos los minutos que has dedicado a practicar secuencias, realizar pilotajes y repeticiones de códigos Grabovoi.',
+          'Es la suma acumulada de todos los minutos que has dedicado a practicar secuencias, realizar pilotajes y repeticiones de secuencias de Grabovoi.',
         ),
         _buildStatCard(
-          'Códigos Explorados',
+          'Secuencias Usadas',
           '${_cachedExploredCodesCount ?? 0}',
           Icons.numbers,
-          'Códigos Explorados',
-          'Representa la cantidad única de códigos Grabovoi que has utilizado al menos una vez en tus sesiones de repetición, pilotaje o compartido.',
+          'Secuencias Usadas',
+          'Representa la cantidad única de secuencias de Grabovoi que has utilizado al menos una vez en tus sesiones de repetición, pilotaje o compartido.',
         ),
         _buildStatCard(
           'Total Pilotajes',
@@ -768,7 +768,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
           totalSesiones,
           Icons.play_circle,
           'Sesiones',
-          'Es el número total de sesiones registradas (repeticiones de códigos, pilotajes y compartidos) que has completado en la aplicación.',
+          'Es el número total de sesiones registradas (repeticiones de secuencias, pilotajes y compartidos) que has completado en la aplicación.',
         ),
         _buildStatCard(
           'Nivel',

@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../utils/share_helper.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/streamed_music_controller.dart';
@@ -375,44 +376,18 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         return;
       }
 
-      // Solo para móvil, web no soporta compartir imágenes
-      if (!kIsWeb) {
-        // Guardar en directorio externo público para evitar FileProvider
-        final dir = await getExternalStorageDirectory();
-        if (dir == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Error: No se pudo acceder al almacenamiento'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
-        final safeFileName = widget.codigo.replaceAll(RegExp(r'[^\w\s-]'), '_');
-        final file = File('${dir.path}/grabovoi_$safeFileName.png');
-        await file.writeAsBytes(pngBytes);
+      // Usar el helper para compartir la imagen (maneja iOS correctamente)
+      await ShareHelper.shareImage(
+        pngBytes: pngBytes,
+        fileName: 'grabovoi_${widget.codigo}',
+        text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        context: context,
+      );
 
-        // Usar shareXFiles con XFile desde ruta (archivos externos no requieren FileProvider)
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
-        );
-
-        ChallengeProgressTracker().trackPilotageShared(
-          codeId: widget.codigo,
-          codeName: widget.nombre ?? widget.codigo,
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Función de compartir no disponible en web'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      ChallengeProgressTracker().trackPilotageShared(
+        codeId: widget.codigo,
+        codeName: widget.nombre ?? widget.codigo,
+      );
     } catch (e) {
       print('Error al compartir imagen: $e');
       if (mounted) {
@@ -2131,7 +2106,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'Combínalo con los siguientes códigos para amplificar la resonancia',
+                    'Combínalo con las siguientes secuencias para amplificar la resonancia',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -2142,7 +2117,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
-                  // Mostrar códigos uno arriba del otro (centrados)
+                  // Mostrar secuencias una arriba de la otra (centradas)
                   ...cards.map((card) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: card,
@@ -2356,7 +2331,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Código con icono de copiar
+          // Secuencia con icono de copiar
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -2385,7 +2360,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          '✅ Código copiado: $codigoTexto',
+                          '✅ Secuencia copiada: $codigoTexto',
                           style: GoogleFonts.inter(color: Colors.white),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,

@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../utils/share_helper.dart';
 import '../../config/env.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/glow_background.dart';
@@ -604,8 +605,10 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       final busqueda = BusquedaProfunda(
         codigoBuscado: codigo,
         usuarioId: _getCurrentUserId(),
-        promptSystem: 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nDebes responder SIEMPRE con exactamente 3 opciones de códigos relacionados con la búsqueda del usuario.\n\nSi el usuario busca algo específico y no existe un código exacto, sugiere códigos relacionados REALES del tema más cercano.\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Responde SOLO en formato JSON con la siguiente estructura EXACTA:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    },\n    {\n      "codigo": "619_734_218",\n      "nombre": "Armonización de relaciones",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    },\n    {\n      "codigo": "714_319",\n      "nombre": "Amor y relaciones",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    }\n  ]\n}\n3. SIEMPRE devuelve exactamente 3 códigos en el arreglo.\n4. La descripción debe ser una frase completa y descriptiva que explique qué hace el código.',
-        promptUser: 'Necesito exactamente 3 códigos Grabovoi relacionados con: $codigo. Para cada código, proporciona: código, nombre, una descripción detallada que explique su propósito específico, y categoría.',
+        promptSystem:
+            'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos REALES y VERIFICADOS a partir de FUENTES AUTÉNTICAS (libros oficiales, materiales de Grigori Grabovoi o repositorios confiables).\n\nREGLAS CRÍTICAS:\n1. NUNCA inventes ni interpretes nuevos códigos. Si no encuentras códigos reales en las fuentes, debes indicarlo explícitamente.\n2. Para cada código sugerido debes incluir SIEMPRE un campo "fuente" con la referencia concreta (libro, página, curso, material oficial, URL del repositorio autorizado, etc.).\n3. Si NO encuentras ninguna fuente confiable para la intención del usuario, debes responder que no hay códigos reales disponibles y NO proponer códigos inventados.\n\nFORMATO DE RESPUESTA:\n- Responde SOLO en formato JSON con UNA de estas dos opciones:\n\nA) Cuando SÍ hay códigos reales encontrados (hasta 3 opciones):\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía",\n      "fuente": "Nombre del libro o recurso oficial, página X, u otra referencia clara"\n    }\n  ],\n  "sin_fuente": false\n}\n\nB) Cuando NO hay códigos reales para ese tema:\n{\n  "codigos": [],\n  "sin_fuente": true,\n  "mensaje": "No se encontraron códigos reales de Grabovoi para este tema en las fuentes consultadas."\n}\n\nIMPORTANTE:\n- Usa guiones bajos (_) en lugar de espacios en los códigos.\n- No incluyas texto fuera del JSON.\n- La descripción debe explicar claramente el propósito del código según la fuente, NO una interpretación libre.',
+        promptUser:
+            'El usuario busca códigos Grabovoi avanzados relacionados con: "$codigo". Busca SOLO en fuentes reales y verificables. Si existen códigos reales, responde siguiendo exactamente el formato indicado (incluyendo el campo "fuente" por código). Si no encuentras nada fiable, responde con "codigos": [] y "sin_fuente": true, indicando que no hay códigos oficiales para este tema.',
         fechaBusqueda: _inicioBusqueda!,
         modeloIa: 'gpt-3.5-turbo',
       );
@@ -872,11 +875,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           'messages': [
             {
               'role': 'system',
-              'content': 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nDebes responder SIEMPRE con exactamente 3 opciones de códigos relacionados con la búsqueda del usuario.\n\nSi el usuario busca algo específico y no existe un código exacto, sugiere códigos relacionados REALES del tema más cercano.\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Responde SOLO en formato JSON con la siguiente estructura EXACTA:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    },\n    {\n      "codigo": "619_734_218",\n      "nombre": "Armonización de relaciones",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    },\n    {\n      "codigo": "714_319",\n      "nombre": "Amor y relaciones",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    }\n  ]\n}\n3. SIEMPRE devuelve exactamente 3 códigos en el arreglo.\n4. La descripción debe ser una frase completa y descriptiva que explique qué hace el código.'
+              'content':
+                  'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos REALES y VERIFICADOS a partir de FUENTES AUTÉNTICAS (libros oficiales, materiales de Grigori Grabovoi o repositorios confiables).\n\nREGLAS CRÍTICAS:\n1. NUNCA inventes ni interpretes nuevos códigos. Si no encuentras códigos reales en las fuentes, debes indicarlo explícitamente.\n2. Para cada código sugerido debes incluir SIEMPRE un campo "fuente" con la referencia concreta (libro, página, curso, material oficial, URL del repositorio autorizado, etc.).\n3. Si NO encuentras ninguna fuente confiable para la intención del usuario, debes responder que no hay códigos reales disponibles y NO proponer códigos inventados.\n\nFORMATO DE RESPUESTA:\n- Responde SOLO en formato JSON con UNA de estas dos opciones:\n\nA) Cuando SÍ hay códigos reales encontrados (hasta 3 opciones):\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía",\n      "fuente": "Nombre del libro o recurso oficial, página X, u otra referencia clara"\n    }\n  ],\n  "sin_fuente": false\n}\n\nB) Cuando NO hay códigos reales para ese tema:\n{\n  "codigos": [],\n  "sin_fuente": true,\n  "mensaje": "No se encontraron códigos reales de Grabovoi para este tema en las fuentes consultadas."\n}\n\nIMPORTANTE:\n- Usa guiones bajos (_) en lugar de espacios en los códigos.\n- No incluyas texto fuera del JSON.\n- La descripción debe explicar claramente el propósito del código según la fuente, NO una interpretación libre.'
             },
             {
               'role': 'user',
-              'content': 'Necesito exactamente 3 códigos Grabovoi relacionados con: $codigo. Para cada código, proporciona: código, nombre, una descripción detallada que explique su propósito específico, y categoría.'
+              'content':
+                  'El usuario busca códigos Grabovoi avanzados relacionados con: "$codigo". Busca SOLO en fuentes reales y verificables. Si existen códigos reales, responde siguiendo exactamente el formato indicado (incluyendo el campo "fuente" por código). Si no encuentras nada fiable, responde con "codigos": [] y "sin_fuente": true, indicando que no hay códigos oficiales para este tema.'
             }
           ],
           'max_tokens': 500,
@@ -961,7 +966,27 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             
             final responseData = jsonDecode(cleanedContent);
             print('✅ Respuesta de OpenAI recibida: $responseData');
-            
+
+            // Caso explícito: no hay fuentes/códigos oficiales
+            final sinFuente = responseData['sin_fuente'] == true;
+            if (sinFuente == true) {
+              print('ℹ️ OpenAI indica que no hay códigos oficiales para este tema (sin_fuente = true)');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'No se encontraron códigos oficiales de Grabovoi para este tema. Puedes seguir usando el código que sientas o crear tu propia secuencia personalizada.',
+                      style: GoogleFonts.inter(color: Colors.white),
+                    ),
+                    backgroundColor: Colors.orange,
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              }
+              // No intentamos inventar alternativas: devolvemos null para que se mantenga el código del usuario
+              return null;
+            }
+
             // Verificar si hay códigos en la respuesta
             if (responseData['codigos'] != null && responseData['codigos'] is List) {
               final codigosList = responseData['codigos'] as List;
@@ -1989,51 +2014,20 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
 $descripcion
 Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
         
-        if (!kIsWeb) {
-          await Share.share(textToShare);
-        } else {
-          Clipboard.setData(ClipboardData(text: textToShare));
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Texto copiado al portapapeles (compartir no disponible en web)'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
+        await ShareHelper.shareText(
+          text: textToShare,
+          context: context,
+        );
         return;
       }
 
-      // Solo para móvil, web no soporta compartir imágenes
-      if (!kIsWeb) {
-        // Guardar en directorio externo público para evitar FileProvider
-        final dir = await getExternalStorageDirectory();
-        if (dir == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: No se pudo acceder al almacenamiento'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-        final safeFileName = codigoId.replaceAll(RegExp(r'[^\w\s-]'), '_');
-        final file = File('${dir.path}/grabovoi_$safeFileName.png');
-        await file.writeAsBytes(pngBytes);
-
-        // Usar shareXFiles con XFile desde ruta (archivos externos no requieren FileProvider)
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Función de compartir no disponible en web'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      // Usar el helper para compartir la imagen (maneja iOS correctamente)
+      await ShareHelper.shareImage(
+        pngBytes: pngBytes,
+        fileName: 'grabovoi_$codigoId',
+        text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        context: context,
+      );
     } catch (e) {
       print('Error al compartir código: $e');
       if (mounted) {
@@ -3438,36 +3432,13 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
         return;
       }
 
-      // Solo para móvil, web no soporta compartir imágenes
-      if (!kIsWeb) {
-        // Guardar en directorio externo público para evitar FileProvider
-        final dir = await getExternalStorageDirectory();
-        if (dir == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: No se pudo acceder al almacenamiento'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-        final file = File('${dir.path}/resonancia_quantica.png');
-        await file.writeAsBytes(pngBytes);
-
-        // Usar shareXFiles con XFile desde ruta (archivos externos no requieren FileProvider)
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Función de compartir no disponible en web'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      // Usar el helper para compartir la imagen (maneja iOS correctamente)
+      await ShareHelper.shareImage(
+        pngBytes: pngBytes,
+        fileName: 'resonancia_quantica',
+        text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        context: context,
+      );
     } catch (e) {
       print('Error al compartir imagen: $e');
       if (mounted) {
@@ -5409,7 +5380,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'Combínalo con los siguientes códigos para amplificar la resonancia',
+                    'Combínalo con las siguientes secuencias para amplificar la resonancia',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -5420,7 +5391,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
-                  // Mostrar códigos uno arriba del otro (centrados)
+                  // Mostrar secuencias una arriba de la otra (centradas)
                   ...cards.map((card) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: card,
@@ -5447,7 +5418,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '✅ Código copiado: $codigoTexto',
+                '✅ Secuencia copiada: $codigoTexto',
                 style: GoogleFonts.inter(color: Colors.white),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -5471,7 +5442,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Código con icono de copiar
+            // Secuencia con icono de copiar
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

@@ -215,7 +215,7 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Código Utilizado (solo lectura - viene de la sesión terminada)
+                // Secuencia Utilizada (solo lectura - viene de la sesión terminada)
                 Row(
                   children: [
                     Expanded(
@@ -223,7 +223,7 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Código Utilizado',
+                            'Secuencia Utilizada',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,

@@ -47,5 +47,13 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Para iniciar sesión de forma rápida y segura.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Necesitamos acceso a tus fotos para que puedas seleccionar un avatar para tu perfil y compartir imágenes desde la app.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Necesitamos acceso para guardar imágenes compartidas desde la app y seleccionar fotos para tu perfil.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Necesitamos acceso a la cámara para que puedas tomar fotos para tu perfil.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Necesitamos acceso al micrófono para que puedas grabar audios durante tus sesiones de manifestación y pilotaje cuántico.</string>
 </dict>
 </plist>

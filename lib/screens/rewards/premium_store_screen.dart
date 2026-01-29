@@ -6,6 +6,7 @@ import '../../widgets/rewards_display.dart';
 import '../../models/rewards_model.dart';
 import '../../services/rewards_service.dart';
 import '../../config/supabase_config.dart';
+import 'premium_wallpaper_screen.dart';
 
 /// Pantalla de tienda premium con secuencias especiales y meditaciones
 class PremiumStoreScreen extends StatefulWidget {
@@ -59,17 +60,21 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           .select()
           .order('costo_cristales', ascending: true);
 
-      return (response as List).map((json) => CodigoPremium(
-        id: json['id'],
-        codigo: json['codigo'],
-        nombre: json['nombre'],
-        descripcion: json['descripcion'],
-        costoCristales: json['costo_cristales'],
-        categoria: json['categoria'] ?? 'Premium',
-        esRaro: json['es_raro'] ?? false,
-      )).toList();
+      return (response as List).map((json) {
+        return CodigoPremium(
+          id: json['id'],
+          codigo: json['codigo'],
+          nombre: json['nombre'],
+          descripcion: json['descripcion'],
+          costoCristales: json['costo_cristales'],
+          categoria: json['categoria'] ?? 'Premium',
+          esRaro: json['es_raro'] ?? false,
+          // Campo opcional en Supabase: URL completa o relativa de la imagen
+          wallpaperUrl: json['wallpaper_url'] as String?,
+        );
+      }).toList();
     } catch (e) {
-      print('Error cargando códigos premium: $e');
+      print('Error cargando secuencias premium: $e');
       return [];
     }
   }
@@ -150,7 +155,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
 
       await _rewardsService.addToHistory(
         'compra',
-        'Código premium desbloqueado: ${codigo.nombre}',
+        'Secuencia premium desbloqueada: ${codigo.nombre}',
         cantidad: codigo.costoCristales,
       );
 
@@ -529,9 +534,9 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                       // Recompensas actuales
                       if (_rewards != null) RewardsDisplay(compact: false),
                       const SizedBox(height: 30),
-                      // Códigos Premium
+                      // Secuencias Premium
                       Text(
-                        'Códigos Premium',
+                        'Secuencias Premium',
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -575,25 +580,54 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   Widget _buildCodigoPremiumCard(CodigoPremium codigo) {
     final estaDesbloqueado = _rewards?.codigosPremiumDesbloqueados.contains(codigo.id) ?? false;
     final puedeComprar = (_rewards?.cristalesEnergia ?? 0) >= codigo.costoCristales;
+    final tieneWallpaper = (codigo.wallpaperUrl != null && codigo.wallpaperUrl!.isNotEmpty);
+
+    void _abrirRecompensa() {
+      if (!estaDesbloqueado) {
+        return;
+      }
+
+      if (!tieneWallpaper) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('La imagen de esta secuencia aún no está disponible'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => PremiumWallpaperScreen(
+            codigo: codigo,
+            imageUrl: codigo.wallpaperUrl,
+          ),
+        ),
+      );
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: estaDesbloqueado
-            ? Colors.green.withOpacity(0.1)
-            : const Color(0xFF2C3E50).withOpacity(0.7),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: estaDesbloqueado
-              ? Colors.green
-              : codigo.esRaro
-                  ? Colors.purple
-                  : const Color(0xFFFFD700).withOpacity(0.5),
-          width: 2,
-        ),
-      ),
-      child: Column(
+      child: GestureDetector(
+        onTap: estaDesbloqueado && tieneWallpaper ? _abrirRecompensa : null,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: estaDesbloqueado
+                ? Colors.green.withOpacity(0.1)
+                : const Color(0xFF2C3E50).withOpacity(0.7),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: estaDesbloqueado
+                  ? Colors.green
+                  : codigo.esRaro
+                      ? Colors.purple
+                      : const Color(0xFFFFD700).withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -649,6 +683,22 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                         color: Colors.white70,
                       ),
                     ),
+                    if (estaDesbloqueado && tieneWallpaper) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.image, color: Colors.green, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Toca para ver tu fondo cuántico',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.greenAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -673,9 +723,25 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                 ],
               ),
               if (estaDesbloqueado)
-                const Text(
-                  '✅ Desbloqueado',
-                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      '✅ Desbloqueado',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (!tieneWallpaper)
+                      Text(
+                        'Imagen próximamente',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white60,
+                        ),
+                      ),
+                  ],
                 )
               else
                 CustomButton(
@@ -686,6 +752,8 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
             ],
           ),
         ],
+          ),
+        ),
       ),
     );
   }

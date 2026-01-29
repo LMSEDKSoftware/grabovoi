@@ -72,6 +72,7 @@ CodigoPremium _$CodigoPremiumFromJson(Map<String, dynamic> json) =>
       costoCristales: (json['costoCristales'] as num).toInt(),
       categoria: json['categoria'] as String? ?? 'Premium',
       esRaro: json['esRaro'] as bool? ?? false,
+      wallpaperUrl: json['wallpaperUrl'] as String?,
     );
 
 Map<String, dynamic> _$CodigoPremiumToJson(CodigoPremium instance) =>
@@ -83,6 +84,7 @@ Map<String, dynamic> _$CodigoPremiumToJson(CodigoPremium instance) =>
       'costoCristales': instance.costoCristales,
       'categoria': instance.categoria,
       'esRaro': instance.esRaro,
+      'wallpaperUrl': instance.wallpaperUrl,
     };
 
 MeditacionEspecial _$MeditacionEspecialFromJson(Map<String, dynamic> json) =>

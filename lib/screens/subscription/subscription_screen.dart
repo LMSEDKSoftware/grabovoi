@@ -154,11 +154,21 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final mediaQuery = MediaQuery.of(context);
     final isCompact = mediaQuery.size.width < 360;
     final now = DateTime.now();
-    final hasPaidSubscription = _hasPremiumAccess &&
-        (_subscriptionExpiryDate != null &&
-            _subscriptionExpiryDate!.isAfter(now) &&
-            (_remainingDays == null || _remainingDays! <= 0));
-    final expiryText = _subscriptionExpiryDate != null
+
+    // ¿Hay alguna fecha de expiración conocida y futura?
+    final hasKnownFutureExpiry = _subscriptionExpiryDate != null &&
+        _subscriptionExpiryDate!.isAfter(now);
+
+    // ¿Trial activo?
+    final bool hasTrial =
+        _remainingDays != null && _remainingDays! > 0;
+
+    // PRO pagado: tiene acceso premium y NO está en trial.
+    // Si además tenemos fecha de expiración, la mostramos.
+    final bool hasPaidSubscription =
+        _hasPremiumAccess && !hasTrial;
+
+    final String expiryText = hasKnownFutureExpiry
         ? DateFormat('dd/MM/yyyy').format(_subscriptionExpiryDate!)
         : '-';
 
@@ -239,7 +249,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Tu suscripción está activa.',
+                              hasKnownFutureExpiry
+                                  ? 'Tu suscripción está activa.'
+                                  : 'Tu suscripción está activa. Gestiona los detalles desde Google Play.',
                               style: GoogleFonts.inter(
                                 color: Colors.white70,
                                 fontSize: 15,

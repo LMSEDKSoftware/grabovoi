@@ -1,5 +1,8 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
+import 'package:image_picker/image_picker.dart';
+import 'ios_photo_permission_helper.dart';
 
 /// Servicio para gestionar solicitud de permisos al inicio de la app
 class PermissionsService {
@@ -40,6 +43,7 @@ class PermissionsService {
 
       if (status.isPermanentlyDenied) {
         print('⚠️ Permiso de notificaciones permanentemente denegado');
+        // NO abrir configuración automáticamente, el usuario puede hacerlo manualmente
         return false;
       }
 
@@ -68,14 +72,29 @@ class PermissionsService {
   /// Solicitar permiso de fotos/galería
   Future<bool> _requestPhotoPermission() async {
     try {
-      // En Android 13+ usar Permission.photos, en versiones anteriores Permission.storage
-      Permission permissionToUse = Permission.photos;
+      Permission permissionToUse;
       
-      if (!kIsWeb) {
-        // Verificar qué versión de Android
+      if (kIsWeb) {
+        return false; // No aplica en web
+      }
+      
+      // En iOS, primero intentar usar PHPhotoLibrary.requestAuthorization nativo
+      // Esto hace que el permiso aparezca en Configuración sin mostrar el selector
+      if (Platform.isIOS) {
+        print('📱 [iOS] Intentando solicitar permiso usando PHPhotoLibrary nativo...');
+        final nativeResult = await IOSPhotoPermissionHelper.requestPhotoPermission();
+        if (nativeResult) {
+          print('✅ [iOS] Permiso de fotos otorgado mediante PHPhotoLibrary');
+          return true;
+        }
+        print('⚠️ [iOS] Permiso no otorgado mediante PHPhotoLibrary, intentando con permission_handler...');
+        permissionToUse = Permission.photos;
+      } else {
+        // En Android 13+ usar Permission.photos, en versiones anteriores Permission.storage
+        permissionToUse = Permission.photos;
         try {
-          final photosStatus = await Permission.photos.status;
-          permissionToUse = Permission.photos;
+          // Verificar si está disponible
+          await Permission.photos.status;
         } catch (_) {
           // Si no está disponible, usar storage para versiones antiguas
           permissionToUse = Permission.storage;
@@ -92,6 +111,7 @@ class PermissionsService {
 
       if (status.isPermanentlyDenied) {
         print('⚠️ Permiso de fotos permanentemente denegado');
+        // NO abrir configuración automáticamente, el usuario puede hacerlo manualmente
         return false;
       }
 
@@ -104,9 +124,11 @@ class PermissionsService {
         return true;
       } else if (result.isDenied) {
         print('⚠️ Permiso de fotos denegado por el usuario');
+        // En iOS, la opción ya debería aparecer en Configuración gracias al intento de ImagePicker
         return false;
       } else if (result.isPermanentlyDenied) {
         print('❌ Permiso de fotos permanentemente denegado');
+        // NO abrir configuración automáticamente, el usuario puede hacerlo manualmente
         return false;
       }
 

@@ -94,6 +94,11 @@ class CodigoPremium {
   final int costoCristales; // Cristales necesarios para desbloquear
   final String categoria;
   final bool esRaro; // Códigos especiales/raros
+  /// URL (opcional) del wallpaper asociado a este código premium.
+  /// 
+  /// - En Supabase se recomienda almacenar este valor en la columna `wallpaper_url`.
+  /// - En JSON local (por ejemplo configuraciones estáticas) se usa la clave `wallpaperUrl`.
+  final String? wallpaperUrl;
 
   CodigoPremium({
     required this.id,
@@ -103,6 +108,7 @@ class CodigoPremium {
     required this.costoCristales,
     this.categoria = 'Premium',
     this.esRaro = false,
+    this.wallpaperUrl,
   });
 
   factory CodigoPremium.fromJson(Map<String, dynamic> json) => _$CodigoPremiumFromJson(json);

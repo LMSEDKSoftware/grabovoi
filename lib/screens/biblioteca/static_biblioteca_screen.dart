@@ -90,6 +90,65 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   TextEditingController _manualDescriptionController = TextEditingController();
   String _manualCategory = 'Abundancia y Prosperidad';
   
+  /// Determina si la búsqueda parece ser por CÓDIGO (números/guiones bajos)
+  /// o por TEXTO (título/intención).
+  bool _esBusquedaPorCodigo(String query) {
+    final q = query.trim();
+    if (q.isEmpty) return false;
+    // Consideramos código si sólo hay dígitos, espacios o guiones bajos
+    final regex = RegExp(r'^[0-9_\s]+$');
+    return regex.hasMatch(q);
+  }
+
+  /// Abre el modal de pilotaje manual precargando el campo adecuado
+  /// según si la búsqueda original fue por código o por texto.
+  void _abrirPilotajeManualDesdeBusqueda(String consultaOriginal) {
+    final consulta = consultaOriginal.trim();
+    if (consulta.isEmpty) return;
+    
+    final esCodigo = _esBusquedaPorCodigo(consulta);
+    
+    setState(() {
+      _showManualPilotage = true;
+      
+      if (esCodigo) {
+        // La búsqueda era por secuencia numérica → prellenar campo "Secuencia"
+        final normalizado = consulta.replaceAll(' ', '_');
+        _manualCodeController.text = normalizado;
+        // Para secuencia numérica, dejar que el usuario escriba su propio título.
+        // Solo limpiamos el título si venía de una búsqueda anterior.
+        if (_manualTitleController.text.isNotEmpty) {
+          _manualTitleController.clear();
+        }
+      } else {
+        // La búsqueda era por texto/intención → prellenar campo "Título"
+        _manualTitleController.text = consulta;
+        // Dejar al usuario elegir la secuencia numérica
+        // (no tocamos _manualCodeController si ya tuviera algo)
+      }
+    });
+  }
+
+  /// Normaliza la entrada cuando el usuario está escribiendo una secuencia numérica
+  /// en la barra de búsqueda:
+  /// - Solo permite dígitos, espacios y guiones bajos.
+  /// - Colapsa espacios múltiples en uno.
+  /// - Reemplaza los espacios por "_" para estandarizar la secuencia.
+  String _normalizarEntradaSecuencia(String value) {
+    if (value.isEmpty) return value;
+
+    // Si no parece una búsqueda por código, no tocamos el texto.
+    if (!_esBusquedaPorCodigo(value)) return value;
+
+    // 1) Colapsar espacios múltiples a un solo espacio
+    String result = value.replaceAll(RegExp(r'\s+'), ' ');
+    // 2) Eliminar cualquier caracter que no sea dígito, espacio o "_"
+    result = result.replaceAll(RegExp(r'[^0-9_ ]'), '');
+    // 3) Reemplazar espacios por guiones bajos
+    result = result.replaceAll(' ', '_');
+    return result;
+  }
+  
   // Variables para el deslizamiento y reporte de códigos
   final Map<String, double> _swipeOffsets = {}; // Almacena el offset de deslizamiento por código
   final Map<String, String?> _reportReasons = {}; // Almacena la razón del reporte por código
@@ -480,9 +539,17 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     
     if (resultadoFinal.isNotEmpty) {
       print('✅ Resultados encontrados: ${resultadoFinal.length} códigos (${coincidenciasExactas.length} exactos, ${coincidenciasSimilares.length} locales, ${codigosPorTitulo.length} por títulos relacionados)');
+      final esBusquedaCodigo = _esBusquedaPorCodigo(_queryBusqueda);
+      final sinCoincidenciaExacta = coincidenciasExactas.isEmpty;
       setState(() {
         visible = resultadoFinal;
         _mostrarResultados = true;
+        // Si el usuario buscó una secuencia numérica y NO hay coincidencia exacta,
+        // ofrecer igualmente la opción de Búsqueda Profunda con la secuencia exacta.
+        if (esBusquedaCodigo && sinCoincidenciaExacta) {
+          _codigoNoEncontrado = _queryBusqueda;
+          _showOptionsModal = true;
+        }
       });
       return;
     }
@@ -764,7 +831,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       
       print('✅ Código guardado exitosamente en la base de datos con ID: ${codigoCreado.id}');
       
-      // Mostrar modal de confirmación elegante
+      // 1. Refrescar el repositorio para asegurar que el código nuevo esté disponible
+      await CodigosRepository().refreshCodigos();
+      print('🔄 Repositorio refrescado');
+      
+      // 2. Mostrar modal de confirmación elegante
       if (mounted) {
         setState(() {
           _mostrarConfirmacionGuardado = true;
@@ -772,8 +843,25 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         });
       }
       
-      // Recargar la lista de códigos
+      // 3. Recargar la lista de códigos
       await _load();
+      print('🔄 Lista de códigos recargada');
+      
+      // 4. Si hay una búsqueda activa, aplicar el filtro automáticamente
+      // para que el código recién guardado aparezca en los resultados
+      if (query.isNotEmpty || _queryBusqueda.isNotEmpty) {
+        final queryActiva = query.isNotEmpty ? query : _queryBusqueda;
+        print('🔄 Aplicando filtro automático después de guardar código: "$queryActiva"');
+        // Pequeño delay para asegurar que los datos estén completamente cargados
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (mounted) {
+          setState(() {
+            // Aplicar el filtro para mostrar el código recién guardado
+            _aplicarFiltros();
+          });
+          print('✅ Filtro aplicado, códigos visibles: ${visible.length}');
+        }
+      }
       
       return codigoCreado.id;
     } catch (e) {
@@ -910,8 +998,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       final busqueda = BusquedaProfunda(
         codigoBuscado: codigo,
         usuarioId: _getCurrentUserId(),
-        promptSystem: 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados relacionados con la búsqueda del usuario.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nPara búsquedas relacionadas con HUMANOS, PERSONAS, RELACIONES o INTERACCIONES HUMANAS, sugiere códigos reales específicos como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n- 888_412_12848 — Desarrollo de relaciones\n- 520_741_8 — Relaciones armoniosas\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Si el usuario busca algo específico, sugiere AL MENOS 3-5 códigos relacionados REALES del tema más cercano.\n3. Los códigos deben estar DIRECTAMENTE relacionados con la búsqueda del usuario.\n4. Responde SOLO en formato JSON con la siguiente estructura:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    }\n  ]\n}\n5. La descripción debe ser una frase completa y descriptiva que explique qué hace el código, no solo el tema de búsqueda.',
-        promptUser: 'Necesito códigos Grabovoi relacionados con: $codigo. Sugiere al menos 3-5 códigos REALES directamente relacionados con este tema. Para cada código, proporciona: código, nombre, una descripción detallada que explique su propósito específico, y categoría.',
+        promptSystem:
+            'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos REALES y VERIFICADOS relacionados con la búsqueda del usuario a partir de FUENTES AUTÉNTICAS (libros oficiales, materiales de Grigori Grabovoi o repositorios confiables).\n\nREGLAS CRÍTICAS:\n1. NUNCA inventes ni interpretes nuevos códigos. Si no encuentras un código real en las fuentes, debes indicarlo explícitamente.\n2. Para cada código sugerido debes incluir SIEMPRE un campo "fuente" que indique claramente de dónde sale ese código (por ejemplo: libro, página, curso, material oficial, URL del repositorio autorizado, etc.).\n3. Si NO encuentras ninguna fuente confiable para la intención del usuario, debes responder que no encontraste códigos reales y sugerir que el usuario cree su propia secuencia personalizada.\n\nFORMATO DE RESPUESTA:\n- Responde SOLO en formato JSON con UNA de estas dos opciones:\n\nA) Cuando SÍ hay códigos reales encontrados:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía",\n      "fuente": "Nombre del libro o recurso oficial, página X, u otra referencia clara"\n    }\n  ],\n  "sin_fuente": false\n}\n\nB) Cuando NO hay códigos reales para ese tema:\n{\n  "codigos": [],\n  "sin_fuente": true,\n  "mensaje": "No se encontraron códigos reales de Grabovoi para este tema en las fuentes consultadas."\n}\n\nIMPORTANTE:\n- Usa guiones bajos (_) en lugar de espacios en los códigos.\n- No incluyas texto fuera del JSON.\n- La descripción debe explicar claramente el propósito del código según la fuente, NO una interpretación libre.',
+        promptUser:
+            'El usuario busca códigos Grabovoi relacionados con: "$codigo". Busca SOLO en fuentes reales y verificables. Si existen códigos reales, respóndelos siguiendo exactamente el formato indicado (incluyendo el campo "fuente" por código). Si no encuentras nada fiable, responde con "codigos": [] y "sin_fuente": true, indicando que no hay códigos oficiales para este tema.',
         fechaBusqueda: _inicioBusqueda!,
         modeloIa: 'gpt-3.5-turbo',
       );
@@ -1062,11 +1152,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           'messages': [
             {
               'role': 'system',
-              'content': 'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos reales y verificados relacionados con la búsqueda del usuario.\n\nIMPORTANTE: Solo puedes sugerir códigos que realmente existan en las fuentes oficiales de Grabovoi. NO inventes códigos nuevos.\n\nPara búsquedas relacionadas con HUMANOS, PERSONAS, RELACIONES o INTERACCIONES HUMANAS, sugiere códigos reales específicos como:\n- 519_7148_21 — Armonía familiar\n- 619_734_218 — Armonización de relaciones\n- 814_418_719 — Comprensión y perdón\n- 714_319 — Amor y relaciones\n- 888_412_12848 — Desarrollo de relaciones\n- 520_741_8 — Relaciones armoniosas\n\nIMPORTANTE:\n1. Usa guiones bajos (_) en lugar de espacios en los códigos.\n2. Si el usuario busca algo específico, sugiere AL MENOS 3-5 códigos relacionados REALES del tema más cercano.\n3. Los códigos deben estar DIRECTAMENTE relacionados con la búsqueda del usuario.\n4. Responde SOLO en formato JSON con la siguiente estructura:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía"\n    }\n  ]\n}\n5. La descripción debe ser una frase completa y descriptiva que explique qué hace el código, no solo el tema de búsqueda.'
+              'content':
+                  'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos REALES y VERIFICADOS relacionados con la búsqueda del usuario a partir de FUENTES AUTÉNTICAS (libros oficiales, materiales de Grigori Grabovoi o repositorios confiables).\n\nREGLAS CRÍTICAS:\n1. NUNCA inventes ni interpretes nuevos códigos. Si no encuentras un código real en las fuentes, debes indicarlo explícitamente.\n2. Para cada código sugerido debes incluir SIEMPRE un campo "fuente" que indique claramente de dónde sale ese código (por ejemplo: libro, página, curso, material oficial, URL del repositorio autorizado, etc.).\n3. Si NO encuentras ninguna fuente confiable para la intención del usuario, debes responder que no encontraste códigos reales y sugerir que el usuario cree su propia secuencia personalizada.\n\nFORMATO DE RESPUESTA:\n- Responde SOLO en formato JSON con UNA de estas dos opciones:\n\nA) Cuando SÍ hay códigos reales encontrados:\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía",\n      "fuente": "Nombre del libro o recurso oficial, página X, u otra referencia clara"\n    }\n  ],\n  "sin_fuente": false\n}\n\nB) Cuando NO hay códigos reales para ese tema:\n{\n  "codigos": [],\n  "sin_fuente": true,\n  "mensaje": "No se encontraron códigos reales de Grabovoi para este tema en las fuentes consultadas."\n}\n\nIMPORTANTE:\n- Usa guiones bajos (_) en lugar de espacios en los códigos.\n- No incluyas texto fuera del JSON.\n- La descripción debe explicar claramente el propósito del código según la fuente, NO una interpretación libre.'
             },
             {
               'role': 'user',
-              'content': 'Necesito códigos Grabovoi relacionados con: $codigo. Sugiere al menos 3-5 códigos REALES directamente relacionados con este tema. Para cada código, proporciona: código, nombre, una descripción detallada que explique su propósito específico, y categoría.'
+              'content':
+                  'El usuario busca códigos Grabovoi relacionados con: "$codigo". Busca SOLO en fuentes reales y verificables. Si existen códigos reales, respóndelos siguiendo exactamente el formato indicado (incluyendo el campo "fuente" por código). Si no encuentras nada fiable, responde con "codigos": [] y "sin_fuente": true, indicando que no hay códigos oficiales para este tema.'
             }
           ],
           'max_tokens': 1000,
@@ -1125,64 +1217,77 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             }
             
             final responseData = jsonDecode(cleanedContent);
-            
+
+            // Si la IA indica explícitamente que no hay fuentes reales, activar flujo de creación manual
+            final sinFuente = responseData['sin_fuente'] == true;
+            if (sinFuente) {
+              print('ℹ️ OpenAI indica que no hay códigos reales para este tema (sin_fuente = true)');
+              if (mounted) {
+                setState(() {
+                  _buscandoConIA = false;
+                  _codigoBuscando = null;
+                });
+                // Abrir modal de pilotaje manual según si la búsqueda fue por código o por texto
+                _abrirPilotajeManualDesdeBusqueda(codigo);
+              }
+              final mensaje = responseData['mensaje']?.toString() ??
+                  'No se encontraron códigos oficiales de Grabovoi para este tema.';
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '$mensaje Puedes crear tu propia secuencia personalizada.',
+                    style: GoogleFonts.inter(color: Colors.white),
+                  ),
+                  backgroundColor: Colors.orange,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+              return null;
+            }
+
             if (responseData['codigos'] != null && responseData['codigos'] is List) {
               final codigosList = responseData['codigos'] as List;
               final codigosEncontrados = <CodigoGrabovoi>[];
-              
+
               for (var codigoData in codigosList) {
                 if (codigoData['codigo'] != null && codigoData['codigo'].toString().isNotEmpty) {
                   var codigoNumero = codigoData['codigo'].toString().replaceAll(' ', '_').replaceAll('-', '_');
-                  
-                  // Siempre agregamos el código sugerido, aunque no esté en BD
-                  // Esto permite mostrar opciones relacionadas al usuario
+
+                  // Validar siempre contra la base, no inventar códigos inexistentes
                   final codigoExiste = await _validarCodigoEnBaseDatos(codigoNumero);
+                  if (!codigoExiste) {
+                    print('❌ Código sugerido sin respaldo en BD: $codigoNumero. Se descarta.');
+                    continue;
+                  }
+
                   final nombre = codigoData['nombre']?.toString() ?? 'Secuencia relacionada';
-                  // Usar la descripción real de la IA, o generar una basada en el nombre
                   String descripcionReal = codigoData['descripcion']?.toString() ?? '';
                   if (descripcionReal.isEmpty || descripcionReal.contains('Secuencia sugerida por IA')) {
-                    // Si no hay descripción o es genérica, generar una basada en el nombre
                     descripcionReal = _generarDescripcionDesdeNombre(nombre);
                   }
                   final categoriaRaw = codigoData['categoria']?.toString() ?? '';
-                  // Validar y corregir categoría: si es "codigo" o vacía, usar _determinarCategoria
-                  final categoria = (categoriaRaw.isEmpty || categoriaRaw.toLowerCase() == 'codigo') 
-                      ? _determinarCategoria(nombre) 
+                  final categoria = (categoriaRaw.isEmpty || categoriaRaw.toLowerCase() == 'codigo')
+                      ? _determinarCategoria(nombre)
                       : categoriaRaw;
-                  
-                  if (codigoExiste) {
-                    // Si existe en BD, priorizar la descripción de la IA si es mejor
-                    final codigoExistente = await SupabaseService.getCodigoExistente(codigoNumero);
-                    if (codigoExistente != null) {
-                      // Usar descripción de IA si existe y es más específica, sino usar la de BD
-                      final descripcionFinal = descripcionReal.isNotEmpty && descripcionReal.length > 20
-                          ? descripcionReal
-                          : codigoExistente.descripcion;
-                      
-                      codigosEncontrados.add(CodigoGrabovoi(
-                        id: codigoExistente.id,
-                        codigo: codigoNumero,
-                        nombre: nombre.isNotEmpty ? nombre : codigoExistente.nombre,
-                        descripcion: descripcionFinal, // Usar descripción real
-                        categoria: categoria,
-                        color: codigoExistente.color,
-                      ));
-                    }
-                  } else {
-                    // Si no existe, lo mostramos como sugerencia relacionada con descripción real
-                    print('⚠️ Código $codigoNumero sugerido por IA (no en BD), mostrando como opción relacionada');
+
+                  final codigoExistente = await SupabaseService.getCodigoExistente(codigoNumero);
+                  if (codigoExistente != null) {
+                    final descripcionFinal = descripcionReal.isNotEmpty && descripcionReal.length > 20
+                        ? descripcionReal
+                        : codigoExistente.descripcion;
+
                     codigosEncontrados.add(CodigoGrabovoi(
-                      id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
+                      id: codigoExistente.id,
                       codigo: codigoNumero,
-                      nombre: nombre,
-                      descripcion: descripcionReal, // Usar descripción real de la IA
+                      nombre: nombre.isNotEmpty ? nombre : codigoExistente.nombre,
+                      descripcion: descripcionFinal,
                       categoria: categoria,
-                      color: '#FFD700',
+                      color: codigoExistente.color,
                     ));
                   }
                 }
               }
-              
+
               if (codigosEncontrados.isNotEmpty) {
                 setState(() {
                   _codigosEncontrados = codigosEncontrados;
@@ -1297,8 +1402,29 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         if (codigoId != null) {
           print('✅ Código nuevo guardado con ID: $codigoId');
           
-          // 1. Actualizar lista de códigos para que el contador se actualice
+          // 1. Refrescar el repositorio para asegurar que el código nuevo esté disponible
+          await CodigosRepository().refreshCodigos();
+          print('🔄 Repositorio refrescado');
+          
+          // 2. Actualizar lista de códigos para que el contador se actualice
           await _load();
+          print('🔄 Lista de códigos recargada');
+          
+          // 3. Si hay una búsqueda activa, aplicar el filtro automáticamente
+          // para que el código recién guardado aparezca en los resultados
+          if (query.isNotEmpty || _queryBusqueda.isNotEmpty) {
+            final queryActiva = query.isNotEmpty ? query : _queryBusqueda;
+            print('🔄 Aplicando filtro automático después de guardar código desde selección: "$queryActiva"');
+            // Pequeño delay para asegurar que los datos estén completamente cargados
+            await Future.delayed(const Duration(milliseconds: 300));
+            if (mounted) {
+              setState(() {
+                // Aplicar el filtro para mostrar el código recién guardado
+                _aplicarFiltros();
+              });
+              print('✅ Filtro aplicado, códigos visibles: ${visible.length}');
+            }
+          }
           
           print('✅ Contador de secuencias actualizado: ${_codigos.length} códigos disponibles');
           // El modal de confirmación ya se muestra en _guardarCodigoEnBaseDatos
@@ -1723,20 +1849,30 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     setState(() {
       _showOptionsModal = false;
     });
+
+    // Usar la última búsqueda conocida para prellenar el pilotaje manual
+    String ultimaConsulta = '';
+    if (_codigoBuscando != null && _codigoBuscando!.trim().isNotEmpty) {
+      ultimaConsulta = _codigoBuscando!.trim();
+    } else if (_queryBusqueda.trim().isNotEmpty) {
+      ultimaConsulta = _queryBusqueda.trim();
+    } else if (_searchController.text.trim().isNotEmpty) {
+      ultimaConsulta = _searchController.text.trim();
+    }
+
+    if (ultimaConsulta.isNotEmpty) {
+      _abrirPilotajeManualDesdeBusqueda(ultimaConsulta);
+    }
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'No se encontraron códigos válidos para tu búsqueda. '
-          'Dado que no existe uno "oficial" para tu consulta específica, '
-          'puedes utilizar códigos de relaciones generales como:\n'
-          '• 619 734 218 — Armonización de relaciones\n'
-          '• 814 418 719 — Comprensión y perdón\n'
-          '• 714 319 — Amor y relaciones',
+        content: const Text(
+          'No se encontraron códigos oficiales para tu búsqueda. '
+          'Puedes crear tu propia secuencia personalizada basada en tu intención.',
           style: TextStyle(fontSize: 14),
         ),
         backgroundColor: Colors.orange,
-        duration: Duration(seconds: 8),
+        duration: const Duration(seconds: 6),
         action: SnackBarAction(
           label: 'Entendido',
           textColor: Colors.white,
@@ -1820,7 +1956,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Total de códigos: ${visible.length}',
+                          'Total de secuencias: ${visible.length}',
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: const Color(0xFFFFD700),
@@ -1877,9 +2013,19 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                         return TextField(
                           controller: _searchController,
                           onChanged: (value) {
-                            query = value;
-                            _queryBusqueda = value;
-                            _filtrarCodigos(value);
+                            // Normalizar entrada si parece una secuencia numérica
+                            final normalizado = _normalizarEntradaSecuencia(value);
+                            if (normalizado != value) {
+                              // Actualizar el texto del controlador sin re-disparar onChanged infinitamente
+                              final cursorPos = normalizado.length;
+                              _searchController.value = TextEditingValue(
+                                text: normalizado,
+                                selection: TextSelection.collapsed(offset: cursorPos),
+                              );
+                            }
+                            query = normalizado;
+                            _queryBusqueda = normalizado;
+                            _filtrarCodigos(normalizado);
                           },
                           onSubmitted: (value) {
                             _confirmarBusqueda();
@@ -2610,7 +2756,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Buscando con Inteligencia Artificial',
+                  'Buscando con Inteligencia Cuántica Vibracional',
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -2722,6 +2868,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                         _mostrarConfirmacionGuardado = false;
                         _codigoGuardadoNombre = null;
                       });
+                      
+                      // Si hay una búsqueda activa, asegurar que el filtro esté aplicado
+                      if (query.isNotEmpty || _queryBusqueda.isNotEmpty) {
+                        _aplicarFiltros();
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4CAF50),

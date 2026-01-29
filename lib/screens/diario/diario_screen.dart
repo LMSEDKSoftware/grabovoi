@@ -173,7 +173,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Visualiza todas las secuencias que estás siguiendo. Cada una muestra el código activado y el detalle de cada día con tus intenciones, sensaciones y resultados.',
+                                'Visualiza todas las secuencias que estás siguiendo. Cada una muestra la secuencia activada y el detalle de cada día con tus intenciones, sensaciones y resultados.',
                                 style: GoogleFonts.inter(
                                   fontSize: 13,
                                   color: Colors.white70,
@@ -233,7 +233,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                     ),
                   ),
                   
-                  // Grid de secuencias agrupadas por código
+                  // Grid de secuencias agrupadas por secuencia
                               Expanded(
                     child: _secuenciasFiltradas.isEmpty
                         ? _buildEmptyState()
@@ -276,7 +276,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
     required String codigo,
     required List<Map<String, dynamic>> entradas,
   }) {
-    // Obtener el nombre del código desde el repositorio
+    // Obtener el nombre de la secuencia desde el repositorio
     final nombreCodigo = CodigosRepository().getTituloByCode(codigo);
     final diasUnicos = entradas.map((e) => e['fecha']).toSet().length;
 
@@ -310,7 +310,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
           padding: const EdgeInsets.all(18),
           child: Row(
             children: [
-              // Código destacado
+              // Secuencia destacada
               Container(
                 constraints: const BoxConstraints(maxWidth: 120),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -338,7 +338,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Título del código (abajo del código visualmente)
+                    // Título de la secuencia (abajo de la secuencia visualmente)
                     Text(
                       nombreCodigo.isNotEmpty && nombreCodigo != 'Campo Energético'
                           ? nombreCodigo
@@ -539,7 +539,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Código completo
+                          // Secuencia completa
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
@@ -884,7 +884,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'El diario transforma el uso de códigos de Grabovoi de una práctica pasiva a una experiencia activa y consciente, permitiendo a los usuarios comprender mejor su cuerpo, mente y espíritu a través del registro sistemático y la reflexión personal.',
+                    'El diario transforma el uso de secuencias de Grabovoi de una práctica pasiva a una experiencia activa y consciente, permitiendo a los usuarios comprender mejor su cuerpo, mente y espíritu a través del registro sistemático y la reflexión personal.',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       color: Colors.white70,

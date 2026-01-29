@@ -48,7 +48,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
     print('🔄 [BIBLIOTECA] ===========================================');
     print('🔄 [BIBLIOTECA] Timestamp: ${DateTime.now()}');
     print('🔄 [BIBLIOTECA] Estado actual: isLoading=$isLoading');
-    print('🔄 [BIBLIOTECA] Códigos actuales: ${codigos.length}');
+      print('🔄 [BIBLIOTECA] Secuencias actuales: ${codigos.length}');
     print('🔄 [BIBLIOTECA] Filtrados actuales: ${filtrados.length}');
     print('🔄 [BIBLIOTECA] ===========================================');
     
@@ -57,18 +57,18 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       print('🔄 [BIBLIOTECA] setState: isLoading = true');
       print('🔄 [BIBLIOTECA] Iniciando carga de datos via API...');
       
-      // Cargar códigos desde API
+      // Cargar secuencias desde API
       print('🔄 [BIBLIOTECA] Llamando BibliotecaSupabaseService.getTodosLosCodigos()...');
       final codigosData = await BibliotecaSupabaseService.getTodosLosCodigos();
       
       print('📚 [BIBLIOTECA] ===========================================');
       print('📚 [BIBLIOTECA] DATOS OBTENIDOS DE API');
       print('📚 [BIBLIOTECA] ===========================================');
-      print('📚 [BIBLIOTECA] Códigos cargados: ${codigosData.length}');
-      print('📚 [BIBLIOTECA] Primer código: ${codigosData.isNotEmpty ? codigosData.first.nombre : 'N/A'}');
-      print('📚 [BIBLIOTECA] Último código: ${codigosData.isNotEmpty ? codigosData.last.nombre : 'N/A'}');
+      print('📚 [BIBLIOTECA] Secuencias cargadas: ${codigosData.length}');
+      print('📚 [BIBLIOTECA] Primera secuencia: ${codigosData.isNotEmpty ? codigosData.first.nombre : 'N/A'}');
+      print('📚 [BIBLIOTECA] Última secuencia: ${codigosData.isNotEmpty ? codigosData.last.nombre : 'N/A'}');
       print('📚 [BIBLIOTECA] Categorías en datos: ${codigosData.map((c) => c.categoria).toSet().toList()}');
-      print('📚 [BIBLIOTECA] Primeros 3 códigos: ${codigosData.take(3).map((c) => '${c.codigo} - ${c.nombre}').toList()}');
+      print('📚 [BIBLIOTECA] Primeras 3 secuencias: ${codigosData.take(3).map((c) => '${c.codigo} - ${c.nombre}').toList()}');
       print('📚 [BIBLIOTECA] ===========================================');
       
       // Cargar categorías desde API
@@ -88,7 +88,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
         _categorias = ['Todos', ...categoriasData];
         favoritos = favoritosData;
         popularidad = []; // Se carga dinámicamente
-        // Inicializar _favoritosSet con los códigos (strings) de los favoritos
+        // Inicializar _favoritosSet con las secuencias (strings) de los favoritos
         _favoritosSet = {};
         for (final favorito in favoritos) {
           final codigo = codigos.firstWhere((c) => c.id == favorito.codigoId);
@@ -110,7 +110,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       // Aplicar filtros iniciales después de cargar los datos
       _aplicarFiltros();
       
-      print('✅ Datos cargados exitosamente via API. Total códigos: ${codigos.length}');
+      print('✅ Datos cargados exitosamente via API. Total secuencias: ${codigos.length}');
       print('✅ Categorías finales: $_categorias');
       print('✅ Filtrados iniciales: ${filtrados.length}');
     } catch (e) {
@@ -120,7 +120,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       
       // Mostrar mensaje de error amigable al usuario
       if (mounted) {
-        String mensajeError = 'Error al cargar los códigos';
+        String mensajeError = 'Error al cargar las secuencias';
         String tituloError = 'Error de Conexión';
         
         if (e.toString().contains('Error DNS')) {
@@ -194,7 +194,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
     print('🔍 [FILTROS] Tab actual: $_tab');
     print('🔍 [FILTROS] Categoría: $_filtroCategoria');
     print('🔍 [FILTROS] Query: "$_query"');
-    print('🔍 [FILTROS] Códigos disponibles: ${codigos.length}');
+    print('🔍 [FILTROS] Secuencias disponibles: ${codigos.length}');
     print('🔍 [FILTROS] Favoritos disponibles: ${favoritos.length}');
     print('🔍 [FILTROS] Filtrados ANTES: ${filtrados.length}');
     print('🔍 [FILTROS] ===========================================');
@@ -207,8 +207,8 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       print('🔍 [FILTROS] Favoritos: ${favoritos.map((f) => f.codigoId).toList()}');
     } else {
       base = List.from(codigos);
-      print('🔍 [FILTROS] Usando todos los códigos como base: ${base.length}');
-      print('🔍 [FILTROS] Primeros 3 códigos: ${base.take(3).map((c) => c.nombre).toList()}');
+      print('🔍 [FILTROS] Usando todas las secuencias como base: ${base.length}');
+      print('🔍 [FILTROS] Primeras 3 secuencias: ${base.take(3).map((c) => c.nombre).toList()}');
       
       if (_filtroCategoria != 'Todos') {
         base = base.where((c) => c.categoria.toLowerCase() == _filtroCategoria.toLowerCase()).toList();
@@ -254,9 +254,9 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
     print('🔍 [FILTROS] ===========================================');
     print('🔍 [FILTROS] RESULTADO FINAL DE FILTROS');
     print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] Códigos filtrados: ${base.length}');
-    print('🔍 [FILTROS] Primeros 3 códigos: ${base.take(3).map((c) => c.nombre).toList()}');
-    print('🔍 [FILTROS] Últimos 3 códigos: ${base.length > 3 ? base.skip(base.length - 3).map((c) => c.nombre).toList() : base.map((c) => c.nombre).toList()}');
+    print('🔍 [FILTROS] Secuencias filtradas: ${base.length}');
+    print('🔍 [FILTROS] Primeras 3 secuencias: ${base.take(3).map((c) => c.nombre).toList()}');
+    print('🔍 [FILTROS] Últimas 3 secuencias: ${base.length > 3 ? base.skip(base.length - 3).map((c) => c.nombre).toList() : base.map((c) => c.nombre).toList()}');
     print('🔍 [FILTROS] Categorías en filtrados: ${base.map((c) => c.categoria).toSet().toList()}');
     print('🔍 [FILTROS] ===========================================');
     
@@ -268,7 +268,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
     print('🔍 [FILTROS] setState COMPLETADO');
     print('🔍 [FILTROS] ===========================================');
     print('🔍 [FILTROS] Filtrados DESPUÉS: ${filtrados.length}');
-    print('🔍 [FILTROS] UI actualizada con ${filtrados.length} códigos');
+    print('🔍 [FILTROS] UI actualizada con ${filtrados.length} secuencias');
     print('🔍 [FILTROS] ===========================================');
   }
 
@@ -287,16 +287,16 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
         );
       }
       
-      // Buscar códigos siguiendo el sistema de 3 niveles
+      // Buscar secuencias siguiendo el sistema de 3 niveles
       final resultado = await AICodesService.buscarYCrearCodigos(consulta);
       
       if (mounted) {
         switch (resultado['tipo']) {
           case 'oficiales':
-            final codigos = resultado['codigos'] as List<CodigoGrabovoi>;
+            final secuencias = resultado['codigos'] as List<CodigoGrabovoi>;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✅ ${resultado['mensaje']} (${codigos.length} secuencias encontradas)'),
+                content: Text('✅ ${resultado['mensaje']} (${secuencias.length} secuencias encontradas)'),
                 backgroundColor: const Color(0xFF4CAF50),
                 duration: const Duration(seconds: 4),
               ),
@@ -304,10 +304,10 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
             break;
             
           case 'adicionales':
-            final codigos = resultado['codigos'] as List<CodigoGrabovoi>;
+            final secuencias = resultado['codigos'] as List<CodigoGrabovoi>;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✅ ${resultado['mensaje']} (${codigos.length} secuencias agregadas)'),
+                content: Text('✅ ${resultado['mensaje']} (${secuencias.length} secuencias agregadas)'),
                 backgroundColor: const Color(0xFF2196F3),
                 duration: const Duration(seconds: 4),
               ),
@@ -362,7 +362,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'No se encontraron códigos oficiales o auténticos para "$consulta".',
+              'No se encontraron secuencias oficiales o auténticas para "$consulta".',
               style: GoogleFonts.inter(
                 color: Colors.white70,
                 fontSize: 14,
@@ -551,8 +551,8 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
               // Estado de datos
               _buildDebugInfoItem('Estado de carga', isLoading ? 'Cargando...' : 'Completado'),
               const SizedBox(height: 8),
-              _buildDebugInfoItem('Total códigos', '${codigos.length}'),
-              _buildDebugInfoItem('Códigos filtrados', '${filtrados.length}'),
+              _buildDebugInfoItem('Total secuencias', '${codigos.length}'),
+              _buildDebugInfoItem('Secuencias filtradas', '${filtrados.length}'),
               _buildDebugInfoItem('Categorías disponibles', '${_categorias.length}'),
               _buildDebugInfoItem('Favoritos', '${favoritos.length}'),
               _buildDebugInfoItem('Popularidad registros', '${popularidad.length}'),
@@ -577,7 +577,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '🚨 DIAGNÓSTICO - No hay códigos',
+                        '🚨 DIAGNÓSTICO - No hay secuencias',
                         style: GoogleFonts.inter(
                           color: Colors.red,
                           fontSize: 12,
@@ -698,7 +698,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '💡 Si no ves códigos, prueba recargar los datos o reiniciar los filtros.',
+                  '💡 Si no ves secuencias, prueba recargar los datos o reiniciar los filtros.',
                   style: GoogleFonts.inter(
                     color: Colors.orange,
                     fontSize: 11,
@@ -806,7 +806,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildDebugInfoItem('Conexión', '✅ Exitosa'),
-              _buildDebugInfoItem('Códigos obtenidos', '${testResult.length}'),
+              _buildDebugInfoItem('Secuencias obtenidas', '${testResult.length}'),
               _buildDebugInfoItem('Estado', testResult.isEmpty ? '⚠️ Lista vacía' : '✅ Con datos'),
               
               if (testResult.isNotEmpty) ...[
@@ -946,7 +946,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                         Row(
                           children: [
                             Text(
-                              '${codigos.length} códigos disponibles',
+                              '${codigos.length} secuencias disponibles',
                               style: GoogleFonts.inter(
                                 color: Colors.white70,
                                 fontSize: 16,
@@ -985,7 +985,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Códigos numéricos de manifestación',
+                      'Secuencias numéricas de manifestación',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: Colors.white70,
@@ -1213,7 +1213,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
   }
 
   Color _getCategoryColor(String categoria) {
-    // Buscar el color en la lista de códigos filtrados
+    // Buscar el color en la lista de secuencias filtradas
     final codigo = filtrados.firstWhere(
       (c) => c.categoria.toLowerCase() == categoria.toLowerCase(),
       orElse: () => CodigoGrabovoi(
@@ -1266,7 +1266,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
               letterSpacing: 4,
             ),
             const SizedBox(height: 20),
-            // Descripción del código con formato estándar
+            // Descripción de la secuencia con formato estándar
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1395,7 +1395,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Los códigos numéricos de Grabovoi son herramientas de manifestación y no sustituyen el consejo, diagnóstico o tratamiento médico profesional. Siempre consulta con profesionales de la salud calificados para cualquier condición médica.',
+                    'Las secuencias numéricas de Grabovoi son herramientas de manifestación y no sustituyen el consejo, diagnóstico o tratamiento médico profesional. Siempre consulta con profesionales de la salud calificados para cualquier condición médica.',
                     style: GoogleFonts.inter(
                       color: Colors.white70,
                       fontSize: 12,

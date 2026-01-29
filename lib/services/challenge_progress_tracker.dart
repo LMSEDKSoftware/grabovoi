@@ -108,19 +108,21 @@ class ChallengeProgressTracker extends ChangeNotifier {
     print('🔍 codesRepeatedToday: $_codesRepeatedToday');
     
     switch (action) {
-      case '🔄 Repetir al menos 1 código':
+      // Repeticiones de secuencias
+      case '🔄 Repetir al menos 1 secuencia':
         return (counts['codes_repeated'] ?? 0) >= 1;
-      case '🔄 Repetir 2 códigos diferentes':
+      case '🔄 Repetir 2 secuencias diferentes':
         return (counts['codes_repeated'] ?? 0) >= 2;
-      case '🔄 Repetir 3 códigos diferentes':
+      case '🔄 Repetir 3 secuencias diferentes':
         return (counts['codes_repeated'] ?? 0) >= 3;
-      case '🔄 Repetir 5 códigos diferentes':
+      case '🔄 Repetir 5 secuencias diferentes':
         return (counts['codes_repeated'] ?? 0) >= 5;
-      case '🚀 Pilotar 1 código':
+      // Pilotajes de secuencias
+      case '🚀 Pilotar 1 secuencia':
         return (counts['codes_piloted'] ?? 0) >= 1;
-      case '🚀 Pilotar 2 códigos':
+      case '🚀 Pilotar 2 secuencias':
         return (counts['codes_piloted'] ?? 0) >= 2;
-      case '🚀 Pilotar 3 códigos':
+      case '🚀 Pilotar 3 secuencias':
         return (counts['codes_piloted'] ?? 0) >= 3;
       case '🖼️ Compartir 1 pilotaje':
         return (counts['pilotages_shared'] ?? 0) >= 1;
@@ -167,14 +169,14 @@ class ChallengeProgressTracker extends ChangeNotifier {
   // Obtener el requerimiento de una acción
   int getActionRequirement(String action) {
     if (action.contains('🔄')) {
-      if (action.contains('1 código')) return 1;
-      if (action.contains('2 códigos')) return 2;
-      if (action.contains('3 códigos')) return 3;
-      if (action.contains('5 códigos')) return 5;
+      if (action.contains('1 secuencia')) return 1;
+      if (action.contains('2 secuencias')) return 2;
+      if (action.contains('3 secuencias')) return 3;
+      if (action.contains('5 secuencias')) return 5;
     } else if (action.contains('🚀')) {
-      if (action.contains('1 código')) return 1;
-      if (action.contains('2 códigos')) return 2;
-      if (action.contains('3 códigos')) return 3;
+      if (action.contains('1 secuencia')) return 1;
+      if (action.contains('2 secuencias')) return 2;
+      if (action.contains('3 secuencias')) return 3;
     } else if (action.contains('🖼️')) {
       if (action.contains('1 pilotaje')) return 1;
       if (action.contains('2 pilotajes')) return 2;
@@ -200,7 +202,8 @@ class ChallengeProgressTracker extends ChangeNotifier {
   // Iniciar el seguimiento del tiempo de uso de la app
   void _startAppUsageTracking() {
     _appStartTime = DateTime.now();
-    _appUsageTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    // Intervalo de 60 segundos para reducir escrituras y logs sin perder precisión útil
+    _appUsageTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
       if (_appStartTime != null) {
         final elapsed = DateTime.now().difference(_appStartTime!).inSeconds;
         trackAppUsage(elapsed);

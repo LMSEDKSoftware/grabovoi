@@ -227,7 +227,7 @@ serve(async (req) => {
                   <p>Hola${name ? ` ${name}` : ""},</p>
                   <p>Tu código de verificación es:</p>
                   <div class="otp-code">${dynamicTemplateData.otp_code || otpCode}</div>
-                  <p>Este código expirará en 10 minutos.</p>
+                  <p>Este código expirará en 1 hora.</p>
                   <p>Si no solicitaste este código, puedes ignorar este mensaje de forma segura.</p>
                   <div class="footer">
                     <p>© ${new Date().getFullYear()} ${APP_NAME}. Todos los derechos reservados.</p>

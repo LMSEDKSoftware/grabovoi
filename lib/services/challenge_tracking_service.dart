@@ -22,6 +22,15 @@ class ChallengeTrackingService extends ChangeNotifier {
   final List<UserAction> _userActions = [];
   final Map<String, StreamController<ChallengeProgress>> _progressControllers = {};
 
+  // Cache local para evitar escribir uso de app en Supabase demasiado frecuente
+  String? _lastAppUsageDayKey;
+  int _lastAppUsageTotalSeconds = 0;
+
+  String _getTodayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
   // Getters
   Map<String, ChallengeProgress> get challengesProgress => Map.unmodifiable(_challengesProgress);
   List<UserAction> get userActions => List.unmodifiable(_userActions);
@@ -66,17 +75,44 @@ class ChallengeTrackingService extends ChangeNotifier {
     // Guardar en Supabase si el usuario está autenticado
     if (_authService.isLoggedIn) {
       try {
-        await _supabase.from('user_actions').insert({
-          'user_id': _authService.currentUser!.id,
-          'action_type': type.toString().split('.').last,
-          'action_data': {
-            'codeId': codeId,
-            'codeName': codeName,
-            'duration': duration?.inMinutes,
-            'metadata': metadata,
-            'timestamp': action.timestamp.toIso8601String(),
-          },
-        });
+        // Para tiempo en app, evitar escribir registros demasiado frecuentes.
+        if (type == ActionType.tiempoEnApp) {
+          final todayKey = _getTodayKey();
+          final totalSeconds = (metadata['total_seconds'] as int?) ?? duration?.inSeconds ?? 0;
+
+          // Si el incremento es menor a 60s respecto al último registro de hoy, omitir escritura.
+          if (_lastAppUsageDayKey == todayKey &&
+              totalSeconds > 0 &&
+              (totalSeconds - _lastAppUsageTotalSeconds) < 60) {
+            _lastAppUsageTotalSeconds = totalSeconds;
+          } else {
+            _lastAppUsageDayKey = todayKey;
+            _lastAppUsageTotalSeconds = totalSeconds;
+            await _supabase.from('user_actions').insert({
+              'user_id': _authService.currentUser!.id,
+              'action_type': type.toString().split('.').last,
+              'action_data': {
+                'codeId': codeId,
+                'codeName': codeName,
+                'duration': duration?.inMinutes,
+                'metadata': metadata,
+                'timestamp': action.timestamp.toIso8601String(),
+              },
+            });
+          }
+        } else {
+          await _supabase.from('user_actions').insert({
+            'user_id': _authService.currentUser!.id,
+            'action_type': type.toString().split('.').last,
+            'action_data': {
+              'codeId': codeId,
+              'codeName': codeName,
+              'duration': duration?.inMinutes,
+              'metadata': metadata,
+              'timestamp': action.timestamp.toIso8601String(),
+            },
+          });
+        }
       } catch (e) {
         print('Error guardando acción en Supabase: $e');
       }
@@ -86,9 +122,13 @@ class ChallengeTrackingService extends ChangeNotifier {
     await _updateActiveChallenges(action);
     
     // Mostrar notificación de acción completada
-    // NOTA: Para sesiones de pilotaje, la notificación principal viene de onPilotageCompleted()
-    // que ya incluye el código. NO enviar notificación aquí para evitar duplicados.
-    if (action.type != ActionType.sesionPilotaje) {
+    // NOTA:
+    // - Para sesiones de pilotaje, la notificación principal viene de onPilotageCompleted()
+    //   que ya incluye el código. NO enviar notificación aquí para evitar duplicados.
+    // - Para tiempo en app, preferimos no enviar notificaciones de "acción completada"
+    //   en cada actualización parcial para evitar ruido y consumo innecesario.
+    if (action.type != ActionType.sesionPilotaje &&
+        action.type != ActionType.tiempoEnApp) {
       await _showActionNotification(action);
     } else {
       // Para pilotajes, solo log (la notificación principal viene de NotificationScheduler.onPilotageCompleted())

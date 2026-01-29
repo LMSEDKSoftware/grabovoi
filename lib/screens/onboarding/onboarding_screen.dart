@@ -17,10 +17,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingSlide> _slides = [
+  // Mantener la lista como `static const` evita que el tree-shaking de iconos
+  // elimine glifos de Material Icons en builds release (especialmente en web).
+  static const List<OnboardingSlide> _slides = [
     OnboardingSlide(
       title: 'Tu esfera de pilotaje',
-      description: 'No solo es un círculo, es una antena cuántica de propósito.\n\nAquí, el enfoque se convierte en dirección.\n\nEl número en vibración.',
+      description: 'No es solo una imagen, es una antena cuántica de propósito.\n\nAquí, el enfoque se convierte en dirección.\n\nEl número en vibración.',
       mentalShift: 'No estás enfocando la mente. Estás alineando tu campo.',
       icon: Icons.auto_awesome,
       color: const Color(0xFFFFD700),
@@ -355,7 +357,7 @@ class OnboardingSlide {
   final IconData icon;
   final Color color;
 
-  OnboardingSlide({
+  const OnboardingSlide({
     required this.title,
     required this.description,
     required this.mentalShift,

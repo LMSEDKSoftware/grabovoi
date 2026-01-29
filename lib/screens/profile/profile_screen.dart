@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import 'package:image_picker/image_picker.dart';
@@ -22,6 +23,7 @@ import '../../services/admin_service.dart';
 import '../../screens/home/home_screen.dart';
 import '../admin/approve_suggestions_screen.dart';
 import '../admin/view_reports_screen.dart';
+import '../admin/manigrab_lovers_screen.dart';
 import '../rewards/premium_store_screen.dart';
 import '../rewards/mantras_screen.dart';
 import '../resources/resources_screen.dart';
@@ -336,6 +338,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                   );
                                 },
                               ),
+                              _buildCompactButton(
+                                text: 'ManiGrabLovers',
+                                icon: Icons.favorite,
+                                color: const Color(0xFFFF69B4),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ManiGrabLoversScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
                             ],
                           ],
                         );
@@ -361,6 +376,22 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         color: Colors.white54,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const SizedBox.shrink();
+                        final info = snapshot.data!;
+                        return Text(
+                          'Versión ${info.version}+${info.buildNumber}',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.white38,
+                          ),
+                          textAlign: TextAlign.center,
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -520,10 +551,15 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           final shouldOpen = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Permiso requerido'),
+              backgroundColor: const Color(0xFF1A1A2E),
+              title: const Text(
+                'Permiso de Fotos Requerido',
+                style: TextStyle(color: Colors.white),
+              ),
               content: const Text(
-                'Se necesita acceso a las fotos para seleccionar un avatar. '
-                '¿Deseas abrir la configuración para otorgar el permiso?',
+                'Para seleccionar un avatar, necesitamos acceso a tus fotos. '
+                'Puedes habilitarlo en Configuración > MANIGRAB > Fotos.',
+                style: TextStyle(color: Colors.white70),
               ),
               actions: [
                 TextButton(
@@ -532,7 +568,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Abrir configuración'),
+                  child: const Text(
+                    'Abrir Configuración',
+                    style: TextStyle(color: Color(0xFFFFD700)),
+                  ),
                 ),
               ],
             ),
@@ -556,10 +595,15 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               final shouldOpen = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Permiso requerido'),
+                  backgroundColor: const Color(0xFF1A1A2E),
+                  title: const Text(
+                    'Permiso de Fotos Requerido',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   content: const Text(
-                    'Se necesita acceso a las fotos. '
-                    '¿Deseas abrir la configuración?',
+                    'Para seleccionar un avatar, necesitamos acceso a tus fotos. '
+                    'Puedes habilitarlo en Configuración > MANIGRAB > Fotos.',
+                    style: TextStyle(color: Colors.white70),
                   ),
                   actions: [
                     TextButton(
@@ -568,7 +612,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text('Abrir configuración'),
+                      child: const Text(
+                        'Abrir Configuración',
+                        style: TextStyle(color: Color(0xFFFFD700)),
+                      ),
                     ),
                   ],
                 ),

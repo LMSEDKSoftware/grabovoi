@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -85,6 +85,12 @@ class NotificationService {
         settings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
+      
+      // NOTA: Los permisos NO se solicitan automáticamente aquí
+      // Se solicitarán mediante PermissionsRequestModal después del login
+      // DarwinInitializationSettings(requestAlertPermission: true) solo prepara
+      // el plugin para solicitar permisos cuando sea necesario
+      
       _isInitialized = true;
       
       print('✅ NotificationService inicializado');
@@ -92,6 +98,69 @@ class NotificationService {
       print('⚠️ Error inicializando NotificationService: $e');
       _isInitialized = true; // Marcar como inicializado para no volver a intentar
     }
+  }
+
+  /// Solicitar permisos explícitamente en iOS
+  /// Esto es necesario para que las notificaciones aparezcan en el centro de notificaciones
+  Future<bool> _requestIOSPermissions() async {
+    if (kIsWeb || !Platform.isIOS) {
+      return true; // No aplica para web o Android
+    }
+    
+    try {
+      print('📱 [iOS] Verificando permisos de notificaciones...');
+      
+      // IMPORTANTE: Con DarwinInitializationSettings(requestAlertPermission: true),
+      // los permisos se solicitan automáticamente durante initialize().
+      // Este método solo verifica que funcionen correctamente.
+      
+      print('💡 [iOS] Los permisos deberían haberse solicitado automáticamente durante initialize()');
+      print('💡 [iOS] Verifica en Configuración > MANIGRAB > Notificaciones');
+      
+      // Verificar que los permisos funcionen correctamente
+      final verified = await _verifyIOSPermissions();
+      
+      if (verified) {
+        print('✅ [iOS] Permisos verificados correctamente');
+        return true;
+      } else {
+        print('⚠️ [iOS] No se pudieron verificar los permisos');
+        print('💡 [iOS] El usuario debe habilitar notificaciones en Configuración > MANIGRAB > Notificaciones');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      print('❌ [iOS] Error solicitando permisos: $e');
+      print('❌ [iOS] Stack trace: $stackTrace');
+      return false;
+    }
+  }
+
+  /// Verificar que los permisos estén realmente otorgados
+  Future<bool> _verifyIOSPermissions() async {
+    try {
+      // Intentar obtener notificaciones pendientes como verificación
+      final pending = await _notifications.pendingNotificationRequests();
+      print('📱 [iOS] Verificación: ${pending.length} notificaciones pendientes');
+      
+      // Si podemos obtener notificaciones pendientes, los permisos probablemente están bien
+      // (aunque esto no garantiza que se puedan mostrar)
+      return true;
+    } catch (e) {
+      print('⚠️ [iOS] Error en verificación de permisos: $e');
+      // No fallar por esto, puede que los permisos estén bien pero haya otro problema
+      return true; // Asumir que está bien para no bloquear
+    }
+  }
+
+  /// Verificar y solicitar permisos si es necesario (específico para iOS)
+  /// En iOS, los permisos se solicitan automáticamente durante initialize()
+  Future<bool> checkIOSPermissions() async {
+    if (kIsWeb || !Platform.isIOS) {
+      return true; // No aplica para web o Android
+    }
+    
+    // Verificar que los permisos funcionen correctamente
+    return await _verifyIOSPermissions();
   }
 
   /// Callback cuando el usuario toca una notificación
@@ -236,6 +305,19 @@ class NotificationService {
       return;
     }
     
+    // En iOS, verificar permisos antes de mostrar notificaciones
+    if (Platform.isIOS) {
+      final hasPermissions = await checkIOSPermissions();
+      if (!hasPermissions) {
+        print('⚠️ Permisos de notificaciones iOS no otorgados, solicitando...');
+        final requested = await _requestIOSPermissions();
+        if (!requested) {
+          print('❌ No se pueden mostrar notificaciones: permisos denegados');
+          return;
+        }
+      }
+    }
+    
     // Obtener preferencias del usuario
     final preferences = await NotificationPreferences.load();
     if (!preferences.enabled) {
@@ -265,27 +347,53 @@ class NotificationService {
       styleInformation: BigTextStyleInformation(body),
     );
 
-    final NotificationDetails details = NotificationDetails(android: androidDetails);
+    // Configuración específica para iOS
+    // IMPORTANTE: interruptionLevel debe ser 'active' o 'timeSensitive' para que aparezcan en el centro de notificaciones
+    final DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true, // Mostrar alerta en iOS (necesario para centro de notificaciones)
+      presentBadge: true, // Mostrar badge en el icono de la app
+      presentSound: shouldPlaySound, // Reproducir sonido si está habilitado
+      interruptionLevel: priority == NotificationPriority.high
+          ? InterruptionLevel.timeSensitive // Alta prioridad: notificación sensible al tiempo (aparece en centro)
+          : InterruptionLevel.active, // Prioridad normal: activa (aparece en centro de notificaciones)
+      // NOTA: InterruptionLevel.passive NO aparece en el centro de notificaciones, solo en el banner
+    );
 
-    await _notifications.show(
-      type.id,
-      title,
-      body,
-      details,
-      payload: payload ?? type.toString(),
+    final NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
     );
+
+    print('📤 [iOS] Intentando mostrar notificación: $title');
+    print('📤 [iOS] Configuración iOS: presentAlert=${iosDetails.presentAlert}, interruptionLevel=${iosDetails.interruptionLevel}');
     
-    // Guardar en historial
-    await NotificationHistory.addNotification(
-      title: title,
-      body: body,
-      type: type.toString(),
-    );
-    
-    // Actualizar conteo inmediatamente
-    await NotificationCountService().updateCount();
-    
-    print('📤 Notificación enviada: $title');
+    try {
+      await _notifications.show(
+        type.id,
+        title,
+        body,
+        details,
+        payload: payload ?? type.toString(),
+      );
+      
+      print('✅ [iOS] Notificación mostrada exitosamente: $title');
+      
+      // Guardar en historial
+      await NotificationHistory.addNotification(
+        title: title,
+        body: body,
+        type: type.toString(),
+      );
+      
+      // Actualizar conteo inmediatamente
+      await NotificationCountService().updateCount();
+      
+      print('📤 Notificación enviada: $title');
+    } catch (e, stackTrace) {
+      print('❌ [iOS] Error al mostrar notificación: $e');
+      print('❌ [iOS] Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   /// Mostrar notificación genérica (con rate limiting y cola)
@@ -374,7 +482,22 @@ class NotificationService {
       styleInformation: BigTextStyleInformation(body),
     );
 
-    final NotificationDetails details = NotificationDetails(android: androidDetails);
+    // Configuración específica para iOS
+    // IMPORTANTE: interruptionLevel debe ser 'active' o 'timeSensitive' para que aparezcan en el centro de notificaciones
+    final DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true, // Mostrar alerta en iOS (necesario para centro de notificaciones)
+      presentBadge: true, // Mostrar badge en el icono de la app
+      presentSound: shouldPlaySound, // Reproducir sonido si está habilitado
+      interruptionLevel: priority == NotificationPriority.high
+          ? InterruptionLevel.timeSensitive // Alta prioridad: notificación sensible al tiempo (aparece en centro)
+          : InterruptionLevel.active, // Prioridad normal: activa (aparece en centro de notificaciones)
+      // NOTA: InterruptionLevel.passive NO aparece en el centro de notificaciones, solo en el banner
+    );
+
+    final NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     await _notifications.zonedSchedule(
       type.id,

@@ -153,7 +153,7 @@ class ChallengeService extends ChangeNotifier {
       Challenge(
         id: 'iniciacion_energetica',
         title: 'Desafío de Iniciación Energética',
-        description: 'Comienza tu viaje de manifestación con los códigos básicos.',
+        description: 'Comienza tu viaje de manifestación con las secuencias básicas.',
         durationDays: 7,
         difficulty: ChallengeDifficulty.principiante,
         dailyActions: [

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../utils/share_helper.dart';
 import '../../services/challenge_progress_tracker.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
@@ -161,29 +162,17 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
         return;
       }
 
-      // Solo para móvil, web no soporta compartir imágenes
-      if (!kIsWeb) {
-        final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/reto_${widget.title.replaceAll(' ', '_')}.png');
-        await file.writeAsBytes(pngBytes);
+      // Usar el helper para compartir la imagen (maneja iOS correctamente)
+      await ShareHelper.shareImage(
+        pngBytes: pngBytes,
+        fileName: 'reto_${widget.title.replaceAll(' ', '_')}',
+        text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        context: context,
+      );
 
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
-        );
-
-        ChallengeProgressTracker().trackPilotageShared(
-          codeName: widget.title,
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Función de compartir no disponible en web'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      ChallengeProgressTracker().trackPilotageShared(
+        codeName: widget.title,
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

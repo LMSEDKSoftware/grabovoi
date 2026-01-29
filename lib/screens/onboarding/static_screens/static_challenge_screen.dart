@@ -119,7 +119,7 @@ class StaticChallengeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 15),
                       Text(
-                        'Comienza tu viaje de manifestación con los códigos básicos.',
+                        'Comienza tu viaje de manifestación con las secuencias básicas.',
                         style: GoogleFonts.lato(color: Colors.white70),
                       ),
                       const SizedBox(height: 15),
