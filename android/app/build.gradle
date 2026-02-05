@@ -3,7 +3,7 @@ import java.io.FileInputStream
 
 plugins {
     id "com.android.application"
-    id "org.jetbrains.kotlin.android"
+    id "org.jetbrains.kotlin.android" version "2.2.0"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -32,8 +32,9 @@ android {
         applicationId = "com.manifestacion.grabovoi"
         minSdk = 21
         targetSdk = 36
-        versionCode = 21
-        versionName = "2.3.21"
+        // IMPORTANTE: Incrementar versionCode en cada subida a Play Store. Nunca reutilizar un código ya usado.
+        versionCode = 24
+        versionName = "2.3.24"
     }
 
     signingConfigs {

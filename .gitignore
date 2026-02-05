@@ -17,6 +17,7 @@ migrate_working_dir/
 lib/config/openai_config_dev.dart
 .env
 secrets.txt
+panel-kpis-web/config.js
 
 # IntelliJ related
 *.iml

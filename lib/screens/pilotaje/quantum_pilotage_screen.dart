@@ -21,6 +21,7 @@ import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/quantum_pilotage_modal.dart';
 import '../../widgets/sequencia_activada_modal.dart';
 import '../../utils/code_formatter.dart';
+import '../../utils/codigo_busqueda_util.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
@@ -85,7 +86,14 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   // Códigos encontrados por IA
   List<CodigoGrabovoi> _codigosEncontrados = [];
   bool _mostrarSeleccionCodigos = false;
-  
+  // Flujo B Fase 2: fallback relacionados cuando no hay fuente externa
+  bool _mostrarFallbackFase2 = false;
+  List<Map<String, dynamic>> _fallbackFase2Items = [];
+  String? _safetyNoteFase2;
+  String _queryFallbackFase2 = '';
+  bool _buscandoRelacionadosFase2 = false;
+  String? _codigoBuscandoFase2;
+
   // Sistema de animación secuencial
   bool _showSequentialSteps = false;
   int _currentStepIndex = 0;
@@ -128,6 +136,19 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
   TextEditingController _manualTitleController = TextEditingController();
   TextEditingController _manualDescriptionController = TextEditingController();
   String _manualCategory = 'Abundancia y Prosperidad';
+  static const _manualDropdownCategorias = [
+    'Abundancia y Prosperidad',
+    'Amor y Relaciones',
+    'Conciencia Espiritual',
+    'Liberación Emocional',
+    'Limpieza y Reconexión',
+    'Protección Energética',
+    'Salud y Regeneración',
+  ];
+  String get _manualCategoryDropdownValue =>
+      _manualDropdownCategorias.contains(_manualCategory)
+          ? _manualCategory
+          : _manualDropdownCategorias.first;
 
   // Control de audio y animaciones
   bool _isAudioPlaying = false;
@@ -358,10 +379,48 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         _codigos = codigosUnicos.values.toList();
       });
       
-      // 1. PRIMERO: Buscar coincidencias exactas
-      final coincidenciasExactas = _codigos.where((codigo) {
-        return codigo.codigo.toLowerCase() == _queryBusqueda.toLowerCase();
-      }).toList();
+      // Flujo B: numérico = SOLO exacto (normalizado). Texto = exactas + similares + títulos relacionados.
+      final exactCode = exactCodeFromQuery(_queryBusqueda);
+      final isNumeric = isNumericQuery(_queryBusqueda);
+      
+      List<CodigoGrabovoi> coincidenciasExactas;
+      List<CodigoGrabovoi> coincidenciasSimilares = [];
+      if (isNumeric && exactCode != null) {
+        coincidenciasExactas = _codigos.where((c) => normalizarCodigo(c.codigo) == exactCode).toList();
+        if (coincidenciasExactas.isEmpty) {
+          final varianteEspacios = exactCodeWithSpaces(exactCode);
+          final c1 = await SupabaseService.getCodigoExistente(exactCode);
+          final c2 = await SupabaseService.getCodigoExistente(varianteEspacios);
+          if (c1 != null) coincidenciasExactas = [c1];
+          if (c2 != null && coincidenciasExactas.isEmpty) coincidenciasExactas = [c2];
+        }
+      } else {
+        coincidenciasExactas = _codigos.where((c) => c.codigo.toLowerCase() == _queryBusqueda.toLowerCase()).toList();
+        coincidenciasSimilares = _codigos.where((codigo) {
+          final query = _queryBusqueda.toLowerCase();
+          return codigo.codigo.toLowerCase().contains(query) ||
+                 codigo.nombre.toLowerCase().contains(query) ||
+                 codigo.categoria.toLowerCase().contains(query) ||
+                 codigo.descripcion.toLowerCase().contains(query) ||
+                 (query.contains('salud') && codigo.categoria.toLowerCase().contains('salud')) ||
+                 (query.contains('amor') && codigo.categoria.toLowerCase().contains('amor')) ||
+                 (query.contains('dinero') && (codigo.categoria.toLowerCase().contains('abundancia') || codigo.categoria.toLowerCase().contains('manifestacion'))) ||
+                 (query.contains('trabajo') && (codigo.categoria.toLowerCase().contains('abundancia') || codigo.categoria.toLowerCase().contains('manifestacion'))) ||
+                 (query.contains('sanacion') && codigo.categoria.toLowerCase().contains('salud')) ||
+                 (query.contains('prosperidad') && codigo.categoria.toLowerCase().contains('abundancia'));
+        }).toList();
+        if (coincidenciasSimilares.isEmpty) {
+          try {
+            final codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(_queryBusqueda);
+            if (codigosPorTitulo.isNotEmpty) {
+              print('🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
+              coincidenciasSimilares = codigosPorTitulo;
+            }
+          } catch (e) {
+            print('⚠️ Error buscando en títulos relacionados: $e');
+          }
+        }
+      }
       
       if (coincidenciasExactas.isNotEmpty) {
         print('✅ Coincidencias exactas encontradas: ${coincidenciasExactas.length} códigos');
@@ -370,36 +429,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           _mostrarResultados = true;
         });
         return;
-      }
-      
-      // 2. SEGUNDO: Buscar coincidencias similares/parciales (incluyendo títulos relacionados)
-      // Primero buscar en la lista local
-      var coincidenciasSimilares = _codigos.where((codigo) {
-        final query = _queryBusqueda.toLowerCase();
-        return codigo.codigo.toLowerCase().contains(query) ||
-               codigo.nombre.toLowerCase().contains(query) ||
-               codigo.categoria.toLowerCase().contains(query) ||
-               codigo.descripcion.toLowerCase().contains(query) ||
-               // Búsqueda por temas comunes
-               (query.contains('salud') && codigo.categoria.toLowerCase().contains('salud')) ||
-               (query.contains('amor') && codigo.categoria.toLowerCase().contains('amor')) ||
-               (query.contains('dinero') && (codigo.categoria.toLowerCase().contains('abundancia') || codigo.categoria.toLowerCase().contains('manifestacion'))) ||
-               (query.contains('trabajo') && (codigo.categoria.toLowerCase().contains('abundancia') || codigo.categoria.toLowerCase().contains('manifestacion'))) ||
-               (query.contains('sanacion') && codigo.categoria.toLowerCase().contains('salud')) ||
-               (query.contains('prosperidad') && codigo.categoria.toLowerCase().contains('abundancia'));
-      }).toList();
-      
-      // Si no hay resultados locales, buscar en títulos relacionados
-      if (coincidenciasSimilares.isEmpty) {
-        try {
-          final codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(_queryBusqueda);
-          if (codigosPorTitulo.isNotEmpty) {
-            print('🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
-            coincidenciasSimilares = codigosPorTitulo;
-          }
-        } catch (e) {
-          print('⚠️ Error buscando en títulos relacionados: $e');
-        }
       }
       
       if (coincidenciasSimilares.isNotEmpty) {
@@ -862,6 +891,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     
     try {
       print('🔍 Buscando código $codigo con OpenAI...');
+      final exactCode = exactCodeFromQuery(codigo);
+      final isNumeric = isNumericQuery(codigo);
+      const systemFase1 =
+          'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos REALES y VERIFICADOS a partir de FUENTES AUTÉNTICAS (libros oficiales, materiales de Grigori Grabovoi o repositorios confiables).\n\nREGLAS CRÍTICAS:\n1. NUNCA inventes ni interpretes nuevos códigos. Si no encuentras códigos reales en las fuentes, debes indicarlo explícitamente.\n2. Para cada código sugerido debes incluir SIEMPRE un campo "fuente" con la referencia concreta (libro, página, curso, material oficial, URL del repositorio autorizado, etc.).\n3. Si NO encuentras ninguna fuente confiable para la intención del usuario, debes responder que no hay códigos reales disponibles y NO proponer códigos inventados.\n4. Si la consulta es numérica, solo es match si la fuente contiene EXACTAMENTE la misma secuencia de dígitos (ignorando espacios; espacios y _ equivalen). Si no, marca sin_fuente:true.\n\nFORMATO DE RESPUESTA:\n- Responde SOLO en formato JSON con UNA de estas dos opciones:\n\nA) Cuando SÍ hay códigos reales encontrados (hasta 3 opciones):\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía",\n      "fuente": "Nombre del libro o recurso oficial, página X, u otra referencia clara"\n    }\n  ],\n  "sin_fuente": false\n}\n\nB) Cuando NO hay códigos reales para ese tema:\n{\n  "codigos": [],\n  "sin_fuente": true,\n  "mensaje": "No se encontraron códigos reales de Grabovoi para este tema en las fuentes consultadas."\n}\n\nIMPORTANTE:\n- Usa guiones bajos (_) en lugar de espacios en los códigos.\n- No incluyas texto fuera del JSON.\n- La descripción debe explicar claramente el propósito del código según la fuente, NO una interpretación libre.';
+      final userFase1 = isNumeric && exactCode != null
+          ? 'El usuario busca el código Grabovoi exacto: "$codigo". Código normalizado (solo dígitos y _): "$exactCode". Busca SOLO en fuentes reales y verificables. Solo es válido si la fuente cita exactamente esa secuencia. Si no encuentras esa secuencia en una fuente, responde con "codigos": [] y "sin_fuente": true.'
+          : 'El usuario busca códigos Grabovoi avanzados relacionados con: "$codigo". Busca SOLO en fuentes reales y verificables. Si existen códigos reales, responde siguiendo exactamente el formato indicado (incluyendo el campo "fuente" por código). Si no encuentras nada fiable, responde con "codigos": [] y "sin_fuente": true, indicando que no hay códigos oficiales para este tema.';
       
       // PRIMERO: Buscar con OpenAI (prioridad)
       final response = await http.post(
@@ -873,16 +909,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         body: jsonEncode({
           'model': 'gpt-3.5-turbo',
           'messages': [
-            {
-              'role': 'system',
-              'content':
-                  'Eres un asistente experto en códigos de Grigori Grabovoi. Tu tarea es ayudar a encontrar códigos REALES y VERIFICADOS a partir de FUENTES AUTÉNTICAS (libros oficiales, materiales de Grigori Grabovoi o repositorios confiables).\n\nREGLAS CRÍTICAS:\n1. NUNCA inventes ni interpretes nuevos códigos. Si no encuentras códigos reales en las fuentes, debes indicarlo explícitamente.\n2. Para cada código sugerido debes incluir SIEMPRE un campo "fuente" con la referencia concreta (libro, página, curso, material oficial, URL del repositorio autorizado, etc.).\n3. Si NO encuentras ninguna fuente confiable para la intención del usuario, debes responder que no hay códigos reales disponibles y NO proponer códigos inventados.\n\nFORMATO DE RESPUESTA:\n- Responde SOLO en formato JSON con UNA de estas dos opciones:\n\nA) Cuando SÍ hay códigos reales encontrados (hasta 3 opciones):\n{\n  "codigos": [\n    {\n      "codigo": "519_7148_21",\n      "nombre": "Armonía familiar",\n      "descripcion": "Descripción detallada y específica del código que explique su propósito y beneficios",\n      "categoria": "Armonía",\n      "fuente": "Nombre del libro o recurso oficial, página X, u otra referencia clara"\n    }\n  ],\n  "sin_fuente": false\n}\n\nB) Cuando NO hay códigos reales para ese tema:\n{\n  "codigos": [],\n  "sin_fuente": true,\n  "mensaje": "No se encontraron códigos reales de Grabovoi para este tema en las fuentes consultadas."\n}\n\nIMPORTANTE:\n- Usa guiones bajos (_) en lugar de espacios en los códigos.\n- No incluyas texto fuera del JSON.\n- La descripción debe explicar claramente el propósito del código según la fuente, NO una interpretación libre.'
-            },
-            {
-              'role': 'user',
-              'content':
-                  'El usuario busca códigos Grabovoi avanzados relacionados con: "$codigo". Busca SOLO en fuentes reales y verificables. Si existen códigos reales, responde siguiendo exactamente el formato indicado (incluyendo el campo "fuente" por código). Si no encuentras nada fiable, responde con "codigos": [] y "sin_fuente": true, indicando que no hay códigos oficiales para este tema.'
-            }
+            {'role': 'system', 'content': systemFase1},
+            {'role': 'user', 'content': userFase1},
           ],
           'max_tokens': 500,
           'temperature': 0.7,
@@ -967,10 +995,32 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             final responseData = jsonDecode(cleanedContent);
             print('✅ Respuesta de OpenAI recibida: $responseData');
 
-            // Caso explícito: no hay fuentes/códigos oficiales
+            // Flujo B: si no hay fuente externa → Fase 2 fallback (3 relacionados desde BD)
             final sinFuente = responseData['sin_fuente'] == true;
             if (sinFuente == true) {
-              print('ℹ️ OpenAI indica que no hay códigos oficiales para este tema (sin_fuente = true)');
+              print('ℹ️ OpenAI indica que no hay fuentes (sin_fuente = true). Ejecutando Fase 2 fallback.');
+              if (mounted) {
+                setState(() {
+                  _buscandoRelacionadosFase2 = true;
+                  _codigoBuscandoFase2 = codigo;
+                });
+              }
+              final fallbackResult = await _buscarRelacionadosFase2(codigo);
+              if (mounted) {
+                setState(() {
+                  _buscandoRelacionadosFase2 = false;
+                  _codigoBuscandoFase2 = null;
+                });
+              }
+              if (mounted && fallbackResult != null && (fallbackResult['items'] as List).length >= 3) {
+                setState(() {
+                  _mostrarFallbackFase2 = true;
+                  _fallbackFase2Items = List<Map<String, dynamic>>.from(fallbackResult['items'] as List);
+                  _queryFallbackFase2 = codigo;
+                  _safetyNoteFase2 = fallbackResult['safety_note'] as String?;
+                });
+                return null;
+              }
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -983,7 +1033,6 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   ),
                 );
               }
-              // No intentamos inventar alternativas: devolvemos null para que se mantenga el código del usuario
               return null;
             }
 
@@ -1136,6 +1185,99 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         return codigoConocido;
       }
       
+      return null;
+    }
+  }
+
+  /// Flujo B Fase 2: recomienda 3 códigos relacionados desde catálogo local cuando no hay fuente externa.
+  Future<Map<String, dynamic>?> _buscarRelacionadosFase2(String userQueryText) async {
+    try {
+      final exactCode = exactCodeFromQuery(userQueryText);
+      final isNumeric = isNumericQuery(userQueryText);
+      final candidates = await SupabaseService.getCandidatosParaFallbackRelacionados(
+        userQueryText: userQueryText,
+        isNumericQuery: isNumeric,
+        exactCode: exactCode,
+        maxCandidatos: 60,
+      );
+      if (candidates.length < 3) return null;
+      final jsonCandidates = candidates.map((c) => {
+        'code': normalizarCodigo(c.codigo),
+        'title': c.nombre,
+        'section': c.categoria,
+        'description': c.descripcion.length > 200 ? '${c.descripcion.substring(0, 200)}...' : c.descripcion,
+      }).toList();
+      const systemFase2 =
+          'Eres un motor de recomendación de secuencias numéricas basado en un catálogo local. No inventes códigos. Solo puedes elegir códigos que estén en CANDIDATES. No prometas curas; usa lenguaje de apoyo (armonización, regulación). Devuelve JSON válido y nada más.';
+      final userFase2 = '''
+TAREA
+El usuario no obtuvo una fuente externa confiable para su búsqueda exacta.
+Debes recomendar EXACTAMENTE 3 códigos RELACIONADOS CON LA INTENCIÓN O TEMA de la búsqueda, seleccionados SOLO del catálogo en CANDIDATES.
+
+REGLAS DE RELEVANCIA (OBLIGATORIAS)
+- La búsqueda del usuario fue: "$userQueryText". Las recomendaciones DEBEN ser temáticamente o semánticamente relacionadas con esa intención.
+- Para búsquedas de DEPORTE / ACTIVIDAD FÍSICA (futbol, deporte, ejercicio, correr, etc.): prioriza SOLO códigos sobre rendimiento físico, vitalidad, recuperación, lesiones, energía, músculos, articulaciones. NUNCA recomiendes códigos de Amor/relaciones, problemas digestivos o cardíacos específicos para una búsqueda de deporte.
+- Para otras búsquedas: no recomiendes códigos de temas no relacionados (ej. no Amor para una búsqueda de deporte).
+- relation_score debe reflejar la relación real: 70-100 = vínculo claro con el tema; 40-69 = apoyo relacionado (vitalidad, recuperación); 20-39 = solo si no hay 3 claramente relacionados, indica "apoyo general" en why_recommended.
+- Si en CANDIDATES no hay 3 códigos claramente relacionados con la búsqueda, elige los 3 más cercanos (ej. vitalidad, recuperación, energía, rendimiento) y pon relation_score bajo (20-40) explicando en why_recommended que son de apoyo general.
+- NO inventes secuencias. Solo devuelve códigos presentes en CANDIDATES.
+- Cada recomendación: code, title, section, relation_type, relation_score(0-100), why_recommended, usage_note.
+- relation_type: synonym_equivalent, symptom_related, cause_related, supportive_regulation, goal_higher_level, recovery_acceleration, prevention_protection
+- Devuelve siempre 3. No uses "cura", "sanar definitivamente", "garantiza". safety_note breve.
+
+INPUT
+USER_QUERY_TEXT: $userQueryText
+IS_NUMERIC_QUERY: $isNumeric
+EXACT_CODE: ${exactCode ?? 'null'}
+
+CANDIDATES:
+${jsonEncode(jsonCandidates)}
+
+OUTPUT (JSON ESTRICTO)
+{
+  "mode": "related_fallback",
+  "related": [
+    { "code": "string", "title": "string", "section": "string", "relation_type": "string", "relation_score": number, "why_recommended": "string", "usage_note": "string" }
+  ],
+  "safety_note": "string"
+}
+''';
+      final response = await http.post(
+        Uri.parse('https://api.openai.com/v1/chat/completions'),
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${Env.openAiKey}'},
+        body: jsonEncode({
+          'model': 'gpt-3.5-turbo',
+          'messages': [{'role': 'system', 'content': systemFase2}, {'role': 'user', 'content': userFase2}],
+          'max_tokens': 800,
+          'temperature': 0.5,
+        }),
+      );
+      if (response.statusCode != 200) return null;
+      final data = jsonDecode(response.body);
+      final content = data['choices']?[0]?['message']?['content']?.toString() ?? '';
+      if (content.isEmpty) return null;
+      String cleaned = content.trim();
+      final start = cleaned.indexOf('{');
+      final end = cleaned.lastIndexOf('}') + 1;
+      if (start >= 0 && end > start) cleaned = cleaned.substring(start, end);
+      final parsed = jsonDecode(cleaned) as Map<String, dynamic>;
+      final related = parsed['related'] as List? ?? [];
+      final safetyNote = parsed['safety_note']?.toString();
+      final items = <Map<String, dynamic>>[];
+      for (var i = 0; i < related.length && items.length < 3; i++) {
+        final r = related[i] as Map<String, dynamic>;
+        final codeStr = (r['code'] ?? '').toString().replaceAll(' ', '_').replaceAll('-', '_');
+        final normalized = normalizarCodigo(codeStr);
+        CodigoGrabovoi? c = await SupabaseService.getCodigoExistente(normalized);
+        if (c == null) c = await SupabaseService.getCodigoExistente(exactCodeWithSpaces(normalized));
+        if (c != null) {
+          items.add({'codigo': c, 'why_recommended': (r['why_recommended'] ?? '').toString()});
+        }
+      }
+      if (items.length < 3) return null;
+      return {'items': items, 'safety_note': safetyNote};
+    } catch (e) {
+      print('❌ _buscarRelacionadosFase2: $e');
       return null;
     }
   }
@@ -1484,22 +1626,23 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       ),
     };
 
-    return codigosConocidos[codigo];
+    final normalized = normalizarCodigo(codigo);
+    return codigosConocidos[normalized] ?? codigosConocidos[codigo];
   }
 
   void _iniciarPilotajeManual() {
-    // Prellenar el campo de código con el código buscado
-    final codigoParaPrellenar = _codigoNoEncontrado ?? _queryBusqueda ?? '';
-    if (codigoParaPrellenar.isNotEmpty) {
-      _manualCodeController.text = codigoParaPrellenar;
-      
-      // Si el código buscado parece ser un título (no contiene solo números y guiones bajos),
-      // prellenar también el título
-      if (!RegExp(r'^[0-9_\s]+$').hasMatch(codigoParaPrellenar)) {
-        _manualTitleController.text = codigoParaPrellenar;
+    final textoBusqueda = _codigoNoEncontrado ?? _queryBusqueda ?? '';
+    final esCodigo = textoBusqueda.isNotEmpty && esBusquedaPorCodigo(textoBusqueda);
+    if (textoBusqueda.isNotEmpty) {
+      if (esCodigo) {
+        _manualCodeController.text = normalizarCodigo(textoBusqueda);
+        _manualTitleController.clear();
+      } else {
+        // No es código (ej. "futbol") → solo Título; Secuencia vacía para que el usuario la introduzca
+        _manualTitleController.text = textoBusqueda;
+        _manualCodeController.clear();
       }
     }
-    
     setState(() {
       _showManualPilotage = true;
       _showOptionsModal = false;
@@ -1808,7 +1951,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         
         // Modal de opciones cuando no se encuentra código
         if (_showOptionsModal) _buildOptionsModal(),
-        
+        // Flujo B Fase 2: 3 relacionados cuando no hay fuente externa
+        if (_mostrarFallbackFase2) _buildFallbackFase2Modal(),
+        if (_buscandoRelacionadosFase2) _buildBuscandoRelacionadosFase2Modal(),
         // Modal de selección de códigos encontrados por IA
         if (_mostrarSeleccionCodigos) _buildSeleccionCodigosModal(),
         
@@ -4260,7 +4405,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'La Inteligencia Cuántica Vibracional analiza y encuentra códigos relacionados con tu búsqueda',
+                          'Esto consulta fuentes externas y puede tardar.',
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: Colors.white70,
@@ -4330,6 +4475,207 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Modal de espera cuando no hay secuencia que resuene y se buscan secuencias RELACIONADAS (Fase 2).
+  Widget _buildBuscandoRelacionadosFase2Modal() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.8),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C2541),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'No encontramos una secuencia que resuene con tu búsqueda.',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Buscando secuencias RELACIONADAS para ti...',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFFFD700),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '"${_codigoBuscandoFase2 ?? 'tu búsqueda'}"',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Un momento, por favor...',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.white54,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Flujo B Fase 2: UI de 3 secuencias relacionadas cuando no hay coincidencia exacta.
+  Widget _buildFallbackFase2Modal() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.8),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C2541),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'No encontramos una secuencia que resuene con tu búsqueda.',
+                    style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Estas 3 secuencias están relacionadas y pueden servir como alternativa.',
+                    style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (_safetyNoteFase2 != null && _safetyNoteFase2!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(_safetyNoteFase2!.replaceAll('códigos', 'secuencias').replaceAll('código', 'secuencia'), style: GoogleFonts.inter(fontSize: 12, color: Colors.orange), textAlign: TextAlign.center),
+                  ],
+                  const SizedBox(height: 20),
+                  ..._fallbackFase2Items.map((item) {
+                    final c = item['codigo'] as CodigoGrabovoi;
+                    final why = (item['why_recommended'] ?? '').toString();
+                    final codeDisplay = normalizarCodigo(c.codigo);
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(codeDisplay, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFFFFD700))),
+                          const SizedBox(height: 4),
+                          Text(c.nombre, style: GoogleFonts.inter(fontSize: 14, color: Colors.white)),
+                          Text(c.categoria, style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+                          if (why.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(why, style: GoogleFonts.inter(fontSize: 12, color: Colors.white70), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          ],
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _codigoSeleccionado = normalizarCodigo(c.codigo);
+                                  _categoriaActual = c.categoria;
+                                  _colorVibracional = _getCategoryColor(c.categoria);
+                                  _mostrarFallbackFase2 = false;
+                                  _fallbackFase2Items = [];
+                                  _queryFallbackFase2 = '';
+                                  _safetyNoteFase2 = null;
+                                  _showOptionsModal = false;
+                                });
+                              },
+                              icon: const Icon(Icons.touch_app, size: 18),
+                              label: const Text('Usar esta secuencia'),
+                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4CAF50)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _mostrarFallbackFase2 = false;
+                        _fallbackFase2Items = [];
+                        _queryFallbackFase2 = '';
+                        _safetyNoteFase2 = null;
+                      });
+                      _iniciarPilotajeManual();
+                    },
+                    icon: const Icon(Icons.edit, color: Color(0xFFFFD700)),
+                    label: const Text('Ir a pilotaje manual', style: TextStyle(color: Color(0xFFFFD700))),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _mostrarFallbackFase2 = false;
+                        _fallbackFase2Items = [];
+                        _queryFallbackFase2 = '';
+                        _safetyNoteFase2 = null;
+                      });
+                    },
+                    child: const Text('Cerrar', style: TextStyle(color: Colors.white70)),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -4420,7 +4766,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _manualCategory,
+                  value: _manualCategoryDropdownValue,
                   decoration: InputDecoration(
                     labelText: 'Categoría',
                     border: OutlineInputBorder(
@@ -4431,15 +4777,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                       borderSide: const BorderSide(color: Color(0xFFFFD700)),
                     ),
                   ),
-                  items: [
-                    'Abundancia y Prosperidad',
-                    'Amor y Relaciones',
-                    'Conciencia Espiritual',
-                    'Liberación Emocional',
-                    'Limpieza y Reconexión',
-                    'Protección Energética',
-                    'Salud y Regeneración',
-                  ].map((cat) {
+                  items: _manualDropdownCategorias.map((cat) {
                     return DropdownMenuItem(
                       value: cat,
                       child: Text(cat),

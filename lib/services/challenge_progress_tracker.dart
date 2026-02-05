@@ -296,7 +296,8 @@ class ChallengeProgressTracker extends ChangeNotifier {
           .gte('recorded_at', start.toIso8601String())
           .lte('recorded_at', end.toIso8601String());
 
-      int codesRepeated = 0;
+      // Repeticiones: contar SECUENCIAS ÚNICAS (la misma secuencia no cuenta dos veces)
+      final Set<String> _secuenciasRepetidasUnicas = {};
       int codesPiloted = 0;
       int pilotagesShared = 0;
       int appUsageSeconds = 0;
@@ -305,9 +306,17 @@ class ChallengeProgressTracker extends ChangeNotifier {
         final String type = row['action_type'] as String? ?? '';
         final Map<String, dynamic>? data = (row['action_data'] as Map?)?.cast<String, dynamic>();
         switch (type) {
-          case 'codigoRepetido':
-            codesRepeated += 1;
+          case 'codigoRepetido': {
+            final codeId = (data?['codeId'] as String?)?.trim() ?? '';
+            // Normalizar solo espacios → _ (333 333 3 = 333_333_3). NO colapsar: 3333333 ≠ 333_333_3
+            final key = codeId.replaceAll(RegExp(r'\s+'), '_');
+            if (key.isNotEmpty) {
+              _secuenciasRepetidasUnicas.add(key);
+            } else {
+              _secuenciasRepetidasUnicas.add('legacy_${_secuenciasRepetidasUnicas.length}');
+            }
             break;
+          }
           case 'sesionPilotaje':
             codesPiloted += 1;
             break;
@@ -320,6 +329,8 @@ class ChallengeProgressTracker extends ChangeNotifier {
             break;
         }
       }
+
+      final codesRepeated = _secuenciasRepetidasUnicas.length;
 
       _dailyCounts[todayKey] = {
         if (codesRepeated > 0) 'codes_repeated': codesRepeated,

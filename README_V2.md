@@ -281,6 +281,7 @@ flutter build apk --release
 - [ ] Tracking de desafíos
 - [ ] Gráficos de evolución con fl_chart
 - [ ] Persistencia con SharedPreferences
+- [ ] **Idiomas (i18n)** – Soporte multiidioma (ej. inglés): todas las secciones traducibles. Por ahora la app se mantiene **solo en español**; dejar para Fase 2 o nueva versión (ver informe de complejidad si aplica).
 
 ### Fase 3: Mejoras Visuales
 - [ ] Animaciones Lottie personalizadas

@@ -510,21 +510,23 @@ class _MainNavigationState extends State<MainNavigation> {
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
-        
-        // Verificar si hay pilotaje activo
+
+        final navigator = Navigator.of(context);
+        // Si estamos en la raíz (solo tabs, sin pantalla encima), no hacer pop para evitar pantalla negra en Android
+        if (!navigator.canPop()) {
+          return;
+        }
+
+        // Verificar si hay pilotaje activo antes de salir de la pantalla actual
         final pilotageService = PilotageStateService();
         if (pilotageService.isAnyPilotageActive) {
           final result = await _showPilotageActiveDialog();
-          if (result == true) {
-            // Usuario confirmó, permitir pop
-            if (context.mounted) {
-              Navigator.of(context).pop();
-            }
+          if (result == true && context.mounted) {
+            navigator.pop();
           }
         } else {
-          // No hay pilotaje activo, permitir pop
           if (context.mounted) {
-            Navigator.of(context).pop();
+            navigator.pop();
           }
         }
       },

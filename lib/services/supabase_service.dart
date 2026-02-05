@@ -442,6 +442,93 @@ class SupabaseService {
     }
   }
 
+  /// Indica si la consulta sugiere deporte/actividad física (para enriquecer candidatos Fase 2).
+  static bool _querySugiereDeporteActividad(String q) {
+    if (q.isEmpty) return false;
+    final lower = q.toLowerCase().trim();
+    const terminos = [
+      'futbol', 'fútbol', 'deporte', 'deportes', 'sport', 'soccer', 'correr', 'running',
+      'ejercicio', 'gimnasio', 'actividad fisica', 'actividad física', 'aire libre',
+      'atletismo', 'natacion', 'natación', 'bici', 'ciclismo', 'fitness', 'entrenar',
+    ];
+    return terminos.any((t) => lower.contains(t));
+  }
+
+  /// Candidatos para fallback Fase 2 (relacionados desde catálogo local).
+  /// - Query texto: top N por ILIKE; si sugiere deporte/actividad, también busca por rendimiento/vitalidad/recuperación; si faltan, generales.
+  /// - Query numérica con texto: ILIKE por parte textual; si faltan, generales.
+  /// - Query numérica sin texto: generales desde BD.
+  static Future<List<CodigoGrabovoi>> getCandidatosParaFallbackRelacionados({
+    required String userQueryText,
+    required bool isNumericQuery,
+    String? exactCode,
+    int maxCandidatos = 20,
+  }) async {
+    try {
+      List<CodigoGrabovoi> todos = [];
+      if (!isNumericQuery) {
+        final list = await buscarCodigosPorTitulo(userQueryText);
+        todos = list.take(maxCandidatos).toList();
+        // Si la búsqueda sugiere deporte/actividad y hay pocos resultados, enriquecer con términos relacionados
+        if (todos.length < maxCandidatos && _querySugiereDeporteActividad(userQueryText)) {
+          for (final keyword in ['rendimiento', 'vitalidad', 'recuperación', 'lesión', 'energía', 'físico', 'muscular']) {
+            if (todos.length >= maxCandidatos) break;
+            final extra = await buscarCodigosPorTitulo(keyword);
+            for (final c in extra) {
+              if (todos.length >= maxCandidatos) break;
+              if (!todos.any((e) => e.codigo == c.codigo)) todos.add(c);
+            }
+          }
+        }
+      } else {
+        final textPart = userQueryText
+            .replaceAll(RegExp(r'[0-9_\s]+'), ' ')
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
+        if (textPart.isNotEmpty) {
+          final list = await buscarCodigosPorTitulo(textPart);
+          todos = list.take(maxCandidatos).toList();
+          if (todos.length < maxCandidatos && _querySugiereDeporteActividad(textPart)) {
+            for (final keyword in ['rendimiento', 'vitalidad', 'recuperación', 'lesión', 'energía']) {
+              if (todos.length >= maxCandidatos) break;
+              final extra = await buscarCodigosPorTitulo(keyword);
+              for (final c in extra) {
+                if (todos.length >= maxCandidatos) break;
+                if (!todos.any((e) => e.codigo == c.codigo)) todos.add(c);
+              }
+            }
+          }
+        }
+      }
+      // Si no hay suficientes candidatos (ej. "futbol" devuelve 0), rellenar con generales
+      // de forma DIVERSIFICADA: tomar por igual de cada categoría para que el LLM tenga
+      // opciones temáticamente variadas (vitalidad, rendimiento, recuperación, etc.).
+      if (todos.length < maxCandidatos) {
+        final categorias = ['Crecimiento personal', 'Salud', 'Energía y vitalidad', 'Otros'];
+        final porCategoria = (maxCandidatos / 4).ceil();
+        for (final cat in categorias) {
+          if (todos.length >= maxCandidatos) break;
+          final list = await getCodigosPorCategoria(cat);
+          for (final c in list.take(porCategoria)) {
+            if (todos.length >= maxCandidatos) break;
+            if (!todos.any((e) => e.codigo == c.codigo)) todos.add(c);
+          }
+        }
+        if (todos.length < maxCandidatos) {
+          final rest = await getCodigos();
+          for (final c in rest) {
+            if (todos.length >= maxCandidatos) break;
+            if (!todos.any((e) => e.codigo == c.codigo)) todos.add(c);
+          }
+        }
+      }
+      return todos.take(maxCandidatos).toList();
+    } catch (e) {
+      print('❌ Error getCandidatosParaFallbackRelacionados: $e');
+      return [];
+    }
+  }
+
   // ===== FAVORITOS =====
   
   static Future<List<CodigoGrabovoi>> getFavoritos(String userId) async {
@@ -590,11 +677,12 @@ class SupabaseService {
           .maybeSingle();
 
       if (existing != null) {
-        // Actualizar registro existente
+        // Actualizar registro existente (incremento numérico; el cliente no acepta expresiones SQL)
+        final contadorActual = (existing['contador'] as num?)?.toInt() ?? 0;
         await _client
             .from('codigo_popularidad')
             .update({
-              'contador': 'contador + 1',
+              'contador': contadorActual + 1,
               'ultimo_uso': DateTime.now().toIso8601String(),
               'updated_at': DateTime.now().toIso8601String(),
             })
