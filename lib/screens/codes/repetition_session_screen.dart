@@ -34,8 +34,16 @@ import '../diario/nueva_entrada_diario_screen.dart';
 class RepetitionSessionScreen extends StatefulWidget {
   final String codigo;
   final String? nombre;
+  /// Si no es null, se acaba de guardar un pilotaje manual y se muestra un aviso
+  /// indicando que la secuencia está en Favoritos con este nombre.
+  final String? nombrePilotajeManualEnFavoritos;
 
-  const RepetitionSessionScreen({super.key, required this.codigo, this.nombre});
+  const RepetitionSessionScreen({
+    super.key,
+    required this.codigo,
+    this.nombre,
+    this.nombrePilotajeManualEnFavoritos,
+  });
 
   @override
   State<RepetitionSessionScreen> createState() => _RepetitionSessionScreenState();
@@ -79,6 +87,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   Future<void>? _favoritoFuture;
 
   bool _hasStartedRepetition = false; // Bandera para evitar múltiples llamadas
+  bool _mostradoAvisoPilotajeManual = false;
 
   // Sistema de Steps Secuenciales (igual que en pilotaje)
   bool _showSequentialSteps = false;
@@ -140,6 +149,11 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
           _hasStartedRepetition = true;
           _startRepetition();
         }
+        // Aviso central: secuencia de pilotaje manual guardada, disponible en Favoritos
+        if (mounted && !_mostradoAvisoPilotajeManual && widget.nombrePilotajeManualEnFavoritos != null) {
+          _mostradoAvisoPilotajeManual = true;
+          _mostrarAvisoPilotajeManualEnFavoritos();
+        }
       });
     }
   }
@@ -151,6 +165,60 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     _colorBarController.dispose();
     _intencionPersonalController.dispose();
     super.dispose();
+  }
+
+  /// Muestra un aviso central: la secuencia se generó solo para este usuario
+  /// y está disponible en Favoritos con el nombre que le puso el usuario.
+  Future<void> _mostrarAvisoPilotajeManualEnFavoritos() async {
+    if (!mounted || widget.nombrePilotajeManualEnFavoritos == null) return;
+    final nombre = widget.nombrePilotajeManualEnFavoritos!;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Secuencia guardada',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Esta secuencia se generó solo para ti.\n\n'
+          'Está disponible en la sección Favoritos con el nombre:\n«$nombre»',
+          style: GoogleFonts.inter(
+            color: Colors.white70,
+            fontSize: 16,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Entendido',
+              style: GoogleFonts.inter(
+                color: const Color(0xFFFFD700),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _startRepetition() async {
@@ -1082,7 +1150,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                                   if (_showSequentialSteps && _currentStepIndex == 5) ...[
                                     const SizedBox(height: 20),
                                     Text(
-                                      '¿Qué deseas armonizar con este código?',
+                                      '¿Qué deseas armonizar con esta secuencia?',
                                       style: GoogleFonts.inter(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
@@ -1295,7 +1363,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                               );
                             }
                             final titulo = snapshot.data!['titulo'] ?? 'Campo Energético';
-                            final descripcion = snapshot.data!['descripcion'] ?? 'Código cuántico para la manifestación y transformación energética.';
+                            final descripcion = snapshot.data!['descripcion'] ?? 'Secuencia cuántica para la manifestación y transformación energética.';
                             return _buildShareableImage(widget.codigo, titulo, descripcion);
                           },
                         );
@@ -1882,9 +1950,9 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               ),
               child: SingleChildScrollView(
                 child: Text(
-                  'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
+                  'Las secuencias numéricas de Grabovoi NO sustituyen la atención médica profesional. '
                   'Siempre consulta con profesionales de la salud para cualquier condición médica. '
-                  'Estos códigos son herramientas complementarias de bienestar.',
+                  'Estas secuencias son herramientas complementarias de bienestar.',
                   style: GoogleFonts.inter(
                     color: const Color(0xFFCCCCCC),
                     fontSize: 16,
@@ -1946,7 +2014,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
           SnackBar(
             content: Text(
               recompensasInfo['mensaje'] as String? ?? 
-              'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.',
+              'Ya recibiste cristales por esta secuencia hoy. Puedes seguir usándola, pero no recibirás más recompensas.',
             ),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
@@ -2201,14 +2269,14 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               side: const BorderSide(color: Color(0xFFFFD700), width: 2),
             ),
             title: Text(
-              'Eliminar código personalizado',
+              'Eliminar secuencia personalizada',
               style: GoogleFonts.inter(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
             content: Text(
-              'Este código fue insertado manualmente, si lo eliminas de favoritos no lo podrás volver a ver, hasta que lo insertes nuevamente de forma manual.',
+              'Esta secuencia fue insertada manualmente; si la eliminas de favoritos no podrás volver a verla hasta que la insertes nuevamente de forma manual.',
               style: GoogleFonts.inter(
                 color: Colors.white70,
               ),

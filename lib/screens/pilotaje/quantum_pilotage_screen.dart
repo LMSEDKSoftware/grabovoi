@@ -38,6 +38,7 @@ import '../../services/rewards_service.dart';
 import '../../services/user_progress_service.dart';
 import '../../services/user_custom_codes_service.dart';
 import '../../models/supabase_models.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class QuantumPilotageScreen extends StatefulWidget {
   final String? codigoInicial;
@@ -461,7 +462,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'ℹ️ El código ${codigo.codigo} ya existe en la base de datos',
+              'ℹ️ La secuencia ${codigo.codigo} ya existe en la base de datos',
               style: GoogleFonts.inter(color: Colors.white),
             ),
             backgroundColor: Colors.blue,
@@ -483,7 +484,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '✅ Código guardado permanentemente: ${codigo.nombre}',
+            '✅ Secuencia guardada permanentemente: ${codigo.nombre}',
             style: GoogleFonts.inter(color: Colors.white),
           ),
           backgroundColor: const Color(0xFF4CAF50),
@@ -497,13 +498,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       print('🔍 Tipo de error: ${e.runtimeType}');
       
       // Determinar el tipo de error y mostrar mensaje apropiado
-      String mensajeError = 'No se pudo guardar el código.';
+      String mensajeError = 'No se pudo guardar la secuencia.';
       if (e.toString().contains('401') || e.toString().contains('No API key')) {
         mensajeError = 'Error de autenticación: Verifica la configuración de la aplicación.';
       } else if (e.toString().contains('duplicate') || e.toString().contains('unique')) {
-        mensajeError = 'El código ya existe en la base de datos.';
+        mensajeError = 'La secuencia ya existe en la base de datos.';
       } else if (e.toString().contains('permission') || e.toString().contains('RLS')) {
-        mensajeError = 'No tienes permisos para guardar códigos. Contacta al administrador.';
+        mensajeError = 'No tienes permisos para guardar secuencias. Contacta al administrador.';
       } else {
         mensajeError = 'Error al guardar: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e.toString()}';
       }
@@ -520,7 +521,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Error al guardar código',
+                      'Error al guardar secuencia',
                       style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 16,
@@ -666,7 +667,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Buscando código con IA...',
+                'Buscando secuencia con IA...',
                 style: GoogleFonts.inter(color: Colors.white),
               ),
             ],
@@ -1025,7 +1026,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'No se encontraron códigos oficiales de Grabovoi para este tema. Puedes seguir usando el código que sientas o crear tu propia secuencia personalizada.',
+                      'No se encontraron secuencias oficiales de Grabovoi para este tema. Puedes seguir usando la secuencia que sientas o crear tu propia secuencia personalizada.',
                       style: GoogleFonts.inter(color: Colors.white),
                     ),
                     backgroundColor: Colors.orange,
@@ -1519,7 +1520,7 @@ OUTPUT (JSON ESTRICTO)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '✨ Se ha creado una sugerencia para el código ${codigoExistente.codigo}',
+              '✨ Se ha creado una sugerencia para la secuencia ${codigoExistente.codigo}',
               style: GoogleFonts.inter(color: Colors.white),
             ),
             backgroundColor: Colors.blue,
@@ -1801,7 +1802,7 @@ OUTPUT (JSON ESTRICTO)
         final nombreGuardado = _manualTitleController.text;
         final descripcionGuardada = _manualDescriptionController.text.isNotEmpty 
             ? _manualDescriptionController.text 
-            : 'Código personalizado del usuario';
+            : 'Secuencia personalizada del usuario';
         final categoriaGuardada = _manualCategory;
         
         // Invalidar cache local y del servicio
@@ -1885,6 +1886,8 @@ OUTPUT (JSON ESTRICTO)
 
   @override
   void dispose() {
+    _pilotageTimer?.cancel();
+    if (!kIsWeb) WakelockPlus.disable();
     _breathingController.dispose();
     _pulseController.dispose();
     _expansionController.dispose();
@@ -1895,7 +1898,6 @@ OUTPUT (JSON ESTRICTO)
     _manualTitleController.dispose();
     _manualDescriptionController.dispose();
     _intencionPersonalController.dispose();
-    _pilotageTimer?.cancel();
     super.dispose();
   }
 
@@ -2080,9 +2082,9 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               ),
               child: SingleChildScrollView(
                 child: Text(
-                  'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
+                  'Las secuencias numéricas de Grabovoi NO sustituyen la atención médica profesional. '
                   'Siempre consulta con profesionales de la salud para cualquier condición médica. '
-                  'Estos códigos son herramientas complementarias de bienestar.',
+                  'Estas secuencias son herramientas complementarias de bienestar.',
                   style: GoogleFonts.inter(
                     color: const Color(0xFFCCCCCC),
                     fontSize: 16,
@@ -2222,13 +2224,13 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               IconButton(
                 onPressed: _copyToClipboard,
                 icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
-                tooltip: 'Copiar código',
+                tooltip: 'Copiar secuencia',
               ),
               // Botón de compartir
               IconButton(
                 onPressed: _shareCode,
                 icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
-                tooltip: 'Compartir código',
+                tooltip: 'Compartir secuencia',
               ),
             ],
           ),
@@ -2588,7 +2590,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                         if (_showSequentialSteps && _currentStepIndex == 5) ...[
                           const SizedBox(height: 20),
                           Text(
-                            '¿Qué deseas armonizar con este código?',
+                            '¿Qué deseas armonizar con esta secuencia?',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -2759,7 +2761,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                           IconButton(
                             icon: const Icon(Icons.search, color: Color(0xFFFFD700)),
                             onPressed: _confirmarBusqueda,
-                            tooltip: 'Buscar código completo',
+                            tooltip: 'Buscar secuencia completa',
                           ),
                         IconButton(
                           icon: const Icon(Icons.clear, color: Colors.white54),
@@ -3369,7 +3371,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
             controller: _intencionPersonalController,
             style: GoogleFonts.inter(color: Colors.white),
             decoration: InputDecoration(
-              hintText: '¿Qué deseas armonizar con este código?',
+              hintText: '¿Qué deseas armonizar con esta secuencia?',
               hintStyle: GoogleFonts.inter(color: Colors.white54),
               filled: true,
               fillColor: Colors.white.withOpacity(0.05),
@@ -3809,7 +3811,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               ],
             ),
             content: Text(
-              'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.\n\n¿Deseas continuar?',
+              'Ya recibiste cristales por esta secuencia hoy. Puedes seguir usándola, pero no recibirás más recompensas.\n\n¿Deseas continuar?',
               style: GoogleFonts.inter(
                 color: Colors.white70,
                 fontSize: 16,
@@ -3893,6 +3895,11 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
         _completarPilotajeAutomatico();
       }
     });
+
+    // Mantener pantalla encendida durante el pilotaje (sin tener que tocar)
+    if (!kIsWeb) {
+      WakelockPlus.enable();
+    }
   }
 
   void _detenerPilotaje() {
@@ -3972,7 +3979,8 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
 
   void _confirmarDetenerPilotaje() {
     _pilotageTimer?.cancel();
-    
+    if (!kIsWeb) WakelockPlus.disable();
+
     setState(() {
       _isPilotageActive = false;
       _isAudioPlaying = false;
@@ -3996,7 +4004,8 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
 
   void _completarPilotajeAutomatico() {
     _pilotageTimer?.cancel();
-    
+    if (!kIsWeb) WakelockPlus.disable();
+
     setState(() {
       _isPilotageActive = false;
       _isAudioPlaying = false;
@@ -4047,7 +4056,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
           SnackBar(
             content: Text(
               recompensasInfo['mensaje'] as String? ?? 
-              'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.',
+              'Ya recibiste cristales por esta secuencia hoy. Puedes seguir usándola, pero no recibirás más recompensas.',
             ),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
@@ -5901,15 +5910,15 @@ extension QuantumPilotageStepExtension on QuantumPilotageStep {
       case QuantumPilotageStep.preparacion:
         return 'Cierra los ojos, respira... conecta con la Norma.';
       case QuantumPilotageStep.visualizacion:
-        return 'Visualiza el código dentro de una esfera luminosa.';
+        return 'Visualiza la secuencia dentro de una esfera luminosa.';
       case QuantumPilotageStep.emision:
         return 'Enfoca tu intención y emítela al campo cuántico.';
       case QuantumPilotageStep.repeticion:
-        return 'Repite el código 3 veces sintiendo la vibración.';
+        return 'Repite la secuencia 3 veces sintiendo la vibración.';
       case QuantumPilotageStep.cierre:
         return 'Visualiza la esfera elevándose y disolviéndose.';
       case QuantumPilotageStep.intencion:
-        return '¿Qué deseas armonizar con este código?';
+        return '¿Qué deseas armonizar con esta secuencia?';
     }
   }
 

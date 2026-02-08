@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Script para lanzar Flutter en Chrome con puerto automático
-# Autor: Auto
-# Fecha: $(date)
+# Script para lanzar Flutter en Chrome con puerto automático.
+# En web, Supabase necesita SUPABASE_URL y SUPABASE_ANON_KEY vía --dart-define;
+# este script carga .env y los inyecta. Si ejecutas "Run" desde el IDE sin este
+# script, las peticiones a Supabase fallarán (error en Network tab).
 
 set +e  # No salir automáticamente si hay errores
 

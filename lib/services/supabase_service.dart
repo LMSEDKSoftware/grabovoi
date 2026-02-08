@@ -121,49 +121,41 @@ class SupabaseService {
     }
   }
   
+  /// Tamaño de página para paginación (Supabase/PostgREST devuelve máx 1000 por defecto)
+  static const int _getCodigosPageSize = 1000;
+
   static Future<List<CodigoGrabovoi>> getCodigos() async {
     try {
-      print('🔗 Ejecutando query en Supabase...');
-      print('📋 Tabla: codigos_grabovoi');
-      print('🔍 Select: * (todos los campos)');
-      print('📊 Order: nombre (ascending: true)');
-      
-      final response = await _client
-          .from('codigos_grabovoi')
-          .select()
-          .order('nombre', ascending: true);
+      print('🔗 Ejecutando query en Supabase (paginado para >1000 registros)...');
+      final List<CodigoGrabovoi> codigos = [];
+      int offset = 0;
+      bool hasMore = true;
 
-      print('📡 Respuesta recibida de Supabase');
-      print('📊 Cantidad de registros: ${response.length}');
-      
-      if (response.isNotEmpty) {
-        print('📄 Primer registro completo: ${response.first}');
-        print('🔍 Campos del primer registro: ${(response.first as Map).keys}');
-      } else {
-        print('⚠️ ADVERTENCIA: La respuesta está vacía');
-        print('🔍 Esto puede indicar:');
-        print('   - La tabla está vacía');
-        print('   - RLS está bloqueando el acceso');
-        print('   - Error en la consulta');
+      while (hasMore) {
+        final end = offset + _getCodigosPageSize - 1;
+        final response = await _client
+            .from('codigos_grabovoi')
+            .select()
+            .order('nombre', ascending: true)
+            .range(offset, end);
+
+        final list = response as List;
+        if (list.isEmpty) break;
+
+        for (final json in list) {
+          try {
+            codigos.add(CodigoGrabovoi.fromJson(json));
+          } catch (e) {
+            print('❌ Error parseando registro: $e');
+            rethrow;
+          }
+        }
+        print('📊 Página: ${offset + 1}-${offset + list.length} (total acumulado: ${codigos.length})');
+        if (list.length < _getCodigosPageSize) hasMore = false;
+        else offset += _getCodigosPageSize;
       }
 
-      print('🔄 Iniciando parseo de registros...');
-      final codigos = (response as List)
-          .map((json) {
-            try {
-              final codigo = CodigoGrabovoi.fromJson(json);
-              print('✅ Parseado: ${codigo.codigo} - ${codigo.nombre}');
-              return codigo;
-            } catch (e) {
-              print('❌ Error parseando registro: $json');
-              print('❌ Error específico: $e');
-              print('❌ Tipo de dato: ${json.runtimeType}');
-              rethrow;
-            }
-          })
-          .toList();
-      
-      print('✅ Parseo completado: ${codigos.length} códigos procesados');
+      print('✅ getCodigos completado: ${codigos.length} secuencias');
       return codigos;
     } catch (e) {
       print('💥 ERROR CRÍTICO en SupabaseService.getCodigos():');

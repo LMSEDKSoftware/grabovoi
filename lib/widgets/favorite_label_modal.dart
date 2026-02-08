@@ -5,12 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 class FavoriteLabelModal extends StatefulWidget {
   final String codigo;
   final String nombre;
+  /// Etiquetas que el usuario ya tiene guardadas (para elegir y no duplicar)
+  final List<String> etiquetasExistentes;
   final Function(String etiqueta) onSave;
 
   const FavoriteLabelModal({
     super.key,
     required this.codigo,
     required this.nombre,
+    this.etiquetasExistentes = const [],
     required this.onSave,
   });
 
@@ -21,6 +24,8 @@ class FavoriteLabelModal extends StatefulWidget {
 class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
   final TextEditingController _etiquetaController = TextEditingController();
   final FocusNode _etiquetaFocus = FocusNode();
+  /// Índice de la etiqueta existente seleccionada (-1 si ninguna o texto manual)
+  int _selectedExistingIndex = -1;
 
   @override
   void initState() {
@@ -141,14 +146,69 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
                 ),
               ),
               const SizedBox(height: 20),
+
+              // Etiquetas existentes en scroll horizontal (como en favoritos)
+              if (widget.etiquetasExistentes.isNotEmpty) ...[
+                Text(
+                  'Etiquetas que ya usas',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(widget.etiquetasExistentes.length, (i) {
+                      final etiqueta = widget.etiquetasExistentes[i];
+                      final isSelected = _selectedExistingIndex == i;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedExistingIndex = i;
+                            _etiquetaController.text = etiqueta;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFFFFD700).withOpacity(0.2)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFFFD700).withOpacity(0.5),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            etiqueta,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               
-              // Campo de etiqueta
+              // Campo para elegir etiqueta existente o escribir una nueva
               TextField(
                 controller: _etiquetaController,
                 focusNode: _etiquetaFocus,
-                maxLength: 30, // Aumentado de 15 a 30
+                onChanged: (_) => setState(() => _selectedExistingIndex = -1),
+                maxLength: 30,
                 inputFormatters: [
-                  // Permitir letras con acentos, números, espacios y algunos caracteres especiales
                   FilteringTextInputFormatter.allow(RegExp(r"[a-zA-ZÀ-ÿ0-9\s\-_.,!?'\u0022]"))
                 ],
                 style: GoogleFonts.inter(
@@ -156,7 +216,9 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
                   color: Colors.white,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Etiqueta...',
+                  hintText: widget.etiquetasExistentes.isEmpty
+                      ? 'Etiqueta...'
+                      : 'Elige una arriba o escribe una nueva',
                   hintStyle: GoogleFonts.inter(
                     color: Colors.white54,
                     fontSize: 14,

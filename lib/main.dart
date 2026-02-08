@@ -485,19 +485,11 @@ class _MainNavigationState extends State<MainNavigation> {
     setState(() {
       _currentIndex = index;
     });
-    
-    // Recargar diario cuando se cambia a la pestaña del Diario
-    if (index == 2) { // Diario está en índice 2
-      final diarioState = _diarioScreenKey.currentState;
-      if (diarioState != null) {
-        try {
-          (diarioState as dynamic).reloadDiario();
-        } catch (e) {
-          print('⚠️ Error recargando diario: $e');
-        }
-      }
-    }
-    
+
+    // No recargar Diario al hacer clic en la pestaña: la vista mantiene estado (IndexedStack)
+    // y se evitan llamadas repetidas a la DB. Los datos se cargan una vez en initState del DiarioScreen.
+    // Si el usuario añade/edita una entrada desde otra pantalla, puede refrescar desde el propio Diario (pull-to-refresh o similar).
+
     // Actualizar conteo de notificaciones cuando se cambia a la pestaña de Perfil
     if (index == 6) { // Perfil ahora es índice 6
       _notificationCountService.updateCount();
@@ -825,7 +817,7 @@ class _TourOverlayState extends State<_TourOverlay> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            'Tu espacio cuántico para la transformación personal a través de los códigos de Grabovoi.',
+            'Tu espacio cuántico para la transformación personal a través de las secuencias de Grabovoi.',
             style: GoogleFonts.lato(
               fontSize: 16,
               color: Colors.white,

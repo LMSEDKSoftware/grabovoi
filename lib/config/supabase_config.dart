@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb, FlutterError;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'env.dart';
 
@@ -7,8 +8,20 @@ class SupabaseConfig {
   static const String localUrl = 'http://localhost:54321';
   static const String localAnonKey = 'your-local-anon-key';
 
-  static String get url => useLocal ? localUrl : (Env.supabaseUrl.isNotEmpty ? Env.supabaseUrl : localUrl);
-  static String get anonKey => useLocal ? localAnonKey : (Env.supabaseAnonKey.isNotEmpty ? Env.supabaseAnonKey : localAnonKey);
+  /// En web no usamos fallback a localhost para evitar cientos de peticiones fallidas.
+  /// Hay que lanzar con ./scripts/launch_chrome.sh (inyecta --dart-define desde .env).
+  static String get url {
+    if (useLocal) return localUrl;
+    if (Env.supabaseUrl.isNotEmpty) return Env.supabaseUrl;
+    if (kIsWeb) return ''; // Evitar conectar a localhost:54321 sin config
+    return localUrl;
+  }
+  static String get anonKey {
+    if (useLocal) return localAnonKey;
+    if (Env.supabaseAnonKey.isNotEmpty) return Env.supabaseAnonKey;
+    if (kIsWeb) return '';
+    return localAnonKey;
+  }
   static String get serviceRoleKey => Env.supabaseServiceRoleKey;
 
   // Clientes de Supabase
@@ -31,6 +44,13 @@ class SupabaseConfig {
   }
 
   static Future<void> initialize() async {
+    if (kIsWeb && (url.isEmpty || anonKey.isEmpty)) {
+      throw FlutterError(
+        'Supabase no configurado para web. '
+        'Lanza la app con: ./scripts/launch_chrome.sh\n'
+        'Ese script carga el .env y pasa SUPABASE_URL y SUPABASE_ANON_KEY por --dart-define.'
+      );
+    }
     await Supabase.initialize(
       url: url,
       anonKey: anonKey,

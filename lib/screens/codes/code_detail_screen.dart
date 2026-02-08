@@ -338,7 +338,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
           SnackBar(
             content: Text(
               recompensasInfo['mensaje'] as String? ?? 
-              'Ya recibiste cristales por este código hoy. Puedes seguir usándolo, pero no recibirás más recompensas.',
+              'Ya recibiste cristales por esta secuencia hoy. Puedes seguir usándola, pero no recibirás más recompensas.',
             ),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
@@ -476,7 +476,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     } catch (e) {
       // Fallback si hay error - usar datos básicos
       final textToCopy = '''${widget.codigo} : Campo Energético
-Código cuántico para la manifestación y transformación energética.
+Secuencia cuántica para la manifestación y transformación energética.
 Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
       
       await Clipboard.setData(ClipboardData(text: textToCopy));
@@ -534,9 +534,9 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               ),
               child: SingleChildScrollView(
                 child: Text(
-                  'Los códigos numéricos de Grabovoi NO sustituyen la atención médica profesional. '
+                  'Las secuencias numéricas de Grabovoi NO sustituyen la atención médica profesional. '
                   'Siempre consulta con profesionales de la salud para cualquier condición médica. '
-                  'Estos códigos son herramientas complementarias de bienestar.',
+                  'Estas secuencias son herramientas complementarias de bienestar.',
                   style: GoogleFonts.inter(
                     color: const Color(0xFFCCCCCC),
                     fontSize: 16,
@@ -855,7 +855,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     try {
       return CodigosRepository().getDescripcionByCode(widget.codigo);
     } catch (e) {
-      return 'Código cuántico para la manifestación y transformación energética.';
+      return 'Secuencia cuántica para la manifestación y transformación energética.';
     }
   }
   
@@ -988,7 +988,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     try {
       return CodigosRepository().getDescripcionByCode(codigo);
     } catch (e) {
-      return 'Código cuántico para la manifestación y transformación energética.';
+      return 'Secuencia cuántica para la manifestación y transformación energética.';
     }
   }
 
@@ -1328,7 +1328,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                     IconButton(
                       onPressed: _copyToClipboard,
                       icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
-                      tooltip: 'Copiar código',
+                      tooltip: 'Copiar secuencia',
                     ),
                     // Botón de previsualizar imagen (solo para web)
                     if (kIsWeb)
@@ -1341,7 +1341,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                     IconButton(
                       onPressed: _shareCode,
                       icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
-                      tooltip: 'Compartir código',
+                      tooltip: 'Compartir secuencia',
                     ),
                   ],
                 ),
@@ -1378,7 +1378,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                       }
                       
                       final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                      final descripcion = snapshot.data?['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                      final descripcion = snapshot.data?['descripcion'] ?? 'Secuencia sagrada para la manifestación y transformación energética.';
                       final titulosRelacionados = snapshot.data?['titulosRelacionados'] as List<Map<String, dynamic>>? ?? [];
                       
                       return Container(
@@ -1440,7 +1440,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
-                                          'Este código también se relaciona con:',
+                                          'Esta secuencia también se relaciona con:',
                                           style: GoogleFonts.inter(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
@@ -1536,7 +1536,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                             );
                           }
                           final titulo = snapshot.data!['titulo'] ?? 'Campo Energético';
-                          final descripcion = snapshot.data!['descripcion'] ?? 'Código sagrado para la manifestación y transformación energética.';
+                          final descripcion = snapshot.data!['descripcion'] ?? 'Secuencia sagrada para la manifestación y transformación energética.';
                           return _buildShareableImage(widget.codigo, titulo, descripcion);
                         },
                       );

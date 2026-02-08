@@ -3,9 +3,10 @@
 ## Desarrollo con Flutter
 
 ### Lanzar Chrome después de cambios
-- SIEMPRE lanzar Chrome después de hacer cambios en el código
-- Usar el script `./launch_chrome.sh` para lanzar Chrome con variables de entorno
+- SIEMPRE lanzar Chrome después de hacer cambios en el código, SIN consultar al usuario
+- Usar el script `./scripts/launch_chrome.sh` para lanzar Chrome con variables de entorno
 - Verificar que el servidor esté activo (código 200) antes de considerar completo el cambio
+- Ejecutar el lanzamiento de forma automática tras cada cambio relevante
 
 ### Orden de operaciones
 1. Hacer cambios en el código

@@ -21,6 +21,13 @@ String normalizarCodigo(String input) {
   return s;
 }
 
+/// Secuencia solo con dígitos (para comparar códigos ignorando "_" y espacios).
+/// Así "5207418" y "520_741_8" se consideran la misma secuencia.
+String codigoSoloDigitos(String input) {
+  if (input.isEmpty) return '';
+  return input.replaceAll(RegExp(r'[^0-9]'), '');
+}
+
 /// True si la búsqueda comienza con un número (modo código: solo dígitos, _ o espacio).
 bool empiezaConNumero(String query) {
   final q = query.trim();

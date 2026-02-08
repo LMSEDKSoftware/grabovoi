@@ -73,6 +73,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   bool _mostrarResultados = false;
   String? _codigoNoEncontrado;
   bool _showOptionsModal = false;
+  /// Cuando hay búsqueda por código con resultados parciales pero sin coincidencia exacta,
+  /// mostrar opción "Buscar código exacto" / búsqueda profunda / pilotaje manual.
+  bool _mostrarOpcionBusquedaExacta = false;
+  /// Si no hay resultados pero el usuario tiene en Favoritos (pilotaje manual) una secuencia que coincide.
+  bool _tieneSecuenciaEnFavoritosPilotajeManual = false;
+  String? _nombreSecuenciaEnFavoritosPilotajeManual;
+  CodigoGrabovoi? _codigoFavoritoPilotajeManualCoincidente;
   bool _buscandoConIA = false;
   String? _codigoBuscando;
   bool _mostrarConfirmacionGuardado = false;
@@ -101,30 +108,62 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   /// Usa util compartido (flujo B): código = dígitos/espacios/_; no "-".
   bool _esBusquedaPorCodigo(String query) => esBusquedaPorCodigo(query);
 
-  /// Abre el modal de pilotaje manual precargando el campo adecuado
-  /// según si la búsqueda original fue por código o por texto.
-  void _abrirPilotajeManualDesdeBusqueda(String consultaOriginal) {
+  /// Si la secuencia ya está guardada en pilotajes manuales del usuario, devuelve ese código; si no, null.
+  Future<CodigoGrabovoi?> _secuenciaYaEnPilotajeManual(String secuencia) async {
+    final q = secuencia.trim();
+    if (q.isEmpty) return null;
+    final queryDigitos = codigoSoloDigitos(normalizarCodigo(q));
+    if (queryDigitos.length < 3) return null;
+    try {
+      final customCodes = await UserCustomCodesService().getUserCustomCodes();
+      for (final c in customCodes) {
+        if (codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos) return c;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Redirige a la vista que muestra el card de la secuencia guardada en Favoritos (sin abrir el formulario).
+  void _redirigirAVistaSecuenciaGuardadaEnFavoritos(CodigoGrabovoi c, String queryBusqueda) {
+    setState(() {
+      _showManualPilotage = false;
+      _showOptionsModal = false;
+      _queryBusqueda = queryBusqueda;
+      _mostrarResultados = true;
+      visible = [];
+      _tieneSecuenciaEnFavoritosPilotajeManual = true;
+      _nombreSecuenciaEnFavoritosPilotajeManual = c.nombre;
+      _codigoFavoritoPilotajeManualCoincidente = c;
+    });
+    _searchController.text = queryBusqueda;
+  }
+
+  /// Abre el modal de pilotaje manual precargando el campo adecuado.
+  /// Si la secuencia ya existe en pilotajes manuales del usuario, redirige a ver esa secuencia guardada.
+  Future<void> _abrirPilotajeManualDesdeBusqueda(String consultaOriginal) async {
     final consulta = consultaOriginal.trim();
     if (consulta.isEmpty) return;
     
     final esCodigo = _esBusquedaPorCodigo(consulta);
     
+    if (esCodigo) {
+      final normalizado = consulta.replaceAll(' ', '_');
+      final yaGuardado = await _secuenciaYaEnPilotajeManual(normalizado);
+      if (mounted && yaGuardado != null) {
+        _redirigirAVistaSecuenciaGuardadaEnFavoritos(yaGuardado, normalizado);
+        return;
+      }
+    }
+    
+    if (!mounted) return;
     setState(() {
       _showManualPilotage = true;
-      
       if (esCodigo) {
-        // La búsqueda era por secuencia numérica → prellenar campo "Secuencia"
         final normalizado = consulta.replaceAll(' ', '_');
         _manualCodeController.text = normalizado;
-        // Para secuencia numérica, dejar que el usuario escriba su propio título.
-        // Solo limpiamos el título si venía de una búsqueda anterior.
-        if (_manualTitleController.text.isNotEmpty) {
-          _manualTitleController.clear();
-        }
+        if (_manualTitleController.text.isNotEmpty) _manualTitleController.clear();
       } else {
-        // La búsqueda era por texto/intención (no código) → prellenar solo "Título"
         _manualTitleController.text = consulta;
-        // Secuencia debe quedar vacía (solo placeholder) para que el usuario introduzca el código
         _manualCodeController.clear();
       }
     });
@@ -299,6 +338,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       // Recargar los datos en la pantalla (esto ya incluye la carga de preferencias)
       await _load();
       
+      // Reaplicar búsqueda/filtros actuales para no perder la vista filtrada (ej. "empleo" → 4 secuencias)
+      if (mounted && _queryBusqueda.trim().isNotEmpty) {
+        _filtrarCodigos(_queryBusqueda);
+      } else if (mounted) {
+        _aplicarFiltros();
+      }
+      
       // Mostrar mensaje de éxito
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -386,6 +432,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     if (query.isEmpty) {
       setState(() {
         _mostrarResultados = false;
+        _mostrarOpcionBusquedaExacta = false;
+        _tieneSecuenciaEnFavoritosPilotajeManual = false;
+        _nombreSecuenciaEnFavoritosPilotajeManual = null;
+        _codigoFavoritoPilotajeManualCoincidente = null;
       });
       _aplicarFiltros();
       return;
@@ -395,12 +445,16 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     final exactCode = exactCodeFromQuery(query);
     final isNumeric = isNumericQuery(query);
     
-    // Flujo B: si es numérico, SOLO coincidencia exacta (normalizada). Nunca "parecido" local.
+    // Búsqueda por código: exactas + parciales; comparar por dígitos para que 5207418 y 520_741_8 coincidan.
     List<CodigoGrabovoi> coincidenciasExactas;
     List<CodigoGrabovoi> coincidenciasLocales;
     if (isNumeric && exactCode != null) {
-      coincidenciasExactas = _codigos.where((c) => normalizarCodigo(c.codigo) == exactCode).toList();
-      coincidenciasLocales = []; // numérico: no parciales
+      final queryDigitos = codigoSoloDigitos(exactCode);
+      coincidenciasExactas = _codigos.where((c) =>
+          codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos).toList();
+      // Parciales: códigos cuya secuencia (solo dígitos) contiene lo escrito (ej. 520741 incluye 5207418)
+      coincidenciasLocales = _codigos.where((c) =>
+          codigoSoloDigitos(normalizarCodigo(c.codigo)).contains(queryDigitos)).toList();
     } else {
       coincidenciasExactas = _codigos.where((c) => c.codigo.toLowerCase() == queryLower).toList();
       coincidenciasLocales = _codigos.where((codigo) {
@@ -456,7 +510,58 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       setState(() {
         visible = resultadoFiltrado;
         _mostrarResultados = true;
+        // Opción "Buscar código exacto" cuando hay parciales pero no hay coincidencia exacta
+        _mostrarOpcionBusquedaExacta = isNumeric &&
+            exactCode != null &&
+            coincidenciasExactas.isEmpty &&
+            resultadoFiltrado.isNotEmpty;
+        if (resultadoFiltrado.isNotEmpty) {
+          _tieneSecuenciaEnFavoritosPilotajeManual = false;
+          _nombreSecuenciaEnFavoritosPilotajeManual = null;
+          _codigoFavoritoPilotajeManualCoincidente = null;
+        }
       });
+      if (resultadoFiltrado.isEmpty && query.trim().isNotEmpty) {
+        _verificarCoincidenciaEnFavoritosPilotajeManual();
+      }
+    }
+  }
+
+  /// Comprueba si el usuario tiene en Favoritos (pilotaje manual) una secuencia que coincide con la búsqueda.
+  Future<void> _verificarCoincidenciaEnFavoritosPilotajeManual() async {
+    final q = _queryBusqueda.trim();
+    if (q.isEmpty) return;
+    final queryDigitos = codigoSoloDigitos(normalizarCodigo(q));
+    if (queryDigitos.length < 3) return;
+    try {
+      final customCodes = await UserCustomCodesService().getUserCustomCodes();
+      for (final c in customCodes) {
+        if (codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos) {
+          if (mounted) {
+            setState(() {
+              _tieneSecuenciaEnFavoritosPilotajeManual = true;
+              _nombreSecuenciaEnFavoritosPilotajeManual = c.nombre;
+              _codigoFavoritoPilotajeManualCoincidente = c;
+            });
+          }
+          return;
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _tieneSecuenciaEnFavoritosPilotajeManual = false;
+          _nombreSecuenciaEnFavoritosPilotajeManual = null;
+          _codigoFavoritoPilotajeManualCoincidente = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _tieneSecuenciaEnFavoritosPilotajeManual = false;
+          _nombreSecuenciaEnFavoritosPilotajeManual = null;
+          _codigoFavoritoPilotajeManualCoincidente = null;
+        });
+      }
     }
   }
 
@@ -477,7 +582,9 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     List<CodigoGrabovoi> coincidenciasSimilares;
     List<CodigoGrabovoi> codigosPorTitulo = [];
     if (isNumeric && exactCode != null) {
-      coincidenciasExactas = _codigos.where((c) => normalizarCodigo(c.codigo) == exactCode).toList();
+      final queryDigitos = codigoSoloDigitos(exactCode);
+      coincidenciasExactas = _codigos.where((c) =>
+          codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos).toList();
       coincidenciasSimilares = [];
       if (coincidenciasExactas.isEmpty) {
         final varianteEspacios = exactCodeWithSpaces(exactCode);
@@ -542,6 +649,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       setState(() {
         visible = resultadoFinal;
         _mostrarResultados = true;
+        _tieneSecuenciaEnFavoritosPilotajeManual = false;
+        _nombreSecuenciaEnFavoritosPilotajeManual = null;
+        _codigoFavoritoPilotajeManualCoincidente = null;
+        // Ocultar el banner solo si hubo coincidencia exacta; si no, mantenerlo al final
+        if (coincidenciasExactas.isNotEmpty) _mostrarOpcionBusquedaExacta = false;
         // Si el usuario buscó una secuencia numérica y NO hay coincidencia exacta,
         // ofrecer igualmente la opción de Búsqueda Profunda con la secuencia exacta.
         if (esBusquedaCodigo && sinCoincidenciaExacta) {
@@ -552,12 +664,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       return;
     }
     
-    // 5. Si no hay resultados, mostrar modal de búsqueda profunda
+    // 5. Si no hay resultados, mostrar modal de búsqueda profunda (el banner "¿No está tu código?" se mantiene)
     print('❌ No se encontraron coincidencias para: $_queryBusqueda');
     setState(() {
+      visible = [];
       _codigoNoEncontrado = _queryBusqueda;
       _showOptionsModal = true;
     });
+    _verificarCoincidenciaEnFavoritosPilotajeManual();
   }
 
   // Cargar favoritos en caché para optimizar consultas
@@ -756,7 +870,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'No tienes códigos en favoritos. Agrega algunos desde la biblioteca.',
+                'No tienes secuencias en favoritos. Agrega algunas desde la biblioteca.',
                 style: GoogleFonts.inter(fontSize: 14),
               ),
               backgroundColor: Colors.orange,
@@ -814,7 +928,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'ℹ️ El código ${codigo.codigo} ya existe en la base de datos',
+              'ℹ️ La secuencia ${codigo.codigo} ya existe en la base de datos',
               style: GoogleFonts.inter(color: Colors.white),
             ),
             backgroundColor: Colors.blue,
@@ -866,13 +980,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       print('❌ Error al guardar en la base de datos: $e');
       
       // Determinar el tipo de error y mostrar mensaje apropiado
-      String mensajeError = 'No se pudo guardar el código.';
+      String mensajeError = 'No se pudo guardar la secuencia.';
       if (e.toString().contains('401') || e.toString().contains('No API key')) {
         mensajeError = 'Error de autenticación: Verifica la configuración de la aplicación.';
       } else if (e.toString().contains('duplicate') || e.toString().contains('unique')) {
-        mensajeError = 'El código ya existe en la base de datos.';
+        mensajeError = 'La secuencia ya existe en la base de datos.';
       } else if (e.toString().contains('permission') || e.toString().contains('RLS')) {
-        mensajeError = 'No tienes permisos para guardar códigos. Contacta al administrador.';
+        mensajeError = 'No tienes permisos para guardar secuencias. Contacta al administrador.';
       } else {
         mensajeError = 'Error al guardar: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e.toString()}';
       }
@@ -889,7 +1003,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Error al guardar código',
+                      'Error al guardar secuencia',
                       style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 16,
@@ -1244,9 +1358,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 return null;
               }
               // Si Fase 2 no devolvió 3 códigos, abrir pilotaje manual como antes
-              if (mounted) _abrirPilotajeManualDesdeBusqueda(codigo);
-              final mensaje = responseData['mensaje']?.toString() ??
-                  'No se encontraron códigos oficiales de Grabovoi para este tema.';
+              if (mounted) await _abrirPilotajeManualDesdeBusqueda(codigo);
+              final mensajeRaw = responseData['mensaje']?.toString() ??
+                  'No se encontraron secuencias oficiales de Grabovoi para este tema.';
+              final mensaje = mensajeRaw
+                  .replaceAll('códigos', 'secuencias')
+                  .replaceAll('código', 'secuencia');
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -1388,12 +1505,23 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     try {
       final exactCode = exactCodeFromQuery(userQueryText);
       final isNumeric = isNumericQuery(userQueryText);
-      final candidates = await SupabaseService.getCandidatosParaFallbackRelacionados(
+      List<CodigoGrabovoi> candidates = await SupabaseService.getCandidatosParaFallbackRelacionados(
         userQueryText: userQueryText,
         isNumericQuery: isNumeric,
         exactCode: exactCode,
         maxCandidatos: 60,
       );
+      // Búsqueda por código: solo recomendar códigos que CONTENGAN la secuencia (ej. 520_741 → 5207418).
+      // Si no hay al menos 3, no mostrar recomendaciones no relacionadas; se guiará a pilotaje manual.
+      if (isNumeric && exactCode != null) {
+        final queryDigitos = codigoSoloDigitos(exactCode);
+        candidates = candidates.where((c) =>
+            codigoSoloDigitos(normalizarCodigo(c.codigo)).contains(queryDigitos)).toList();
+        if (candidates.length < 3) {
+          print('ℹ️ Fase 2: búsqueda por código "$userQueryText": solo ${candidates.length} códigos contienen la secuencia. Se guía a pilotaje manual.');
+          return null;
+        }
+      }
       if (candidates.length < 3) {
         print('⚠️ Fase 2: menos de 3 candidatos (${candidates.length}), no se puede recomendar 3.');
         return null;
@@ -1975,7 +2103,7 @@ OUTPUT (JSON ESTRICTO)
     return 'Abundancia';
   }
 
-  void _mostrarMensajeNoEncontrado() {
+  Future<void> _mostrarMensajeNoEncontrado() async {
     setState(() {
       _showOptionsModal = false;
     });
@@ -1991,13 +2119,13 @@ OUTPUT (JSON ESTRICTO)
     }
 
     if (ultimaConsulta.isNotEmpty) {
-      _abrirPilotajeManualDesdeBusqueda(ultimaConsulta);
+      await _abrirPilotajeManualDesdeBusqueda(ultimaConsulta);
     }
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text(
-          'No se encontraron códigos oficiales para tu búsqueda. '
+          'No se encontraron secuencias oficiales para tu búsqueda. '
           'Puedes crear tu propia secuencia personalizada basada en tu intención.',
           style: TextStyle(fontSize: 14),
         ),
@@ -2172,7 +2300,7 @@ OUTPUT (JSON ESTRICTO)
                                         IconButton(
                                           icon: const Icon(Icons.search, color: Color(0xFFFFD700)),
                                           onPressed: _confirmarBusqueda,
-                                          tooltip: 'Buscar código completo',
+                                          tooltip: 'Buscar secuencia completa',
                                         ),
                                       IconButton(
                                         icon: const Icon(Icons.clear, color: Colors.white54),
@@ -2682,8 +2810,8 @@ OUTPUT (JSON ESTRICTO)
                     );
                   }),
                   const SizedBox(height: 12),
-                  TextButton.icon(
-                    onPressed: () {
+                  InkWell(
+                    onTap: () async {
                       final q = _queryFallbackFase2;
                       setState(() {
                         _mostrarFallbackFase2 = false;
@@ -2691,10 +2819,42 @@ OUTPUT (JSON ESTRICTO)
                         _queryFallbackFase2 = '';
                         _safetyNoteFase2 = null;
                       });
-                      _abrirPilotajeManualDesdeBusqueda(q);
+                      await _abrirPilotajeManualDesdeBusqueda(q);
                     },
-                    icon: const Icon(Icons.edit, color: Color(0xFFFFD700)),
-                    label: const Text('Ir a pilotaje manual', style: TextStyle(color: Color(0xFFFFD700))),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.edit, color: Color(0xFFFFD700), size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Ir a pilotaje manual',
+                                  style: GoogleFonts.inter(
+                                    color: const Color(0xFFFFD700),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Crea y guarda tu secuencia personalizada con nombre, descripción y categoría.',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   TextButton(
                     onPressed: () {
@@ -2760,25 +2920,36 @@ OUTPUT (JSON ESTRICTO)
     _manualCodeController.text = normalizarCodigo(c.codigo);
     _manualTitleController.text = c.nombre;
     _manualDescriptionController.text = c.descripcion;
+    final cats = categorias.where((x) => x != 'Todos').toList();
     setState(() {
       _showManualPilotage = true;
-      _manualCategory = _categoriaParaDropdown(c.categoria);
+      _manualCategory = cats.isNotEmpty && cats.contains(c.categoria)
+          ? c.categoria
+          : _categoriaParaDropdown(c.categoria);
     });
   }
 
-  void _iniciarPilotajeManual() {
+  Future<void> _iniciarPilotajeManual() async {
     final textoBusqueda = _codigoNoEncontrado ?? _queryBusqueda ?? query ?? '';
     final esCodigo = textoBusqueda.isNotEmpty && _esBusquedaPorCodigo(textoBusqueda);
+    if (textoBusqueda.isNotEmpty && esCodigo) {
+      final normalizado = normalizarCodigo(textoBusqueda);
+      final yaGuardado = await _secuenciaYaEnPilotajeManual(normalizado);
+      if (mounted && yaGuardado != null) {
+        _redirigirAVistaSecuenciaGuardadaEnFavoritos(yaGuardado, normalizado);
+        return;
+      }
+    }
     if (textoBusqueda.isNotEmpty) {
       if (esCodigo) {
         _manualCodeController.text = normalizarCodigo(textoBusqueda);
         _manualTitleController.clear();
       } else {
-        // No es código (ej. "futbol") → solo Título; Secuencia vacía para que el usuario la introduzca
         _manualTitleController.text = textoBusqueda;
         _manualCodeController.clear();
       }
     }
+    if (!mounted) return;
     setState(() {
       _showManualPilotage = true;
       _showOptionsModal = false;
@@ -2786,7 +2957,11 @@ OUTPUT (JSON ESTRICTO)
   }
 
   Widget _buildManualPilotageModal() {
-    final categoriasDisponibles = _dropdownCategorias;
+    // Usar categorías que existen en los códigos (sin "Todos"); si no hay, fallback a lista fija
+    final categoriasDeCodigos = categorias.where((c) => c != 'Todos').toList();
+    final categoriasDisponibles = categoriasDeCodigos.isNotEmpty
+        ? categoriasDeCodigos
+        : _dropdownCategorias;
     final valueDropdown = categoriasDisponibles.contains(_manualCategory)
         ? _manualCategory
         : categoriasDisponibles.first;
@@ -2893,7 +3068,7 @@ OUTPUT (JSON ESTRICTO)
                     }).toList(),
                     onChanged: (value) {
                       setState(() {
-                        _manualCategory = value ?? 'Abundancia y Prosperidad';
+                        _manualCategory = value ?? categoriasDisponibles.first;
                       });
                     },
                   ),
@@ -2979,13 +3154,15 @@ OUTPUT (JSON ESTRICTO)
           ),
         );
 
-        // Navegar al código para usarlo
+        // Navegar a repetición de la secuencia recién guardada; el usuario verá
+        // un aviso central indicando que está en Favoritos con el nombre que puso
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => RepetitionSessionScreen(
               codigo: codigoGuardado,
               nombre: nombreGuardado,
+              nombrePilotajeManualEnFavoritos: nombreGuardado,
             ),
           ),
         );
@@ -3052,7 +3229,7 @@ OUTPUT (JSON ESTRICTO)
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Analizando códigos relacionados con "${_codigoBuscando ?? 'tu búsqueda'}"',
+                  'Analizando secuencias relacionadas con "${_codigoBuscando ?? 'tu búsqueda'}"',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: Colors.white70,
@@ -3220,7 +3397,7 @@ OUTPUT (JSON ESTRICTO)
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'El código ha sido agregado permanentemente a la biblioteca',
+                  'La secuencia ha sido agregada permanentemente a la biblioteca',
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: Colors.white54,
@@ -3532,8 +3709,39 @@ OUTPUT (JSON ESTRICTO)
     }
     
     if (visible.isEmpty) {
-      // Si hay una búsqueda activa, mostrar el mismo mensaje que en Pilotaje Cuántico
+      // Si hay una búsqueda activa y tiene la secuencia en Favoritos (pilotaje manual), mostrar el card
       if (_queryBusqueda.isNotEmpty) {
+        if (_tieneSecuenciaEnFavoritosPilotajeManual && _codigoFavoritoPilotajeManualCoincidente != null) {
+          final codigoFav = _codigoFavoritoPilotajeManualCoincidente!;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1),
+                  ),
+                  child: Text(
+                    'Resultado de tus Favoritos — no forma parte de las secuencias generales.',
+                    style: GoogleFonts.inter(color: Colors.orange, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: _buildCodigoCard(codigoFav),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
         return Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -3590,8 +3798,16 @@ OUTPUT (JSON ESTRICTO)
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: visible.length,
+        itemCount: visible.length + (_mostrarOpcionBusquedaExacta ? 1 : 0),
         itemBuilder: (context, index) {
+          if (_mostrarOpcionBusquedaExacta && index == visible.length) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: _buildOpcionBusquedaExacta(),
+              ),
+            );
+          }
           final codigo = visible[index];
           return Center(
             child: ConstrainedBox(
@@ -3600,6 +3816,59 @@ OUTPUT (JSON ESTRICTO)
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Banner "¿No está tu código? Buscar código exacto" cuando hay parciales pero no exacto.
+  Widget _buildOpcionBusquedaExacta() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Material(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () {
+            _confirmarBusqueda();
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                Icon(Icons.search, color: const Color(0xFFFFD700), size: 28),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '¿No está tu secuencia?',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Buscar secuencia exacta "$_queryBusqueda" o usar búsqueda profunda / pilotaje manual',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios, color: Color(0xFFFFD700), size: 18),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -3742,7 +4011,7 @@ OUTPUT (JSON ESTRICTO)
                                               ),
                                             ),
                                             content: Text(
-                                              'Este código fue insertado manualmente. Si lo eliminas de favoritos, no podrás volver a verlo hasta que lo insertes nuevamente de forma manual.\n\n¿Deseas continuar?',
+                                              'Esta secuencia fue insertada manualmente. Si la eliminas de favoritos, no podrás volver a verla hasta que la insertes nuevamente de forma manual.\n\n¿Deseas continuar?',
                                               style: GoogleFonts.inter(color: Colors.white),
                                             ),
                                             actions: [
@@ -3919,7 +4188,7 @@ OUTPUT (JSON ESTRICTO)
                             color: Color(0xFFFFD700),
                             size: 20,
                           ),
-                          tooltip: 'Copiar código',
+                          tooltip: 'Copiar secuencia',
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: codigo.codigo));
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -4215,7 +4484,7 @@ OUTPUT (JSON ESTRICTO)
       // Obtener información del usuario actual
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
-        _mostrarNotificacionError('Debes iniciar sesión para reportar un código');
+        _mostrarNotificacionError('Debes iniciar sesión para reportar una secuencia');
         return;
       }
 
@@ -4353,44 +4622,45 @@ OUTPUT (JSON ESTRICTO)
     );
   }
 
-  void _mostrarModalEtiquetado(CodigoGrabovoi codigo) {
+  void _mostrarModalEtiquetado(CodigoGrabovoi codigo) async {
+    final etiquetasExistentes = await BibliotecaSupabaseService.getEtiquetasFavoritos();
+    if (!mounted) return;
+    // Capturar ScaffoldMessenger antes de abrir el diálogo para usarlo en el callback async.
+    // Tras Navigator.pop() el context del builder puede estar desactivado y .of(context) falla.
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => FavoriteLabelModal(
         codigo: codigo.codigo,
         nombre: codigo.nombre,
+        etiquetasExistentes: etiquetasExistentes,
         onSave: (etiqueta) async {
           try {
             await BibliotecaSupabaseService.agregarFavoritoConEtiqueta(codigo.codigo, etiqueta);
-            
-            // Actualizar caché manualmente
+            if (!mounted) return;
             _favoritosCache[codigo.codigo] = true;
             _etiquetasCache[codigo.codigo] = etiqueta;
-            
-            // Actualizar estado de favoritos después de agregar
             await _actualizarEstadoFavoritos();
-            
-            if (mounted) {
-              setState(() {});
-            ScaffoldMessenger.of(context).showSnackBar(
+            if (!mounted) return;
+            setState(() {});
+            scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text('❤️ ${codigo.nombre} agregado a favoritos con etiqueta: $etiqueta'),
                 backgroundColor: Colors.green,
                 duration: const Duration(seconds: 2),
               ),
             );
-            }
           } catch (e) {
             print('Error agregando favorito con etiqueta: $e');
             if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error: ${e.toString()}'),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 3),
-              ),
-            );
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
             }
           }
         },
@@ -4491,7 +4761,7 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                       ),
                       children: [
                         const TextSpan(
-                          text: 'La activación de los códigos ocurre por resonancia, no por acumulación de repeticiones.\n\n'
+                          text: 'La activación de las secuencias ocurre por resonancia, no por acumulación de repeticiones.\n\n'
                               'Una sola repetición con total enfoque puede ser más efectiva que cientos realizadas de forma automática.\n\n'
                               'Visualiza la secuencia dentro de una esfera de luz y repítela mentalmente hasta sentir que la energía se acomoda en armonía. Con esta app puedes materializar esos números y esa esfera de manera más fácil, usando la visualización interactiva que te ofrece la pantalla. El modo "Concentración" ',
                         ),
@@ -4503,9 +4773,9 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                           ),
                         ),
                         const TextSpan(
-                          text: ' permite ver solo la esfera y los códigos sin distracciones.\n\n'
+                          text: ' permite ver solo la esfera y las secuencias sin distracciones.\n\n'
                               'Lo esencial no es cuántas veces repitas, sino la calidad de tu atención e intención.\n\n'
-                              'Para recibir los cristales de energía, debes "pilotar" 2 minutos seguidos con el código seleccionado. Si lo cancelas, los cristales no serán entregados.',
+                              'Para recibir los cristales de energía, debes "pilotar" 2 minutos seguidos con la secuencia seleccionada. Si lo cancelas, los cristales no serán entregados.',
                         ),
                       ],
                     ),
