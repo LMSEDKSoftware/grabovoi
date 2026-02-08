@@ -32,9 +32,9 @@ android {
         applicationId = "com.manifestacion.grabovoi"
         minSdk = 21
         targetSdk = 36
-        // IMPORTANTE: Incrementar versionCode en cada subida a Play Store. Nunca reutilizar un código ya usado.
-        versionCode = 24
-        versionName = "2.3.24"
+        // IMPORTANTE: Incrementar versionCode en cada subida a Play Store. Debe ser MAYOR que el último en Play (ej. 39 → 40).
+        versionCode = 40
+        versionName = "2.3.27"
     }
 
     signingConfigs {

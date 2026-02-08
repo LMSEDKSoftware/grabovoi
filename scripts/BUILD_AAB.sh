@@ -82,4 +82,7 @@ echo "✅ ¡AAB compilado exitosamente!"
 echo "📍 Ubicación: $(pwd)/build/app/outputs/bundle/release/app-release.aab"
 echo ""
 ls -lh build/app/outputs/bundle/release/app-release.aab
+echo ""
+echo "🔍 Verificando que la versión del AAB coincida con el proyecto..."
+./scripts/verificar_version_aab.sh build/app/outputs/bundle/release/app-release.aab
 

@@ -1,7 +1,7 @@
 # Reporte: requisitos para compilar APK (grabovoi_build)
 
 **Proyecto:** manifestacion_numerica_grabovoi  
-**Última actualización:** 2025-02-04 (alineado con compilación exitosa 2.3.23+23).
+**Última actualización:** 2025-02-05 (versión 2.3.27+40 para Play Console).
 
 ---
 
@@ -9,7 +9,7 @@
 
 | Componente | Versión / Requisito |
 |------------|---------------------|
-| **App** | `2.3.23+23` (versionName + versionCode) |
+| **App** | `2.3.27+40` (versionName + versionCode) |
 | **Dart SDK** | `>=3.2.0 <4.0.0` (pubspec.yaml) |
 | **Flutter** | Recomendado estable (ej. 3.24.x). En este equipo: 3.24.5 |
 | **Android compileSdk** | 36 |
@@ -66,7 +66,31 @@ El script:
 **Salida esperada:**  
 `build/app/outputs/flutter-apk/app-release.apk`
 
-Para compilar **sin** incrementar versión (por ejemplo para probar), se puede ejecutar manualmente:
+---
+
+### Compilar AAB (Play Store)
+
+Cada vez que compiles el AAB, conviene compilar y **luego verificar la versión**:
+
+```bash
+flutter build appbundle --release
+./scripts/verificar_version_aab.sh
+```
+
+El script **`./scripts/BUILD_AAB.sh`** ya hace el build con variables de `.env` y **al final ejecuta automáticamente** `verificar_version_aab.sh` para confirmar que el AAB tiene el versionCode/versionName del proyecto.
+
+Si compilas a mano (sin script), ejecuta siempre después:
+
+```bash
+./scripts/verificar_version_aab.sh
+```
+
+**Salida AAB:**  
+`build/app/outputs/bundle/release/app-release.aab`
+
+---
+
+Para compilar APK **sin** incrementar versión (por ejemplo para probar), se puede ejecutar manualmente:
 
 ```bash
 source .env
@@ -133,4 +157,14 @@ Se eliminó **solo** en `~/.gradle/caches/`:
 - **Versiones clave:** Flutter estable, Dart 3.2+, Android SDK 36, Kotlin 2.2.0 (plugin en `settings.gradle` y **versión explícita en `app/build.gradle`**), Java 17.
 - **Liberar espacio sin tocar el proyecto:** borrar solo `~/.gradle/caches/transforms-*` y opcionalmente `build-cache-*` y `journal-*`.
 
-**Configuración que hizo funcionar la última compilación (2.3.23+23):** igual a la descrita en este reporte; en particular, Kotlin 2.2.0 con versión explícita en `android/app/build.gradle` (bloque `plugins`) para evitar el fallo de metadata 2.2.0 vs 1.9.0.
+**Configuración que hizo funcionar la última compilación:** Kotlin 2.2.0 con versión explícita en `android/app/build.gradle` (bloque `plugins`) para evitar el fallo de metadata 2.2.0 vs 1.9.0.
+
+---
+
+## 8. Errores en Google Play Console
+
+- **"No puedes lanzar esta versión porque no permite que ningún usuario existente actualice..."**  
+  El **versionCode** del AAB/APK que subes debe ser **mayor** que el último que ya está en esa pista (prueba cerrada, producción, etc.). Si en Play ya hay versionCode 37, sube con **38 o superior**. Actualizar en `pubspec.yaml` (ej. `2.3.25+38`) y en `android/app/build.gradle` (`versionCode = 38`, `versionName = "2.3.25"`), luego generar de nuevo el AAB y subirlo.
+
+- **"No hay archivo de desofuscación asociado con este App Bundle"**  
+  Es una advertencia (no bloquea). Si usas R8/Proguard (`minifyEnabled true`), puedes subir el archivo de mapping que genera la compilación. En este proyecto `minifyEnabled` está en `false`; si lo activas, el mapping suele estar en `build/app/outputs/mapping/release/`. Para versiones ya subidas sin mapping, la advertencia puede seguir; no impide publicar.
