@@ -83,7 +83,9 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
     // Configurar listener para el scroll con debounce
     _scrollController.addListener(_checkScrollPositionDebounced);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
         _checkScrollPosition();
       });
     });
@@ -100,10 +102,11 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
   }
 
   void _checkScrollPositionDebounced() {
-    if (_isCheckingScroll) return;
+    if (_isCheckingScroll || !mounted) return;
     _isCheckingScroll = true;
     Future.delayed(const Duration(milliseconds: 100), () {
       _isCheckingScroll = false;
+      if (!mounted) return;
       _checkScrollPosition();
     });
   }
@@ -117,7 +120,8 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
       final canScroll = maxScroll > 0;
       final shouldShow = canScroll && currentScroll < maxScroll - 50;
       
-      if (_showScrollIndicator != shouldShow && mounted) {
+      if (_showScrollIndicator != shouldShow) {
+        if (!mounted) return;
         setState(() {
           _showScrollIndicator = shouldShow;
         });
@@ -133,13 +137,12 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
       _copiedCodeMessage = '✅ Secuencia copiada: $codigo';
     });
     
-    // Ocultar el mensaje después de 2 segundos
+    // Ocultar el mensaje después de 2 segundos (solo si el modal sigue montado)
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _copiedCodeMessage = null;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _copiedCodeMessage = null;
+      });
     });
   }
 
@@ -148,11 +151,10 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
       _overlayEntry!.remove();
       _overlayEntry = null;
     }
-    if (mounted) {
-      setState(() {
-        _copiedCodeMessage = null;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _copiedCodeMessage = null;
+    });
   }
 
   @override

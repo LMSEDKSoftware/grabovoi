@@ -7,7 +7,14 @@ import '../services/audio_manager_service.dart';
 class StreamedMusicController extends StatefulWidget {
   final bool autoPlay;
   final bool isActive;
-  const StreamedMusicController({super.key, this.autoPlay = false, this.isActive = false});
+  /// Cuando true, sin margen y solo bordes inferiores redondeados (para bloque unificado).
+  final bool embeddedInBlock;
+  const StreamedMusicController({
+    super.key,
+    this.autoPlay = false,
+    this.isActive = false,
+    this.embeddedInBlock = false,
+  });
 
   @override
   State<StreamedMusicController> createState() => _StreamedMusicControllerState();
@@ -264,15 +271,32 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: widget.embeddedInBlock
+          ? EdgeInsets.zero
+          : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460)],
+          colors: widget.embeddedInBlock
+              ? [
+                  const Color(0xFF1a1a2e).withOpacity(0.82),
+                  const Color(0xFF16213e).withOpacity(0.82),
+                  const Color(0xFF0f3460).withOpacity(0.82),
+                ]
+              : const [
+                  Color(0xFF1a1a2e),
+                  Color(0xFF16213e),
+                  Color(0xFF0f3460),
+                ],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: widget.embeddedInBlock
+            ? const BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              )
+            : BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
       ),
       child: Row(

@@ -5626,7 +5626,19 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               ),
             ),
           ),
-          
+          // Icono ManiGrab abajo al centro
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 40,
+            child: Center(
+              child: Image.asset(
+                'assets/icons/ManiGrab_transparente.png',
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
           // Indicador de tiempo en la esquina superior izquierda
           if (_isPilotageActive)
             Positioned(

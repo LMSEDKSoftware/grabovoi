@@ -12,6 +12,7 @@ import '../../utils/share_helper.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/streamed_music_controller.dart';
+import '../../widgets/session_tools_block.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../utils/code_formatter.dart';
@@ -92,6 +93,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
 
   /// Voz numérica: estado local sincronizado con RewardsService (encender/apagar en sesión).
   bool _voiceNumbersEnabled = false;
+  /// Si el usuario tiene adquirida la repetición guiada en la tienda cuántica (muestra u oculta la card).
+  bool _hasGuidedRepetition = false;
   String _voiceGender = 'female';
 
   // Sistema de Steps Secuenciales (igual que en pilotaje)
@@ -143,6 +146,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       if (mounted) {
         setState(() {
           _voiceNumbersEnabled = rewards.voiceNumbersEnabled;
+          _hasGuidedRepetition = rewards.logros['voice_numbers_unlocked'] == true ||
+              rewards.voiceNumbersEnabled == true;
           _voiceGender = rewards.voiceGender == 'male' ? 'male' : 'female';
         });
       }
@@ -383,6 +388,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
             if (mounted) {
               setState(() {
                 _voiceNumbersEnabled = rewards.voiceNumbersEnabled;
+                _hasGuidedRepetition = rewards.logros['voice_numbers_unlocked'] == true ||
+                    rewards.voiceNumbersEnabled == true;
                 _voiceGender = rewards.voiceGender == 'male' ? 'male' : 'female';
               });
             }
@@ -452,15 +459,12 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     });
   }
 
+  /// Toggle de repetición guiada solo para esta sesión: apaga/enciende la reproducción de voz
+  /// para esta secuencia. No modifica la configuración global (esa solo se cambia en Ajustes).
+  /// Si en configuración está encendido, la próxima secuencia comenzará de nuevo con voz activa.
   Future<void> _toggleVoiceNumbers() async {
     final newValue = !_voiceNumbersEnabled;
     setState(() => _voiceNumbersEnabled = newValue);
-    try {
-      await RewardsService().saveVoiceNumbersSettings(
-        enabled: newValue,
-        gender: _voiceGender,
-      );
-    } catch (_) {}
     if (!mounted) return;
     if (_isRepetitionActive) {
       if (newValue) {
@@ -476,49 +480,66 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     }
   }
 
+  /// Solo el contenido del toggle (Row) para usar dentro del bloque unificado.
+  Widget _buildVoiceNumbersToggleContent() {
+    final color = _getColorSeleccionado();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.record_voice_over,
+          color: _voiceNumbersEnabled ? color : Colors.white54,
+          size: 24,
+        ),
+        const SizedBox(width: 10),
+        Text(
+          'Repetición guiada',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _voiceNumbersEnabled ? color : Colors.white70,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Icon(
+          _voiceNumbersEnabled ? Icons.toggle_on : Icons.toggle_off,
+          color: _voiceNumbersEnabled ? color : Colors.white38,
+          size: 32,
+        ),
+      ],
+    );
+  }
+
   Widget _buildVoiceNumbersToggle() {
     final color = _getColorSeleccionado();
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: _toggleVoiceNumbers,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460)],
+            ),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _voiceNumbersEnabled ? color : color.withOpacity(0.4),
+              color: (_voiceNumbersEnabled ? color : color.withOpacity(0.35)).withOpacity(0.5),
               width: 1,
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.record_voice_over,
-                color: _voiceNumbersEnabled ? color : Colors.white54,
-                size: 24,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Repetición guiada',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: _voiceNumbersEnabled ? color : Colors.white70,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                _voiceNumbersEnabled ? Icons.toggle_on : Icons.toggle_off,
-                color: _voiceNumbersEnabled ? color : Colors.white38,
-                size: 32,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
+          child: _buildVoiceNumbersToggleContent(),
         ),
       ),
     );
@@ -1208,246 +1229,222 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                       ),
                       const SizedBox(height: 20),
 
-                      // Esfera normal en pantalla
+                      // Esfera normal en pantalla (solo esfera + números; controles van abajo)
                       Center(
                         child: _buildIntegratedSphere(widget.codigo),
                       ),
-                      
-                      // Descripción del código
-                      Center(
-                        child: FutureBuilder<Map<String, dynamic>>(
+
+                      // Bloque unificado reutilizable (SessionToolsBlock)
+                      const SizedBox(height: 28),
+                      SessionToolsBlock(
+                        colorSelectorChild: _buildColorSelectorContent(),
+                        descriptionChild: FutureBuilder<Map<String, dynamic>>(
                           future: _codigoInfoFuture,
                           builder: (context, snapshot) {
                             final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
                             final descripcion = snapshot.data?['descripcion'] ?? 'Secuencia cuántica para la manifestación y transformación energética.';
                             final titulosRelacionados = snapshot.data?['titulosRelacionados'] as List<Map<String, dynamic>>? ?? [];
-                            
-                            return Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.symmetric(horizontal: 20),
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFFFFD700).withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // Título principal
-                                  Text(
-                                    titulo,
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFFFFD700),
-                                    ),
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  titulo,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFFFD700),
                                   ),
-                                  const SizedBox(height: 12),
-                                  // Descripción principal
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  descripcion,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: Colors.white.withOpacity(0.9),
+                                    height: 1.4,
+                                  ),
+                                ),
+                                if (_showSequentialSteps && _currentStepIndex == 5) ...[
+                                  const SizedBox(height: 20),
                                   Text(
-                                    descripcion,
-                                    textAlign: TextAlign.center,
+                                    '¿Qué deseas armonizar con esta secuencia?',
                                     style: GoogleFonts.inter(
                                       fontSize: 14,
-                                      color: Colors.white.withOpacity(0.9),
-                                      height: 1.4,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFFFFD700),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextField(
+                                    controller: _intencionPersonalController,
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Escribe tu intención aquí...',
+                                      hintStyle: GoogleFonts.inter(
+                                        color: Colors.white.withOpacity(0.5),
+                                        fontSize: 14,
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white.withOpacity(0.1),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color: const Color(0xFFFFD700).withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color: const Color(0xFFFFD700).withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFFFD700),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    maxLines: 3,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                                if (_intencionPersonal.isNotEmpty && (!_showSequentialSteps || _currentStepIndex != 5)) ...[
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFD700).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFFFFD700).withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          'Intención Personal',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFFFFD700),
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _intencionPersonal,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            color: Colors.white.withOpacity(0.9),
+                                            height: 1.4,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  // Campo de texto de intención cuando estamos en el paso de intención
-                                  if (_showSequentialSteps && _currentStepIndex == 5) ...[
-                                    const SizedBox(height: 20),
-                                    Text(
-                                      '¿Qué deseas armonizar con esta secuencia?',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFFFFD700),
+                                ],
+                                if (titulosRelacionados.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFD700).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: const Color(0xFFFFD700).withOpacity(0.3),
+                                        width: 1,
                                       ),
-                                      textAlign: TextAlign.center,
                                     ),
-                                    const SizedBox(height: 12),
-                                    TextField(
-                                      controller: _intencionPersonalController,
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: 'Escribe tu intención aquí...',
-                                        hintStyle: GoogleFonts.inter(
-                                          color: Colors.white.withOpacity(0.5),
-                                          fontSize: 14,
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.white.withOpacity(0.1),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
-                                            color: const Color(0xFFFFD700).withOpacity(0.3),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
-                                            color: const Color(0xFFFFD700).withOpacity(0.3),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                            color: Color(0xFFFFD700),
-                                            width: 2,
-                                          ),
-                                        ),
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 12,
-                                        ),
-                                      ),
-                                      maxLines: 3,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                  // Mostrar intención personal si existe (después de completar el paso)
-                                  if (_intencionPersonal.isNotEmpty && (!_showSequentialSteps || _currentStepIndex != 5)) ...[
-                                    const SizedBox(height: 16),
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFD700).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: const Color(0xFFFFD700).withOpacity(0.3),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Text(
-                                            'Intención Personal',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFFFFD700),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.info_outline,
+                                              color: Color(0xFFFFD700),
+                                              size: 16,
                                             ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            _intencionPersonal,
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13,
-                                              color: Colors.white.withOpacity(0.9),
-                                              height: 1.4,
-                                              fontStyle: FontStyle.italic,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  // Mostrar títulos relacionados si existen
-                                  if (titulosRelacionados.isNotEmpty) ...[
-                                    const SizedBox(height: 16),
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFD700).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: const Color(0xFFFFD700).withOpacity(0.3),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.info_outline,
-                                                color: Color(0xFFFFD700),
-                                                size: 16,
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'También relacionado con:',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: const Color(0xFFFFD700),
                                               ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                'También relacionado con:',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: const Color(0xFFFFD700),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        ...titulosRelacionados.map((tituloRel) {
+                                          return Padding(
+                                            padding: const EdgeInsets.only(bottom: 8),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  '• ${tituloRel['titulo']?.toString() ?? ''}',
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          ...titulosRelacionados.map((tituloRel) {
-                                            return Padding(
-                                              padding: const EdgeInsets.only(bottom: 8),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    '• ${tituloRel['titulo']?.toString() ?? ''}',
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 13,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: Colors.white,
+                                                if (tituloRel['descripcion'] != null &&
+                                                    (tituloRel['descripcion'] as String).isNotEmpty) ...[
+                                                  const SizedBox(height: 4),
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(left: 12),
+                                                    child: Text(
+                                                      tituloRel['descripcion']?.toString() ?? '',
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 11,
+                                                        color: Colors.white.withOpacity(0.7),
+                                                        height: 1.3,
+                                                      ),
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
-                                                  if (tituloRel['descripcion'] != null && 
-                                                      (tituloRel['descripcion'] as String).isNotEmpty) ...[
-                                                    const SizedBox(height: 4),
-                                                    Padding(
-                                                      padding: const EdgeInsets.only(left: 12),
-                                                      child: Text(
-                                                        tituloRel['descripcion']?.toString() ?? '',
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: 11,
-                                                          color: Colors.white.withOpacity(0.7),
-                                                          height: 1.3,
-                                                        ),
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                    ),
-                                                  ],
                                                 ],
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ],
-                                      ),
+                                              ],
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ],
-                              ),
+                              ],
                             );
                           },
                         ),
+                        hasGuidedRepetition: _hasGuidedRepetition,
+                        voiceToggleChild: _buildVoiceNumbersToggleContent(),
+                        onVoiceToggle: _toggleVoiceNumbers,
+                        musicControllerKey: ValueKey(_musicControllerKeySeed),
+                        musicAutoPlay: _isRepetitionActive,
+                        musicIsActive: true,
                       ),
-                      const SizedBox(height: 20),
-                      
-                      // Botón para encender/apagar voz numérica durante la sesión
-                      _buildVoiceNumbersToggle(),
-                      const SizedBox(height: 12),
-                      
-                      // Control de Música para sesión de repetición
-                      StreamedMusicController(
-                        key: ValueKey(_musicControllerKeySeed),
-                        autoPlay: _isRepetitionActive,
-                        isActive: true,
-                      ),
-                      
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -1702,9 +1699,6 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        // SELECTOR DE COLORES fuera del Stack
-        _buildColorSelector(),
       ],
     );
   }
@@ -1789,6 +1783,19 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.fullscreen, color: Colors.white, size: 24),
+              ),
+            ),
+          ),
+          // Icono ManiGrab abajo al centro
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 40,
+            child: Center(
+              child: Image.asset(
+                'assets/icons/ManiGrab_transparente.png',
+                height: 150,
+                fit: BoxFit.contain,
               ),
             ),
           ),
@@ -1933,93 +1940,105 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     );
   }
 
-  // Selector de colores (igual que en quantum_pilotage_screen)
+  /// Solo el contenido del selector (Row) para usar dentro del bloque unificado.
+  Widget _buildColorSelectorContent() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Color:',
+          style: GoogleFonts.inter(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 8),
+        ..._coloresDisponibles.entries.map((entry) {
+          final isSelected = _colorSeleccionado == entry.key;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _colorSeleccionado = entry.key;
+              });
+            },
+            child: Container(
+              width: 24,
+              height: 24,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: entry.value,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  width: 2,
+                ),
+                boxShadow: isSelected ? [
+                  BoxShadow(
+                    color: entry.value.withOpacity(0.8),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ] : null,
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 14,
+                    )
+                  : null,
+            ),
+          );
+        }).toList(),
+        const SizedBox(width: 16),
+        GestureDetector(
+          onTap: _toggleConcentrationMode,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _getColorSeleccionado().withOpacity(0.2),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: _getColorSeleccionado().withOpacity(0.5),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.fullscreen,
+              color: _getColorSeleccionado(),
+              size: 20,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildColorSelector() {
     return Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(25),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
+          ),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: _getColorSeleccionado().withOpacity(0.5),
+            color: _getColorSeleccionado().withOpacity(0.4),
             width: 1,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Color:',
-              style: GoogleFonts.inter(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 8),
-            ..._coloresDisponibles.entries.map((entry) {
-              final isSelected = _colorSeleccionado == entry.key;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _colorSeleccionado = entry.key;
-                  });
-                },
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: entry.value,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected ? Colors.white : Colors.transparent,
-                      width: 2,
-                    ),
-                    boxShadow: isSelected ? [
-                      BoxShadow(
-                        color: entry.value.withOpacity(0.8),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ] : null,
-                  ),
-                  child: isSelected
-                      ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 14,
-                        )
-                      : null,
-                ),
-              );
-            }).toList(),
-            
-            const SizedBox(width: 16),
-            
-            // Botón de modo concentración
-            GestureDetector(
-              onTap: _toggleConcentrationMode,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _getColorSeleccionado().withOpacity(0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _getColorSeleccionado().withOpacity(0.5),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  Icons.fullscreen,
-                  color: _getColorSeleccionado(),
-                  size: 20,
-                ),
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
+        child: _buildColorSelectorContent(),
       ),
     );
   }

@@ -645,9 +645,12 @@ class RewardsService {
       throw Exception('La voz numérica ya está desbloqueada');
     }
 
+    final newLogros = Map<String, dynamic>.from(rewards.logros)
+      ..['voice_numbers_unlocked'] = true;
     final updatedRewards = rewards.copyWith(
       cristalesEnergia: rewards.cristalesEnergia - cristalesParaVozNumerica,
       voiceNumbersEnabled: true,
+      logros: newLogros,
       ultimaActualizacion: DateTime.now(),
     );
 

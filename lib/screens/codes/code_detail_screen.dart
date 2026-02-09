@@ -12,6 +12,7 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/streamed_music_controller.dart';
+import '../../widgets/session_tools_block.dart';
 import '../../widgets/audio_preload_indicator.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/sequencia_activada_modal.dart';
@@ -69,6 +70,13 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   bool _isConcentrationMode = false;
   late Future<Map<String, dynamic>> _codigoInfoFuture;
   late Future<Map<String, String>> _shareableDataFuture;
+
+  // Repetición guiada (voz numérica), mismo modelo que Sesión de Repetición
+  bool _voiceNumbersEnabled = false;
+  /// Si el usuario tiene adquirida la repetición guiada en la tienda cuántica (muestra u oculta la card).
+  bool _hasGuidedRepetition = false;
+  String _voiceGender = 'female';
+  int _musicControllerKeySeed = 0;
   
 
   @override
@@ -91,7 +99,8 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
 
     _codigoInfoFuture = _loadCodigoInfo();
     _shareableDataFuture = _loadShareableData();
-    
+    _loadVoiceSettings();
+
     // Secuencia diaria (Portal Energético): siempre permitir acceso. Resto: verificar premium.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (widget.isDailySequence) {
@@ -240,6 +249,27 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         'assets/audios/forest_meditation.mp3',
       ];
       await audioManager.playTrack(tracks[0], autoPlay: true);
+      // Voz numérica (repetición guiada): si está habilitada, iniciar sesión
+      try {
+        final rewards = await RewardsService().getUserRewards();
+        if (mounted) {
+          setState(() {
+            _voiceNumbersEnabled = rewards.voiceNumbersEnabled;
+            _hasGuidedRepetition = rewards.logros['voice_numbers_unlocked'] == true ||
+                rewards.voiceNumbersEnabled == true;
+            _voiceGender = rewards.voiceGender == 'male' ? 'male' : 'female';
+          });
+        }
+        if (rewards.voiceNumbersEnabled) {
+          NumbersVoiceService().startSession(
+            code: widget.codigo,
+            enabled: true,
+            gender: rewards.voiceGender,
+            sessionDuration: const Duration(minutes: 2),
+          );
+        }
+      } catch (_) {}
+      if (mounted) setState(() {});
     } catch (e) {
       print('Error iniciando audio: $e');
     }
@@ -1050,6 +1080,41 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     };
   }
 
+  Future<void> _loadVoiceSettings() async {
+    try {
+      final rewards = await RewardsService().getUserRewards();
+      if (mounted) {
+        setState(() {
+          _voiceNumbersEnabled = rewards.voiceNumbersEnabled;
+          _hasGuidedRepetition = rewards.logros['voice_numbers_unlocked'] == true ||
+              rewards.voiceNumbersEnabled == true;
+          _voiceGender = rewards.voiceGender == 'male' ? 'male' : 'female';
+        });
+      }
+    } catch (_) {}
+  }
+
+  /// Toggle de repetición guiada solo para esta sesión: apaga/enciende la reproducción de voz
+  /// para esta secuencia. No modifica la configuración global (esa solo se cambia en Ajustes).
+  /// Si en configuración está encendido, la próxima secuencia comenzará de nuevo con voz activa.
+  Future<void> _toggleVoiceNumbers() async {
+    final newValue = !_voiceNumbersEnabled;
+    setState(() => _voiceNumbersEnabled = newValue);
+    if (!mounted) return;
+    if (_isPiloting) {
+      if (newValue) {
+        NumbersVoiceService().startSession(
+          code: widget.codigo,
+          enabled: true,
+          gender: _voiceGender,
+          sessionDuration: Duration(seconds: _secondsRemaining),
+        );
+      } else {
+        NumbersVoiceService().stopSession();
+      }
+    }
+  }
+
   void _stopActivePilotage() {
     setState(() {
       _isPiloting = false;
@@ -1365,147 +1430,125 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                 ),
                 const SizedBox(height: 40),
                 
-                // Esfera integrada (sin contenedor rectangular oscuro)
+                // Esfera integrada (solo esfera + números; controles en bloque unificado abajo)
                 _buildQuantumDetailSphere(widget.codigo),
-                const SizedBox(height: 20),
-                
-                // Selector de colores fuera del Stack
-                Center(
-                  child: _buildColorSelector(),
-                ),
-                const SizedBox(height: 20),
-                
-                // Descripción
-                Center(
-                  child: FutureBuilder<Map<String, dynamic>>(
+                const SizedBox(height: 28),
+                // Bloque unificado reutilizable (SessionToolsBlock)
+                SessionToolsBlock(
+                  colorSelectorChild: _buildColorSelectorContent(),
+                  descriptionChild: FutureBuilder<Map<String, dynamic>>(
                     future: _codigoInfoFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator(color: Color(0xFFFFD700));
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator(color: Color(0xFFFFD700)),
+                          ),
+                        );
                       }
-                      
                       final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
                       final descripcion = snapshot.data?['descripcion'] ?? 'Secuencia sagrada para la manifestación y transformación energética.';
                       final titulosRelacionados = snapshot.data?['titulosRelacionados'] as List<Map<String, dynamic>>? ?? [];
-                      
-                      return Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: const Color(0xFFFFD700).withOpacity(0.3),
-                            width: 1,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            titulo,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFFFD700),
+                            ),
                           ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Título principal
-                            Text(
-                              titulo,
-                              style: GoogleFonts.inter(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFFD700),
-                              ),
+                          const SizedBox(height: 12),
+                          Text(
+                            descripcion,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.9),
+                              height: 1.45,
                             ),
-                            const SizedBox(height: 12),
-                            // Descripción principal
-                            Text(
-                              descripcion,
-                              style: GoogleFonts.inter(
-                                fontSize: 17,
-                                color: Colors.white.withOpacity(0.9),
-                                height: 1.45,
+                          ),
+                          if (titulosRelacionados.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFD700).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFFFD700).withOpacity(0.3),
+                                  width: 1,
+                                ),
                               ),
-                            ),
-                            // Mostrar otros títulos relacionados si existen
-                            if (titulosRelacionados.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFD700).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: const Color(0xFFFFD700).withOpacity(0.3),
-                                    width: 1,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.info_outline, color: Color(0xFFFFD700), size: 16),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Esta secuencia también se relaciona con:',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFFFFD700),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.info_outline,
-                                          color: Color(0xFFFFD700),
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Esta secuencia también se relaciona con:',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: const Color(0xFFFFD700),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ...titulosRelacionados.map((tituloRel) {
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 8),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              tituloRel['titulo']?.toString() ?? '',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                              ),
+                                  const SizedBox(height: 8),
+                                  ...titulosRelacionados.map((tituloRel) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            tituloRel['titulo']?.toString() ?? '',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
                                             ),
-                                            if (tituloRel['descripcion'] != null && (tituloRel['descripcion'] as String).isNotEmpty) ...[
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                tituloRel['descripcion']?.toString() ?? '',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 11,
-                                                  color: Colors.white.withOpacity(0.7),
-                                                  height: 1.3,
-                                                ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
+                                          ),
+                                          if (tituloRel['descripcion'] != null && (tituloRel['descripcion'] as String).isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              tituloRel['descripcion']?.toString() ?? '',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 11,
+                                                color: Colors.white.withOpacity(0.7),
+                                                height: 1.3,
                                               ),
-                                            ],
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ],
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ],
-                                ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ],
                               ),
-                            ],
+                            ),
                           ],
-                        ),
+                        ],
                       );
                     },
                   ),
+                  hasGuidedRepetition: _hasGuidedRepetition,
+                  voiceToggleChild: _buildVoiceNumbersToggleContent(),
+                  onVoiceToggle: _toggleVoiceNumbers,
+                  musicControllerKey: ValueKey(_musicControllerKeySeed),
+                  musicAutoPlay: _isPiloting,
+                  musicIsActive: _isPiloting,
                 ),
-                const SizedBox(height: 20),
-                
-                // Reproductor de Audio (siempre visible)
-                StreamedMusicController(
-                  autoPlay: _isPiloting,
-                  isActive: _isPiloting,
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 
                 
                 // Botón de Acción eliminado - el pilotaje se inicia automáticamente
@@ -1566,87 +1609,140 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     });
   }
   
-  // Método para construir el selector de colores (igual que en Sesión de Repetición)
-  Widget _buildColorSelector() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Color:',
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+  /// Solo el contenido del selector (Row) para el bloque unificado.
+  Widget _buildColorSelectorContent() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Color:',
+          style: GoogleFonts.inter(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
-          const SizedBox(width: 8),
-          ..._coloresDisponibles.entries.map((entry) {
-            final colorName = entry.key;
-            final color = entry.value;
-            final isSelected = _colorSeleccionado == colorName;
-
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _colorSeleccionado = colorName;
-                });
-              },
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: isSelected ? 2 : 1,
-                  ),
+        ),
+        const SizedBox(width: 8),
+        ..._coloresDisponibles.entries.map((entry) {
+          final colorName = entry.key;
+          final color = entry.value;
+          final isSelected = _colorSeleccionado == colorName;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _colorSeleccionado = colorName;
+              });
+            },
+            child: Container(
+              width: 24,
+              height: 24,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  width: 2,
                 ),
-                child: isSelected
-                    ? const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 14,
-                      )
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: color.withOpacity(0.8),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ]
                     : null,
               ),
-            );
-          }).toList(),
-          const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isConcentrationMode = true;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _getColorSeleccionado().withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _getColorSeleccionado().withOpacity(0.5),
-                        width: 1,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.fullscreen,
-                      color: _getColorSeleccionado(),
-                      size: 20,
-                    ),
-                  ),
-                ),
-        ],
+              child: isSelected
+                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  : null,
+            ),
+          );
+        }).toList(),
+        const SizedBox(width: 16),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isConcentrationMode = true;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _getColorSeleccionado().withOpacity(0.2),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: _getColorSeleccionado().withOpacity(0.5),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.fullscreen,
+              color: _getColorSeleccionado(),
+              size: 20,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorSelector() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: _getColorSeleccionado().withOpacity(0.4),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: _buildColorSelectorContent(),
       ),
+    );
+  }
+
+  Widget _buildVoiceNumbersToggleContent() {
+    final color = _getColorSeleccionado();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.record_voice_over,
+          color: _voiceNumbersEnabled ? color : Colors.white54,
+          size: 24,
+        ),
+        const SizedBox(width: 10),
+        Text(
+          'Repetición guiada',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _voiceNumbersEnabled ? color : Colors.white70,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Icon(
+          _voiceNumbersEnabled ? Icons.toggle_on : Icons.toggle_off,
+          color: _voiceNumbersEnabled ? color : Colors.white38,
+          size: 32,
+        ),
+      ],
     );
   }
 
@@ -1776,7 +1872,19 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               ),
             ),
           ),
-          
+          // Icono ManiGrab abajo al centro
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 40,
+            child: Center(
+              child: Image.asset(
+                'assets/icons/ManiGrab_transparente.png',
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
         ],
       ),
     );
