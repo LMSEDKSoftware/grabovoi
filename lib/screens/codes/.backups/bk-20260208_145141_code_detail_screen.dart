@@ -17,7 +17,6 @@ import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/sequencia_activada_modal.dart';
 import '../../services/audio_preload_service.dart';
 import '../../services/audio_manager_service.dart';
-import '../../services/numbers_voice_service.dart';
 import '../../services/challenge_tracking_service.dart';
 import '../../services/challenge_progress_tracker.dart';
 import '../../services/pilotage_state_service.dart';
@@ -272,10 +271,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         // Notificar al servicio global
         PilotageStateService().setPilotageActive(false);
         
-        // Detener voz numérica y música
-        try {
-          NumbersVoiceService().stopSession();
-        } catch (_) {}
+        // Detener el audio
         AudioManagerService().stop();
         
         // AHORA SÍ: Registrar el pilotaje completado (solo cuando se completa)
@@ -1058,10 +1054,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     // Notificar al servicio global
     PilotageStateService().setPilotageActive(false);
     
-    // Detener voz numérica y música
-    try {
-      NumbersVoiceService().stopSession();
-    } catch (_) {}
+    // Detener el audio
     AudioManagerService().stop();
   }
 

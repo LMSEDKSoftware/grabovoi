@@ -18,7 +18,6 @@ import '../sugerencias/sugerencias_screen.dart';
 import 'edit_profile_screen.dart';
 import 'notifications_settings_screen.dart';
 import 'notification_history_screen.dart';
-import 'voice_numbers_settings_screen.dart';
 import '../mural/mural_history_screen.dart';
 import '../../services/admin_service.dart';
 import '../../screens/home/home_screen.dart';
@@ -741,22 +740,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   context,
                   MaterialPageRoute(
                     builder: (context) => const NotificationsSettingsScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildConfigMenuItem(
-              context: context,
-              icon: Icons.record_voice_over,
-              title: 'Repetición guiada',
-              subtitle: 'Voz en pilotajes (Hombre / Mujer)',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const VoiceNumbersSettingsScreen(),
                   ),
                 );
               },

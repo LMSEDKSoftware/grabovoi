@@ -1,0 +1,14 @@
+---
+description: Tras cambios en el código, lanzar Chrome automáticamente sin preguntar al usuario
+alwaysApply: true
+---
+
+# Lanzar Chrome después de cambios
+
+Cuando hagas **cualquier cambio** en el código del proyecto (Flutter):
+
+1. **Lanzar Chrome automáticamente** usando `./scripts/launch_chrome.sh` desde la raíz del proyecto.
+2. **No consultar** al usuario: ejecutar el lanzamiento sin preguntar.
+3. Comprobar que el servidor responda (HTTP 200) en el puerto indicado.
+
+Esto aplica al final de cualquier tarea en la que hayas modificado código (lib/, assets/, etc.).

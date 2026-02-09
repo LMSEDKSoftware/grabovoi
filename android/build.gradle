@@ -5,12 +5,33 @@ buildscript {
         targetSdkVersion = 36
         kotlin_version = '2.2.0'
     }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
 }
 
 allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+}
+
+// Forzar Kotlin 2.2.0 en todos los subproyectos (plugins como in_app_update)
+subprojects { subproject ->
+    subproject.buildscript {
+        ext.kotlin_version = '2.2.0'
+        repositories {
+            google()
+            mavenCentral()
+        }
+        dependencies {
+            classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0"
+        }
     }
 }
 

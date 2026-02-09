@@ -10,7 +10,6 @@ import 'services/app_time_tracker.dart';
 import 'services/pilotage_state_service.dart';
 import 'services/audio_service.dart';
 import 'services/audio_manager_service.dart';
-import 'services/numbers_voice_service.dart';
 import 'services/notification_scheduler.dart';
 import 'services/notification_service.dart';
 import 'services/permissions_service.dart';
@@ -362,9 +361,6 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   void _stopActivePilotage() {
-    try {
-      NumbersVoiceService().stopSession();
-    } catch (_) {}
     final audioService = AudioService();
     audioService.stopMusic();
     

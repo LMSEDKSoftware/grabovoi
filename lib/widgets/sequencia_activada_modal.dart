@@ -148,9 +148,11 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
       _overlayEntry!.remove();
       _overlayEntry = null;
     }
-    setState(() {
-      _copiedCodeMessage = null;
-    });
+    if (mounted) {
+      setState(() {
+        _copiedCodeMessage = null;
+      });
+    }
   }
 
   @override

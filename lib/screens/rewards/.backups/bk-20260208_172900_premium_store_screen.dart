@@ -7,7 +7,6 @@ import '../../models/rewards_model.dart';
 import '../../services/rewards_service.dart';
 import '../../config/supabase_config.dart';
 import 'premium_wallpaper_screen.dart';
-import '../profile/voice_numbers_settings_screen.dart';
 
 /// Pantalla de tienda premium con secuencias especiales y meditaciones
 class PremiumStoreScreen extends StatefulWidget {
@@ -315,194 +314,6 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
     }
   }
 
-  Future<void> _comprarVozNumerica() async {
-    if (_rewards == null) return;
-
-    final yaDesbloqueado = _rewards!.logros['voice_numbers_unlocked'] == true ||
-        _rewards!.voiceNumbersEnabled == true;
-
-    if (yaDesbloqueado) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ La voz numérica ya está desbloqueada'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      return;
-    }
-
-    const costo = RewardsService.cristalesParaVozNumerica;
-    if (_rewards!.cristalesEnergia < costo) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '❌ No tienes suficientes cristales. Necesitas $costo, tienes ${_rewards!.cristalesEnergia}',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        title: Text(
-          'Desbloquear Voz Numérica',
-          style: GoogleFonts.inter(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          '¿Deseas desbloquear la voz numérica por $costo cristales?',
-          style: GoogleFonts.inter(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Comprar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmar != true) return;
-
-    try {
-      final updatedRewards = await _rewardsService.comprarVozNumerica();
-      if (mounted) {
-        setState(() {
-          _rewards = updatedRewards;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Voz numérica desbloqueada'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Widget _buildVoiceNumbersCard() {
-    final desbloqueado = _rewards?.logros['voice_numbers_unlocked'] == true ||
-        _rewards?.voiceNumbersEnabled == true;
-    final costo = RewardsService.cristalesParaVozNumerica;
-    final puedeComprar = (_rewards?.cristalesEnergia ?? 0) >= costo;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C3E50).withOpacity(0.7),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFFD700).withOpacity(0.4),
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.record_voice_over,
-                  color: Color(0xFFFFD700),
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Voz numérica en pilotajes',
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Reproduce la secuencia dígito a dígito durante el pilotaje (voz hombre o mujer).',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 20),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$costo',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFD700),
-                    ),
-                  ),
-                ],
-              ),
-              CustomButton(
-                text: desbloqueado
-                    ? 'Configurar'
-                    : puedeComprar
-                        ? 'Comprar'
-                        : 'Insuficientes',
-                onPressed: desbloqueado
-                    ? () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const VoiceNumbersSettingsScreen(),
-                          ),
-                        );
-                      }
-                    : (puedeComprar ? () => _comprarVozNumerica() : null),
-                color: (desbloqueado || puedeComprar)
-                    ? const Color(0xFFFFD700)
-                    : Colors.grey,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAnclaContinuidadCard() {
     final puedeComprar = (_rewards?.cristalesEnergia ?? 0) >= RewardsService.cristalesParaAnclaContinuidad;
     final anclasDisponibles = _rewards?.anclasContinuidad ?? 0;
@@ -734,18 +545,6 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                       ),
                       const SizedBox(height: 16),
                       ..._codigosPremium.map((codigo) => _buildCodigoPremiumCard(codigo)),
-                      const SizedBox(height: 30),
-                      // Mejoras de Pilotaje
-                      Text(
-                        'Mejoras de Pilotaje',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildVoiceNumbersCard(),
                       const SizedBox(height: 30),
                       // Anclas de Continuidad
                       Text(
@@ -1067,3 +866,4 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
     );
   }
 }
+

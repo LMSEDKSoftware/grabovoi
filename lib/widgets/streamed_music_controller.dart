@@ -32,6 +32,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
   bool _isBuffering = true;
   bool _isPlaying = false;
   bool _isMuted = false;
+  double _volumeLevel = 1.0;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   bool _hasShownVolumeMessage = false;
@@ -245,11 +246,18 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
     setState(() {
       _isMuted = !_isMuted;
     });
-    
     if (_isMuted) {
       await _audioManager.setVolume(0.0);
     } else {
-      await _audioManager.setVolume(1.0);
+      await _audioManager.setVolume(_volumeLevel);
+    }
+  }
+
+  Future<void> _onVolumeChanged(double value) async {
+    final v = value.clamp(0.0, 1.0);
+    setState(() => _volumeLevel = v);
+    if (!_isMuted) {
+      await _audioManager.setVolume(v);
     }
   }
 
@@ -306,7 +314,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
             ),
           ),
           
-          // Botón de silenciar/activar sonido
+          // Mute y nivelador de volumen
           IconButton(
             onPressed: _toggleMute,
             icon: Icon(
@@ -318,7 +326,31 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-          
+          SizedBox(
+            width: 80,
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: const Color(0xFFFFD700),
+                inactiveTrackColor: const Color(0xFFFFD700).withOpacity(0.3),
+                thumbColor: const Color(0xFFFFD700),
+                overlayColor: const Color(0xFFFFD700).withOpacity(0.2),
+              ),
+              child: Slider(
+                value: _isMuted ? 0.0 : _volumeLevel,
+                onChanged: (v) {
+                  if (_isMuted) {
+                    setState(() {
+                      _isMuted = false;
+                      _volumeLevel = v.clamp(0.0, 1.0);
+                    });
+                    _audioManager.setVolume(_volumeLevel);
+                  } else {
+                    _onVolumeChanged(v);
+                  }
+                },
+              ),
+            ),
+          ),
           IconButton(
             onPressed: _isBuffering ? null : _next,
             icon: Icon(Icons.skip_next, color: const Color(0xFFFFD700), size: 24),
