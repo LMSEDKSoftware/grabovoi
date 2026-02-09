@@ -11,6 +11,7 @@ UserRewards _$UserRewardsFromJson(Map<String, dynamic> json) => UserRewards(
       cristalesEnergia: (json['cristalesEnergia'] as num?)?.toInt() ?? 0,
       restauradoresArmonia:
           (json['restauradoresArmonia'] as num?)?.toInt() ?? 0,
+      anclasContinuidad: (json['anclasContinuidad'] as num?)?.toInt() ?? 0,
       luzCuantica: (json['luzCuantica'] as num?)?.toDouble() ?? 0.0,
       mantrasDesbloqueados: (json['mantrasDesbloqueados'] as List<dynamic>?)
               ?.map((e) => e as String)
@@ -27,6 +28,8 @@ UserRewards _$UserRewardsFromJson(Map<String, dynamic> json) => UserRewards(
           ? null
           : DateTime.parse(json['ultimaMeditacionEspecial'] as String),
       logros: json['logros'] as Map<String, dynamic>? ?? const {},
+      voiceNumbersEnabled: json['voiceNumbersEnabled'] as bool? ?? false,
+      voiceGender: json['voiceGender'] as String? ?? 'female',
     );
 
 Map<String, dynamic> _$UserRewardsToJson(UserRewards instance) =>
@@ -34,6 +37,7 @@ Map<String, dynamic> _$UserRewardsToJson(UserRewards instance) =>
       'userId': instance.userId,
       'cristalesEnergia': instance.cristalesEnergia,
       'restauradoresArmonia': instance.restauradoresArmonia,
+      'anclasContinuidad': instance.anclasContinuidad,
       'luzCuantica': instance.luzCuantica,
       'mantrasDesbloqueados': instance.mantrasDesbloqueados,
       'codigosPremiumDesbloqueados': instance.codigosPremiumDesbloqueados,
@@ -41,6 +45,8 @@ Map<String, dynamic> _$UserRewardsToJson(UserRewards instance) =>
       'ultimaMeditacionEspecial':
           instance.ultimaMeditacionEspecial?.toIso8601String(),
       'logros': instance.logros,
+      'voiceNumbersEnabled': instance.voiceNumbersEnabled,
+      'voiceGender': instance.voiceGender,
     };
 
 Mantra _$MantraFromJson(Map<String, dynamic> json) => Mantra(

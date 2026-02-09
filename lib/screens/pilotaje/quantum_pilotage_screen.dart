@@ -29,6 +29,7 @@ import '../../config/supabase_config.dart';
 import '../../models/busqueda_profunda_model.dart';
 import '../../services/busquedas_profundas_service.dart';
 import '../../services/audio_manager_service.dart';
+import '../../services/numbers_voice_service.dart';
 import '../../services/sugerencias_codigos_service.dart';
 import '../../services/pilotage_state_service.dart';
 import '../../models/sugerencia_codigo_model.dart';
@@ -3881,6 +3882,20 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       print('Error iniciando audio: $e');
     }
 
+    // Voz numérica (Premium): si está habilitada, iniciar sesión de voz
+    try {
+      final rewards = await RewardsService().getUserRewards();
+      final code = _codigoSeleccionado.isNotEmpty ? _codigoSeleccionado : (widget.codigoInicial ?? '');
+      if (rewards.voiceNumbersEnabled && code.isNotEmpty) {
+        NumbersVoiceService().startSession(
+          code: code,
+          enabled: true,
+          gender: rewards.voiceGender,
+          sessionDuration: const Duration(minutes: 2),
+        );
+      }
+    } catch (_) {}
+
     // Notificar al servicio global
     PilotageStateService().setQuantumPilotageActive(true);
 
@@ -3991,7 +4006,10 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     // Notificar al servicio global
     PilotageStateService().setQuantumPilotageActive(false);
     
-    // Detener el audio usando el AudioManagerService
+    // Detener voz numérica y música
+    try {
+      NumbersVoiceService().stopSession();
+    } catch (_) {}
     final audioManager = AudioManagerService();
     audioManager.stop();
     
@@ -4016,7 +4034,10 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     // Notificar al servicio global
     PilotageStateService().setQuantumPilotageActive(false);
     
-    // Detener el audio usando el AudioManagerService
+    // Detener voz numérica y música
+    try {
+      NumbersVoiceService().stopSession();
+    } catch (_) {}
     final audioManager = AudioManagerService();
     audioManager.stop();
     

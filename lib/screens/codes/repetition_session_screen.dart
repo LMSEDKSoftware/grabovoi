@@ -22,6 +22,7 @@ import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/audio_manager_service.dart';
+import '../../services/numbers_voice_service.dart';
 import '../../services/pilotage_state_service.dart';
 import '../../widgets/sequencia_activada_modal.dart';
 import '../../services/rewards_service.dart';
@@ -89,6 +90,10 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   bool _hasStartedRepetition = false; // Bandera para evitar múltiples llamadas
   bool _mostradoAvisoPilotajeManual = false;
 
+  /// Voz numérica: estado local sincronizado con RewardsService (encender/apagar en sesión).
+  bool _voiceNumbersEnabled = false;
+  String _voiceGender = 'female';
+
   // Sistema de Steps Secuenciales (igual que en pilotaje)
   bool _showSequentialSteps = false;
   int _currentStepIndex = 0;
@@ -102,36 +107,46 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     _codigoInfoFuture = _loadCodigoInfo();
     _shareableDataFuture = _loadShareableData();
     _favoritoFuture = _verificarFavorito();
-    
+    _loadVoiceNumbersPreference();
+
     _pulseController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _rotationController = AnimationController(
       duration: const Duration(seconds: 25),
       vsync: this,
     )..repeat();
-    
+
     _pulseAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
     );
-    
-    // Inicializar controlador de animación de la barra de colores
+
     _colorBarController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _colorBarAnimation = Tween<Offset>(
       begin: Offset.zero,
-      end: const Offset(0.3, 0), // Se desliza hacia la derecha
+      end: const Offset(0.3, 0),
     ).animate(CurvedAnimation(
       parent: _colorBarController,
       curve: Curves.easeInOut,
     ));
-    
-    // NO iniciar automáticamente - esperar a que el widget esté montado
+  }
+
+  Future<void> _loadVoiceNumbersPreference() async {
+    try {
+      final rewards = await RewardsService().getUserRewards();
+      if (mounted) {
+        setState(() {
+          _voiceNumbersEnabled = rewards.voiceNumbersEnabled;
+          _voiceGender = rewards.voiceGender == 'male' ? 'male' : 'female';
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -362,6 +377,25 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
           await audioManager.playTrack(tracks[0], autoPlay: true);
           print('✅ Audio iniciado automáticamente');
           
+          // Voz numérica (Premium): si está habilitada, iniciar sesión de voz
+          try {
+            final rewards = await RewardsService().getUserRewards();
+            if (mounted) {
+              setState(() {
+                _voiceNumbersEnabled = rewards.voiceNumbersEnabled;
+                _voiceGender = rewards.voiceGender == 'male' ? 'male' : 'female';
+              });
+            }
+            if (rewards.voiceNumbersEnabled) {
+              NumbersVoiceService().startSession(
+                code: widget.codigo,
+                enabled: true,
+                gender: rewards.voiceGender,
+                sessionDuration: const Duration(minutes: 2),
+              );
+            }
+          } catch (_) {}
+          
           // Forzar rebuild para que StreamedMusicController detecte el audio
           if (mounted) {
             setState(() {});
@@ -404,7 +438,10 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         // Notificar al servicio global
         PilotageStateService().setRepetitionActive(false);
         
-        // Detener audio
+        // Detener voz numérica y música
+        try {
+          NumbersVoiceService().stopSession();
+        } catch (_) {}
         try {
           AudioManagerService().stop();
         } catch (_) {}
@@ -413,6 +450,78 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         _registrarRepeticionYMostrarRecompensas();
       }
     });
+  }
+
+  Future<void> _toggleVoiceNumbers() async {
+    final newValue = !_voiceNumbersEnabled;
+    setState(() => _voiceNumbersEnabled = newValue);
+    try {
+      await RewardsService().saveVoiceNumbersSettings(
+        enabled: newValue,
+        gender: _voiceGender,
+      );
+    } catch (_) {}
+    if (!mounted) return;
+    if (_isRepetitionActive) {
+      if (newValue) {
+        NumbersVoiceService().startSession(
+          code: widget.codigo,
+          enabled: true,
+          gender: _voiceGender,
+          sessionDuration: Duration(seconds: _secondsRemaining),
+        );
+      } else {
+        NumbersVoiceService().stopSession();
+      }
+    }
+  }
+
+  Widget _buildVoiceNumbersToggle() {
+    final color = _getColorSeleccionado();
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _toggleVoiceNumbers,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _voiceNumbersEnabled ? color : color.withOpacity(0.4),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.record_voice_over,
+                color: _voiceNumbersEnabled ? color : Colors.white54,
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Repetición guiada',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _voiceNumbersEnabled ? color : Colors.white70,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                _voiceNumbersEnabled ? Icons.toggle_on : Icons.toggle_off,
+                color: _voiceNumbersEnabled ? color : Colors.white38,
+                size: 32,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // Removed _formatCodeForDisplay method - now using CodeFormatter
@@ -551,7 +660,10 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
     // Notificar al servicio global
     PilotageStateService().setRepetitionActive(false);
     
-    // Detener el audio
+    // Detener voz numérica y música
+    try {
+      NumbersVoiceService().stopSession();
+    } catch (_) {}
     AudioManagerService().stop();
   }
 
@@ -1323,6 +1435,10 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                         ),
                       ),
                       const SizedBox(height: 20),
+                      
+                      // Botón para encender/apagar voz numérica durante la sesión
+                      _buildVoiceNumbersToggle(),
+                      const SizedBox(height: 12),
                       
                       // Control de Música para sesión de repetición
                       StreamedMusicController(

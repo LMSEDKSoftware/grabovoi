@@ -50,23 +50,14 @@ class AudioManagerService {
   }
 
   Future<void> playTrack(String trackFile, {bool autoPlay = true}) async {
-    // Detener cualquier reproducción actual
     await stop();
-    
-    // Inicializar listeners si no están activos
-    if (_stateSub == null) {
-      _initializeListeners();
-    }
-    
+    if (_stateSub == null) _initializeListeners();
+
     try {
       _currentTrack = trackFile;
       _currentTrackController.add(_currentTrack);
-      
       await _globalPlayer.setSource(AssetSource(trackFile.replaceFirst('assets/', '')));
-      
-      if (autoPlay) {
-        await _globalPlayer.resume();
-      }
+      if (autoPlay) await _globalPlayer.resume();
     } catch (e) {
       print('Error reproduciendo audio: $e');
     }

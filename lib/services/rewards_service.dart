@@ -23,6 +23,7 @@ class RewardsService {
   // Constantes de compra
   static const int cristalesParaCodigoPremium = 100; // Cristales necesarios para código premium
   static const int cristalesParaAnclaContinuidad = 200; // Cristales necesarios para comprar una ancla de continuidad
+  static const int cristalesParaVozNumerica = 50; // Cristales para desbloquear voz numérica en pilotajes
   static const int maxAnclasContinuidad = 2; // Máximo de anclas que se pueden tener (solo 2 días seguidos)
   static const int diasParaRestaurador = 7; // Días para obtener un restaurador
   static const int diasParaMantra = 21; // Días consecutivos para desbloquear mantra
@@ -74,6 +75,8 @@ class RewardsService {
               ? DateTime.parse(response['ultima_meditacion_especial'])
               : null,
           logros: Map<String, dynamic>.from(response['logros'] ?? {}),
+          voiceNumbersEnabled: response['voice_numbers_enabled'] == true,
+          voiceGender: (response['voice_gender'] as String?) ?? 'female',
         );
         
         print('✅ [DIAGNÓSTICO] Recompensas leídas de SUPABASE para usuario $userId: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
@@ -93,6 +96,8 @@ class RewardsService {
         codigosPremiumDesbloqueados: [],
         ultimaActualizacion: DateTime.now(),
         logros: {},
+        voiceNumbersEnabled: false,
+        voiceGender: 'female',
       );
       
       // Guardar el nuevo registro en Supabase para que quede persistido
@@ -134,6 +139,8 @@ class RewardsService {
         codigosPremiumDesbloqueados: List<String>.from(map['codigosPremiumDesbloqueados'] ?? []),
         ultimaActualizacion: DateTime.parse(map['ultimaActualizacion']),
         logros: Map<String, dynamic>.from(map['logros'] ?? {}),
+        voiceNumbersEnabled: map['voiceNumbersEnabled'] == true,
+        voiceGender: (map['voiceGender'] as String?) ?? 'female',
       );
     }
 
@@ -147,7 +154,18 @@ class RewardsService {
       codigosPremiumDesbloqueados: [],
       ultimaActualizacion: DateTime.now(),
       logros: {},
+      voiceNumbersEnabled: false,
+      voiceGender: 'female',
     );
+  }
+
+  /// Guardar solo configuración de voz numérica (reutilizable desde UI).
+  Future<void> saveVoiceNumbersSettings({required bool enabled, required String gender}) async {
+    final rewards = await getUserRewards();
+    await saveUserRewards(rewards.copyWith(
+      voiceNumbersEnabled: enabled,
+      voiceGender: gender == 'male' ? 'male' : 'female',
+    ));
   }
 
   /// Guardar recompensas
@@ -171,19 +189,19 @@ class RewardsService {
     print('✅ [DIAGNÓSTICO] Usuario autenticado verificado: ${currentUser.id}');
     
     try {
-      // Guardar en Supabase usando upsert con onConflict para asegurar actualización
-      // Nota: anclas_continuidad puede no existir en la tabla, así que lo omitimos si falla
       final dataToSave = {
         'user_id': rewards.userId,
         'cristales_energia': rewards.cristalesEnergia,
         'restauradores_armonia': rewards.restauradoresArmonia,
-        // 'anclas_continuidad': rewards.anclasContinuidad, // Comentado: columna no existe en Supabase
+        'anclas_continuidad': rewards.anclasContinuidad,
         'luz_cuantica': rewards.luzCuantica,
         'mantras_desbloqueados': rewards.mantrasDesbloqueados,
         'codigos_premium_desbloqueados': rewards.codigosPremiumDesbloqueados,
         'ultima_actualizacion': rewards.ultimaActualizacion.toIso8601String(),
         'ultima_meditacion_especial': rewards.ultimaMeditacionEspecial?.toIso8601String(),
         'logros': rewards.logros,
+        'voice_numbers_enabled': rewards.voiceNumbersEnabled,
+        'voice_gender': rewards.voiceGender,
         'updated_at': DateTime.now().toIso8601String(),
       };
       
@@ -217,6 +235,8 @@ class RewardsService {
         'ultimaActualizacion': rewards.ultimaActualizacion.toIso8601String(),
         'ultimaMeditacionEspecial': rewards.ultimaMeditacionEspecial?.toIso8601String(),
         'logros': rewards.logros,
+        'voiceNumbersEnabled': rewards.voiceNumbersEnabled,
+        'voiceGender': rewards.voiceGender,
       }),
     );
   }
@@ -609,6 +629,32 @@ class RewardsService {
       'ancla_continuidad',
       'Ancla de Continuidad comprada',
       cantidad: 1,
+    );
+    return updatedRewards;
+  }
+
+  /// Comprar voz numérica con cristales (habilita voiceNumbersEnabled)
+  Future<UserRewards> comprarVozNumerica() async {
+    final rewards = await getUserRewards();
+
+    if (rewards.cristalesEnergia < cristalesParaVozNumerica) {
+      throw Exception('No tienes suficientes cristales. Necesitas $cristalesParaVozNumerica cristales.');
+    }
+
+    if (rewards.voiceNumbersEnabled) {
+      throw Exception('La voz numérica ya está desbloqueada');
+    }
+
+    final updatedRewards = rewards.copyWith(
+      cristalesEnergia: rewards.cristalesEnergia - cristalesParaVozNumerica,
+      voiceNumbersEnabled: true,
+      ultimaActualizacion: DateTime.now(),
+    );
+
+    await saveUserRewards(updatedRewards);
+    await addToHistory(
+      'voice_numbers',
+      'Voz numérica desbloqueada',
     );
     return updatedRewards;
   }

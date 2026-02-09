@@ -15,6 +15,10 @@ class UserRewards {
   final DateTime ultimaActualizacion;
   final DateTime? ultimaMeditacionEspecial; // Cuándo se usó la última meditación especial
   final Map<String, dynamic> logros; // Logros adicionales
+  /// Voz numérica en pilotajes (Premium): activar lectura dígito a dígito.
+  final bool voiceNumbersEnabled;
+  /// Género de voz: 'male' | 'female'.
+  final String voiceGender;
 
   UserRewards({
     required this.userId,
@@ -27,6 +31,8 @@ class UserRewards {
     required this.ultimaActualizacion,
     this.ultimaMeditacionEspecial,
     this.logros = const {},
+    this.voiceNumbersEnabled = false,
+    this.voiceGender = 'female',
   });
 
   factory UserRewards.fromJson(Map<String, dynamic> json) => _$UserRewardsFromJson(json);
@@ -43,6 +49,8 @@ class UserRewards {
     DateTime? ultimaActualizacion,
     DateTime? ultimaMeditacionEspecial,
     Map<String, dynamic>? logros,
+    bool? voiceNumbersEnabled,
+    String? voiceGender,
   }) {
     return UserRewards(
       userId: userId ?? this.userId,
@@ -55,6 +63,8 @@ class UserRewards {
       ultimaActualizacion: ultimaActualizacion ?? this.ultimaActualizacion,
       ultimaMeditacionEspecial: ultimaMeditacionEspecial ?? this.ultimaMeditacionEspecial,
       logros: logros ?? this.logros,
+      voiceNumbersEnabled: voiceNumbersEnabled ?? this.voiceNumbersEnabled,
+      voiceGender: voiceGender ?? this.voiceGender,
     );
   }
 }
