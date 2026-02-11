@@ -1,7 +1,7 @@
 name: manifestacion_numerica_grabovoi
 description: App espiritual basada en los códigos de Grigori Grabovoi
 publish_to: 'none'
-version: 2.3.34+47
+version: 2.3.36+49
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -50,7 +50,7 @@ dependencies:
   flutter_local_notifications: ^17.2.3
   flutter_dotenv: ^5.1.0
   timezone: ^0.9.0
-  workmanager: ^0.5.2
+  # workmanager: ^0.5.2  # No se usa en el código; comentado para evitar error iOS WorkmanagerPlugin.h tras pub cache clean. Restaurar si en el futuro se usan tareas en segundo plano.
   image_picker: ^1.0.7
   permission_handler: ^11.2.0
   cached_network_image: ^3.3.1

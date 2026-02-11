@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/rewards_model.dart';
@@ -29,6 +30,9 @@ class RewardsService {
   static const int diasParaMantra = 21; // Días consecutivos para desbloquear mantra
 
   final AuthServiceSimple _authService = AuthServiceSimple();
+
+  /// Notificador para que las vistas (Tienda, Portal) refresquen cuando se actualizan recompensas (ej. compra de cristales).
+  static final ValueNotifier<int> rewardsUpdated = ValueNotifier<int>(0);
   
   AuthServiceSimple get authService => _authService;
 
@@ -659,6 +663,24 @@ class RewardsService {
       'voice_numbers',
       'Voz numérica desbloqueada',
     );
+    return updatedRewards;
+  }
+
+  /// Añadir cristales por compra (IAP simulada o real). Cuando la tienda valide el pago,
+  /// se llama este método con la cantidad del paquete comprado.
+  Future<UserRewards> agregarCristalesComprados(int cantidad) async {
+    final rewards = await getUserRewards(forceRefresh: true);
+    final updatedRewards = rewards.copyWith(
+      cristalesEnergia: rewards.cristalesEnergia + cantidad,
+      ultimaActualizacion: DateTime.now(),
+    );
+    await saveUserRewards(updatedRewards);
+    await addToHistory(
+      'cristales',
+      'Cristales comprados (paquete)',
+      cantidad: cantidad,
+    );
+    rewardsUpdated.value++;
     return updatedRewards;
   }
 

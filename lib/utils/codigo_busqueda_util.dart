@@ -5,7 +5,7 @@
 /// 2) Si la búsqueda comienza con un número → es un código: "333_333" y "333 333"
 ///    dan el mismo resultado (espacio se interpreta como "_").
 /// 3) Si comienza con número: solo dígitos y "_" o espacio. Un espacio en blanco
-///    se muestra en el input como "__". No letras, no "-" ni otros símbolos.
+///    se muestra en el input como "_". No letras, no "-" ni otros símbolos.
 
 /// Normaliza una secuencia de código para comparación y búsqueda.
 /// - trim
@@ -58,13 +58,13 @@ String? exactCodeFromQuery(String query) {
 }
 
 /// Filtra la entrada cuando está en modo código: solo dígitos y "_".
-/// Un espacio en blanco se convierte en "__" en el input. No permite letras ni otros símbolos.
+/// Un espacio en blanco se convierte en "_" en el input. No permite letras ni otros símbolos.
 /// Si es texto (no empieza por número), no modifica.
 String filtrarEntradaCodigo(String value) {
   if (value.isEmpty) return value;
   if (!empiezaConNumero(value)) return value;
-  // Espacio → "__" en secuencia; luego quitar todo lo que no sea dígito o "_"
-  final conGuiones = value.replaceAll(' ', '__');
+  // Espacio → "_" en secuencia; luego quitar todo lo que no sea dígito o "_"
+  final conGuiones = value.replaceAll(' ', '_');
   return conGuiones.replaceAll(RegExp(r'[^0-9_]'), '');
 }
 

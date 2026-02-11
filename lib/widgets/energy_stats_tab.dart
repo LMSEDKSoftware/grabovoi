@@ -24,6 +24,7 @@ class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProvid
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    RewardsService.rewardsUpdated.addListener(_onRewardsUpdated);
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -62,8 +63,13 @@ class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProvid
     }
   }
 
+  void _onRewardsUpdated() {
+    if (mounted) _loadRewards(forceRefresh: true);
+  }
+
   @override
   void dispose() {
+    RewardsService.rewardsUpdated.removeListener(_onRewardsUpdated);
     WidgetsBinding.instance.removeObserver(this);
     _slideController.dispose();
     super.dispose();

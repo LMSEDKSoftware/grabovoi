@@ -129,61 +129,16 @@ class _DiarioScreenState extends State<DiarioScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Seguimiento de tus activaciones',
+                              'Visualiza todas las secuencias que estás siguiendo. Cada una muestra la secuencia activada y el detalle de cada día con tus intenciones, sensaciones y resultados.',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 color: Colors.white70,
+                                height: 1.4,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 20),
-                        
-                        // Texto explicativo
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFD700).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFFFFD700).withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                        Row(
-                          children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    color: const Color(0xFFFFD700),
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '¿Qué puedes ver aquí?',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFFFFD700),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Visualiza todas las secuencias que estás siguiendo. Cada una muestra la secuencia activada y el detalle de cada día con tus intenciones, sensaciones y resultados.',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  color: Colors.white70,
-                                  height: 1.5,
-                              ),
-                            ),
-                          ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                         
                         // Total de secuencias en seguimiento
                         Text(

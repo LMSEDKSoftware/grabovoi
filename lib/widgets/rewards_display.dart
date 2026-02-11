@@ -4,10 +4,12 @@ import '../models/rewards_model.dart';
 import '../services/rewards_service.dart';
 
 /// Widget para mostrar las recompensas del usuario (cristales, luz cuántica, etc.)
+/// Si [initialRewards] no es null, se usa ese valor (p. ej. desde la Tienda tras una compra) y no se carga del servicio.
 class RewardsDisplay extends StatefulWidget {
   final bool compact; // Versión compacta para encabezados
+  final UserRewards? initialRewards; // Si se pasa, se muestra este valor y se actualiza cuando cambie
 
-  const RewardsDisplay({super.key, this.compact = false});
+  const RewardsDisplay({super.key, this.compact = false, this.initialRewards});
 
   @override
   State<RewardsDisplay> createState() => _RewardsDisplayState();
@@ -21,7 +23,23 @@ class _RewardsDisplayState extends State<RewardsDisplay> {
   @override
   void initState() {
     super.initState();
-    _loadRewards();
+    if (widget.initialRewards != null) {
+      _rewards = widget.initialRewards;
+      _isLoading = false;
+    } else {
+      _loadRewards();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant RewardsDisplay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialRewards != null && widget.initialRewards != oldWidget.initialRewards) {
+      setState(() {
+        _rewards = widget.initialRewards;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadRewards() async {

@@ -19,15 +19,33 @@ class PremiumStoreScreen extends StatefulWidget {
 
 class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   final RewardsService _rewardsService = RewardsService();
+  final ScrollController _scrollController = ScrollController();
   UserRewards? _rewards;
   List<CodigoPremium> _codigosPremium = [];
   List<MeditacionEspecial> _meditacionesEspeciales = [];
   bool _isLoading = true;
+  bool _showStickyHeader = false;
+  static const double _rewardsSectionHeight = 280; // Altura aprox. título + Recompensas Cuánticas
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final show = _scrollController.offset > _rewardsSectionHeight;
+    if (show != _showStickyHeader && mounted) {
+      setState(() => _showStickyHeader = show);
+    }
   }
 
   Future<void> _loadData() async {
@@ -688,6 +706,87 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
     }
   }
 
+  Widget _buildStickyHeader() {
+    if (_rewards == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C2541).withOpacity(0.98),
+        border: Border(bottom: BorderSide(color: const Color(0xFFFFD700).withOpacity(0.3))),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFFFFD700)),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            Expanded(
+              child: Text(
+                'Tienda Cuántica',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
+                ),
+              ),
+            ),
+            // Cristales (estilo app: icono + cantidad)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C3E50).withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${_rewards!.cristalesEnergia}',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Luz cuántica (estilo app: icono + %)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C3E50).withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${_rewards!.luzCuantica.toInt()}%',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -695,85 +794,433 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
         child: SafeArea(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header
-                      Row(
+              : Stack(
+                  children: [
+                    // Todo el contenido en un solo scroll (sección Recompensas se mueve con el resto)
+                    SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Color(0xFFFFD700)),
-                            onPressed: () => Navigator.of(context).pop(),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: Color(0xFFFFD700)),
+                                onPressed: () => Navigator.of(context).pop(),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'Tienda Cuántica',
+                                  style: GoogleFonts.playfairDisplay(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFFFD700),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          Expanded(
-                            child: Text(
-                              'Tienda Cuántica',
+                          const SizedBox(height: 12),
+                          if (_rewards != null)
+                            RewardsDisplay(compact: false, initialRewards: _rewards),
+                          const SizedBox(height: 30),
+                          Text(
+                            'Secuencias Premium',
+                            style: GoogleFonts.playfairDisplay(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFFFD700),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ..._codigosPremium.map((codigo) => _buildCodigoPremiumCard(codigo)),
+                            const SizedBox(height: 30),
+                            Text(
+                              'Mejoras de Pilotaje',
                               style: GoogleFonts.playfairDisplay(
-                                fontSize: 28,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFFFFD700),
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 16),
+                            _buildVoiceNumbersCard(),
+                            const SizedBox(height: 30),
+                            Text(
+                              'Elementos Salvadores',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildAnclaContinuidadCard(),
+                            const SizedBox(height: 30),
+                            Text(
+                              'Meditaciones Especiales',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ..._meditacionesEspeciales.map((meditacion) => _buildMeditacionCard(meditacion)),
+                            const SizedBox(height: 30),
+                            Text(
+                              'Cristales de energía',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Recarga cristales para comprar secuencias, voz numérica y más.',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildCristalesPackCard(250, 89),
+                            const SizedBox(height: 12),
+                            _buildCristalesPackCard(700, 199),
+                            const SizedBox(height: 12),
+                            _buildCristalesPackCard(1600, 349),
+                            const SizedBox(height: 30),
+                            Text(
+                              'Luz cuántica',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Recarga tu luz cuántica sin esperar para acceder a meditaciones especiales.',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildRecargaLuzCuanticaCard(),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      // Recompensas actuales
-                      if (_rewards != null) RewardsDisplay(compact: false),
-                      const SizedBox(height: 30),
-                      // Secuencias Premium
-                      Text(
-                        'Secuencias Premium',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
+                    ),
+                    if (_showStickyHeader)
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: _buildStickyHeader(),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      ..._codigosPremium.map((codigo) => _buildCodigoPremiumCard(codigo)),
-                      const SizedBox(height: 30),
-                      // Mejoras de Pilotaje
-                      Text(
-                        'Mejoras de Pilotaje',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildVoiceNumbersCard(),
-                      const SizedBox(height: 30),
-                      // Anclas de Continuidad
-                      Text(
-                        'Elementos Salvadores',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildAnclaContinuidadCard(),
-                      const SizedBox(height: 30),
-                      // Meditaciones Especiales
-                      Text(
-                        'Meditaciones Especiales',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ..._meditacionesEspeciales.map((meditacion) => _buildMeditacionCard(meditacion)),
-                    ],
-                  ),
+                  ],
                 ),
         ),
+      ),
+    );
+  }
+
+  /// Card de pack de cristales (compra in-app). Iconos de cristales según cantidad (más llenado = más cristales).
+  Widget _buildCristalesPackCard(int cristales, int precioMxn) {
+    // Nivel visual: 250 -> pocos, 700 -> medio, 1600 -> lleno (cantidad de iconos + “llenado”)
+    final int nivel = cristales <= 250 ? 3 : (cristales <= 700 ? 5 : 7);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C3E50).withOpacity(0.7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 72,
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.35),
+                width: 1,
+              ),
+            ),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              runSpacing: 2,
+              spacing: 2,
+              children: List.generate(nivel, (i) {
+                final size = 14.0 + (i % 3) * 2.0;
+                final opacity = 0.6 + (i / nivel) * 0.4;
+                return Icon(
+                  Icons.diamond,
+                  color: const Color(0xFFFFD700).withOpacity(opacity.clamp(0.0, 1.0)),
+                  size: size,
+                );
+              }),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '$cristales cristales',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '\$$precioMxn MXN',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFFD700),
+                ),
+              ),
+              const SizedBox(height: 8),
+              CustomButton(
+                text: 'Comprar',
+                onPressed: () => _comprarCristalesPack(cristales, precioMxn),
+                color: const Color(0xFFFFD700),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Card de recarga de luz cuántica (placeholder hasta integrar IAP).
+  Widget _buildRecargaLuzCuanticaCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C3E50).withOpacity(0.7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFD700).withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 32),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Recarga al 100%',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Luz cuántica al máximo para meditaciones especiales',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          CustomButton(
+            text: 'Próximamente',
+            onPressed: null,
+            color: Colors.grey,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _comprarCristalesPack(int cristales, int precioMxn) async {
+    if (!mounted) return;
+    // Simular proceso de pago en tienda (luego aquí irá la integración real con StoreKit / in_app_purchase)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: Color(0xFFFFD700)),
+                SizedBox(height: 16),
+                Text(
+                  'Procesando compra...',
+                  style: TextStyle(
+                    color: Color(0xFF1C2541),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+    try {
+      final updatedRewards = await _rewardsService.agregarCristalesComprados(cristales);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      setState(() {
+        _rewards = updatedRewards;
+      });
+      if (!mounted) return;
+      _mostrarConfirmacionCristalesComprados(cristales);
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al procesar la compra: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _mostrarConfirmacionCristalesComprados(int cristales) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 32),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '¡Gracias por tu compra!',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Has adquirido $cristales cristales de energía. Ya están en tu cuenta.',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.white,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Ahora puedes usarlos para comprar:',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFFFFD700),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _bullet('Secuencias premium'),
+            _bullet('Mejoras en el pilotaje (voz numérica)'),
+            _bullet('Elementos salvadores (anclas de continuidad)'),
+            const SizedBox(height: 8),
+            Text(
+              '¡Disfruta tu experiencia cuántica!',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.white70,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Entendido',
+              style: GoogleFonts.inter(
+                color: const Color(0xFFFFD700),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bullet(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '• ',
+            style: GoogleFonts.inter(
+              color: const Color(0xFFFFD700),
+              fontSize: 14,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

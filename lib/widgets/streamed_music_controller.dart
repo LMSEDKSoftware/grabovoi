@@ -310,30 +310,31 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
           ),
           
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.timer, color: const Color(0xFFFFD700), size: 14),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
+            child: ConstrainedBox(
+              minWidth: 56,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.timer, color: const Color(0xFFFFD700), size: 14),
+                    const SizedBox(width: 4),
+                    Text(
                       _formatDuration(_position),
                       style: GoogleFonts.spaceMono(
-                        color: const Color(0xFFFFD700), 
-                        fontSize: 11, 
-                        fontWeight: FontWeight.bold
+                        color: const Color(0xFFFFD700),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -350,16 +351,17 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-          SizedBox(
-            width: 80,
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: const Color(0xFFFFD700),
-                inactiveTrackColor: const Color(0xFFFFD700).withOpacity(0.3),
-                thumbColor: const Color(0xFFFFD700),
-                overlayColor: const Color(0xFFFFD700).withOpacity(0.2),
-              ),
-              child: Slider(
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 40, maxWidth: 100),
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: const Color(0xFFFFD700),
+                  inactiveTrackColor: const Color(0xFFFFD700).withOpacity(0.3),
+                  thumbColor: const Color(0xFFFFD700),
+                  overlayColor: const Color(0xFFFFD700).withOpacity(0.2),
+                ),
+                child: Slider(
                 value: _isMuted ? 0.0 : _volumeLevel,
                 onChanged: (v) {
                   if (_isMuted) {
@@ -372,6 +374,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
                     _onVolumeChanged(v);
                   }
                 },
+                ),
               ),
             ),
           ),

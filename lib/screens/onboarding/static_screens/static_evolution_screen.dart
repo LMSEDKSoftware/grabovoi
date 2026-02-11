@@ -81,7 +81,7 @@ class StaticEvolutionScreen extends StatelessWidget {
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
                     _buildStatCard('Tiempo Total', '45m', Icons.timer),
-                    _buildStatCard('Códigos', '12', Icons.numbers),
+                    _buildStatCard('Secuencias', '12', Icons.numbers),
                     _buildStatCard('Pilotajes', '5', Icons.psychology),
                     _buildStatCard('Nivel', 'Iniciado', Icons.star),
                   ],
@@ -99,7 +99,7 @@ class StaticEvolutionScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
                 
-                _buildAchievementItem('Primer Paso', 'Repetiste tu primer código', Icons.flag),
+                _buildAchievementItem('Primer Paso', 'Repetiste tu primera secuencia', Icons.flag),
                 _buildAchievementItem('Constancia', '3 días seguidos', Icons.repeat),
               ],
             ),
