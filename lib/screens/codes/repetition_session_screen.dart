@@ -578,7 +578,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
       await ShareHelper.shareImage(
         pngBytes: pngBytes,
         fileName: 'grabovoi_${widget.codigo}',
-        text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        text: 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
         context: context,
       );
 
@@ -1159,7 +1159,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
                                 
                                 final textToCopy = '''${widget.codigo} : $titulo
 $descripcion
-Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabovoi''';
                                 
                                 await Clipboard.setData(ClipboardData(text: textToCopy));
                                 if (mounted) {
@@ -1176,7 +1176,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                                 final titulo = widget.nombre ?? 'Secuencia Cuántica';
                                 final textToCopy = '''${widget.codigo} : $titulo
 Esta secuencia ayuda a manifestar la abundancia de alimentos necesarios para una nutrición adecuada y equilibrada en la vida diaria.
-Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabovoi''';
                                 
                                 await Clipboard.setData(ClipboardData(text: textToCopy));
                                 if (mounted) {
@@ -2085,7 +2085,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               ),
               child: SingleChildScrollView(
                 child: Text(
-                  'Las secuencias numéricas de Grabovoi NO sustituyen la atención médica profesional. '
+                  'Las secuencias numéricas gravitacionales NO sustituyen la atención médica profesional. '
                   'Siempre consulta con profesionales de la salud para cualquier condición médica. '
                   'Estas secuencias son herramientas complementarias de bienestar.',
                   style: GoogleFonts.inter(

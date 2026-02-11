@@ -888,7 +888,7 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                 
                 // Mensaje final
                 Text(
-                  '"El sistema está diseñado para crecer contigo mientras usas la app y practicas las secuencias de Grabovoi."',
+                  '"El sistema está diseñado para crecer contigo mientras usas la app y practicas las secuencias vibracionales."',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: Colors.white70,

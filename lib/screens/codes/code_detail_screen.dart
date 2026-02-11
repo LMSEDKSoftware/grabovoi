@@ -495,7 +495,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       
       final textToCopy = '''${widget.codigo} : $titulo
 $descripcion
-Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabovoi''';
       
       await Clipboard.setData(ClipboardData(text: textToCopy));
       if (mounted) {
@@ -568,7 +568,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               ),
               child: SingleChildScrollView(
                 child: Text(
-                  'Las secuencias numéricas de Grabovoi NO sustituyen la atención médica profesional. '
+                  'Las secuencias numéricas gravitacionales NO sustituyen la atención médica profesional. '
                   'Siempre consulta con profesionales de la salud para cualquier condición médica. '
                   'Estas secuencias son herramientas complementarias de bienestar.',
                   style: GoogleFonts.inter(
@@ -836,7 +836,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
         await ShareHelper.shareImage(
           pngBytes: pngBytes,
           fileName: 'grabovoi_${widget.codigo}',
-          text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+          text: 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
           context: context,
         );
 

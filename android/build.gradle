@@ -3,6 +3,7 @@ buildscript {
         compileSdkVersion = 36
         minSdkVersion = 21
         targetSdkVersion = 36
+        // Kotlin 2.2.0 requerido por los plugins (documentado en REPORTE_COMPILACION_APK.md)
         kotlin_version = '2.2.0'
     }
     repositories {
@@ -41,6 +42,14 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+}
+// Exponer 'flutter' para plugins que lo usan (ej. app_links)
+subprojects { subproject ->
+    subproject.ext.set("flutter", [
+        compileSdkVersion: rootProject.ext.compileSdkVersion,
+        minSdkVersion: rootProject.ext.minSdkVersion,
+        targetSdkVersion: rootProject.ext.targetSdkVersion,
+    ])
 }
 
 tasks.register("clean", Delete) {

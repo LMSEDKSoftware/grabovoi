@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:screenshot/screenshot.dart';
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
@@ -25,6 +27,8 @@ import '../../services/user_progress_service.dart';
 import '../../services/user_custom_codes_service.dart';
 import '../../services/user_favorites_service.dart';
 import '../../utils/codigo_busqueda_util.dart';
+import '../../utils/share_helper.dart';
+import '../../services/challenge_progress_tracker.dart';
 
 class StaticBibliotecaScreen extends StatefulWidget {
   const StaticBibliotecaScreen({super.key});
@@ -97,6 +101,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   String _queryFallbackFase2 = '';
   bool _buscandoRelacionadosFase2 = false;
   String? _codigoBuscandoFase2;
+  
+  // Compartir código desde la biblioteca
+  final ScreenshotController _shareController = ScreenshotController();
+  CodigoGrabovoi? _codigoParaCompartir;
   
   // Variables para pilotaje manual
   bool _showManualPilotage = false;
@@ -2165,6 +2173,171 @@ OUTPUT (JSON ESTRICTO)
     }
   }
 
+  Future<void> _compartirCodigo(CodigoGrabovoi codigo) async {
+    try {
+      if (!mounted) return;
+      setState(() {
+        _codigoParaCompartir = codigo;
+      });
+
+      await WidgetsBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      final Uint8List? pngBytes = await _shareController.capture(pixelRatio: 2.0);
+
+      if (pngBytes == null || pngBytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudo generar la imagen. Intenta nuevamente.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      await ShareHelper.shareImage(
+        pngBytes: pngBytes,
+        fileName: 'grabovoi_${codigo.codigo}',
+        text: 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
+        context: context,
+      );
+
+      try {
+        ChallengeProgressTracker().trackPilotageShared(
+          codeId: codigo.codigo,
+          codeName: codigo.nombre,
+        );
+      } catch (e) {
+        print('⚠️ Error registrando pilotaje compartido: $e');
+      }
+    } catch (e) {
+      print('❌ Error al compartir imagen: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildShareableImage(String codigoCrudo, String titulo, String descripcion) {
+    return Container(
+      width: 800,
+      height: 800,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/ManiGrab-esfera.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 140),
+            Expanded(
+              child: Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.80,
+                  child: Text(
+                    codigoCrudo,
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    style: GoogleFonts.spaceMono(
+                      fontSize: 72,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 6,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.8),
+                          blurRadius: 6,
+                          offset: const Offset(2, 2),
+                        ),
+                        Shadow(
+                          color: Colors.white.withOpacity(0.8),
+                          blurRadius: 30,
+                          offset: Offset.zero,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Transform.translate(
+              offset: const Offset(0, -12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      titulo,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFFD700),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.7),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      descripcion,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        height: 1.35,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.7),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -2519,6 +2692,32 @@ OUTPUT (JSON ESTRICTO)
               ),
             ),
           ],
+            ),
+          ),
+          // Widget oculto para generar la imagen compartible de cada secuencia
+          Positioned(
+            left: -1000,
+            top: -1000,
+            child: IgnorePointer(
+              ignoring: true,
+              child: SizedBox(
+                width: 800,
+                height: 800,
+                child: Screenshot(
+                  controller: _shareController,
+                  child: _codigoParaCompartir == null
+                      ? const SizedBox.shrink()
+                      : _buildShareableImage(
+                          _codigoParaCompartir!.codigo,
+                          _codigoParaCompartir!.nombre.isNotEmpty
+                              ? _codigoParaCompartir!.nombre
+                              : 'Campo Energético',
+                          _codigoParaCompartir!.descripcion.isNotEmpty
+                              ? _codigoParaCompartir!.descripcion
+                              : 'Secuencia cuántica para la manifestación y transformación energética.',
+                        ),
+                ),
+              ),
             ),
           ),
           // Modales de búsqueda profunda (flujo B)
@@ -4182,24 +4381,38 @@ OUTPUT (JSON ESTRICTO)
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.copy,
-                            color: Color(0xFFFFD700),
-                            size: 20,
-                          ),
-                          tooltip: 'Copiar secuencia',
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: codigo.codigo));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Secuencia ${codigo.codigo} copiada al portapapeles'),
-                                duration: const Duration(seconds: 2),
-                                backgroundColor: const Color(0xFFFFD700).withOpacity(0.9),
-                                behavior: SnackBarBehavior.floating,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.share,
+                                color: Color(0xFFFFD700),
+                                size: 20,
                               ),
-                            );
-                          },
+                              tooltip: 'Compartir imagen',
+                              onPressed: () => _compartirCodigo(codigo),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.copy,
+                                color: Color(0xFFFFD700),
+                                size: 20,
+                              ),
+                              tooltip: 'Copiar secuencia',
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: codigo.codigo));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Secuencia ${codigo.codigo} copiada al portapapeles'),
+                                    duration: const Duration(seconds: 2),
+                                    backgroundColor: const Color(0xFFFFD700).withOpacity(0.9),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),

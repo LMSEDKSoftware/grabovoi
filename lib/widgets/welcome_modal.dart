@@ -165,7 +165,7 @@ class _WelcomeModalState extends State<WelcomeModal> {
             // Título
             Center(
               child: Text(
-                '🌀 Bienvenido a la Frecuencia Grabovoi',
+                '🌀 Bienvenido a las Secuencias Numéricas Gravitacionales',
                 style: GoogleFonts.playfairDisplay(
                   color: const Color(0xFFFFD700),
                   fontSize: 22,
@@ -178,7 +178,7 @@ class _WelcomeModalState extends State<WelcomeModal> {
             
             // Texto principal
             Text(
-              'Las Secuencias Numéricas de Grigori Grabovoi son secuencias que vibran en frecuencias específicas, capaces de armonizar tu cuerpo, tu mente y tu realidad.\n\nCada número actúa como una llave energética que abre caminos hacia la Norma: ese estado perfecto en el que todo vuelve al equilibrio natural del Creador.',
+              'Las Secuencias Numéricas Gravitacionales son secuencias que vibran en frecuencias específicas, capaces de armonizar tu cuerpo, tu mente y tu realidad.\n\nCada número actúa como una llave energética que abre caminos hacia la Norma: ese estado perfecto en el que todo vuelve al equilibrio natural del Creador.',
               style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 14,
@@ -268,7 +268,7 @@ class _WelcomeModalState extends State<WelcomeModal> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Las secuencias numéricas de Grabovoi NO sustituyen la atención médica profesional. Siempre consulta con profesionales de la salud para cualquier condición médica. Estas secuencias son herramientas complementarias de bienestar.',
+                        'Las secuencias numéricas gravitacionales NO sustituyen la atención médica profesional. Siempre consulta con profesionales de la salud para cualquier condición médica. Estas secuencias son herramientas complementarias de bienestar.',
                         style: GoogleFonts.inter(
                           color: Colors.white70,
                           fontSize: 13,

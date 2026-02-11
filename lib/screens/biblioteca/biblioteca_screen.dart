@@ -1395,7 +1395,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Las secuencias numéricas de Grabovoi son herramientas de manifestación y no sustituyen el consejo, diagnóstico o tratamiento médico profesional. Siempre consulta con profesionales de la salud calificados para cualquier condición médica.',
+                    'Las secuencias numéricas gravitacionales son herramientas de manifestación y no sustituyen el consejo, diagnóstico o tratamiento médico profesional. Siempre consulta con profesionales de la salud calificados para cualquier condición médica.',
                     style: GoogleFonts.inter(
                       color: Colors.white70,
                       fontSize: 12,

@@ -238,7 +238,7 @@ class _RecoverySetPasswordScreenState extends State<RecoverySetPasswordScreen> {
                 const SizedBox(height: 40),
                 // Logo y título
                 Text(
-                  'ManiGrab',
+                  'ManiGraB',
                   style: GoogleFonts.inter(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,

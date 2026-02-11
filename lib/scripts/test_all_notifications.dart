@@ -74,7 +74,7 @@ class TestAllNotifications {
       
       // 16. Recordatorio de código del día (directa)
       () => _notificationService.showNotification(
-        title: '🌅 Tu Código Grabovoi de Hoy',
+        title: '🌅 Tu Código Numérico de Hoy',
         body: 'Tu código de hoy espera por ti. ¡Recuerda que tu energía se eleva con cada pilotaje consciente!',
         type: NotificationType.dailyCodeReminder,
       ),

@@ -2013,7 +2013,7 @@ OUTPUT (JSON ESTRICTO)
       
       final textToCopy = '''${codigoEncontrado.codigo} : ${codigoEncontrado.nombre}
 ${codigoEncontrado.descripcion}
-Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabovoi''';
       
       Clipboard.setData(ClipboardData(text: textToCopy));
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2028,7 +2028,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       final codigoId = _codigoSeleccionado.isNotEmpty ? _codigoSeleccionado : widget.codigoInicial ?? '';
       final textToCopy = '''$codigoId : Código Cuántico
 Código cuántico para la manifestación y transformación energética.
-Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabovoi''';
       
       Clipboard.setData(ClipboardData(text: textToCopy));
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2083,7 +2083,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
               ),
               child: SingleChildScrollView(
                 child: Text(
-                  'Las secuencias numéricas de Grabovoi NO sustituyen la atención médica profesional. '
+                  'Las secuencias numéricas gravitacionales NO sustituyen la atención médica profesional. '
                   'Siempre consulta con profesionales de la salud para cualquier condición médica. '
                   'Estas secuencias son herramientas complementarias de bienestar.',
                   style: GoogleFonts.inter(
@@ -2160,7 +2160,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
         // Si no se puede capturar imagen, compartir texto
         final textToShare = '''$codigoId : $titulo
 $descripcion
-Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabovoi''';
         
         await ShareHelper.shareText(
           text: textToShare,
@@ -2173,7 +2173,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       await ShareHelper.shareImage(
         pngBytes: pngBytes,
         fileName: 'grabovoi_$codigoId',
-        text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        text: 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
         context: context,
       );
     } catch (e) {
@@ -3584,7 +3584,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       await ShareHelper.shareImage(
         pngBytes: pngBytes,
         fileName: 'resonancia_quantica',
-        text: 'Compartido desde ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        text: 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
         context: context,
       );
     } catch (e) {

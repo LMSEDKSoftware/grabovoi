@@ -25,9 +25,6 @@ class NumbersVoiceService {
   /// Duración por dígito cuando no se puede usar onPlayerComplete (p. ej. web).
   /// Suficiente para que el clip termine antes del siguiente y no se pisen.
   static const Duration _digitDurationFallback = Duration(milliseconds: 1300);
-  /// Duración aproximada para clip "espacio" o "nuevamente" (por si no hay onComplete fiable).
-  static const Duration _namedClipDurationFallback = Duration(milliseconds: 1200);
-  static const Duration _nuevamenteClipDurationFallback = Duration(milliseconds: 2200);
   /// Espera mínima por dígito para que se oiga antes de pasar al siguiente.
   static const Duration _minDigitWait = Duration(milliseconds: 500);
 
@@ -61,7 +58,7 @@ class NumbersVoiceService {
         for (final token in tokens) {
           if (!_sessionActive || localSessionId != _sessionId) break;
           if (token == '_') {
-            await _playNamedClip('espacio', gender, localSessionId);
+            await Future.delayed(_microPause);
           } else {
             final digit = token;
             if (digit.length == 1 &&
@@ -72,7 +69,6 @@ class NumbersVoiceService {
           }
         }
         if (!_sessionActive || localSessionId != _sessionId) break;
-        await _playNamedClip('nuevamente', gender, localSessionId);
         await Future.delayed(_betweenCyclesPause);
       }
       if (localSessionId == _sessionId) {
@@ -103,32 +99,6 @@ class NumbersVoiceService {
       // Mismo timing en todas las plataformas: onPlayerComplete no es fiable en web ni en algunos Android.
       await _waitUntilPlaying(const Duration(milliseconds: 800));
       await Future.delayed(_digitDurationFallback);
-      await _voicePlayer.stop();
-      await Future.delayed(_gapBetweenDigits);
-    } catch (_) {}
-    if (!_sessionActive || localSessionId != _sessionId) return;
-  }
-
-  /// Reproduce un clip por nombre (ej. espacio.mp3, nuevamente.mp3) en voice_numbers/[gender]/.
-  Future<void> _playNamedClip(String name, String gender, int localSessionId) async {
-    if (!_sessionActive || localSessionId != _sessionId) return;
-    try {
-      await _voicePlayer.stop();
-      final fileName = '$name.mp3';
-      if (kIsWeb) {
-        final path = 'assets/audios/voice_numbers/$gender/$fileName';
-        final data = await rootBundle.load(path);
-        final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-        await _voicePlayer.setSource(BytesSource(bytes));
-      } else {
-        final path = 'audios/voice_numbers/$gender/$fileName';
-        await _voicePlayer.setSource(AssetSource(path));
-      }
-      await _voicePlayer.resume();
-
-      final duration = name == 'nuevamente' ? _nuevamenteClipDurationFallback : _namedClipDurationFallback;
-      await _waitUntilPlaying(const Duration(milliseconds: 800));
-      await Future.delayed(duration);
       await _voicePlayer.stop();
       await Future.delayed(_gapBetweenDigits);
     } catch (_) {}

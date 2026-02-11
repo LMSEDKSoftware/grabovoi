@@ -311,7 +311,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
           
           Flexible(
             child: ConstrainedBox(
-              minWidth: 56,
+              constraints: const BoxConstraints(minWidth: 56),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(

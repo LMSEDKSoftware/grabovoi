@@ -81,7 +81,7 @@ class TrackCodeModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'El diario de secuencias ManiGrab permite dar un seguimiento a las activaciones que haces de tus secuencias, registrando tus sensaciones, intenciones y resultados para crear un mapa personalizado de tu transformación.',
+                      'El diario de secuencias ManiGraB permite dar un seguimiento a las activaciones que haces de tus secuencias, registrando tus sensaciones, intenciones y resultados para crear un mapa personalizado de tu transformación.',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: Colors.white70,
@@ -105,7 +105,7 @@ class TrackCodeModal extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'El diario transforma el uso de secuencias de Grabovoi de una práctica pasiva a una experiencia activa y consciente, permitiendo a los usuarios comprender mejor su cuerpo, mente y espíritu a través del registro sistemático y la reflexión personal.',
+                              'El diario transforma el uso de estas secuencias de una práctica pasiva a una experiencia activa y consciente, permitiendo a los usuarios comprender mejor su cuerpo, mente y espíritu a través del registro sistemático y la reflexión personal.',
                               style: GoogleFonts.inter(
                                 fontSize: 13,
                                 color: Colors.white,

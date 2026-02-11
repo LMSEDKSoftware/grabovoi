@@ -20,3 +20,6 @@
 - Chrome debe estar corriendo para validar cambios visuales
 - Usar hot reload cuando sea posible, pero lanzar Chrome si no está corriendo
 
+### Respaldo antes de editar (desde 09-Feb-2026 11:06)
+- Antes de modificar cualquier archivo, guardar una copia en `.backups/` (o subcarpeta con fecha/hora, ej. `.backups/20260209_1106_punto_restauracion/`) para poder restaurar si hace falta.
+- Punto de restauración actual: `.backups/20260209_1106_punto_restauracion/`

@@ -371,7 +371,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     const SizedBox(height: 20),
                     // Créditos
                     Text(
-                      'Creado por: Iván Fernández',
+                      'ManiGraB - Transformación Cuántica',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: Colors.white54,

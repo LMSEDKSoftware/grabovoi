@@ -26,84 +26,84 @@ class OpenAICodesService {
     final consultaLower = consulta.toLowerCase();
     final sugerencias = <Map<String, dynamic>>[];
 
-    // CÓDIGOS GRABOVOI AUTÉNTICOS Y CERTIFICADOS
-    // Fuente: Libros oficiales y enseñanzas de Grigori Grabovoi
+    // CÓDIGOS NUMÉRICOS AUTÉNTICOS Y CERTIFICADOS
+    // Fuente: Libros oficiales y enseñanzas de secuencias numéricas
     final codigosAutenticos = {
       'salud': {
         'categoria': 'Salud y Sanación',
         'color': '#00FF7F',
         'codigos': [
-          {'codigo': '1884321', 'descripcion': 'Norma Absoluta - Salud perfecta (Grabovoi)'},
-          {'codigo': '88888588888', 'descripcion': 'Cura para todos (Grabovoi)'},
-          {'codigo': '817992191', 'descripcion': 'Autoregeneración (Grabovoi)'},
-          {'codigo': '741', 'descripcion': 'Solución inmediata (Grabovoi)'},
-          {'codigo': '71931', 'descripcion': 'Protección y sanación (Grabovoi)'},
+          {'codigo': '1884321', 'descripcion': 'Norma Absoluta - Salud perfecta'},
+          {'codigo': '88888588888', 'descripcion': 'Cura para todos'},
+          {'codigo': '817992191', 'descripcion': 'Autoregeneración'},
+          {'codigo': '741', 'descripcion': 'Solución inmediata'},
+          {'codigo': '71931', 'descripcion': 'Protección y sanación'},
         ]
       },
       'abundancia': {
         'categoria': 'Abundancia y Prosperidad',
         'color': '#FFD700',
         'codigos': [
-          {'codigo': '318798', 'descripcion': 'Activar la abundancia (Grabovoi)'},
-          {'codigo': '71427321893', 'descripcion': 'Prosperidad infinita (Grabovoi)'},
-          {'codigo': '71891871981', 'descripcion': 'Flujo constante de riqueza (Grabovoi)'},
-          {'codigo': '4812412', 'descripcion': 'Eliminar bloqueos financieros (Grabovoi)'},
-          {'codigo': '814418719', 'descripcion': 'Multiplicar ingresos (Grabovoi)'},
+          {'codigo': '318798', 'descripcion': 'Activar la abundancia'},
+          {'codigo': '71427321893', 'descripcion': 'Prosperidad infinita'},
+          {'codigo': '71891871981', 'descripcion': 'Flujo constante de riqueza'},
+          {'codigo': '4812412', 'descripcion': 'Eliminar bloqueos financieros'},
+          {'codigo': '814418719', 'descripcion': 'Multiplicar ingresos'},
         ]
       },
       'amor': {
         'categoria': 'Amor y Relaciones',
         'color': '#FF3B3B',
         'codigos': [
-          {'codigo': '5197148', 'descripcion': 'Todo es posible - Amor universal (Grabovoi)'},
-          {'codigo': '814418719', 'descripcion': 'Apertura al amor (Grabovoi)'},
-          {'codigo': '9187948181', 'descripcion': 'Sanación del corazón (Grabovoi)'},
-          {'codigo': '518491617', 'descripcion': 'Relaciones exitosas (Grabovoi)'},
-          {'codigo': '7199719', 'descripcion': 'Perdón y reconciliación (Grabovoi)'},
+          {'codigo': '5197148', 'descripcion': 'Todo es posible - Amor universal'},
+          {'codigo': '814418719', 'descripcion': 'Apertura al amor'},
+          {'codigo': '9187948181', 'descripcion': 'Sanación del corazón'},
+          {'codigo': '518491617', 'descripcion': 'Relaciones exitosas'},
+          {'codigo': '7199719', 'descripcion': 'Perdón y reconciliación'},
         ]
       },
       'proteccion': {
         'categoria': 'Protección Energética',
         'color': '#1E90FF',
         'codigos': [
-          {'codigo': '71931', 'descripcion': 'Protección general (Grabovoi)'},
-          {'codigo': '9187948181', 'descripcion': 'Campo de protección vibracional (Grabovoi)'},
-          {'codigo': '719849817', 'descripcion': 'Escudo contra energías negativas (Grabovoi)'},
-          {'codigo': '88899141819', 'descripcion': 'Protección familiar (Grabovoi)'},
-          {'codigo': '91719871981', 'descripcion': 'Neutralizar ataques energéticos (Grabovoi)'},
+          {'codigo': '71931', 'descripcion': 'Protección general'},
+          {'codigo': '9187948181', 'descripcion': 'Campo de protección vibracional'},
+          {'codigo': '719849817', 'descripcion': 'Escudo contra energías negativas'},
+          {'codigo': '88899141819', 'descripcion': 'Protección familiar'},
+          {'codigo': '91719871981', 'descripcion': 'Neutralizar ataques energéticos'},
         ]
       },
       'espiritual': {
         'categoria': 'Conciencia Espiritual',
         'color': '#8A2BE2',
         'codigos': [
-          {'codigo': '71381921', 'descripcion': 'Entrar en el punto de poder creador (Grabovoi)'},
-          {'codigo': '19712893', 'descripcion': 'Anclaje energético (Grabovoi)'},
-          {'codigo': '319817318', 'descripcion': 'Conexión universal con el Creador (Grabovoi)'},
-          {'codigo': '9187948181', 'descripcion': 'Elevación de frecuencia del alma (Grabovoi)'},
-          {'codigo': '71984981981', 'descripcion': 'Despertar espiritual (Grabovoi)'},
+          {'codigo': '71381921', 'descripcion': 'Entrar en el punto de poder creador'},
+          {'codigo': '19712893', 'descripcion': 'Anclaje energético'},
+          {'codigo': '319817318', 'descripcion': 'Conexión universal con el Creador'},
+          {'codigo': '9187948181', 'descripcion': 'Elevación de frecuencia del alma'},
+          {'codigo': '71984981981', 'descripcion': 'Despertar espiritual'},
         ]
       },
       'liberacion': {
         'categoria': 'Liberación Emocional',
         'color': '#C0C0C0',
         'codigos': [
-          {'codigo': '591061718489', 'descripcion': 'Liberar creencias limitantes (Grabovoi)'},
-          {'codigo': '49851431918', 'descripcion': 'Liberar traumas (Grabovoi)'},
-          {'codigo': '12516176', 'descripcion': 'Eliminar bloqueos (Grabovoi)'},
-          {'codigo': '9788891719', 'descripcion': 'Resolución total de conflictos (Grabovoi)'},
-          {'codigo': '193751891', 'descripcion': 'Luz del conocimiento (Grabovoi)'},
+          {'codigo': '591061718489', 'descripcion': 'Liberar creencias limitantes'},
+          {'codigo': '49851431918', 'descripcion': 'Liberar traumas'},
+          {'codigo': '12516176', 'descripcion': 'Eliminar bloqueos'},
+          {'codigo': '9788891719', 'descripcion': 'Resolución total de conflictos'},
+          {'codigo': '193751891', 'descripcion': 'Luz del conocimiento'},
         ]
       },
       'limpieza': {
         'categoria': 'Limpieza y Reconexión',
         'color': '#FFFFFF',
         'codigos': [
-          {'codigo': '1231115015', 'descripcion': 'Presencia del Creador (Grabovoi)'},
-          {'codigo': '548491698719', 'descripcion': 'Eliminar resistencias inconscientes (Grabovoi)'},
-          {'codigo': '48971281948', 'descripcion': 'Neutralizar miedos (Grabovoi)'},
-          {'codigo': '71042', 'descripcion': 'Armonizar el presente (Grabovoi)'},
-          {'codigo': '61988184161', 'descripcion': 'Limpieza de memorias emocionales (Grabovoi)'},
+          {'codigo': '1231115015', 'descripcion': 'Presencia del Creador'},
+          {'codigo': '548491698719', 'descripcion': 'Eliminar resistencias inconscientes'},
+          {'codigo': '48971281948', 'descripcion': 'Neutralizar miedos'},
+          {'codigo': '71042', 'descripcion': 'Armonizar el presente'},
+          {'codigo': '61988184161', 'descripcion': 'Limpieza de memorias emocionales'},
         ]
       },
     };
@@ -127,7 +127,7 @@ class OpenAICodesService {
       }
     }
 
-    // Si no hay coincidencias específicas, sugerir códigos universales de Grabovoi
+    // Si no hay coincidencias específicas, sugerir códigos universales
     if (sugerencias.isEmpty) {
       final categoriaUniversal = _generarCategoriaDesdeConsulta(consulta);
       final colorUniversal = _generarColorParaCategoria(categoriaUniversal);
@@ -136,31 +136,31 @@ class OpenAICodesService {
       sugerencias.addAll([
         {
           'codigo': '1884321',
-          'descripcion': 'Norma Absoluta - Todo es posible (Grabovoi) - Para $consulta',
+          'descripcion': 'Norma Absoluta - Todo es posible - Para $consulta',
           'categoria': categoriaUniversal,
           'color': colorUniversal,
         },
         {
           'codigo': '318798',
-          'descripcion': 'Prosperidad universal (Grabovoi) - Para $consulta',
+          'descripcion': 'Prosperidad universal - Para $consulta',
           'categoria': categoriaUniversal,
           'color': colorUniversal,
         },
         {
           'codigo': '71931',
-          'descripcion': 'Protección energética (Grabovoi) - Para $consulta',
+          'descripcion': 'Protección energética - Para $consulta',
           'categoria': categoriaUniversal,
           'color': colorUniversal,
         },
         {
           'codigo': '5197148',
-          'descripcion': 'Manifestación perfecta (Grabovoi) - Para $consulta',
+          'descripcion': 'Manifestación perfecta - Para $consulta',
           'categoria': categoriaUniversal,
           'color': colorUniversal,
         },
         {
           'codigo': '741',
-          'descripcion': 'Solución inmediata (Grabovoi) - Para $consulta',
+          'descripcion': 'Solución inmediata - Para $consulta',
           'categoria': categoriaUniversal,
           'color': colorUniversal,
         },

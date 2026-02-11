@@ -52,7 +52,7 @@ class AppNavbar extends StatelessWidget {
             Expanded(
               child: Center(
                 child: Text(
-                  'ManiGrab',
+                  'ManiGraB',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

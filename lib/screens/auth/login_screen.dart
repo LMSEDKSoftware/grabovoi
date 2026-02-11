@@ -674,23 +674,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               // Título principal
                               Text(
-                                'ManiGrab',
+                                'ManiGraB',
                                 style: GoogleFonts.playfairDisplay(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFFFFD700),
                                   letterSpacing: 0.5,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 6),
-                              // Subtítulo (marca)
-                              Text(
-                                'Manifestaciones Cuánticas Grabovoi',
-                                style: GoogleFonts.inter(
-                                  fontSize: 15,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -1070,7 +1059,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'creado por Iván Fernández Almaguer',
+                        'ManiGraB - Transformación Cuántica',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           color: Colors.white54,

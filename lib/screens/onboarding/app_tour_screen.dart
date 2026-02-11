@@ -31,7 +31,7 @@ class _AppTourScreenState extends State<AppTourScreen> {
   final List<Map<String, String>> _tourData = [
     {
       'title': 'Bienvenido al Portal',
-      'description': 'Tu espacio cuántico para la transformación personal a través de las secuencias de Grabovoi.',
+      'description': 'Tu espacio cuántico para la transformación personal a través de las secuencias vibracionales.',
     },
     {
       'title': 'Encuentra tu Secuencia',

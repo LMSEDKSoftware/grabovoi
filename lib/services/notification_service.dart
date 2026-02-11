@@ -337,8 +337,8 @@ class NotificationService {
 
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'manigrab_notifications',
-      'ManiGrab',
-      channelDescription: 'Notificaciones de ManiGrab - Manifestaciones Cuánticas Grabovoi',
+      'ManiGraB',
+      channelDescription: 'Notificaciones de ManiGraB - Manifestaciones Cuánticas Grabovoi',
       importance: _getImportance(priority),
       priority: _getPriority(priority),
       showWhen: true,
@@ -472,8 +472,8 @@ class NotificationService {
 
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'manigrab_scheduled',
-      'ManiGrab Programadas',
-      channelDescription: 'Notificaciones programadas de ManiGrab',
+      'ManiGraB Programadas',
+      channelDescription: 'Notificaciones programadas de ManiGraB',
       importance: _getImportance(priority),
       priority: _getPriority(priority),
       showWhen: true,

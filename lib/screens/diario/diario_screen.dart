@@ -839,7 +839,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'El diario transforma el uso de secuencias de Grabovoi de una práctica pasiva a una experiencia activa y consciente, permitiendo a los usuarios comprender mejor su cuerpo, mente y espíritu a través del registro sistemático y la reflexión personal.',
+                    'El diario transforma el uso de estas secuencias de una práctica pasiva a una experiencia activa y consciente, permitiendo a los usuarios comprender mejor su cuerpo, mente y espíritu a través del registro sistemático y la reflexión personal.',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       color: Colors.white70,

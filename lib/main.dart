@@ -146,7 +146,7 @@ class MyApp extends StatelessWidget {
         textScaleFactor: MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2),
       ),
       child: MaterialApp(
-        title: 'ManiGrab - Manifestaciones Cuánticas Grabovoi',
+        title: 'ManiGraB - Manifestaciones Numéricas',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
@@ -787,7 +787,7 @@ class _TourOverlayState extends State<_TourOverlay> {
   final List<Map<String, String>> _tourData = [
     {
       'title': 'Bienvenido al Portal',
-      'description': 'Tu espacio cuántico para la transformación personal a través de las secuencias de Grabovoi.',
+      'description': 'Tu espacio cuántico para la transformación personal a través de las secuencias vibracionales.',
     },
     {
       'title': 'Encuentra tu Secuencia',
@@ -821,7 +821,7 @@ class _TourOverlayState extends State<_TourOverlay> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            'Tu espacio cuántico para la transformación personal a través de las secuencias de Grabovoi.',
+            'Tu espacio cuántico para la transformación personal a través de las secuencias vibracionales.',
             style: GoogleFonts.lato(
               fontSize: 16,
               color: Colors.white,
