@@ -19,7 +19,6 @@ import '../../widgets/sequencia_activada_modal.dart';
 import '../../services/audio_preload_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/numbers_voice_service.dart';
-import '../../services/challenge_tracking_service.dart';
 import '../../services/challenge_progress_tracker.dart';
 import '../../services/pilotage_state_service.dart';
 import '../../services/biblioteca_supabase_service.dart';
@@ -308,71 +307,40 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         } catch (_) {}
         AudioManagerService().stop();
         
-        // AHORA SÍ: Registrar el pilotaje completado (solo cuando se completa)
-        try {
-          // Registrar acción de pilotaje para desafíos
-          final trackingService = ChallengeTrackingService();
-          await trackingService.recordPilotageSession(
-            widget.codigo,
-            widget.codigo,
-            const Duration(minutes: 2), // Duración real completada (2 minutos)
-          );
-          
-          // Registrar repetición de código completada para desafíos
-          await trackingService.recordCodeRepetition(
-            widget.codigo,
-            widget.codigo,
-          );
-          
-          // NOTA: NO llamar a progressTracker.trackCodePiloted() ni trackCodeRepeated()
-          // porque ya se registran arriba y causaría conteo duplicado/cuádruple
-
-          // Actualizar progreso global (usuario_progreso)
-          await BibliotecaSupabaseService.registrarPilotaje(
-            codeId: widget.codigo,
-            codeName: widget.codigo,
-            durationMinutes: 2,
-          );
-        } catch (e) {
-          print('Error registrando pilotaje completado: $e');
-        }
-        
-        // Registrar repetición y mostrar recompensas (igual que en repeticiones)
-        _registrarRepeticionYMostrarRecompensas();
+        // Registrar sesionPilotaje y entregar cristales SOLO al finalizar los 2 min
+        await _registrarPilotajeYMostrarRecompensas();
       }
     });
   }
 
-  // Método para registrar repetición y mostrar recompensas (igual que en repeticiones)
-  Future<void> _registrarRepeticionYMostrarRecompensas() async {
+  /// Registra sesionPilotaje (Campo Energético) y entrega cristales - SOLO al completar los 2 min
+  Future<void> _registrarPilotajeYMostrarRecompensas() async {
     try {
-      // Registrar repetición
-      await BibliotecaSupabaseService.registrarRepeticion(
+      await BibliotecaSupabaseService.registrarPilotaje(
         codeId: widget.codigo,
         codeName: widget.codigo,
         durationMinutes: 2,
       );
-      
-      // Obtener recompensas
+      await _entregarRecompensasYMostrarModal();
+    } catch (e) {
+      print('Error registrando pilotaje completado: $e');
+      if (mounted) _mostrarMensajeFinalizacion();
+    }
+  }
+
+  /// Entrega cristales y muestra modal de recompensas (usado por pilotaje y repetición)
+  Future<void> _entregarRecompensasYMostrarModal() async {
+    try {
       final rewardsService = RewardsService();
       final recompensasInfo = await rewardsService.recompensarPorRepeticion(
         codigoId: widget.codigo,
       );
-      
-      // Debug: Verificar valores obtenidos
-      print('🔍 [CAMPO ENERGÉTICO] Recompensas obtenidas:');
-      print('   cristalesGanados: ${recompensasInfo['cristalesGanados']}');
-      print('   luzCuanticaAnterior: ${recompensasInfo['luzCuanticaAnterior']}');
-      print('   luzCuanticaActual: ${recompensasInfo['luzCuanticaActual']}');
-      print('   yaOtorgadas: ${recompensasInfo['yaOtorgadas']}');
-      
-      // Mostrar notificación si ya se otorgaron recompensas
       if (recompensasInfo['yaOtorgadas'] == true && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              recompensasInfo['mensaje'] as String? ?? 
-              'Ya recibiste cristales por esta secuencia hoy. Puedes seguir usándola, pero no recibirás más recompensas.',
+              recompensasInfo['mensaje'] as String? ??
+                  'Ya recibiste cristales por esta secuencia hoy.',
             ),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
@@ -384,8 +352,6 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
           ),
         );
       }
-      
-      // Mostrar modal con recompensas
       if (mounted) {
         _mostrarMensajeFinalizacion(
           cristalesGanados: recompensasInfo['cristalesGanados'] as int,
@@ -393,13 +359,9 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
           luzCuanticaActual: recompensasInfo['luzCuanticaActual'] as double,
         );
       }
-    } catch (e, stackTrace) {
-      print('⚠️ Error registrando repetición y obteniendo recompensas: $e');
-      print('⚠️ Stack trace: $stackTrace');
-      // Mostrar modal sin recompensas si hay error
-      if (mounted) {
-        _mostrarMensajeFinalizacion();
-      }
+    } catch (e) {
+      print('Error entregando recompensas: $e');
+      if (mounted) _mostrarMensajeFinalizacion();
     }
   }
 

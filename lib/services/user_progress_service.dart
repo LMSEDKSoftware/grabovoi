@@ -461,6 +461,82 @@ class UserProgressService {
     }
   }
 
+  /// Normaliza un código para comparación (trim, sin espacios ni underscores internos)
+  static String normalizeCodeForComparison(String code) {
+    return code.trim().replaceAll(RegExp(r'[\s_\-]'), '');
+  }
+
+  /// Obtener lista de IDs de códigos con action_type = codigoRepetido (solo repeticiones completadas).
+  /// Usado para habilitar el botón compartir en la biblioteca: solo si el usuario completó
+  /// la sesión de repetición de 2 min de esa secuencia.
+  Future<Set<String>> getRepeatedCodeIds() async {
+    if (!_authService.isLoggedIn) return {};
+
+    try {
+      final response = await _supabase
+          .from('user_actions')
+          .select('action_data')
+          .eq('user_id', _authService.currentUser!.id)
+          .eq('action_type', 'codigoRepetido');
+
+      final Set<String> repeatedCodes = {};
+      for (final row in response) {
+        final actionData = row['action_data'] as Map<String, dynamic>?;
+        if (actionData == null) continue;
+
+        final codeIdRaw = actionData['codeId'];
+        if (codeIdRaw != null && codeIdRaw.toString().trim().isNotEmpty) {
+          final code = codeIdRaw.toString().trim();
+          repeatedCodes.add(code);
+          final normalized = normalizeCodeForComparison(code);
+          if (normalized != code) repeatedCodes.add(normalized);
+        }
+      }
+
+      return repeatedCodes;
+    } catch (e) {
+      print('Error obteniendo códigos repetidos: $e');
+      return {};
+    }
+  }
+
+  /// Obtener lista de IDs de códigos que han sido pilotados o repetidos por el usuario
+  /// (usa sesionPilotaje, codigoRepetido, pilotajeCompartido - para otros usos internos)
+  Future<Set<String>> getPilotedCodeIds() async {
+    if (!_authService.isLoggedIn) return {};
+
+    try {
+      final response = await _supabase
+          .from('user_actions')
+          .select('action_type, action_data')
+          .eq('user_id', _authService.currentUser!.id);
+
+      final Set<String> pilotedCodes = {};
+      final targetTypes = {'sesionPilotaje', 'codigoRepetido', 'pilotajeCompartido'};
+
+      for (final row in response) {
+        final String actionType = row['action_type'] as String? ?? '';
+        if (!targetTypes.contains(actionType)) continue;
+
+        final actionData = row['action_data'] as Map<String, dynamic>?;
+        if (actionData == null) continue;
+
+        final codeIdRaw = actionData['codeId'];
+        if (codeIdRaw != null && codeIdRaw.toString().trim().isNotEmpty) {
+          final code = codeIdRaw.toString().trim();
+          pilotedCodes.add(code);
+          final normalized = normalizeCodeForComparison(code);
+          if (normalized != code) pilotedCodes.add(normalized);
+        }
+      }
+
+      return pilotedCodes;
+    } catch (e) {
+      print('Error obteniendo códigos pilotados: $e');
+      return {};
+    }
+  }
+
   /// Obtener progreso de días consecutivos
   Future<int> getConsecutiveDays() async {
     final progress = await getUserProgress();

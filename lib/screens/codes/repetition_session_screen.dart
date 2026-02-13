@@ -16,7 +16,6 @@ import '../../widgets/session_tools_block.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../utils/code_formatter.dart';
-import '../../services/challenge_tracking_service.dart';
 import '../../services/challenge_progress_tracker.dart';
 import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
@@ -414,12 +413,8 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
         // Notificar al servicio global
         PilotageStateService().setRepetitionActive(true);
         
-        // Registrar repetición de código INMEDIATAMENTE al iniciar
-        final trackingService = ChallengeTrackingService();
-        trackingService.recordCodeRepetition(
-          widget.codigo,
-          widget.nombre ?? widget.codigo,
-        );
+        // NO registrar aquí: solo se registra codigoRepetido al FINALIZAR los 2 min
+        // cuando se entregan los cristales (en _registrarRepeticionYMostrarRecompensas)
 
         // Ocultar la barra de colores después de 3 segundos
         _hideColorBarAfterDelay();
@@ -546,6 +541,48 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   }
 
   // Removed _formatCodeForDisplay method - now using CodeFormatter
+
+  Future<void> _copyCodeInfo() async {
+    try {
+      // Usar los datos ya cargados en _codigoInfoFuture (sin consultas adicionales)
+      final codigoInfo = await _codigoInfoFuture;
+      final titulo = codigoInfo['titulo'] as String? ?? widget.nombre ?? 'Secuencia Cuántica';
+      final descripcion = codigoInfo['descripcion'] as String? ?? 'Secuencia cuántica para la manifestación y transformación energética.';
+      
+      final textToCopy = '''${widget.codigo} : $titulo
+$descripcion
+Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
+      
+      await Clipboard.setData(ClipboardData(text: textToCopy));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Secuencia ${widget.codigo} copiada con descripción'),
+            backgroundColor: const Color(0xFFFFD700),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      // Fallback si hay error - usar datos básicos
+      final titulo = widget.nombre ?? 'Secuencia Cuántica';
+      final textToCopy = '''${widget.codigo} : $titulo
+Esta secuencia ayuda a manifestar la abundancia de alimentos necesarios para una nutrición adecuada y equilibrada en la vida diaria.
+Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
+      
+      await Clipboard.setData(ClipboardData(text: textToCopy));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Secuencia ${widget.codigo} copiada'),
+            backgroundColor: const Color(0xFFFFD700),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
 
   Future<void> _shareImage() async {
     try {
@@ -1120,21 +1157,28 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   }
 
   Widget build(BuildContext context) {
-    // Modo de concentración (pantalla completa)
-    if (_isConcentrationMode) {
-      return _buildConcentrationMode();
-    }
-
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
+        
+        // Si está en modo concentración, salir de él primero
+        if (_isConcentrationMode) {
+          setState(() {
+            _isConcentrationMode = false;
+          });
+          return;
+        }
+        
         await _handleBackNavigation();
       },
-      child: Scaffold(
-        body: Stack(
-          children: [
-            GlowBackground(
+      child: Stack(
+        children: [
+          // Capa Base: Pantalla Normal (siempre renderizada para preservar estado)
+          Scaffold(
+            body: Stack(
+              children: [
+                GlowBackground(
               child: SafeArea(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -1144,88 +1188,26 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
                       Row(
                         children: [
                           IconButton(
-                        onPressed: _handleBackNavigation,
+                            onPressed: _handleBackNavigation,
                             icon: const Icon(Icons.arrow_back, color: Colors.white),
                           ),
-                          const Spacer(),
-                          // Botón copiar en la parte superior derecha
-                          IconButton(
-                            onPressed: () async {
-                              try {
-                                // Usar los datos ya cargados en _codigoInfoFuture (sin consultas adicionales)
-                                final codigoInfo = await _codigoInfoFuture;
-                                final titulo = codigoInfo['titulo'] as String? ?? widget.nombre ?? 'Secuencia Cuántica';
-                                final descripcion = codigoInfo['descripcion'] as String? ?? 'Secuencia cuántica para la manifestación y transformación energética.';
-                                
-                                final textToCopy = '''${widget.codigo} : $titulo
-$descripcion
-Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabovoi''';
-                                
-                                await Clipboard.setData(ClipboardData(text: textToCopy));
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Secuencia ${widget.codigo} copiada con descripción'),
-                                      backgroundColor: const Color(0xFFFFD700),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                // Fallback si hay error - usar datos básicos
-                                final titulo = widget.nombre ?? 'Secuencia Cuántica';
-                                final textToCopy = '''${widget.codigo} : $titulo
-Esta secuencia ayuda a manifestar la abundancia de alimentos necesarios para una nutrición adecuada y equilibrada en la vida diaria.
-Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabovoi''';
-                                
-                                await Clipboard.setData(ClipboardData(text: textToCopy));
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Secuencia ${widget.codigo} copiada'),
-                                      backgroundColor: const Color(0xFFFFD700),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
-                          ),
-                          // Botón ver detalle
-                          IconButton(
-                            onPressed: _mostrarNotaImportante,
-                            icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
+                          Expanded(
+                            child: Text(
+                              'Sesión de Repetición',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFFD700),
+                              ),
+                            ),
                           ),
                           // Botón compartir/descargar
                           IconButton(
                             onPressed: _shareImage,
                             icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
                           ),
-                          // Botón de favoritos
-                          FutureBuilder<void>(
-                            future: _favoritoFuture,
-                            builder: (context, snapshot) {
-                              return IconButton(
-                                onPressed: _toggleFavorito,
-                                icon: Icon(
-                                  _esFavorito ? Icons.favorite : Icons.favorite_border,
-                                  color: _esFavorito ? Colors.red : const Color(0xFFFFD700),
-                                ),
-                                tooltip: _esFavorito ? 'Remover de favoritos' : 'Agregar a favoritos',
-                              );
-                            },
-                          ),
                         ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Sesión de Repetición',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
-                        ),
                       ),
                       const SizedBox(height: 20),
 
@@ -1247,14 +1229,24 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Text(
-                                  titulo,
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFFFD700),
-                                  ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      titulo,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFFFFD700),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: _mostrarNotaImportante,
+                                      child: const Icon(Icons.info_outline, color: Color(0xFFFFD700), size: 20),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
@@ -1492,6 +1484,13 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
       ),
       bottomNavigationBar: null, // Ocultar menú inferior en sesión de repetición
       ),
+          // Capa Superior: Modo Concentración (Overlay)
+          if (_isConcentrationMode)
+            Positioned.fill(
+              child: _buildConcentrationMode(),
+            ),
+        ],
+      ),
     );
   }
   
@@ -1663,7 +1662,9 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
     final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoCrudo);
     final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo);
 
-    return Column(
+    return GestureDetector(
+      onTap: _copyCodeInfo,
+      child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Stack(
@@ -1700,6 +1701,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
           ],
         ),
       ],
+      ),
     );
   }
 

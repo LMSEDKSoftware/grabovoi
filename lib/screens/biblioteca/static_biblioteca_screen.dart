@@ -105,6 +105,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   // Compartir código desde la biblioteca
   final ScreenshotController _shareController = ScreenshotController();
   CodigoGrabovoi? _codigoParaCompartir;
+  Set<String> _pilotedCodes = {}; // Códigos con codigoRepetido (habilita compartir)
   
   // Variables para pilotaje manual
   bool _showManualPilotage = false;
@@ -243,6 +244,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       final etiquetas = await BibliotecaSupabaseService.getEtiquetasFavoritos();
       final favoritos = await BibliotecaSupabaseService.getFavoritos();
       
+      try {
+      final pilotedCodes = await UserProgressService().getRepeatedCodeIds();
+      setState(() {
+        _pilotedCodes = pilotedCodes;
+      });
+    } catch (e) {
+      print('⚠️ Error loading piloted codes: $e');
+    }
       // Cargar y cachear favoritos
       await _cargarFavoritosCache();
       
@@ -289,6 +298,30 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     } catch (e) {
       print('⚠️ Error cargando las preferencias del usuario (evaluación): $e');
       _userGoals = [];
+    }
+  }
+
+  /// Indica si el usuario tiene codigoRepetido para esta secuencia (habilita compartir)
+  bool _isCodePiloted(String codigo) {
+    if (codigo.isEmpty) return false;
+    final raw = codigo.trim();
+    final normalized = UserProgressService.normalizeCodeForComparison(codigo);
+    return _pilotedCodes.contains(raw) ||
+        _pilotedCodes.contains(normalized) ||
+        (raw != normalized && _pilotedCodes.contains(codigo));
+  }
+
+  /// Refresca los códigos repetidos (codigoRepetido) para actualizar botones de compartir
+  Future<void> refreshPilotedCodes() async {
+    try {
+      final pilotedCodes = await UserProgressService().getRepeatedCodeIds();
+      if (mounted) {
+        setState(() {
+          _pilotedCodes = pilotedCodes;
+        });
+      }
+    } catch (e) {
+      print('⚠️ Error al refrescar estados de pilotaje: $e');
     }
   }
 
@@ -4384,14 +4417,44 @@ OUTPUT (JSON ESTRICTO)
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.share,
-                                color: Color(0xFFFFD700),
-                                size: 20,
+                            Tooltip(
+                              message: _isCodePiloted(codigo.codigo) 
+                                  ? 'Compartir imagen' 
+                                  : 'Completa una repetición para compartir',
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.share,
+                                  color: _isCodePiloted(codigo.codigo)
+                                      ? const Color(0xFFFFD700)
+                                      : Colors.grey,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  if (_isCodePiloted(codigo.codigo)) {
+                                    _compartirCodigo(codigo);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Para compartir esta secuencia completa una sesión de repetición.',
+                                          style: GoogleFonts.inter(color: Colors.white),
+                                        ),
+                                        backgroundColor: Colors.grey[800],
+                                        duration: const Duration(seconds: 3),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        action: SnackBarAction(
+                                          label: 'ENTENDIDO',
+                                          textColor: const Color(0xFFFFD700),
+                                          onPressed: () {},
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
-                              tooltip: 'Compartir imagen',
-                              onPressed: () => _compartirCodigo(codigo),
                             ),
                             IconButton(
                               icon: const Icon(
@@ -4825,14 +4888,31 @@ OUTPUT (JSON ESTRICTO)
     );
   }
 
-  void _mostrarModalRepeticion(CodigoGrabovoi codigo) {
-    showDialog(
+  void _mostrarModalRepeticion(CodigoGrabovoi codigo) async {
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
         return _RepetitionInstructionsModal(codigo: codigo);
       },
     );
+
+    if (result == true && mounted) {
+      // Navegar a la pantalla de repetición y esperar el retorno
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RepetitionSessionScreen(
+            codigo: codigo.codigo,
+            nombre: codigo.nombre,
+          ),
+        ),
+      );
+      
+      // Al regresar, refrescar los estados de pilotaje para habilitar botones de compartir
+      if (mounted) {
+        await refreshPilotedCodes();
+      }
+    }
   }
 
   void _mostrarModalEtiquetado(CodigoGrabovoi codigo) async {
@@ -5001,15 +5081,7 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).pop(); // Cerrar modal
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => RepetitionSessionScreen(
-                              codigo: widget.codigo.codigo,
-                              nombre: widget.codigo.nombre,
-                            ),
-                          ),
-                        );
+                        Navigator.of(context).pop(true); // Cerrar modal y confirmar inicio
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFD700),

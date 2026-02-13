@@ -302,13 +302,14 @@ class _MainNavigationState extends State<MainNavigation> {
   bool _showTourOverlay = false;
   final GlobalKey _homeScreenKey = GlobalKey();
   final GlobalKey _diarioScreenKey = GlobalKey();
+  final GlobalKey _bibliotecaScreenKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _screens = [
       HomeScreen(key: _homeScreenKey as Key?),
-      const StaticBibliotecaScreen(),
+      StaticBibliotecaScreen(key: _bibliotecaScreenKey),
       DiarioScreen(key: _diarioScreenKey), // Índice 2 - Diario (visualmente entre Biblioteca y Desafíos)
       const QuantumPilotageScreen(), // Índice 3 - Oculto en menú
       const DesafiosScreen(),
@@ -356,6 +357,12 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   void _changeTab(int index) {
+    if (index == 1) {
+      // Al cambiar al tab Biblioteca, refrescar códigos pilotados para habilitar compartir
+      try {
+        (_bibliotecaScreenKey.currentState as dynamic)?.refreshPilotedCodes();
+      } catch (_) {}
+    }
     setState(() {
       _currentIndex = index;
     });
