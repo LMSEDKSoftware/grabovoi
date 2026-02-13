@@ -609,21 +609,23 @@ class RewardsService {
     return updatedRewards;
   }
 
-  /// Comprar Ancla de Continuidad con cristales
-  Future<UserRewards> comprarAnclaContinuidad() async {
+  /// Comprar Ancla de Continuidad con cristales.
+  /// [costo] y [maxAnclas] vienen de StoreConfigService; si no se pasan, se usan los valores por defecto.
+  Future<UserRewards> comprarAnclaContinuidad({int? costo, int? maxAnclas}) async {
+    final costoReal = costo ?? cristalesParaAnclaContinuidad;
+    final maxReal = maxAnclas ?? maxAnclasContinuidad;
     final rewards = await getUserRewards();
-    
-    if (rewards.cristalesEnergia < cristalesParaAnclaContinuidad) {
-      throw Exception('No tienes suficientes cristales de energía. Necesitas ${cristalesParaAnclaContinuidad} cristales.');
+
+    if (rewards.cristalesEnergia < costoReal) {
+      throw Exception('No tienes suficientes cristales de energía. Necesitas $costoReal cristales.');
     }
 
-    // Verificar límite máximo de anclas
-    if (rewards.anclasContinuidad >= maxAnclasContinuidad) {
-      throw Exception('Ya tienes el máximo de ${maxAnclasContinuidad} anclas de continuidad. Solo puedes tener ${maxAnclasContinuidad} anclas para salvar máximo ${maxAnclasContinuidad} días seguidos.');
+    if (rewards.anclasContinuidad >= maxReal) {
+      throw Exception('Ya tienes el máximo de $maxReal anclas de continuidad.');
     }
 
     final updatedRewards = rewards.copyWith(
-      cristalesEnergia: rewards.cristalesEnergia - cristalesParaAnclaContinuidad,
+      cristalesEnergia: rewards.cristalesEnergia - costoReal,
       anclasContinuidad: rewards.anclasContinuidad + 1,
       ultimaActualizacion: DateTime.now(),
     );
@@ -637,12 +639,14 @@ class RewardsService {
     return updatedRewards;
   }
 
-  /// Comprar voz numérica con cristales (habilita voiceNumbersEnabled)
-  Future<UserRewards> comprarVozNumerica() async {
+  /// Comprar voz numérica con cristales (habilita voiceNumbersEnabled).
+  /// [costo] viene de StoreConfigService; si no se pasa, se usa cristalesParaVozNumerica.
+  Future<UserRewards> comprarVozNumerica({int? costo}) async {
+    final costoReal = costo ?? cristalesParaVozNumerica;
     final rewards = await getUserRewards();
 
-    if (rewards.cristalesEnergia < cristalesParaVozNumerica) {
-      throw Exception('No tienes suficientes cristales. Necesitas $cristalesParaVozNumerica cristales.');
+    if (rewards.cristalesEnergia < costoReal) {
+      throw Exception('No tienes suficientes cristales. Necesitas $costoReal cristales.');
     }
 
     if (rewards.voiceNumbersEnabled) {
@@ -652,7 +656,7 @@ class RewardsService {
     final newLogros = Map<String, dynamic>.from(rewards.logros)
       ..['voice_numbers_unlocked'] = true;
     final updatedRewards = rewards.copyWith(
-      cristalesEnergia: rewards.cristalesEnergia - cristalesParaVozNumerica,
+      cristalesEnergia: rewards.cristalesEnergia - costoReal,
       voiceNumbersEnabled: true,
       logros: newLogros,
       ultimaActualizacion: DateTime.now(),

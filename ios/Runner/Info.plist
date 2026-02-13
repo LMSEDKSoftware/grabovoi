@@ -55,5 +55,18 @@
 	<string>Necesitamos acceso a la cámara para que puedas tomar fotos para tu perfil.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Necesitamos acceso al micrófono para que puedas grabar audios durante tus sesiones de manifestación y pilotaje cuántico.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.manifestacion.grabovoi</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.manifestacion.grabovoi</string>
+		</dict>
+	</array>
 </dict>
 </plist>

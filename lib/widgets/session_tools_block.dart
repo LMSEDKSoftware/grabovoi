@@ -49,32 +49,17 @@ class SessionToolsBlock extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 1) Color
+          // 1) Color Selector (Ahora flota sin background)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF1a1a2e).withOpacity(0.82),
-                  const Color(0xFF16213e).withOpacity(0.82),
-                  const Color(0xFF0f3460).withOpacity(0.82),
-                ],
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-              border: Border.all(
-                color: const Color(0xFFFFD700).withOpacity(0.25),
-                width: 1,
-              ),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+            // Sin decoration para que los elementos "floten"
             child: Center(child: colorSelectorChild),
           ),
-          // 2) Descripción
+          
+          const SizedBox(height: 20), // Espacio para separar visualmente
+
+          // 2) Descripción (Ahora es el header de la card)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -88,11 +73,15 @@ class SessionToolsBlock extends StatelessWidget {
                   const Color(0xFF0f3460).withOpacity(0.82),
                 ],
               ),
-              border: Border(
-                top: BorderSide(
-                  color: const Color(0xFFFFD700).withOpacity(0.2),
-                  width: 1,
-                ),
+              // Bordes redondeados solo arriba
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+              // Borde completo para definir el inicio de la card
+              border: Border.all(
+                color: const Color(0xFFFFD700).withOpacity(0.25),
+                width: 1,
               ),
             ),
             child: descriptionChild,
@@ -116,9 +105,19 @@ class SessionToolsBlock extends StatelessWidget {
                         const Color(0xFF0f3460).withOpacity(0.82),
                       ],
                     ),
+                    // Solo borde superior para conectar con Descripción
                     border: Border(
                       top: BorderSide(
                         color: const Color(0xFFFFD700).withOpacity(0.2),
+                        width: 1,
+                      ),
+                      // Mantener bordes laterales para continuidad visual (opcional si el diseño lo requiere)
+                      left: BorderSide(
+                        color: const Color(0xFFFFD700).withOpacity(0.25),
+                        width: 1,
+                      ),
+                      right: BorderSide(
+                        color: const Color(0xFFFFD700).withOpacity(0.25),
                         width: 1,
                       ),
                     ),

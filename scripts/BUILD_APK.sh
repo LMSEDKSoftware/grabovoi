@@ -45,17 +45,23 @@ increment_version() {
     echo ""
 }
 
+# Definir directorio del proyecto (el directorio padre de scripts/)
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_DIR"
+
 # Incrementar versionado automáticamente
 increment_version
 
 # Cargar variables de entorno desde .env
-if [ ! -f .env ]; then
-    echo "❌ Error: No se encontró el archivo .env"
+if [ ! -f "${PROJECT_DIR}/.env" ]; then
+    echo "❌ Error: No se encontró el archivo .env en $PROJECT_DIR"
     exit 1
 fi
 
 echo "📋 Cargando variables de entorno desde .env..."
-source .env
+set -a # Exportar automáticamente
+source "${PROJECT_DIR}/.env"
+set +a
 
 # Verificar que las variables existen
 if [ -z "$OPENAI_API_KEY" ] || [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$SB_SERVICE_ROLE_KEY" ]; then

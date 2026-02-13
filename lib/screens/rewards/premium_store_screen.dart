@@ -4,8 +4,9 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/rewards_display.dart';
 import '../../models/rewards_model.dart';
+import '../../models/store_config_model.dart';
 import '../../services/rewards_service.dart';
-import '../../config/supabase_config.dart';
+import '../../services/store_config_service.dart';
 import 'premium_wallpaper_screen.dart';
 import '../profile/voice_numbers_settings_screen.dart';
 
@@ -19,10 +20,15 @@ class PremiumStoreScreen extends StatefulWidget {
 
 class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   final RewardsService _rewardsService = RewardsService();
+  final StoreConfigService _storeConfig = StoreConfigService();
   final ScrollController _scrollController = ScrollController();
   UserRewards? _rewards;
   List<CodigoPremium> _codigosPremium = [];
   List<MeditacionEspecial> _meditacionesEspeciales = [];
+  List<PaqueteCristales> _paquetesCristales = [];
+  int _costoVozNumerica = RewardsService.cristalesParaVozNumerica;
+  int _costoAnclaContinuidad = RewardsService.cristalesParaAnclaContinuidad;
+  int _maxAnclas = RewardsService.maxAnclasContinuidad;
   bool _isLoading = true;
   bool _showStickyHeader = false;
   static const double _rewardsSectionHeight = 280; // Altura aprox. título + Recompensas Cuánticas
@@ -51,14 +57,21 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   Future<void> _loadData() async {
     try {
       final rewards = await _rewardsService.getUserRewards();
-      final codigos = await _loadCodigosPremium();
-      final meditaciones = await _loadMeditacionesEspeciales();
+      final codigos = await _storeConfig.getCodigosPremium();
+      final meditaciones = await _storeConfig.getMeditacionesEspeciales();
+      final paquetes = await _storeConfig.getPaquetesCristales();
+      final costoVoz = await _storeConfig.getCostoVozNumerica();
+      final configAncla = await _storeConfig.getConfigAnclaContinuidad();
 
       if (mounted) {
         setState(() {
           _rewards = rewards;
           _codigosPremium = codigos;
           _meditacionesEspeciales = meditaciones;
+          _paquetesCristales = paquetes;
+          _costoVozNumerica = costoVoz;
+          _costoAnclaContinuidad = configAncla.costo;
+          _maxAnclas = configAncla.maxAnclas;
           _isLoading = false;
         });
       }
@@ -69,53 +82,6 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           _isLoading = false;
         });
       }
-    }
-  }
-
-  Future<List<CodigoPremium>> _loadCodigosPremium() async {
-    try {
-      final response = await SupabaseConfig.client
-          .from('codigos_premium')
-          .select()
-          .order('costo_cristales', ascending: true);
-
-      return (response as List).map((json) {
-        return CodigoPremium(
-          id: json['id'],
-          codigo: json['codigo'],
-          nombre: json['nombre'],
-          descripcion: json['descripcion'],
-          costoCristales: json['costo_cristales'],
-          categoria: json['categoria'] ?? 'Premium',
-          esRaro: json['es_raro'] ?? false,
-          // Campo opcional en Supabase: URL completa o relativa de la imagen
-          wallpaperUrl: json['wallpaper_url'] as String?,
-        );
-      }).toList();
-    } catch (e) {
-      print('Error cargando secuencias premium: $e');
-      return [];
-    }
-  }
-
-  Future<List<MeditacionEspecial>> _loadMeditacionesEspeciales() async {
-    try {
-      final response = await SupabaseConfig.client
-          .from('meditaciones_especiales')
-          .select()
-          .order('duracion_minutos', ascending: true);
-
-      return (response as List).map((json) => MeditacionEspecial(
-        id: json['id'],
-        nombre: json['nombre'],
-        descripcion: json['descripcion'],
-        audioUrl: json['audio_url'] ?? '',
-        luzCuanticaRequerida: (json['luz_cuantica_requerida'] ?? 100.0).toDouble(),
-        duracionMinutos: json['duracion_minutos'] ?? 15,
-      )).toList();
-    } catch (e) {
-      print('Error cargando meditaciones especiales: $e');
-      return [];
     }
   }
 
@@ -205,13 +171,11 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   Future<void> _comprarAnclaContinuidad() async {
     if (_rewards == null) return;
 
-    const costo = RewardsService.cristalesParaAnclaContinuidad;
-
-    if (_rewards!.cristalesEnergia < costo) {
+    if (_rewards!.cristalesEnergia < _costoAnclaContinuidad) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '❌ No tienes suficientes cristales. Necesitas $costo, tienes ${_rewards!.cristalesEnergia}',
+            '❌ No tienes suficientes cristales. Necesitas $_costoAnclaContinuidad, tienes ${_rewards!.cristalesEnergia}',
           ),
           backgroundColor: Colors.red,
         ),
@@ -235,7 +199,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '¿Deseas comprar una Ancla de Continuidad por $costo cristales?',
+              '¿Deseas comprar una Ancla de Continuidad por $_costoAnclaContinuidad cristales?',
               style: GoogleFonts.inter(color: Colors.white70),
             ),
             const SizedBox(height: 16),
@@ -301,12 +265,15 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
     if (confirmar != true) return;
 
     try {
-      final updatedRewards = await _rewardsService.comprarAnclaContinuidad();
+      final updatedRewards = await _rewardsService.comprarAnclaContinuidad(
+        costo: _costoAnclaContinuidad,
+        maxAnclas: _maxAnclas,
+      );
 
       await _rewardsService.addToHistory(
         'compra',
         'Ancla de Continuidad comprada',
-        cantidad: costo,
+        cantidad: _costoAnclaContinuidad,
       );
 
       if (mounted) {
@@ -349,12 +316,11 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
       return;
     }
 
-    const costo = RewardsService.cristalesParaVozNumerica;
-    if (_rewards!.cristalesEnergia < costo) {
+    if (_rewards!.cristalesEnergia < _costoVozNumerica) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '❌ No tienes suficientes cristales. Necesitas $costo, tienes ${_rewards!.cristalesEnergia}',
+            '❌ No tienes suficientes cristales. Necesitas $_costoVozNumerica, tienes ${_rewards!.cristalesEnergia}',
           ),
           backgroundColor: Colors.red,
         ),
@@ -374,7 +340,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           ),
         ),
         content: Text(
-          '¿Deseas desbloquear la voz numérica por $costo cristales?',
+          '¿Deseas desbloquear la voz numérica por $_costoVozNumerica cristales?',
           style: GoogleFonts.inter(color: Colors.white70),
         ),
         actions: [
@@ -393,7 +359,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
     if (confirmar != true) return;
 
     try {
-      final updatedRewards = await _rewardsService.comprarVozNumerica();
+      final updatedRewards = await _rewardsService.comprarVozNumerica(costo: _costoVozNumerica);
       if (mounted) {
         setState(() {
           _rewards = updatedRewards;
@@ -420,8 +386,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   Widget _buildVoiceNumbersCard() {
     final desbloqueado = _rewards?.logros['voice_numbers_unlocked'] == true ||
         _rewards?.voiceNumbersEnabled == true;
-    final costo = RewardsService.cristalesParaVozNumerica;
-    final puedeComprar = (_rewards?.cristalesEnergia ?? 0) >= costo;
+    final puedeComprar = (_rewards?.cristalesEnergia ?? 0) >= _costoVozNumerica;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -486,7 +451,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                   const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 20),
                   const SizedBox(width: 4),
                   Text(
-                    '$costo',
+                    '$_costoVozNumerica',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -522,10 +487,9 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   }
 
   Widget _buildAnclaContinuidadCard() {
-    final puedeComprar = (_rewards?.cristalesEnergia ?? 0) >= RewardsService.cristalesParaAnclaContinuidad;
+    final puedeComprar = (_rewards?.cristalesEnergia ?? 0) >= _costoAnclaContinuidad;
     final anclasDisponibles = _rewards?.anclasContinuidad ?? 0;
-    final maxAnclas = RewardsService.maxAnclasContinuidad;
-    final puedeComprarMas = anclasDisponibles < maxAnclas;
+    final puedeComprarMas = anclasDisponibles < _maxAnclas;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -590,12 +554,12 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: anclasDisponibles >= maxAnclas 
+              color:               anclasDisponibles >= _maxAnclas
                   ? Colors.orange.withOpacity(0.1)
                   : Colors.green.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: anclasDisponibles >= maxAnclas
+                color: anclasDisponibles >= _maxAnclas
                     ? Colors.orange.withOpacity(0.3)
                     : Colors.green.withOpacity(0.3),
               ),
@@ -603,18 +567,18 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
             child: Row(
               children: [
                 Icon(
-                  anclasDisponibles >= maxAnclas ? Icons.info_outline : Icons.check_circle,
-                  color: anclasDisponibles >= maxAnclas ? Colors.orange : Colors.green,
+                  anclasDisponibles >= _maxAnclas ? Icons.info_outline : Icons.check_circle,
+                  color: anclasDisponibles >= _maxAnclas ? Colors.orange : Colors.green,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    anclasDisponibles >= maxAnclas
-                        ? 'Tienes el máximo de $maxAnclas anclas. No puedes comprar más.'
-                        : 'Tienes $anclasDisponibles/${maxAnclas} anclas disponible${anclasDisponibles == 1 ? '' : 's'}',
+                    anclasDisponibles >= _maxAnclas
+                        ? 'Tienes el máximo de $_maxAnclas anclas. No puedes comprar más.'
+                        : 'Tienes $anclasDisponibles/$_maxAnclas anclas disponible${anclasDisponibles == 1 ? '' : 's'}',
                     style: GoogleFonts.inter(
-                      color: anclasDisponibles >= maxAnclas ? Colors.orange : Colors.green,
+                      color: anclasDisponibles >= _maxAnclas ? Colors.orange : Colors.green,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -631,7 +595,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                   const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 20),
                   const SizedBox(width: 4),
                   Text(
-                    '${RewardsService.cristalesParaAnclaContinuidad}',
+                    '$_costoAnclaContinuidad',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -886,11 +850,22 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            _buildCristalesPackCard(250, 89),
-                            const SizedBox(height: 12),
-                            _buildCristalesPackCard(700, 199),
-                            const SizedBox(height: 12),
-                            _buildCristalesPackCard(1600, 349),
+                            if (_paquetesCristales.isEmpty) ...[
+                              _buildCristalesPackCard(250, 89),
+                              const SizedBox(height: 12),
+                              _buildCristalesPackCard(700, 199),
+                              const SizedBox(height: 12),
+                              _buildCristalesPackCard(1600, 349),
+                            ] else ...[
+                              ..._paquetesCristales.asMap().entries.map((e) {
+                                final p = e.value;
+                                final isLast = e.key == _paquetesCristales.length - 1;
+                                return Padding(
+                                  padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                                  child: _buildCristalesPackCard(p.cantidadCristales, p.precioMxn),
+                                );
+                              }),
+                            ],
                             const SizedBox(height: 30),
                             Text(
                               'Luz cuántica',

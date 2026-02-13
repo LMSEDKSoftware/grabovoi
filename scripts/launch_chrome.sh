@@ -4,13 +4,18 @@
 # En web, Supabase necesita SUPABASE_URL y SUPABASE_ANON_KEY vía --dart-define;
 # este script carga .env y los inyecta. Si ejecutas "Run" desde el IDE sin este
 # script, las peticiones a Supabase fallarán (error en Network tab).
-
 set +e  # No salir automáticamente si hay errores
 
 echo "🚀 Iniciando proceso de lanzamiento de Flutter + Chrome..."
 
 # Variables
-PROJECT_DIR="/Users/ifernandez/development/grabovoi_build"
+    # ============================================
+    # 1. Definir directorio del script y del proyecto (Método Robusto)
+    # ============================================
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+    ENV_FILE="${PROJECT_DIR}/.env"
+    
 MAX_WAIT=180  # Máximo 3 minutos esperando
 LOG_FILE="/tmp/flutter_launch.log"
 FIXED_PORT=49181  # Puerto fijo para Flutter Web
@@ -97,33 +102,15 @@ main() {
     # ============================================
     echo -e "${YELLOW}📋 Cargando variables de entorno desde .env...${NC}"
     
-    ENV_FILE="${PROJECT_DIR}/.env"
-    
-    if [ ! -f "${ENV_FILE}" ]; then
-        echo -e "${RED}❌ ERROR: No se encontró el archivo .env en ${ENV_FILE}${NC}"
-        exit 1
+    if [ -f "${ENV_FILE}" ]; then
+        echo -e "📄 Cargando variables desde .env..."
+        set -a
+        source "${ENV_FILE}"
+        set +a
+    else
+        echo -e "${YELLOW}⚠️ ADVERTENCIA: No se encontró el archivo .env en ${ENV_FILE}. Verificando variables de entorno...${NC}"
     fi
-    
-    # Cargar variables de forma segura línea por línea
-    # Usamos método línea por línea para evitar problemas con source en macOS
-    while IFS='=' read -r key value || [ -n "$key" ]; do
-        # Ignorar líneas vacías y comentarios
-        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
-        
-        # Eliminar espacios en blanco al inicio y final
-        key=$(echo "$key" | xargs)
-        value=$(echo "$value" | xargs)
-        
-        # Ignorar si key está vacío después de limpiar
-        [[ -z "$key" ]] && continue
-        
-        # Manejar valores con comillas
-        value=$(echo "$value" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
-        
-        # Exportar la variable
-        export "${key}=${value}"
-    done < "${ENV_FILE}"
-    
+     
     # Verificar que las variables críticas estén cargadas
     if [ -z "${OPENAI_API_KEY}" ] || [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ] || [ -z "${SB_SERVICE_ROLE_KEY}" ]; then
         echo -e "${RED}❌ ERROR: Variables de entorno no cargadas correctamente${NC}"
