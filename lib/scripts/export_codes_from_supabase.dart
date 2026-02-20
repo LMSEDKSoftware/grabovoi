@@ -3,12 +3,20 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 /// Script para exportar todos los códigos desde Supabase
-/// Ejecutar: dart lib/scripts/export_codes_from_supabase.dart
+/// Ejecutar: dart run lib/scripts/export_codes_from_supabase.dart --dart-define=SUPABASE_ANON_KEY=xxx
+/// O: SUPABASE_ANON_KEY=xxx dart run lib/scripts/export_codes_from_supabase.dart
 void main() async {
   print('🚀 Exportando códigos desde Supabase...');
-  
+
   const String supabaseUrl = 'https://whtiazgcxdnemrrgjjqf.supabase.co/functions/v1';
-  const String apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndodGlhemdjeGRuZW1ycmdqanFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MjM2MzgsImV4cCI6MjA3NjA5OTYzOH0.1CFkusMrMKcvSU_-5RyGYPoKDM_yizuQMVGo7W3mXHU';
+  final apiKey = Platform.environment['SUPABASE_ANON_KEY'] ??
+      const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+  if (apiKey.isEmpty) {
+    print('❌ ERROR: SUPABASE_ANON_KEY no configurada.');
+    print('   Ejecutar con: dart run lib/scripts/export_codes_from_supabase.dart --dart-define=SUPABASE_ANON_KEY=tu_key');
+    print('   O: SUPABASE_ANON_KEY=tu_key dart run lib/scripts/export_codes_from_supabase.dart');
+    exit(1);
+  }
   
   try {
     // 1. Obtener todos los códigos

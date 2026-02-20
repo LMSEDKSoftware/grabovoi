@@ -76,7 +76,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
         });
       }
     } catch (e) {
-      print('Error cargando datos de tienda: $e');
+      debugPrint('Error cargando datos de tienda: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

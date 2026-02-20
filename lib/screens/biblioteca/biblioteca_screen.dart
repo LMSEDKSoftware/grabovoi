@@ -43,45 +43,45 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
   }
 
   Future<void> _loadData() async {
-    print('🔄 [BIBLIOTECA] ===========================================');
-    print('🔄 [BIBLIOTECA] INICIANDO CARGA DE DATOS');
-    print('🔄 [BIBLIOTECA] ===========================================');
-    print('🔄 [BIBLIOTECA] Timestamp: ${DateTime.now()}');
-    print('🔄 [BIBLIOTECA] Estado actual: isLoading=$isLoading');
-      print('🔄 [BIBLIOTECA] Secuencias actuales: ${codigos.length}');
-    print('🔄 [BIBLIOTECA] Filtrados actuales: ${filtrados.length}');
-    print('🔄 [BIBLIOTECA] ===========================================');
+    debugPrint('🔄 [BIBLIOTECA] ===========================================');
+    debugPrint('🔄 [BIBLIOTECA] INICIANDO CARGA DE DATOS');
+    debugPrint('🔄 [BIBLIOTECA] ===========================================');
+    debugPrint('🔄 [BIBLIOTECA] Timestamp: ${DateTime.now()}');
+    debugPrint('🔄 [BIBLIOTECA] Estado actual: isLoading=$isLoading');
+      debugPrint('🔄 [BIBLIOTECA] Secuencias actuales: ${codigos.length}');
+    debugPrint('🔄 [BIBLIOTECA] Filtrados actuales: ${filtrados.length}');
+    debugPrint('🔄 [BIBLIOTECA] ===========================================');
     
     try {
       setState(() => isLoading = true);
-      print('🔄 [BIBLIOTECA] setState: isLoading = true');
-      print('🔄 [BIBLIOTECA] Iniciando carga de datos via API...');
+      debugPrint('🔄 [BIBLIOTECA] setState: isLoading = true');
+      debugPrint('🔄 [BIBLIOTECA] Iniciando carga de datos via API...');
       
       // Cargar secuencias desde API
-      print('🔄 [BIBLIOTECA] Llamando BibliotecaSupabaseService.getTodosLosCodigos()...');
+      debugPrint('🔄 [BIBLIOTECA] Llamando BibliotecaSupabaseService.getTodosLosCodigos()...');
       final codigosData = await BibliotecaSupabaseService.getTodosLosCodigos();
       
-      print('📚 [BIBLIOTECA] ===========================================');
-      print('📚 [BIBLIOTECA] DATOS OBTENIDOS DE API');
-      print('📚 [BIBLIOTECA] ===========================================');
-      print('📚 [BIBLIOTECA] Secuencias cargadas: ${codigosData.length}');
-      print('📚 [BIBLIOTECA] Primera secuencia: ${codigosData.isNotEmpty ? codigosData.first.nombre : 'N/A'}');
-      print('📚 [BIBLIOTECA] Última secuencia: ${codigosData.isNotEmpty ? codigosData.last.nombre : 'N/A'}');
-      print('📚 [BIBLIOTECA] Categorías en datos: ${codigosData.map((c) => c.categoria).toSet().toList()}');
-      print('📚 [BIBLIOTECA] Primeras 3 secuencias: ${codigosData.take(3).map((c) => '${c.codigo} - ${c.nombre}').toList()}');
-      print('📚 [BIBLIOTECA] ===========================================');
+      debugPrint('📚 [BIBLIOTECA] ===========================================');
+      debugPrint('📚 [BIBLIOTECA] DATOS OBTENIDOS DE API');
+      debugPrint('📚 [BIBLIOTECA] ===========================================');
+      debugPrint('📚 [BIBLIOTECA] Secuencias cargadas: ${codigosData.length}');
+      debugPrint('📚 [BIBLIOTECA] Primera secuencia: ${codigosData.isNotEmpty ? codigosData.first.nombre : 'N/A'}');
+      debugPrint('📚 [BIBLIOTECA] Última secuencia: ${codigosData.isNotEmpty ? codigosData.last.nombre : 'N/A'}');
+      debugPrint('📚 [BIBLIOTECA] Categorías en datos: ${codigosData.map((c) => c.categoria).toSet().toList()}');
+      debugPrint('📚 [BIBLIOTECA] Primeras 3 secuencias: ${codigosData.take(3).map((c) => '${c.codigo} - ${c.nombre}').toList()}');
+      debugPrint('📚 [BIBLIOTECA] ===========================================');
       
       // Cargar categorías desde API
       final categoriasData = await BibliotecaSupabaseService.getCategorias();
-      print('🏷️ Categorías cargadas: ${categoriasData.length}');
-      print('🏷️ Categorías: $categoriasData');
+      debugPrint('🏷️ Categorías cargadas: ${categoriasData.length}');
+      debugPrint('🏷️ Categorías: $categoriasData');
       
       // Cargar favoritos desde API
       final favoritosData = await BibliotecaSupabaseService.getFavoritos();
-      print('❤️ Favoritos cargados: ${favoritosData.length}');
+      debugPrint('❤️ Favoritos cargados: ${favoritosData.length}');
       
       // Popularidad se maneja por separado
-      print('📊 Popularidad: Se maneja individualmente');
+      debugPrint('📊 Popularidad: Se maneja individualmente');
 
       setState(() {
         codigos = codigosData;
@@ -98,24 +98,24 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
         isLoading = false;
       });
       
-      print('📚 [BIBLIOTECA] ===========================================');
-      print('📚 [BIBLIOTECA] DESPUÉS DE setState');
-      print('📚 [BIBLIOTECA] ===========================================');
-      print('📚 [BIBLIOTECA] codigos.length: ${codigos.length}');
-      print('📚 [BIBLIOTECA] filtrados.length: ${filtrados.length}');
-      print('📚 [BIBLIOTECA] isLoading: $isLoading');
-      print('📚 [BIBLIOTECA] _categorias: $_categorias');
-      print('📚 [BIBLIOTECA] ===========================================');
+      debugPrint('📚 [BIBLIOTECA] ===========================================');
+      debugPrint('📚 [BIBLIOTECA] DESPUÉS DE setState');
+      debugPrint('📚 [BIBLIOTECA] ===========================================');
+      debugPrint('📚 [BIBLIOTECA] codigos.length: ${codigos.length}');
+      debugPrint('📚 [BIBLIOTECA] filtrados.length: ${filtrados.length}');
+      debugPrint('📚 [BIBLIOTECA] isLoading: $isLoading');
+      debugPrint('📚 [BIBLIOTECA] _categorias: $_categorias');
+      debugPrint('📚 [BIBLIOTECA] ===========================================');
       
       // Aplicar filtros iniciales después de cargar los datos
       _aplicarFiltros();
       
-      print('✅ Datos cargados exitosamente via API. Total secuencias: ${codigos.length}');
-      print('✅ Categorías finales: $_categorias');
-      print('✅ Filtrados iniciales: ${filtrados.length}');
+      debugPrint('✅ Datos cargados exitosamente via API. Total secuencias: ${codigos.length}');
+      debugPrint('✅ Categorías finales: $_categorias');
+      debugPrint('✅ Filtrados iniciales: ${filtrados.length}');
     } catch (e) {
       setState(() => isLoading = false);
-      print('❌ Error cargando datos via API: $e');
+      debugPrint('❌ Error cargando datos via API: $e');
       debugPrint('Error cargando datos via API: $e');
       
       // Mostrar mensaje de error amigable al usuario
@@ -187,28 +187,28 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
   }
 
   void _aplicarFiltros() async {
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] APLICANDO FILTROS');
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] Timestamp: ${DateTime.now()}');
-    print('🔍 [FILTROS] Tab actual: $_tab');
-    print('🔍 [FILTROS] Categoría: $_filtroCategoria');
-    print('🔍 [FILTROS] Query: "$_query"');
-    print('🔍 [FILTROS] Secuencias disponibles: ${codigos.length}');
-    print('🔍 [FILTROS] Favoritos disponibles: ${favoritos.length}');
-    print('🔍 [FILTROS] Filtrados ANTES: ${filtrados.length}');
-    print('🔍 [FILTROS] ===========================================');
+    debugPrint('🔍 [FILTROS] ===========================================');
+    debugPrint('🔍 [FILTROS] APLICANDO FILTROS');
+    debugPrint('🔍 [FILTROS] ===========================================');
+    debugPrint('🔍 [FILTROS] Timestamp: ${DateTime.now()}');
+    debugPrint('🔍 [FILTROS] Tab actual: $_tab');
+    debugPrint('🔍 [FILTROS] Categoría: $_filtroCategoria');
+    debugPrint('🔍 [FILTROS] Query: "$_query"');
+    debugPrint('🔍 [FILTROS] Secuencias disponibles: ${codigos.length}');
+    debugPrint('🔍 [FILTROS] Favoritos disponibles: ${favoritos.length}');
+    debugPrint('🔍 [FILTROS] Filtrados ANTES: ${filtrados.length}');
+    debugPrint('🔍 [FILTROS] ===========================================');
     
     List<CodigoGrabovoi> base = [];
     
     if (_tab == 'Favoritos') {
       base = List.from(favoritos);
-      print('🔍 [FILTROS] Usando favoritos como base: ${base.length}');
-      print('🔍 [FILTROS] Favoritos: ${favoritos.map((f) => f.codigoId).toList()}');
+      debugPrint('🔍 [FILTROS] Usando favoritos como base: ${base.length}');
+      debugPrint('🔍 [FILTROS] Favoritos: ${favoritos.map((f) => f.codigoId).toList()}');
     } else {
       base = List.from(codigos);
-      print('🔍 [FILTROS] Usando todas las secuencias como base: ${base.length}');
-      print('🔍 [FILTROS] Primeras 3 secuencias: ${base.take(3).map((c) => c.nombre).toList()}');
+      debugPrint('🔍 [FILTROS] Usando todas las secuencias como base: ${base.length}');
+      debugPrint('🔍 [FILTROS] Primeras 3 secuencias: ${base.take(3).map((c) => c.nombre).toList()}');
       
       if (_filtroCategoria != 'Todos') {
         base = base.where((c) => c.categoria.toLowerCase() == _filtroCategoria.toLowerCase()).toList();
@@ -251,25 +251,25 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
       }
     }
 
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] RESULTADO FINAL DE FILTROS');
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] Secuencias filtradas: ${base.length}');
-    print('🔍 [FILTROS] Primeras 3 secuencias: ${base.take(3).map((c) => c.nombre).toList()}');
-    print('🔍 [FILTROS] Últimas 3 secuencias: ${base.length > 3 ? base.skip(base.length - 3).map((c) => c.nombre).toList() : base.map((c) => c.nombre).toList()}');
-    print('🔍 [FILTROS] Categorías en filtrados: ${base.map((c) => c.categoria).toSet().toList()}');
-    print('🔍 [FILTROS] ===========================================');
+    debugPrint('🔍 [FILTROS] ===========================================');
+    debugPrint('🔍 [FILTROS] RESULTADO FINAL DE FILTROS');
+    debugPrint('🔍 [FILTROS] ===========================================');
+    debugPrint('🔍 [FILTROS] Secuencias filtradas: ${base.length}');
+    debugPrint('🔍 [FILTROS] Primeras 3 secuencias: ${base.take(3).map((c) => c.nombre).toList()}');
+    debugPrint('🔍 [FILTROS] Últimas 3 secuencias: ${base.length > 3 ? base.skip(base.length - 3).map((c) => c.nombre).toList() : base.map((c) => c.nombre).toList()}');
+    debugPrint('🔍 [FILTROS] Categorías en filtrados: ${base.map((c) => c.categoria).toSet().toList()}');
+    debugPrint('🔍 [FILTROS] ===========================================');
     
     setState(() {
       filtrados = base;
     });
     
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] setState COMPLETADO');
-    print('🔍 [FILTROS] ===========================================');
-    print('🔍 [FILTROS] Filtrados DESPUÉS: ${filtrados.length}');
-    print('🔍 [FILTROS] UI actualizada con ${filtrados.length} secuencias');
-    print('🔍 [FILTROS] ===========================================');
+    debugPrint('🔍 [FILTROS] ===========================================');
+    debugPrint('🔍 [FILTROS] setState COMPLETADO');
+    debugPrint('🔍 [FILTROS] ===========================================');
+    debugPrint('🔍 [FILTROS] Filtrados DESPUÉS: ${filtrados.length}');
+    debugPrint('🔍 [FILTROS] UI actualizada con ${filtrados.length} secuencias');
+    debugPrint('🔍 [FILTROS] ===========================================');
   }
 
   Future<void> _buscarConIA(String consulta) async {
@@ -783,7 +783,7 @@ class _BibliotecaScreenState extends State<BibliotecaScreen> {
     );
 
     try {
-      print('🧪 INICIANDO PRUEBA DE CONEXIÓN SUPABASE');
+      debugPrint('🧪 INICIANDO PRUEBA DE CONEXIÓN SUPABASE');
       
       // Probar conexión básica
       final testResult = await SimpleApiService.getCodigos();

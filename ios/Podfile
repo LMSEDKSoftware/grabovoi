@@ -43,6 +43,12 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       # Deshabilitar warnings de módulos para evitar problemas con headers
       config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+      # Habilitar permisos que usa permission_handler (necesario para leer estado correcto en iOS)
+      defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+      defs = [defs] if defs.is_a?(String)
+      defs << 'PERMISSION_NOTIFICATIONS=1' unless defs.any? { |d| d.to_s.include?('PERMISSION_NOTIFICATIONS') }
+      defs << 'PERMISSION_PHOTOS=1' unless defs.any? { |d| d.to_s.include?('PERMISSION_PHOTOS') }
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
     end
   end
 end

@@ -270,7 +270,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       } catch (_) {}
       if (mounted) setState(() {});
     } catch (e) {
-      print('Error iniciando audio: $e');
+      debugPrint('Error iniciando audio: $e');
     }
     
     // Notificar al servicio global
@@ -283,17 +283,17 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   }
 
   void _startCountdown() {
-    print('🕐 [CAMPO ENERGÉTICO] Iniciando temporizador: $_secondsRemaining segundos');
+    debugPrint('🕐 [CAMPO ENERGÉTICO] Iniciando temporizador: $_secondsRemaining segundos');
     Future.delayed(const Duration(seconds: 1), () async {
       if (!mounted) return; // no llamar setState si ya no está montado
       if (_secondsRemaining > 0) {
         setState(() {
           _secondsRemaining--;
         });
-        print('🕐 [CAMPO ENERGÉTICO] Tiempo restante: $_secondsRemaining segundos');
+        debugPrint('🕐 [CAMPO ENERGÉTICO] Tiempo restante: $_secondsRemaining segundos');
         _startCountdown();
       } else {
-        print('✅ [CAMPO ENERGÉTICO] Temporizador completado! Mostrando diálogo...');
+        debugPrint('✅ [CAMPO ENERGÉTICO] Temporizador completado! Mostrando diálogo...');
         setState(() {
           _isPiloting = false;
         });
@@ -323,7 +323,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       );
       await _entregarRecompensasYMostrarModal();
     } catch (e) {
-      print('Error registrando pilotaje completado: $e');
+      debugPrint('Error registrando pilotaje completado: $e');
       if (mounted) _mostrarMensajeFinalizacion();
     }
   }
@@ -360,7 +360,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         );
       }
     } catch (e) {
-      print('Error entregando recompensas: $e');
+      debugPrint('Error entregando recompensas: $e');
       if (mounted) _mostrarMensajeFinalizacion();
     }
   }
@@ -420,11 +420,11 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     double? luzCuanticaActual,
   }) {
     // Debug: Verificar valores que se pasan al modal
-    print('🔍 [CAMPO ENERGÉTICO] Valores pasados al modal:');
-    print('   cristalesGanados: $cristalesGanados');
-    print('   luzCuanticaAnterior: $luzCuanticaAnterior');
-    print('   luzCuanticaActual: $luzCuanticaActual');
-    print('   tipoAccion: campo_energetico');
+    debugPrint('🔍 [CAMPO ENERGÉTICO] Valores pasados al modal:');
+    debugPrint('   cristalesGanados: $cristalesGanados');
+    debugPrint('   luzCuanticaAnterior: $luzCuanticaAnterior');
+    debugPrint('   luzCuanticaActual: $luzCuanticaActual');
+    debugPrint('   tipoAccion: campo_energetico');
     
     showDialog(
       context: context,
@@ -598,7 +598,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       
       return pngBytes;
     } catch (e) {
-      print('❌ Error generando imagen: $e');
+      debugPrint('❌ Error generando imagen: $e');
       return null;
     }
   }
@@ -760,8 +760,8 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
         );
       }
     } catch (e, stackTrace) {
-      print('❌ Error crítico al previsualizar imagen: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('❌ Error crítico al previsualizar imagen: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         Navigator.of(context).pop(); // Cerrar cualquier diálogo abierto
         ScaffoldMessenger.of(context).showSnackBar(
@@ -809,11 +809,11 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
             codeName: widget.codigo,
           );
         } catch (e) {
-          print('⚠️ Error registrando pilotaje compartido: $e');
+          debugPrint('⚠️ Error registrando pilotaje compartido: $e');
           // No mostrar error al usuario, solo log
         }
       } catch (shareError) {
-        print('❌ Error al compartir archivo: $shareError');
+        debugPrint('❌ Error al compartir archivo: $shareError');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -825,8 +825,8 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
         }
       }
     } catch (e, stackTrace) {
-      print('❌ Error crítico al compartir imagen: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('❌ Error crítico al compartir imagen: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1002,7 +1002,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     try {
       return await SupabaseService.getTitulosRelacionados(codigo);
     } catch (e) {
-      print('⚠️ Error obteniendo títulos relacionados: $e');
+      debugPrint('⚠️ Error obteniendo títulos relacionados: $e');
       return [];
     }
   }
@@ -1017,7 +1017,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
           .single();
       return codigoData['categoria'] ?? 'General';
     } catch (e) {
-      print('⚠️ Error al obtener categoría del código: $e');
+      debugPrint('⚠️ Error al obtener categoría del código: $e');
       return 'General';
     }
   }
@@ -1323,243 +1323,230 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
 
   @override
   Widget build(BuildContext context) {
-    // Modo de concentración (pantalla completa)
-    if (_isConcentrationMode) {
-      return _buildConcentrationMode();
-    }
-
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
+        
+        // Si está en modo concentración, salir de él primero
+        if (_isConcentrationMode) {
+          setState(() {
+            _isConcentrationMode = false;
+          });
+          return;
+        }
+        
         await _handleBackNavigation();
       },
-      child: Scaffold(
-        body: Stack(
+      child: Stack(
         children: [
-          GlowBackground(
-            child: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                // Header
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: _handleBackNavigation,
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                    const Spacer(),
-                    // Botón de información
-                    IconButton(
-                      onPressed: _mostrarNotaImportante,
-                      icon: const Icon(Icons.info_outline, color: Color(0xFFFFD700)),
-                      tooltip: 'Nota importante',
-                    ),
-                    // Botón de copiar
-                    IconButton(
-                      onPressed: _copyToClipboard,
-                      icon: const Icon(Icons.copy, color: Color(0xFFFFD700)),
-                      tooltip: 'Copiar secuencia',
-                    ),
-                    // Botón de previsualizar imagen (solo para web)
-                    if (kIsWeb)
-                      IconButton(
-                        onPressed: _previewImage,
-                        icon: const Icon(Icons.preview, color: Color(0xFFFFD700)),
-                        tooltip: 'Vista previa de imagen',
-                      ),
-                    // Botón de compartir
-                    IconButton(
-                      onPressed: _shareCode,
-                      icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
-                      tooltip: 'Compartir secuencia',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                
-                // Título
-                Text(
-                  'Campo Energético',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFFD700),
-                  ),
-                ),
-                const SizedBox(height: 40),
-                
-                // Esfera integrada (solo esfera + números; controles en bloque unificado abajo)
-                _buildQuantumDetailSphere(widget.codigo),
-                const SizedBox(height: 28),
-                // Bloque unificado reutilizable (SessionToolsBlock)
-                SessionToolsBlock(
-                  colorSelectorChild: _buildColorSelectorContent(),
-                  descriptionChild: FutureBuilder<Map<String, dynamic>>(
-                    future: _codigoInfoFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16),
-                            child: CircularProgressIndicator(color: Color(0xFFFFD700)),
-                          ),
-                        );
-                      }
-                      final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
-                      final descripcion = snapshot.data?['descripcion'] ?? 'Secuencia sagrada para la manifestación y transformación energética.';
-                      final titulosRelacionados = snapshot.data?['titulosRelacionados'] as List<Map<String, dynamic>>? ?? [];
-                      return Column(
+          // 1. Pantalla Normal (siempre renderizada para preservar estado de SessionToolsBlock)
+          Scaffold(
+            body: Stack(
+              children: [
+                Positioned.fill(
+                  child: GlowBackground(
+                    child: SafeArea(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            titulo,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFFFD700),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            descripcion,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.white.withOpacity(0.9),
-                              height: 1.45,
-                            ),
-                          ),
-                          if (titulosRelacionados.isNotEmpty) ...[
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFD700).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFFFFD700).withOpacity(0.3),
-                                  width: 1,
+                          // Header
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: _handleBackNavigation,
+                                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'Campo Energético',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.playfairDisplay(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFFFD700),
+                                  ),
                                 ),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.info_outline, color: Color(0xFFFFD700), size: 16),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'Esta secuencia también se relaciona con:',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFFFFD700),
+                              // Botón de compartires
+                              IconButton(
+                                onPressed: _shareCode,
+                                icon: const Icon(Icons.share, color: Color(0xFFFFD700)),
+                                tooltip: 'Compartir secuencia',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // Esfera integrada (solo esfera + números; controles en bloque unificado abajo)
+                          _buildQuantumDetailSphere(widget.codigo),
+                          const SizedBox(height: 28),
+                          // Bloque unificado reutilizable (SessionToolsBlock)
+                          SessionToolsBlock(
+                            colorSelectorChild: _buildColorSelectorContent(),
+                            descriptionChild: FutureBuilder<Map<String, dynamic>>(
+                              future: _codigoInfoFuture,
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: CircularProgressIndicator(color: Color(0xFFFFD700)),
+                                    ),
+                                  );
+                                }
+                                final titulo = snapshot.data?['titulo'] ?? 'Campo Energético';
+                                final descripcion = snapshot.data?['descripcion'] ?? 'Secuencia sagrada para la manifestación y transformación energética.';
+                                final titulosRelacionados = snapshot.data?['titulosRelacionados'] as List<Map<String, dynamic>>? ?? [];
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            titulo,
+                                            textAlign: TextAlign.center,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFFFFD700),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        GestureDetector(
+                                          onTap: _mostrarNotaImportante,
+                                          child: const Icon(Icons.info_outline, color: Color(0xFFFFD700), size: 20),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      descripcion,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        color: Colors.white.withOpacity(0.9),
+                                        height: 1.45,
+                                      ),
+                                    ),
+                                    if (titulosRelacionados.isNotEmpty) ...[
+                                      const SizedBox(height: 16),
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFFD700).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: const Color(0xFFFFD700).withOpacity(0.3),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Secuencias Relacionadas:',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: const Color(0xFFFFD700),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            ...titulosRelacionados.map((relacionado) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(bottom: 4),
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.link, color: Colors.white70, size: 14),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        '${relacionado['codigo']} - ${relacionado['titulo']}',
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: 13,
+                                                          color: Colors.white.withOpacity(0.8),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ],
                                         ),
                                       ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ...titulosRelacionados.map((tituloRel) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            tituloRel['titulo']?.toString() ?? '',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          if (tituloRel['descripcion'] != null && (tituloRel['descripcion'] as String).isNotEmpty) ...[
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              tituloRel['descripcion']?.toString() ?? '',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 11,
-                                                color: Colors.white.withOpacity(0.7),
-                                                height: 1.3,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                                ],
-                              ),
+                                  ],
+                                );
+                              },
                             ),
-                          ],
+                            hasGuidedRepetition: _hasGuidedRepetition,
+                            voiceToggleChild: _buildVoiceNumbersToggleContent(),
+                            onVoiceToggle: _toggleVoiceNumbers,
+                            musicControllerKey: ValueKey(_musicControllerKeySeed),
+                            musicAutoPlay: _isPiloting,
+                            musicIsActive: _isPiloting,
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          const SizedBox(height: 40),
                         ],
-                      );
-                    },
+                      ),
+                    ),
                   ),
-                  hasGuidedRepetition: _hasGuidedRepetition,
-                  voiceToggleChild: _buildVoiceNumbersToggleContent(),
-                  onVoiceToggle: _toggleVoiceNumbers,
-                  musicControllerKey: ValueKey(_musicControllerKeySeed),
-                  musicAutoPlay: _isPiloting,
-                  musicIsActive: _isPiloting,
+                  ),
                 ),
-                const SizedBox(height: 24),
-                
-                
-                // Botón de Acción eliminado - el pilotaje se inicia automáticamente
-                
-                
-                const SizedBox(height: 40),
-                
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Widget para capturar (completamente fuera de la vista pero renderizado)
-          Positioned(
-            left: -1000,
-            top: -1000,
-            child: IgnorePointer(
-              ignoring: true,
-              child: SizedBox(
-                width: 800,
-                height: 800,
-                child: Screenshot(
-                  controller: _screenshotController,
-                  child: Builder(
-                    builder: (context) {
-                      return FutureBuilder<Map<String, String>>(
-                        future: _shareableDataFuture,
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return Container(
-                              width: 800,
-                              height: 800,
-                              color: Colors.black,
-                              child: const Center(child: CircularProgressIndicator()),
+                // Widget para capturar (completamente fuera de la vista pero renderizado)
+                Positioned(
+                  left: -1000,
+                  top: -1000,
+                  child: IgnorePointer(
+                    ignoring: true,
+                    child: SizedBox(
+                      width: 800,
+                      height: 800,
+                      child: Screenshot(
+                        controller: _screenshotController,
+                        child: Builder(
+                          builder: (context) {
+                            return FutureBuilder<Map<String, String>>(
+                              future: _shareableDataFuture,
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return Container(
+                                    width: 800,
+                                    height: 800,
+                                    color: Colors.black,
+                                    child: const Center(child: CircularProgressIndicator()),
+                                  );
+                                }
+                                final titulo = snapshot.data!['titulo'] ?? 'Campo Energético';
+                                final descripcion = snapshot.data!['descripcion'] ?? 'Secuencia sagrada para la manifestación y transformación energética.';
+                                return _buildShareableImage(widget.codigo, titulo, descripcion);
+                              },
                             );
-                          }
-                          final titulo = snapshot.data!['titulo'] ?? 'Campo Energético';
-                          final descripcion = snapshot.data!['descripcion'] ?? 'Secuencia sagrada para la manifestación y transformación energética.';
-                          return _buildShareableImage(widget.codigo, titulo, descripcion);
-                        },
-                      );
-                    },
+                          },
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
+          
+          // 2. Modo Concentración (Overlay - se muestra ENCIMA del Scaffold)
+          if (_isConcentrationMode)
+            Positioned.fill(
+              child: _buildConcentrationMode(),
+            ),
         ],
-      ),
       ),
     );
   }
@@ -1713,39 +1700,44 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
     final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoCrudo);
     final double fontSize = CodeFormatter.calculateFontSize(codigoCrudo, baseSize: 42);
 
-    return Stack(
-      alignment: Alignment.center,
-      clipBehavior: Clip.none,
-      children: [
-        // 1️⃣ Esfera dorada (solo visual, sin contenedor rectangular)
-        Transform.scale(
-          scale: _isPiloting ? _pulseAnimation.value : 1.0,
-          child: GoldenSphere(
-            size: 260,
-            color: _getColorSeleccionado(),
-            glowIntensity: _isPiloting ? 0.85 : 0.7,
-            isAnimated: true,
+    return GestureDetector(
+      onTap: _copyToClipboard,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          // 1️⃣ Esfera dorada (solo visual, sin contenedor rectangular)
+          Transform.scale(
+            scale: _isPiloting ? _pulseAnimation.value : 1.0,
+            child: GoldenSphere(
+              size: 260,
+              color: _getColorSeleccionado(),
+              glowIntensity: _isPiloting ? 0.85 : 0.7,
+              isAnimated: true,
+            ),
           ),
-        ),
 
-        // 2️⃣ Texto iluminado (el código sobre la esfera)
-        AnimatedBuilder(
-          animation: _pulseAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _isPiloting ? _pulseAnimation.value : 1.0,
-              child: IlluminatedCodeText(
-                code: codigoFormateado,
-                fontSize: fontSize,
-                color: _getColorSeleccionado(),
-                letterSpacing: 6,
-                isAnimated: false,
-              ),
-            );
-          },
-        ),
+          // 2️⃣ Texto iluminado (el código sobre la esfera)
+          AnimatedBuilder(
+            animation: _pulseAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _isPiloting ? _pulseAnimation.value : 1.0,
+                child: IlluminatedCodeText(
+                  code: codigoFormateado,
+                  fontSize: fontSize,
+                  color: _getColorSeleccionado(),
+                  letterSpacing: 6,
+                  isAnimated: false,
+                ),
+              );
+            },
+          ),
+          
 
-      ],
+
+        ],
+      ),
     );
   }
 
@@ -1901,7 +1893,7 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
         }
       }
     } catch (e) {
-      print('❌ Error cargando sincrónicos: $e');
+      debugPrint('❌ Error cargando sincrónicos: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -1919,7 +1911,7 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
           .single();
       return codigoData['categoria'] ?? 'General';
     } catch (e) {
-      print('⚠️ Error al obtener categoría del código: $e');
+      debugPrint('⚠️ Error al obtener categoría del código: $e');
       return 'General';
     }
   }

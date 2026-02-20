@@ -28,6 +28,36 @@ class AuthServiceSimple {
   bool get isLoggedIn => _currentUser != null;
   bool get isInitialized => _isInitialized;
 
+  static String get _webAuthRedirectUrl {
+    // Si ya estamos en una URL con ?code=, no intentemos redirigir de nuevo a la misma
+    // o generaremos un bucle si algo falla. 
+    // Aunque aquí solo calculamos la URL para dársela a Supabase.
+
+    if (!kIsWeb) return 'https://manigrab.app/auth/callback';
+    
+    final base = Uri.base;
+    print('🔍 DEBUG AUTH: Uri.base = $base');
+    
+    final isLocal = base.host.contains('localhost') || base.host == '127.0.0.1';
+    
+    if (isLocal) {
+        // Al usar puertos dinámicos o fijos en local, el wildcard http://localhost:* en Supabase
+        // a veces es estricto con los paths.
+        // Probamos usar SOLO el origen (http://localhost:49181) sin /auth/callback
+        // para facilitar el matching del wildcard.
+        
+        String origin = '${base.scheme}://${base.host}';
+        if (base.hasPort && base.port != 0) {
+           origin = '$origin:${base.port}';
+        }
+        
+        print('👉 DEBUG AUTH: Redirect ajustado para local (ROOT): $origin');
+        return origin;
+    }
+    
+    return 'https://manigrab.app/auth/callback';
+  }
+
   // Inicializar el servicio
   Future<void> initialize() async {
     try {
@@ -165,15 +195,10 @@ class AuthServiceSimple {
   }) async {
     try {
       // Mantener la llamada actual a signUp (aunque Supabase ya no envíe correos)
-      // Usar URLs sin puerto específico para que funcione con cualquier puerto dinámico de Flutter Web
+      // En web usar la URL con puerto en localhost para que el callback vuelva a la app
       String? emailRedirectTo;
       if (kIsWeb) {
-        // Detectar si estamos en producción o desarrollo usando Uri.base (funciona en todas las plataformas)
-        final hostname = Uri.base.host;
-        final isProduction = !hostname.contains('localhost') && !hostname.contains('127.0.0.1');
-        emailRedirectTo = isProduction
-            ? 'https://manigrab.app/auth/callback'
-            : 'http://localhost/auth/callback';
+        emailRedirectTo = _webAuthRedirectUrl;
       } else {
         emailRedirectTo = 'com.manifestacion.grabovoi://login-callback';
       }
@@ -252,11 +277,7 @@ class AuthServiceSimple {
         // Construir action_url para el correo de bienvenida
         String? actionUrl;
         if (kIsWeb) {
-          final hostname = Uri.base.host;
-          final isProduction = !hostname.contains('localhost') && !hostname.contains('127.0.0.1');
-          actionUrl = isProduction
-              ? 'https://manigrab.app/auth/callback'
-              : 'http://localhost/auth/callback';
+          actionUrl = _webAuthRedirectUrl;
         } else {
           actionUrl = 'com.manifestacion.grabovoi://login-callback';
         }
@@ -456,16 +477,10 @@ class AuthServiceSimple {
     try {
       print('🔐 Iniciando login con Google...');
       
-      // Configurar redirect URL según la plataforma
-      // Usar URLs sin puerto específico para que funcione con cualquier puerto dinámico de Flutter Web
+      // Configurar redirect URL según la plataforma. En web localhost debe incluir el puerto (ej. :49181)
       String redirectTo;
       if (kIsWeb) {
-        // Detectar si estamos en producción o desarrollo usando Uri.base (funciona en todas las plataformas)
-        final hostname = Uri.base.host;
-        final isProduction = !hostname.contains('localhost') && !hostname.contains('127.0.0.1');
-        redirectTo = isProduction
-            ? 'https://manigrab.app/auth/callback'
-            : 'http://localhost/auth/callback';
+        redirectTo = _webAuthRedirectUrl;
         print('🌐 Usando redirect para web: $redirectTo');
       } else {
         // En móvil, usar deep link

@@ -77,7 +77,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
       _secuenciasEnSeguimiento = await diarioService.getSecuenciasEnSeguimiento();
       _secuenciasFiltradas = _secuenciasEnSeguimiento;
     } catch (e) {
-      print('Error cargando diario: $e');
+      debugPrint('Error cargando diario: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -447,12 +447,12 @@ class _DiarioScreenState extends State<DiarioScreen> {
         }
       }); // Más reciente primero
 
-    print('🔍 [DIARIO] Mostrando detalle de secuencia: $codigo');
-    print('🔍 [DIARIO] Total de entradas: ${entradas.length}');
+    debugPrint('🔍 [DIARIO] Mostrando detalle de secuencia: $codigo');
+    debugPrint('🔍 [DIARIO] Total de entradas: ${entradas.length}');
     for (var i = 0; i < entradas.length; i++) {
-      print('🔍 [DIARIO] Entrada $i: ${entradas[i]}');
+      debugPrint('🔍 [DIARIO] Entrada $i: ${entradas[i]}');
     }
-    print('🔍 [DIARIO] Fechas agrupadas: ${entradasPorFecha.keys.toList()}');
+    debugPrint('🔍 [DIARIO] Fechas agrupadas: ${entradasPorFecha.keys.toList()}');
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -603,7 +603,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                           entradas: entradasDelDia,
                         );
                       } catch (e) {
-                        print('❌ [DIARIO] Error construyendo tarjeta de fecha: $e');
+                        debugPrint('❌ [DIARIO] Error construyendo tarjeta de fecha: $e');
     return Container(
       padding: const EdgeInsets.all(16),
                           margin: const EdgeInsets.only(bottom: 16),
@@ -646,7 +646,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
         final diaSemana = DateFormat('EEEE', 'es').format(fechaObj);
         diaSemanaCapitalizado = diaSemana[0].toUpperCase() + diaSemana.substring(1);
       } catch (e) {
-        print('Error parseando fecha: $fecha - $e');
+        debugPrint('Error parseando fecha: $fecha - $e');
         fechaFormateada = fecha;
         diaSemanaCapitalizado = '';
       }

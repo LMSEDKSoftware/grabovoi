@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../config/env.dart';
+
 class NetDiagReport {
   final List<String> lines = [];
   void log(String msg) => lines.add('${DateTime.now().toIso8601String()}  $msg');
@@ -83,7 +85,7 @@ class NetDiagnostics {
         req.headers.set(HttpHeaders.userAgentHeader, 'Manifestacion/1.0');
         req.headers.set(HttpHeaders.acceptHeader, 'application/json');
         req.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
-        req.headers.set(HttpHeaders.authorizationHeader, 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndodGlhemdjeGRuZW1ycmdqanFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MjM2MzgsImV4cCI6MjA3NjA5OTYzOH0.1CFkusMrMKcvSU_-5RyGYPoKDM_yizuQMVGo7W3mXHU');
+        req.headers.set(HttpHeaders.authorizationHeader, 'Bearer ${Env.supabaseAnonKey}');
         final res = await req.close();
         rep.log('HTTP OK → status ${res.statusCode}');
         final body = await utf8.decodeStream(res);

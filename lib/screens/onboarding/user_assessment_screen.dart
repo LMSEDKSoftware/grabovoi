@@ -31,27 +31,27 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
 
   final List<Map<String, dynamic>> _pages = [
     {
-      'title': 'Conocimiento sobre Grabovoi',
+      'title': 'Conocimiento sobre Secuencias Gravitacionales',
       'subtitle': '¿Cuál es tu nivel de conocimiento sobre las secuencias de Grigori Grabovoi?',
       'type': 'single_choice',
       'options': [
         {
-          'value': 'principiante',
-          'text': 'Principiante',
-          'description': 'Nunca he usado secuencias de Grabovoi o las conozco muy poco',
-          'icon': Icons.eco,
+          'value': 'beginner',
+          'label': 'Principiante',
+          'description': 'Nunca he usado secuencias gravitacionales o las conozco muy poco',
+          'icon': Icons.school_outlined,
         },
         {
-          'value': 'intermedio',
-          'text': 'Intermedio',
-          'description': 'He usado algunas secuencias y conozco los conceptos básicos',
-          'icon': Icons.auto_awesome,
+          'value': 'intermediate',
+          'label': 'Intermedio',
+          'description': 'He practicado algunas veces y conozco los conceptos básicos',
+          'icon': Icons.trending_up,
         },
         {
-          'value': 'avanzado',
-          'text': 'Avanzado',
-          'description': 'Tengo experiencia significativa con las secuencias de Grabovoi',
-          'icon': Icons.star,
+          'value': 'advanced',
+          'label': 'Avanzado',
+          'description': 'Tengo experiencia significativa con las secuencias gravitacionales',
+          'icon': Icons.psychology,
         },
       ],
     },

@@ -6,15 +6,12 @@
         <domain includeSubdomains="true">supabase.co</domain>
         <domain includeSubdomains="true">supabase.io</domain>
         <trust-anchors>
-            <!-- Confiar en certificados del sistema -->
+            <!-- Confiar en certificados del sistema (Let's Encrypt, CA públicos) -->
             <certificates src="system"/>
-            <!-- Confiar en certificados de usuario (para desarrollo) -->
+            <!-- Certificados de usuario solo en debug; en release se recomienda quitar -->
             <certificates src="user"/>
         </trust-anchors>
-        <!-- Forzar TLS 1.2+ -->
-        <pin-set>
-            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
-        </pin-set>
+        <!-- Sin pin-set: permite conexión normal a Supabase. Para pinning, usar SHA-256 real del cert. -->
     </domain-config>
     
     <!-- Configuración por defecto para otros dominios -->

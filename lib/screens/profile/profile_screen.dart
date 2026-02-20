@@ -109,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         _isLoading = false;
       });
     } catch (e) {
-      print('Error cargando datos del usuario: $e');
+      debugPrint('Error cargando datos del usuario: $e');
       setState(() {
         _isLoading = false;
       });
@@ -151,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         );
       }
     } catch (e) {
-      print('Error cerrando sesión: $e');
+      debugPrint('Error cerrando sesión: $e');
     }
   }
 
@@ -817,7 +817,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                      delaySeconds: 5, // Más rápido para pruebas
                    );
                 } catch (e) {
-                  print('Error probando notificaciones: $e');
+                  debugPrint('Error probando notificaciones: $e');
                 }
               },
               ),
@@ -1379,7 +1379,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       future: permission.status,
       builder: (context, snapshot) {
         final status = snapshot.data ?? PermissionStatus.denied;
-        final isGranted = status.isGranted;
+        // En iOS: isLimited = fotos con acceso limitado; isProvisional = notificaciones provisionales
+        // Ambos son permisos efectivos para nuestro uso (avatar y alertas)
+        final isGranted = status.isGranted || status.isLimited || status.isProvisional;
         final isPermanentlyDenied = status.isPermanentlyDenied;
         
         return Container(
@@ -1885,43 +1887,61 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         try {
           // Asegurar que la URL tenga el protocolo https://
           String finalUrl = url.trim();
+          if (finalUrl.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Enlace no disponible.'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+            return;
+          }
           if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
             finalUrl = 'https://$finalUrl';
           }
           
-          final uri = Uri.parse(finalUrl);
+          final uri = Uri.tryParse(finalUrl);
+          if (uri == null || uri.host.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('La dirección del enlace no es válida.'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+            return;
+          }
           
-          // Intentar abrir con platformDefault primero (más compatible en Android)
+          // En iOS, Safari muestra "la dirección no es válida" con el navegador in-app
+          // (platformDefault). Usar externalApplication evita el error en iOS y funciona en Android.
           try {
             final launched = await launchUrl(
               uri,
-              mode: LaunchMode.platformDefault,
+              mode: LaunchMode.externalApplication,
             );
-            
-            if (!launched) {
-              // Si falla, intentar con externalApplication
-              await launchUrl(
-                uri,
-                mode: LaunchMode.externalApplication,
+            if (!launched && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('No se pudo abrir el enlace. Verifica tu conexión a internet.'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 3),
+                ),
               );
             }
-          } catch (launchError) {
-            // Si falla platformDefault, intentar externalApplication
-            try {
-              await launchUrl(
-                uri,
-                mode: LaunchMode.externalApplication,
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('No se pudo abrir el enlace. Verifica tu conexión a internet.'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 3),
+                ),
               );
-            } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('No se pudo abrir el enlace. Verifica tu conexión a internet.'),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              }
             }
           }
         } catch (e) {

@@ -140,6 +140,7 @@ class PermissionsService {
   }
 
   /// Verificar si los permisos están otorgados
+  /// En iOS: isLimited (fotos) e isProvisional (notificaciones) son permisos efectivos
   Future<Map<String, bool>> checkPermissionsStatus() async {
     final notificationStatus = await Permission.notification.status;
     
@@ -153,8 +154,8 @@ class PermissionsService {
     final photoStatus = await photoPermission.status;
 
     return {
-      'notifications': notificationStatus.isGranted,
-      'photos': photoStatus.isGranted,
+      'notifications': notificationStatus.isGranted || notificationStatus.isProvisional,
+      'photos': photoStatus.isGranted || photoStatus.isLimited,
     };
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -28,7 +29,7 @@ class UserProgressService {
 
       return response;
     } catch (e) {
-      print('Error obteniendo progreso del usuario: $e');
+      debugPrint('Error obteniendo progreso del usuario: $e');
       return null;
     }
   }
@@ -57,9 +58,9 @@ class UserProgressService {
           .update(data)
           .eq('user_id', _authService.currentUser!.id);
 
-      print('✅ Progreso del usuario actualizado');
+      debugPrint('✅ Progreso del usuario actualizado');
     } catch (e) {
-      print('Error actualizando progreso: $e');
+      debugPrint('Error actualizando progreso: $e');
     }
   }
 
@@ -87,25 +88,25 @@ class UserProgressService {
       final currentUser = _supabase.auth.currentUser;
       final userIdFromAuth = _authService.currentUser!.id;
       
-      print('🔍 [DEBUG user_actions] Verificando autenticación:');
-      print('   userId desde AuthService: $userIdFromAuth');
-      print('   auth.uid() desde Supabase: ${currentUser?.id}');
-      print('   ¿Coinciden?: ${currentUser?.id == userIdFromAuth}');
-      print('   ¿Usuario autenticado?: ${currentUser != null}');
+      debugPrint('🔍 [DEBUG user_actions] Verificando autenticación:');
+      debugPrint('   userId desde AuthService: $userIdFromAuth');
+      debugPrint('   auth.uid() desde Supabase: ${currentUser?.id}');
+      debugPrint('   ¿Coinciden?: ${currentUser?.id == userIdFromAuth}');
+      debugPrint('   ¿Usuario autenticado?: ${currentUser != null}');
       
       if (currentUser == null) {
-        print('❌ [DEBUG user_actions] ERROR: No hay usuario autenticado en Supabase');
+        debugPrint('❌ [DEBUG user_actions] ERROR: No hay usuario autenticado en Supabase');
         throw Exception('Usuario no autenticado en Supabase');
       }
       
       if (currentUser.id != userIdFromAuth) {
-        print('❌ [DEBUG user_actions] ERROR: userId no coincide');
-        print('   AuthService.userId: $userIdFromAuth');
-        print('   Supabase.auth.uid(): ${currentUser.id}');
+        debugPrint('❌ [DEBUG user_actions] ERROR: userId no coincide');
+        debugPrint('   AuthService.userId: $userIdFromAuth');
+        debugPrint('   Supabase.auth.uid(): ${currentUser.id}');
         throw Exception('userId no coincide con auth.uid()');
       }
       
-      print('✅ [DEBUG user_actions] Autenticación verificada, insertando acción...');
+      debugPrint('✅ [DEBUG user_actions] Autenticación verificada, insertando acción...');
       
       await _supabase.from('user_actions').insert({
         'user_id': userIdFromAuth,
@@ -121,7 +122,7 @@ class UserProgressService {
         'recorded_at': now.toIso8601String(),
       });
       
-      print('✅ [DEBUG user_actions] Acción insertada correctamente');
+      debugPrint('✅ [DEBUG user_actions] Acción insertada correctamente');
 
       // Ahora obtener estadísticas COMPLETAS desde user_actions y recalcular
       final estadisticas = await _obtenerEstadisticasCompletas();
@@ -173,7 +174,7 @@ class UserProgressService {
           'created_at': now.toIso8601String(),
           'updated_at': now.toIso8601String(),
         });
-        print('✅ Progreso inicial creado');
+        debugPrint('✅ Progreso inicial creado');
       } else {
         await updateUserProgress(
           diasConsecutivos: diasConsecutivos,
@@ -183,7 +184,7 @@ class UserProgressService {
         );
       }
 
-      print('✅ Sesión registrada y progreso actualizado. Nivel: $nivel');
+      debugPrint('✅ Sesión registrada y progreso actualizado. Nivel: $nivel');
       
       // NOTA: Ya no actualizamos user_code_history porque los datos están en user_actions
       // La consulta de códigos explorados ahora lee directamente desde user_actions
@@ -197,10 +198,10 @@ class UserProgressService {
         // Actualizar luz cuántica basada en la racha de días
         await rewardsService.actualizarLuzCuanticaPorRacha(diasConsecutivos);
       } catch (e) {
-        print('⚠️ Error verificando recompensas por racha: $e');
+        debugPrint('⚠️ Error verificando recompensas por racha: $e');
       }
     } catch (e) {
-      print('Error registrando sesión: $e');
+      debugPrint('Error registrando sesión: $e');
     }
   }
   
@@ -244,7 +245,7 @@ class UserProgressService {
         'total_minutos': totalMinutos,
       };
     } catch (e) {
-      print('Error obteniendo estadísticas: $e');
+      debugPrint('Error obteniendo estadísticas: $e');
       return {};
     }
   }
@@ -329,7 +330,7 @@ class UserProgressService {
         });
       }
     } catch (e) {
-      print('Error actualizando historial de códigos: $e');
+      debugPrint('Error actualizando historial de códigos: $e');
     }
   }
 
@@ -345,7 +346,7 @@ class UserProgressService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error obteniendo estadísticas: $e');
+      debugPrint('Error obteniendo estadísticas: $e');
       return [];
     }
   }
@@ -387,7 +388,7 @@ class UserProgressService {
 
       return normalized;
     } catch (e) {
-      print('Error obteniendo historial de sesiones (user_actions): $e');
+      debugPrint('Error obteniendo historial de sesiones (user_actions): $e');
       return [];
     }
   }
@@ -456,7 +457,7 @@ class UserProgressService {
       
       return sortedCodes.take(limit).toList();
     } catch (e) {
-      print('Error obteniendo códigos más usados: $e');
+      debugPrint('Error obteniendo códigos más usados: $e');
       return [];
     }
   }
@@ -495,7 +496,7 @@ class UserProgressService {
 
       return repeatedCodes;
     } catch (e) {
-      print('Error obteniendo códigos repetidos: $e');
+      debugPrint('Error obteniendo códigos repetidos: $e');
       return {};
     }
   }
@@ -532,7 +533,7 @@ class UserProgressService {
 
       return pilotedCodes;
     } catch (e) {
-      print('Error obteniendo códigos pilotados: $e');
+      debugPrint('Error obteniendo códigos pilotados: $e');
       return {};
     }
   }
@@ -592,9 +593,9 @@ class UserProgressService {
           'assessment_data': assessmentData,
           'created_at': DateTime.now().toIso8601String(),
         });
-        print('✅ Evaluación guardada en user_assessments');
+        debugPrint('✅ Evaluación guardada en user_assessments');
       } catch (e) {
-        print('⚠️ No se pudo guardar en user_assessments (tabla puede no existir o error de RLS): $e');
+        debugPrint('⚠️ No se pudo guardar en user_assessments (tabla puede no existir o error de RLS): $e');
         // Continuar con el guardado en user_progress que es más importante
       }
 
@@ -619,9 +620,9 @@ class UserProgressService {
         'updated_at': DateTime.now().toIso8601String(),
       });
 
-      print('✅ Evaluación del usuario guardada en Supabase');
+      debugPrint('✅ Evaluación del usuario guardada en Supabase');
     } catch (e) {
-      print('⚠️ Error guardando evaluación en Supabase (pero guardada localmente): $e');
+      debugPrint('⚠️ Error guardando evaluación en Supabase (pero guardada localmente): $e');
     }
   }
 
@@ -666,20 +667,20 @@ class UserProgressService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_assessment', jsonEncode(assessmentData));
-      print('✅ Evaluación guardada localmente');
+      debugPrint('✅ Evaluación guardada localmente');
     } catch (e) {
-      print('Error guardando evaluación localmente: $e');
+      debugPrint('Error guardando evaluación localmente: $e');
     }
   }
 
   /// Obtener evaluación del usuario - SIMPLIFICADO con fallback a SharedPreferences
   Future<Map<String, dynamic>?> getUserAssessment() async {
     if (!_authService.isLoggedIn) {
-      print('❌ Usuario no autenticado');
+      debugPrint('❌ Usuario no autenticado');
       return null;
     }
 
-    print('🔍 Buscando evaluación para usuario: ${_authService.currentUser!.id}');
+    debugPrint('🔍 Buscando evaluación para usuario: ${_authService.currentUser!.id}');
 
     // Primero intentar obtener desde user_progress (más confiable)
     try {
@@ -698,12 +699,12 @@ class UserProgressService {
             'completed_at': preferences['assessment_date'],
             'is_complete': true,
           };
-          print('✅ Evaluación encontrada en user_progress');
+          debugPrint('✅ Evaluación encontrada en user_progress');
           return assessmentData;
         }
       }
     } catch (e) {
-      print('⚠️ Error obteniendo evaluación de user_progress: $e');
+      debugPrint('⚠️ Error obteniendo evaluación de user_progress: $e');
     }
 
     // Intentar obtener desde user_assessments (puede no existir)
@@ -717,14 +718,14 @@ class UserProgressService {
           .maybeSingle();
 
       if (response != null && response['assessment_data'] != null) {
-        print('✅ Evaluación encontrada en user_assessments');
+        debugPrint('✅ Evaluación encontrada en user_assessments');
         final assessmentData = response['assessment_data'] as Map<String, dynamic>;
         // Asegurarse de que tiene el flag is_complete
         assessmentData['is_complete'] = true;
         return assessmentData;
       }
     } catch (e) {
-      print('⚠️ Error obteniendo evaluación de user_assessments (tabla puede no existir): $e');
+      debugPrint('⚠️ Error obteniendo evaluación de user_assessments (tabla puede no existir): $e');
       // Continuar con fallback a SharedPreferences
     }
 
@@ -736,14 +737,14 @@ class UserProgressService {
         final assessmentData = jsonDecode(assessmentJson) as Map<String, dynamic>;
         // Asegurarse de que tiene el flag is_complete
         assessmentData['is_complete'] = true;
-        print('✅ Evaluación encontrada en SharedPreferences (fallback)');
+        debugPrint('✅ Evaluación encontrada en SharedPreferences (fallback)');
         return assessmentData;
       }
     } catch (e) {
-      print('⚠️ Error obteniendo evaluación de SharedPreferences: $e');
+      debugPrint('⚠️ Error obteniendo evaluación de SharedPreferences: $e');
     }
 
-    print('❌ No se encontró evaluación ni en Supabase ni localmente');
+    debugPrint('❌ No se encontró evaluación ni en Supabase ni localmente');
     return null;
   }
 
@@ -761,7 +762,7 @@ class UserProgressService {
     
     for (final field in requiredFields) {
       if (!assessment.containsKey(field) || assessment[field] == null) {
-        print('❌ Campo faltante en evaluación: $field');
+        debugPrint('❌ Campo faltante en evaluación: $field');
         return false;
       }
       
@@ -769,7 +770,7 @@ class UserProgressService {
       if (field == 'goals' || field == 'preferences') {
         final value = assessment[field];
         if (value is! List || value.isEmpty) {
-          print('❌ Lista vacía en evaluación: $field');
+          debugPrint('❌ Lista vacía en evaluación: $field');
           return false;
         }
       }
@@ -779,7 +780,7 @@ class UserProgressService {
           field == 'time_available' || field == 'motivation') {
         final value = assessment[field];
         if (value is! String || value.isEmpty) {
-          print('❌ String vacío en evaluación: $field');
+          debugPrint('❌ String vacío en evaluación: $field');
           return false;
         }
       }
@@ -787,11 +788,11 @@ class UserProgressService {
     
     // Verificar que tenga el flag de completado
     if (assessment['is_complete'] != true) {
-      print('❌ Evaluación no marcada como completa');
+      debugPrint('❌ Evaluación no marcada como completa');
       return false;
     }
     
-    print('✅ Evaluación completa y válida');
+    debugPrint('✅ Evaluación completa y válida');
     return true;
   }
 }

@@ -109,7 +109,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Aprende y profundiza en los números de Grabovoi',
+                            'Aprende y profundiza en los Números Gravitacionales',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               color: Colors.white70,

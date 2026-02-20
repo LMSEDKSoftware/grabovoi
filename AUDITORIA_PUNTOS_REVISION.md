@@ -3,11 +3,13 @@
 **Fecha de auditoría:** 2025  
 **Objetivo:** Identificar posibles fuentes de errores sin modificar código. Revisar detalladamente cada punto antes de aplicar cambios.
 
+**Estado de implementación:** Ver `IMPLEMENTACION_AVANCE.md` para el avance actual. Items marcados con ☑ están culminados.
+
 ---
 
 ## 1. SEGURIDAD
 
-### 1.1 API Keys y secretos hardcodeados
+### ☑ 1.1 API Keys y secretos hardcodeados (CULMINADO)
 - **Archivos afectados:**
   - `lib/services/api_service.dart` - apiKey Supabase anon hardcodeada
   - `lib/services/robust_api_service.dart` - _apiKey hardcodeada
@@ -19,7 +21,7 @@
 - **Riesgo:** Exposición de credenciales en repositorio, rotación imposible sin redeploy.
 - **Revisar:** Migrar todas las APIs a `Env` o variables de entorno. Nunca commitear keys en código.
 
-### 1.2 SSL Bypass en producción
+### ☑ 1.2 SSL Bypass en producción (CULMINADO)
 - **Archivos afectados:**
   - `lib/services/api_service.dart` (líneas 127-131) - En el primer intento usa `SecureHttp.createUnsafeClient()` que acepta **cualquier** certificado SSL.
   - `lib/services/simple_api_service.dart` (líneas 66-71) - `badCertificateCallback` retorna `true` siempre.
@@ -30,14 +32,14 @@
 
 ## 2. AUTENTICACIÓN Y ESTADO
 
-### 2.1 Listeners de Supabase sin cancelar
+### ☑ 2.1 Listeners de Supabase sin cancelar (CULMINADO)
 - **Archivos afectados:**
   - `lib/main.dart` (línea 64) - `Supabase.instance.client.auth.onAuthStateChange.listen(...)` no se guarda ni cancela.
   - `lib/widgets/auth_wrapper.dart` (línea 39) - Mismo listener en `initState`, sin `StreamSubscription` ni `cancel()` en `dispose`.
 - **Riesgo:** Posible fuga de memoria; listeners activos tras desmontar widgets; llamadas a `_checkAuthStatus` con widget desmontado.
 - **Revisar:** Guardar `StreamSubscription` y llamar `.cancel()` en `dispose`.
 
-### 2.2 setState / Navigator sin verificar `mounted`
+### ☑ 2.2 setState / Navigator sin verificar `mounted` (CULMINADO)
 - **Archivos afectados:**
   - `lib/widgets/subscription_welcome_modal.dart` (líneas 62-66): `_loadRemainingDays` llama `setState` sin comprobar `mounted` antes del `await`.
   - `lib/widgets/subscription_welcome_modal.dart` (líneas 75-82): `Future.delayed` usa `Navigator.of(context).push` sin verificar `mounted` tras el delay; el contexto puede estar desmontado.
@@ -48,7 +50,7 @@
 
 ## 3. BASE DE DATOS (SUPABASE)
 
-### 3.1 Uso de `.single()` sin try-catch
+### ☑ 3.1 Uso de `.single()` sin try-catch (CULMINADO – ya protegidos)
 - **Archivos afectados (entre otros):**
   - `lib/screens/codes/code_detail_screen.dart` (líneas 1016-1018, 1918-1920) - `_obtenerCategoriaPorCodigo`
   - `lib/screens/codes/repetition_session_screen.dart` (líneas 2360-2362)
@@ -60,7 +62,7 @@
 - **Riesgo:** `PgException` o similar si la consulta no devuelve exactamente una fila (0 o 2+).
 - **Revisar:** Envolver en try-catch o usar `.maybeSingle()` con manejo de `null`.
 
-### 3.2 Tablas / columnas que pueden no existir
+### ☑ 3.2 Tablas / columnas que pueden no existir (CULMINADO – fallbacks en StoreConfigService)
 - **StoreConfigService** usa:
   - `paquetes_cristales`
   - `elementos_tienda`
@@ -72,12 +74,12 @@
 
 ## 4. VARIABLES DE ENTORNO Y CONFIGURACIÓN
 
-### 4.1 Web sin .env
+### ☑ 4.1 Web sin .env (CULMINADO – validación en main, doc en GUIA)
 - **Archivos:** `lib/config/env.dart`, `lib/main.dart`
 - **Riesgo:** En web, `dotenv` no carga `.env`; se depende de `--dart-define` vía `launch_chrome.sh`. Si se lanza sin ese script, Supabase/OpenAI pueden quedar sin configurar.
 - **Revisar:** Documentar y validar en startup que `SUPABASE_URL` y `SUPABASE_ANON_KEY` estén definidos; fallar con mensaje claro si faltan.
 
-### 4.2 OpenAI API Key vacía
+### ☑ 4.2 OpenAI API Key vacía (CULMINADO – verificación antes de llamar)
 - **Archivos:** `lib/screens/biblioteca/static_biblioteca_screen.dart`, `lib/screens/pilotaje/quantum_pilotage_screen.dart` - `Env.openAiKey`
 - **Riesgo:** Si está vacía, las llamadas a OpenAI pueden devolver 401 o errores poco informativos.
 - **Revisar:** Verificar que la key esté configurada antes de llamar a la API; deshabilitar o mostrar mensaje amigable si no está.
@@ -86,12 +88,12 @@
 
 ## 5. ASINCRONÍA Y RACE CONDITIONS
 
-### 5.1 AuthWrapper y `_checkAuthStatus` concurrente
+### ☑ 5.1 AuthWrapper y `_checkAuthStatus` concurrente (CULMINADO)
 - **Archivo:** `lib/widgets/auth_wrapper.dart`
 - **Riesgo:** `onAuthStateChange` puede disparar `_checkAuthStatus` varias veces seguidas; `didChangeDependencies` también lo llama. Riesgo de condiciones de carrera y múltiples `setState`.
 - **Revisar:** Añadir debounce, flag de “en progreso” o cancelación del `Future` anterior.
 
-### 5.2 Navegación tras `Future.delayed`
+### ☑ 5.2 Navegación tras `Future.delayed` (CULMINADO – navigator capturado)
 - **Archivo:** `lib/widgets/subscription_welcome_modal.dart` (líneas 75-82)
 - **Riesgo:** Tras 300 ms el widget puede estar desmontado; usar `context` o `Navigator` puede fallar.
 - **Revisar:** Comprobar `mounted` antes de navegar; o usar un `Completer`/callback controlado.
@@ -100,12 +102,12 @@
 
 ## 6. DEPENDENCIAS EXTERNAS
 
-### 6.1 Cliente HTTP sin cerrar
+### ☑ 6.1 Cliente HTTP sin cerrar (CULMINADO – try/finally con .close())
 - **Archivos:** `lib/services/api_service.dart`, `lib/services/simple_api_service.dart`
 - **Riesgo:** Se crean `http.Client` (o `IOClient`) en cada petición; no se llama `.close()`. Posible fuga de recursos en uso intensivo.
 - **Revisar:** Reutilizar un cliente (singleton) o asegurar `.close()` cuando corresponda.
 
-### 6.2 Timeouts y reintentos
+### ☑ 6.2 Timeouts y reintentos (DOCUMENTADO – docs/TIMEOUTS_Y_REINTENTOS.md)
 - **Archivos:** Varios servicios de API
 - **Riesgo:** Timeouts fijos pueden ser cortos en redes lentas; reintentos sin backoff exponencial pueden saturar el servidor.
 - **Revisar:** Ajustar timeouts y estrategia de reintentos según uso real.
@@ -114,7 +116,7 @@
 
 ## 7. UI / FLUTTER
 
-### 7.1 `print()` en producción
+### ☑ 7.1 `print()` en producción (CULMINADO – lotes: api_service, simple_api_service)
 - **Archivos:** Casi todos los servicios y varias pantallas
 - **Riesgo:** Ruido en logs, posible fuga de información sensible, impacto en rendimiento.
 - **Revisar:** Sustituir por `debugPrint`, `log` de `dart:developer` o un logger condicionado a modo debug.
@@ -150,7 +152,7 @@
 - **Archivo:** `ios/Runner/Info.plist`
 - **Revisar:** Confirmar que `CFBundleURLTypes` para OAuth está bien configurado (ya añadido). Revisar descripciones de uso de cámara, micrófono, fotos, Face ID.
 
-### 9.2 Android - network_security_config
+### ☑ 9.2 Android - network_security_config (CULMINADO – pin-set placeholder eliminado)
 - **Archivo:** `android/app/src/main/res/xml/network_security_config.xml`
 - **Revisar:** No debe permitir cleartext ni confiar en certificados no válidos en release.
 
@@ -158,7 +160,7 @@
 
 ## 10. SCRIPTS Y HERRAMIENTAS
 
-### 10.1 Scripts con credenciales
+### ☑ 10.1 Scripts con credenciales (CULMINADO – export_codes usa env/dart-define)
 - **Archivo:** `lib/scripts/export_codes_from_supabase.dart`
 - **Riesgo:** API key en código fuente.
 - **Revisar:** Leer la key desde variable de entorno o archivo no versionado.

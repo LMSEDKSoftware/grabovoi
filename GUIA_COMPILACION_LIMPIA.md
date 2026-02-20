@@ -1,5 +1,30 @@
 # Guía de Compilación Limpia
 
+## Lanzamiento en Web (Chrome)
+
+En web, Supabase requiere `SUPABASE_URL` y `SUPABASE_ANON_KEY` vía `--dart-define` porque `.env` no se carga como asset. **Siempre** lanza la app web con:
+
+```bash
+./scripts/launch_chrome.sh
+```
+
+Ese script carga `.env` y pasa las variables por `--dart-define`. Si ejecutas `flutter run -d chrome` directamente sin el script, las peticiones a Supabase fallarán.
+
+### Auditoría en modo DEBUG (Chrome)
+
+Para verificar que la app compile, analice sin errores y funcione en Chrome:
+
+```bash
+./scripts/auditoria_debug_chrome.sh
+```
+
+- Sin argumentos: ejecuta `flutter analyze`, `flutter build web --debug`, `flutter test`, lanza la app en Chrome y verifica que el servidor responda.
+- Con `--no-launch`: solo análisis y build, sin lanzar Chrome.
+
+Los logs se guardan en `logs/auditoria_debug_YYYYMMDD_HHMMSS.log`.
+
+---
+
 ## Por qué ocurren los errores "Operation not permitted"
 A menudo, al ejecutar comandos como `flutter clean` o `flutter build`, se generan archivos temporales (especialmente el `lockfile` en la caché de Flutter) con permisos de `root` si se usó `sudo` previamente o si hubo un conflicto de permisos. Esto impide que ejecuciones posteriores funcionen correctamente.
 

@@ -347,7 +347,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         if (coincidenciasExactas.isNotEmpty) {
           _codigosFiltrados = coincidenciasExactas;
           _mostrarResultados = true;
-          print('✅ Coincidencia exacta encontrada: ${coincidenciasExactas.length} códigos');
+          debugPrint('✅ Coincidencia exacta encontrada: ${coincidenciasExactas.length} códigos');
         } else {
           // Si no hay coincidencias exactas, buscar coincidencias parciales
           _codigosFiltrados = _codigos.where((codigo) {
@@ -356,7 +356,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                    codigo.categoria.toLowerCase().contains(query.toLowerCase());
           }).toList();
           _mostrarResultados = true;
-          print('🔍 Coincidencias parciales encontradas: ${_codigosFiltrados.length} códigos');
+          debugPrint('🔍 Coincidencias parciales encontradas: ${_codigosFiltrados.length} códigos');
         }
         
         // NO mostrar modal automáticamente - esperar confirmación del usuario
@@ -367,7 +367,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
   void _confirmarBusqueda() async {
     if (_queryBusqueda.isNotEmpty) {
-      print('🔍 Confirmando búsqueda para: $_queryBusqueda');
+      debugPrint('🔍 Confirmando búsqueda para: $_queryBusqueda');
       
       // Refrescar el repositorio antes de buscar para asegurar datos actualizados
       await CodigosRepository().refreshCodigos();
@@ -415,17 +415,17 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           try {
             final codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(_queryBusqueda);
             if (codigosPorTitulo.isNotEmpty) {
-              print('🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
+              debugPrint('🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
               coincidenciasSimilares = codigosPorTitulo;
             }
           } catch (e) {
-            print('⚠️ Error buscando en títulos relacionados: $e');
+            debugPrint('⚠️ Error buscando en títulos relacionados: $e');
           }
         }
       }
       
       if (coincidenciasExactas.isNotEmpty) {
-        print('✅ Coincidencias exactas encontradas: ${coincidenciasExactas.length} códigos');
+        debugPrint('✅ Coincidencias exactas encontradas: ${coincidenciasExactas.length} códigos');
         setState(() {
           _codigosFiltrados = coincidenciasExactas;
           _mostrarResultados = true;
@@ -434,7 +434,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       }
       
       if (coincidenciasSimilares.isNotEmpty) {
-        print('🔍 Coincidencias similares encontradas: ${coincidenciasSimilares.length} códigos');
+        debugPrint('🔍 Coincidencias similares encontradas: ${coincidenciasSimilares.length} códigos');
         setState(() {
           _codigosFiltrados = coincidenciasSimilares;
           _mostrarResultados = true;
@@ -443,7 +443,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       }
       
       // 3. TERCERO: Si no hay coincidencias exactas ni similares, mostrar modal de búsqueda profunda
-      print('❌ No se encontraron coincidencias exactas ni similares para: $_queryBusqueda');
+      debugPrint('❌ No se encontraron coincidencias exactas ni similares para: $_queryBusqueda');
       setState(() {
         _codigoNoEncontrado = _queryBusqueda;
         _showOptionsModal = true;
@@ -453,13 +453,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
 
   Future<String?> _guardarCodigoEnBaseDatos(CodigoGrabovoi codigo) async {
     try {
-      print('💾 Verificando si el código ya existe: ${codigo.codigo}');
+      debugPrint('💾 Verificando si el código ya existe: ${codigo.codigo}');
       
       // Verificar si el código ya existe
       final existe = await SupabaseService.codigoExiste(codigo.codigo);
       
       if (existe) {
-        print('⚠️ El código ${codigo.codigo} ya existe en la base de datos');
+        debugPrint('⚠️ El código ${codigo.codigo} ya existe en la base de datos');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -473,13 +473,13 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         return null; // No se creó nuevo código
       }
       
-      print('💾 Guardando código nuevo en base de datos: ${codigo.codigo}');
-      print('📋 Información: ${codigo.nombre} - ${codigo.categoria}');
+      debugPrint('💾 Guardando código nuevo en base de datos: ${codigo.codigo}');
+      debugPrint('📋 Información: ${codigo.nombre} - ${codigo.categoria}');
       
       // Usar crearCodigo para obtener el ID del código creado
       final codigoCreado = await SupabaseService.crearCodigo(codigo);
       
-      print('✅ Código guardado exitosamente en la base de datos con ID: ${codigoCreado.id}');
+      debugPrint('✅ Código guardado exitosamente en la base de datos con ID: ${codigoCreado.id}');
       
       // Mostrar mensaje de éxito
       ScaffoldMessenger.of(context).showSnackBar(
@@ -495,8 +495,8 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       
       return codigoCreado.id; // Devolver el ID del código creado
     } catch (e) {
-      print('❌ Error al guardar en la base de datos: $e');
-      print('🔍 Tipo de error: ${e.runtimeType}');
+      debugPrint('❌ Error al guardar en la base de datos: $e');
+      debugPrint('🔍 Tipo de error: ${e.runtimeType}');
       
       // Determinar el tipo de error y mostrar mensaje apropiado
       String mensajeError = 'No se pudo guardar la secuencia.';
@@ -571,7 +571,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       ).timeout(const Duration(seconds: 3));
       return response.statusCode >= 200 && response.statusCode < 500;
     } catch (e) {
-      print('⚠️ Verificación de conexión: $e');
+      debugPrint('⚠️ Verificación de conexión: $e');
       // En caso de error, asumir que hay conexión y dejar que la llamada real falle si no hay
       // Esto evita falsos negativos
       return true;
@@ -583,7 +583,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     final tieneInternet = await _verificarConexionInternet();
     
     if (!tieneInternet) {
-      print('⚠️ No hay conexión a internet, no se puede usar IA');
+      debugPrint('⚠️ No hay conexión a internet, no se puede usar IA');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -627,7 +627,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     }
     
     try {
-      print('🚀 Iniciando búsqueda profunda para código: $codigo');
+      debugPrint('🚀 Iniciando búsqueda profunda para código: $codigo');
       
       // Registrar inicio de búsqueda
       _inicioBusqueda = DateTime.now();
@@ -647,9 +647,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       // Guardar búsqueda inicial
       try {
         _busquedaActualId = await BusquedasProfundasService.guardarBusquedaProfunda(busqueda);
-        print('📝 Búsqueda registrada con ID: $_busquedaActualId');
+        debugPrint('📝 Búsqueda registrada con ID: $_busquedaActualId');
       } catch (e) {
-        print('⚠️ Error al registrar búsqueda inicial: $e');
+        debugPrint('⚠️ Error al registrar búsqueda inicial: $e');
         _busquedaActualId = null; // Continuar sin registro si falla
       }
       
@@ -691,7 +691,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       final hayCodigosParaSeleccionar = _mostrarSeleccionCodigos && _codigosEncontrados.isNotEmpty;
       
       if (resultado != null) {
-        print('✅ Código encontrado: ${resultado.nombre}');
+        debugPrint('✅ Código encontrado: ${resultado.nombre}');
         
         // Agregar a la base de datos
         bool codigoGuardado = false;
@@ -701,7 +701,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           codigoGuardado = codigoId != null;
           // NO mostrar mensaje aquí porque _guardarCodigoEnBaseDatos ya lo muestra
         } catch (e) {
-          print('⚠️ Error al guardar código: $e');
+          debugPrint('⚠️ Error al guardar código: $e');
         }
         
         // Si el código ya existe, considerarlo como "guardado" exitosamente
@@ -709,7 +709,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           // Verificar si el código ya existe en la base de datos
           final existe = await SupabaseService.codigoExiste(resultado.codigo);
           if (existe) {
-            print('ℹ️ El código ya existe en la base de datos, considerando como guardado');
+            debugPrint('ℹ️ El código ya existe en la base de datos, considerando como guardado');
             codigoGuardado = true;
           }
         }
@@ -727,9 +727,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   );
 
                   await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
-                  print('📝 Búsqueda actualizada con resultado exitoso - Código ID: $codigoId');
+                  debugPrint('📝 Búsqueda actualizada con resultado exitoso - Código ID: $codigoId');
                 } catch (e) {
-                  print('⚠️ Error al actualizar búsqueda: $e');
+                  debugPrint('⚠️ Error al actualizar búsqueda: $e');
                 }
               }
         
@@ -743,12 +743,12 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         });
         // NO mostrar mensaje aquí porque _guardarCodigoEnBaseDatos ya lo muestra
       } else {
-        print('❌ Código no encontrado directamente: $codigo');
+        debugPrint('❌ Código no encontrado directamente: $codigo');
         
         // Verificar si se mostraron códigos en el modal de selección (códigos encontrados por IA)
         // Si es así, NO mostrar error porque el usuario puede seleccionar de la lista
         if (hayCodigosParaSeleccionar) {
-          print('ℹ️ Se mostraron códigos en modal de selección (${_codigosEncontrados.length} códigos), esperando selección del usuario');
+          debugPrint('ℹ️ Se mostraron códigos en modal de selección (${_codigosEncontrados.length} códigos), esperando selección del usuario');
           
           // Actualizar registro de búsqueda indicando que se encontraron códigos (pendiente selección)
           if (_busquedaActualId != null) {
@@ -763,9 +763,9 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               );
               
               await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
-              print('📝 Búsqueda actualizada: códigos encontrados, pendiente selección');
+              debugPrint('📝 Búsqueda actualizada: códigos encontrados, pendiente selección');
             } catch (e) {
-              print('⚠️ Error al actualizar búsqueda: $e');
+              debugPrint('⚠️ Error al actualizar búsqueda: $e');
             }
           }
           
@@ -774,7 +774,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         }
         
         // Solo mostrar error si realmente no se encontró nada
-        print('❌ No se encontraron códigos para: $codigo');
+        debugPrint('❌ No se encontraron códigos para: $codigo');
         
         // Actualizar registro de búsqueda con resultado fallido
         if (_busquedaActualId != null) {
@@ -789,7 +789,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           );
           
           await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
-          print('📝 Búsqueda actualizada con resultado fallido');
+          debugPrint('📝 Búsqueda actualizada con resultado fallido');
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -801,7 +801,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         );
       }
     } catch (e) {
-      print('❌ Error en búsqueda profunda: $e');
+      debugPrint('❌ Error en búsqueda profunda: $e');
       
       // Actualizar registro de búsqueda con error
       if (_busquedaActualId != null) {
@@ -822,7 +822,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
         );
         
         await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
-        print('📝 Búsqueda actualizada con error');
+        debugPrint('📝 Búsqueda actualizada con error');
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -847,8 +847,22 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     // Verificar conexión antes de llamar a OpenAI
     final tieneInternet = await _verificarConexionInternet();
     
+    if (Env.openAiKey.isEmpty) {
+      debugPrint('⚠️ OPENAI_API_KEY no configurada. Búsqueda con IA deshabilitada.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('La búsqueda con IA no está configurada. Configura OPENAI_API_KEY.'),
+            backgroundColor: Colors.orange.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return null;
+    }
+    
     if (!tieneInternet) {
-      print('❌ Sin conexión a internet, no se puede usar OpenAI');
+      debugPrint('❌ Sin conexión a internet, no se puede usar OpenAI');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -892,7 +906,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
     }
     
     try {
-      print('🔍 Buscando código $codigo con OpenAI...');
+      debugPrint('🔍 Buscando código $codigo con OpenAI...');
       final exactCode = exactCodeFromQuery(codigo);
       final isNumeric = isNumericQuery(codigo);
       const systemFase1 =
@@ -933,14 +947,14 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           final completionTokens = usage['completion_tokens'] ?? 0;
           _costoEstimadoOpenAI = ((promptTokens / 1000) * 0.0015) + ((completionTokens / 1000) * 0.002);
           
-          print('📊 Métricas de OpenAI:');
-          print('   Tokens totales: $_tokensUsadosOpenAI');
-          print('   Tokens prompt: $promptTokens');
-          print('   Tokens completion: $completionTokens');
-          print('   Costo estimado: \$${_costoEstimadoOpenAI.toStringAsFixed(4)}');
+          debugPrint('📊 Métricas de OpenAI:');
+          debugPrint('   Tokens totales: $_tokensUsadosOpenAI');
+          debugPrint('   Tokens prompt: $promptTokens');
+          debugPrint('   Tokens completion: $completionTokens');
+          debugPrint('   Costo estimado: \$${_costoEstimadoOpenAI.toStringAsFixed(4)}');
         }
         
-        print('🤖 Respuesta de OpenAI: $content');
+        debugPrint('🤖 Respuesta de OpenAI: $content');
         
         if (content != 'null' && content.isNotEmpty && content.toLowerCase() != 'null') {
           try {
@@ -948,11 +962,11 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             
             // Verificar si es formato de lista numerada (nuevo formato)
             if (cleanedContent.contains('1.') && cleanedContent.contains('—')) {
-              print('📋 Detectado formato de lista numerada');
+              debugPrint('📋 Detectado formato de lista numerada');
               final codigosEncontrados = await _parsearListaNumerada(cleanedContent);
               
               if (codigosEncontrados.isNotEmpty) {
-                print('✅ Códigos extraídos de lista: ${codigosEncontrados.length}');
+                debugPrint('✅ Códigos extraídos de lista: ${codigosEncontrados.length}');
                 
                 // Mostrar selección de códigos
                 setState(() {
@@ -963,7 +977,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 
                 return null; // No devolver código individual, mostrar selección
               } else {
-                print('❌ No se pudieron extraer códigos de la lista');
+                debugPrint('❌ No se pudieron extraer códigos de la lista');
                 _mostrarMensajeNoEncontrado();
               }
               return null;
@@ -972,7 +986,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             // Intentar parsear como JSON (formato anterior)
             // Limpiar y reparar JSON si es necesario
             if (!cleanedContent.endsWith('}') && !cleanedContent.endsWith(']')) {
-              print('🔧 Intentando reparar JSON malformado...');
+              debugPrint('🔧 Intentando reparar JSON malformado...');
               
               // Buscar el último objeto completo
               int lastCompleteObject = cleanedContent.lastIndexOf('}');
@@ -989,18 +1003,18 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   }
                   
                   cleanedContent = validPart;
-                  print('🔧 JSON reparado: ${cleanedContent.length} caracteres');
+                  debugPrint('🔧 JSON reparado: ${cleanedContent.length} caracteres');
                 }
               }
             }
             
             final responseData = jsonDecode(cleanedContent);
-            print('✅ Respuesta de OpenAI recibida: $responseData');
+            debugPrint('✅ Respuesta de OpenAI recibida: $responseData');
 
             // Flujo B: si no hay fuente externa → Fase 2 fallback (3 relacionados desde BD)
             final sinFuente = responseData['sin_fuente'] == true;
             if (sinFuente == true) {
-              print('ℹ️ OpenAI indica que no hay fuentes (sin_fuente = true). Ejecutando Fase 2 fallback.');
+              debugPrint('ℹ️ OpenAI indica que no hay fuentes (sin_fuente = true). Ejecutando Fase 2 fallback.');
               if (mounted) {
                 setState(() {
                   _buscandoRelacionadosFase2 = true;
@@ -1041,7 +1055,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
             // Verificar si hay códigos en la respuesta
             if (responseData['codigos'] != null && responseData['codigos'] is List) {
               final codigosList = responseData['codigos'] as List;
-              print('🔍 Códigos encontrados: ${codigosList.length}');
+              debugPrint('🔍 Códigos encontrados: ${codigosList.length}');
               
               // Asegurar que tenemos exactamente 3 opciones (o al menos 3)
               // Si hay más de 3, tomar solo los primeros 3
@@ -1061,11 +1075,11 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                   // VALIDAR que el código existe en la base de datos real
                   final codigoExiste = await _validarCodigoEnBaseDatos(codigoNumero);
                   if (!codigoExiste) {
-                    print('❌ CÓDIGO INVENTADO RECHAZADO: $codigoNumero - No existe en la base de datos');
+                    debugPrint('❌ CÓDIGO INVENTADO RECHAZADO: $codigoNumero - No existe en la base de datos');
                     continue;
                   }
                   
-                  print('✅ CÓDIGO VÁLIDO CONFIRMADO: $codigoNumero');
+                  debugPrint('✅ CÓDIGO VÁLIDO CONFIRMADO: $codigoNumero');
                   
                   final categoriaRaw = codigoData['categoria']?.toString() ?? '';
                   final nombreCodigo = codigoData['nombre']?.toString() ?? 'Secuencia encontrada por IA';
@@ -1085,7 +1099,7 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
               }
               
               if (codigosEncontrados.isNotEmpty) {
-                print('✅ Códigos válidos procesados: ${codigosEncontrados.length}');
+                debugPrint('✅ Códigos válidos procesados: ${codigosEncontrados.length}');
                 
                 // Mostrar selección de códigos (siempre mostrar las opciones disponibles)
                 setState(() {
@@ -1096,17 +1110,17 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
                 
                 return null; // No devolver código individual, mostrar selección
               } else {
-                print('❌ No se encontraron códigos válidos en la respuesta');
+                debugPrint('❌ No se encontraron códigos válidos en la respuesta');
                 // Mostrar mensaje de que no se encontraron códigos válidos
                 _mostrarMensajeNoEncontrado();
               }
             } else {
-              print('❌ Formato de respuesta inesperado: $responseData');
+              debugPrint('❌ Formato de respuesta inesperado: $responseData');
             }
           } catch (e) {
-            print('❌ Error parseando respuesta de OpenAI: $e');
-            print('📄 Contenido recibido: $content');
-            print('📄 Longitud del contenido: ${content.length} caracteres');
+            debugPrint('❌ Error parseando respuesta de OpenAI: $e');
+            debugPrint('📄 Contenido recibido: $content');
+            debugPrint('📄 Longitud del contenido: ${content.length} caracteres');
             
             // Intentar extraer códigos manualmente del texto
             await _extraerCodigosDelTexto(content);
@@ -1114,22 +1128,22 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
           }
         }
       } else {
-        print('❌ Error en respuesta de OpenAI: ${response.statusCode}');
-        print('📄 Respuesta: ${response.body}');
+        debugPrint('❌ Error en respuesta de OpenAI: ${response.statusCode}');
+        debugPrint('📄 Respuesta: ${response.body}');
       }
       
       // SEGUNDO: Si OpenAI no encuentra, buscar en base local (respaldo)
-      print('🔄 OpenAI no encontró el código, buscando en base local...');
+      debugPrint('🔄 OpenAI no encontró el código, buscando en base local...');
       final codigoConocido = _buscarCodigoConocido(codigo);
       if (codigoConocido != null) {
-        print('✅ Código encontrado en base de datos local: $codigo');
+        debugPrint('✅ Código encontrado en base de datos local: $codigo');
         return codigoConocido;
       }
       
-      print('❌ Código no encontrado ni en OpenAI ni en base local: $codigo');
+      debugPrint('❌ Código no encontrado ni en OpenAI ni en base local: $codigo');
       return null;
     } catch (e) {
-      print('❌ Error en búsqueda con OpenAI: $e');
+      debugPrint('❌ Error en búsqueda con OpenAI: $e');
       
       // Mostrar mensaje amigable al usuario si hay error de conexión
       if (mounted) {
@@ -1180,10 +1194,10 @@ class _QuantumPilotageScreenState extends State<QuantumPilotageScreen>
       }
       
       // En caso de error, intentar búsqueda local como respaldo
-      print('🔄 Error en OpenAI, buscando en base local como respaldo...');
+      debugPrint('🔄 Error en OpenAI, buscando en base local como respaldo...');
       final codigoConocido = _buscarCodigoConocido(codigo);
       if (codigoConocido != null) {
-        print('✅ Código encontrado en base de datos local (respaldo): $codigo');
+        debugPrint('✅ Código encontrado en base de datos local (respaldo): $codigo');
         return codigoConocido;
       }
       
@@ -1279,7 +1293,7 @@ OUTPUT (JSON ESTRICTO)
       if (items.length < 3) return null;
       return {'items': items, 'safety_note': safetyNote};
     } catch (e) {
-      print('❌ _buscarRelacionadosFase2: $e');
+      debugPrint('❌ _buscarRelacionadosFase2: $e');
       return null;
     }
   }
@@ -1304,10 +1318,10 @@ OUTPUT (JSON ESTRICTO)
           final codigoConGuiones = codigoConEspacios.replaceAll(' ', '_');
           final nombre = match.group(2)!.trim();
           
-          print('🔍 Procesando línea: $linea');
-          print('📋 Código con espacios: $codigoConEspacios');
-          print('📋 Código con guiones: $codigoConGuiones');
-          print('📋 Nombre extraído: $nombre');
+          debugPrint('🔍 Procesando línea: $linea');
+          debugPrint('📋 Código con espacios: $codigoConEspacios');
+          debugPrint('📋 Código con guiones: $codigoConGuiones');
+          debugPrint('📋 Nombre extraído: $nombre');
           
           // Validar código con lógica de sugerencias
           final validacion = await _validarCodigoConSugerencia(
@@ -1318,7 +1332,7 @@ OUTPUT (JSON ESTRICTO)
           
           if (validacion['existe'] == true) {
             if (validacion['necesitaSugerencia'] == true) {
-              print('⚠️ Código existe pero con tema diferente - Creando sugerencia');
+              debugPrint('⚠️ Código existe pero con tema diferente - Creando sugerencia');
               
               // Crear sugerencia
               await _crearSugerencia(
@@ -1337,7 +1351,7 @@ OUTPUT (JSON ESTRICTO)
                 color: '#FFD700',
               ));
             } else {
-              print('✅ Código válido confirmado: $codigoConGuiones');
+              debugPrint('✅ Código válido confirmado: $codigoConGuiones');
               
               codigosEncontrados.add(CodigoGrabovoi(
                 id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
@@ -1350,7 +1364,7 @@ OUTPUT (JSON ESTRICTO)
             }
           } else {
             // CASO 3: Código NO existe - Agregarlo como opción nueva para el usuario
-            print('⚠️ Código NO existe en BD - Agregando como opción para el usuario: $codigoConGuiones');
+            debugPrint('⚠️ Código NO existe en BD - Agregando como opción para el usuario: $codigoConGuiones');
             
             // Determinar la categoría correcta
             final categoria = _determinarCategoria(nombre);
@@ -1370,10 +1384,10 @@ OUTPUT (JSON ESTRICTO)
         }
       }
       
-      print('📊 Total de códigos válidos extraídos: ${codigosEncontrados.length}');
+      debugPrint('📊 Total de códigos válidos extraídos: ${codigosEncontrados.length}');
       return codigosEncontrados;
     } catch (e) {
-      print('❌ Error parseando lista numerada: $e');
+      debugPrint('❌ Error parseando lista numerada: $e');
       return [];
     }
   }
@@ -1393,7 +1407,7 @@ OUTPUT (JSON ESTRICTO)
       // Buscar en la lista de códigos cargados
       final codigoExiste = _codigos.any((c) => c.codigo == codigo);
       if (codigoExiste) {
-        print('✅ Código $codigo encontrado en la base de datos local');
+        debugPrint('✅ Código $codigo encontrado en la base de datos local');
         return true;
       }
       
@@ -1405,10 +1419,10 @@ OUTPUT (JSON ESTRICTO)
           .limit(1);
       
       final existe = response.isNotEmpty;
-      print('${existe ? "✅" : "❌"} Código $codigo ${existe ? "existe" : "NO existe"} en Supabase');
+      debugPrint('${existe ? "✅" : "❌"} Código $codigo ${existe ? "existe" : "NO existe"} en Supabase');
       return existe;
     } catch (e) {
-      print('❌ Error validando código $codigo: $e');
+      debugPrint('❌ Error validando código $codigo: $e');
       return false; // En caso de error, rechazar el código
     }
   }
@@ -1416,13 +1430,13 @@ OUTPUT (JSON ESTRICTO)
   // Validar código y detectar si necesita sugerencia
   Future<Map<String, dynamic>> _validarCodigoConSugerencia(String codigo, String temaSugerido, String descripcionSugerida) async {
     try {
-      print('🔍 Validando código con sugerencia: $codigo');
+      debugPrint('🔍 Validando código con sugerencia: $codigo');
       
       // Verificar si el código existe
       final codigoExiste = await _validarCodigoEnBaseDatos(codigo);
       
       if (!codigoExiste) {
-        print('❌ Código $codigo NO existe en la base de datos');
+        debugPrint('❌ Código $codigo NO existe en la base de datos');
         return {
           'existe': false,
           'necesitaSugerencia': false,
@@ -1434,7 +1448,7 @@ OUTPUT (JSON ESTRICTO)
       final codigoExistente = await SupabaseService.getCodigoExistente(codigo);
       
       if (codigoExistente == null) {
-        print('❌ No se pudo obtener información del código existente');
+        debugPrint('❌ No se pudo obtener información del código existente');
         return {
           'existe': true,
           'necesitaSugerencia': false,
@@ -1446,15 +1460,15 @@ OUTPUT (JSON ESTRICTO)
       final temaExistente = codigoExistente.nombre.toLowerCase();
       final temaNuevo = temaSugerido.toLowerCase();
       
-      print('🔍 Comparando temas:');
-      print('   Existente: "$temaExistente"');
-      print('   Sugerido: "$temaNuevo"');
+      debugPrint('🔍 Comparando temas:');
+      debugPrint('   Existente: "$temaExistente"');
+      debugPrint('   Sugerido: "$temaNuevo"');
       
       // Verificar si los temas son diferentes
       final temasDiferentes = temaExistente != temaNuevo;
       
       if (temasDiferentes) {
-        print('⚠️ Temas diferentes detectados - Creando sugerencia');
+        debugPrint('⚠️ Temas diferentes detectados - Creando sugerencia');
         return {
           'existe': true,
           'necesitaSugerencia': true,
@@ -1464,7 +1478,7 @@ OUTPUT (JSON ESTRICTO)
           'descripcionSugerida': descripcionSugerida,
         };
       } else {
-        print('✅ Temas coinciden - No se necesita sugerencia');
+        debugPrint('✅ Temas coinciden - No se necesita sugerencia');
         return {
           'existe': true,
           'necesitaSugerencia': false,
@@ -1472,7 +1486,7 @@ OUTPUT (JSON ESTRICTO)
         };
       }
     } catch (e) {
-      print('❌ Error validando código con sugerencia: $e');
+      debugPrint('❌ Error validando código con sugerencia: $e');
       return {
         'existe': false,
         'necesitaSugerencia': false,
@@ -1485,7 +1499,7 @@ OUTPUT (JSON ESTRICTO)
   // Crear sugerencia para código existente con tema diferente
   Future<void> _crearSugerencia(CodigoGrabovoi codigoExistente, String temaSugerido, String descripcionSugerida) async {
     try {
-      print('💾 Creando sugerencia para código: ${codigoExistente.codigo}');
+      debugPrint('💾 Creando sugerencia para código: ${codigoExistente.codigo}');
       
       // Verificar si ya existe una sugerencia similar (con control de duplicados)
       final existeSimilar = await SugerenciasCodigosService.existeSugerenciaSimilar(
@@ -1496,7 +1510,7 @@ OUTPUT (JSON ESTRICTO)
       );
       
       if (existeSimilar) {
-        print('ℹ️ Ya existe una sugerencia similar para este código');
+        debugPrint('ℹ️ Ya existe una sugerencia similar para este código');
         return;
       }
       
@@ -1514,7 +1528,7 @@ OUTPUT (JSON ESTRICTO)
       );
       
       final sugerenciaId = await SugerenciasCodigosService.crearSugerencia(sugerencia);
-      print('✅ Sugerencia creada con ID: $sugerenciaId');
+      debugPrint('✅ Sugerencia creada con ID: $sugerenciaId');
       
       // Mostrar notificación al usuario
       if (mounted) {
@@ -1530,7 +1544,7 @@ OUTPUT (JSON ESTRICTO)
         );
       }
     } catch (e) {
-      print('❌ Error creando sugerencia: $e');
+      debugPrint('❌ Error creando sugerencia: $e');
     }
   }
 
@@ -1656,7 +1670,7 @@ OUTPUT (JSON ESTRICTO)
     try {
       return SupabaseConfig.client.auth.currentUser?.id;
     } catch (e) {
-      print('⚠️ No se pudo obtener el ID del usuario actual: $e');
+      debugPrint('⚠️ No se pudo obtener el ID del usuario actual: $e');
       return null;
     }
   }
@@ -1705,7 +1719,7 @@ OUTPUT (JSON ESTRICTO)
       _cachedCodigoForDescription = _codigoSeleccionado;
       return descripcion;
     } catch (e) {
-      print('Error al obtener descripción del código: $e');
+      debugPrint('Error al obtener descripción del código: $e');
       return 'Secuencia Grabovoi para la manifestación y transformación energética.';
     }
   }
@@ -1754,7 +1768,7 @@ OUTPUT (JSON ESTRICTO)
       _cachedCodigoForTitulo = _codigoSeleccionado;
       return titulo;
     } catch (e) {
-      print('Error al obtener título del código: $e');
+      debugPrint('Error al obtener título del código: $e');
       return 'Campo Energético';
     }
   }
@@ -2177,7 +2191,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
         context: context,
       );
     } catch (e) {
-      print('Error al compartir código: $e');
+      debugPrint('Error al compartir código: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -3588,7 +3602,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
         context: context,
       );
     } catch (e) {
-      print('Error al compartir imagen: $e');
+      debugPrint('Error al compartir imagen: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -3879,7 +3893,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
       ];
       audioManager.playTrack(tracks[0], autoPlay: true);
     } catch (e) {
-      print('Error iniciando audio: $e');
+      debugPrint('Error iniciando audio: $e');
     }
 
     // Voz numérica (Premium): si está habilitada, iniciar sesión de voz
@@ -4090,10 +4104,10 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
         );
       }
       
-      print('✅ Recompensas otorgadas por completar pilotaje cuántico');
+      debugPrint('✅ Recompensas otorgadas por completar pilotaje cuántico');
       return recompensasInfo;
     } catch (e) {
-      print('⚠️ Error otorgando recompensas por pilotaje: $e');
+      debugPrint('⚠️ Error otorgando recompensas por pilotaje: $e');
       return null;
     }
   }
@@ -5059,7 +5073,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
   }
 
   Future<void> _extraerCodigosDelTexto(String content) async {
-    print('🔍 Intentando extraer códigos del texto...');
+    debugPrint('🔍 Intentando extraer códigos del texto...');
     
     try {
       final codigosEncontrados = <CodigoGrabovoi>[];
@@ -5069,7 +5083,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
         linea = linea.trim();
         if (linea.isEmpty) continue;
         
-        print('🔍 Procesando línea: $linea');
+        debugPrint('🔍 Procesando línea: $linea');
         
         // Buscar patrón numérico al inicio
         final match = RegExp(r'^\d+\.\s+(.+)$').firstMatch(linea);
@@ -5098,15 +5112,15 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
           // Convertir espacios a guiones bajos
           codigoStr = codigoStr.replaceAll(' ', '_').replaceAll('__', '_');
           
-          print('📋 Código procesado: $codigoStr');
-          print('📋 Nombre extraído: $nombre');
+          debugPrint('📋 Código procesado: $codigoStr');
+          debugPrint('📋 Nombre extraído: $nombre');
           
           // Verificar si el código existe en la base de datos
           final codigoExiste = await _validarCodigoEnBaseDatos(codigoStr);
           
           if (codigoExiste) {
             // CASO 1: Código existe en BD con tema diferente
-            print('✅ Código existe en BD: $codigoStr');
+            debugPrint('✅ Código existe en BD: $codigoStr');
             
             // Obtener información del código existente
             final codigoExistente = await SupabaseService.getCodigoExistente(codigoStr);
@@ -5116,12 +5130,12 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
               final temaExistente = codigoExistente.nombre.toLowerCase();
               final temaNuevo = nombre.toLowerCase();
               
-              print('🔍 Comparando temas:');
-              print('   Existente: "$temaExistente"');
-              print('   Sugerido por IA: "$temaNuevo"');
+              debugPrint('🔍 Comparando temas:');
+              debugPrint('   Existente: "$temaExistente"');
+              debugPrint('   Sugerido por IA: "$temaNuevo"');
               
               if (temaExistente != temaNuevo) {
-                print('⚠️ Código existe pero con tema diferente - Agregando a sugerencias');
+                debugPrint('⚠️ Código existe pero con tema diferente - Agregando a sugerencias');
                 
                 // Agregar código con marcador de que es una sugerencia
                 final categoria = _determinarCategoria(nombre);
@@ -5147,7 +5161,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
             }
           } else {
             // CASO 2: Código NO existe en BD - Agregarlo para que el usuario lo seleccione
-            print('⚠️ Código NO existe en BD pero es válido de IA: $codigoStr');
+            debugPrint('⚠️ Código NO existe en BD pero es válido de IA: $codigoStr');
             
             // Determinar la categoría correcta para el código
             final categoria = _determinarCategoria(nombre);
@@ -5164,21 +5178,21 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
         }
       }
       
-      print('📊 Total de códigos válidos extraídos: ${codigosEncontrados.length}');
+      debugPrint('📊 Total de códigos válidos extraídos: ${codigosEncontrados.length}');
       
       if (codigosEncontrados.isNotEmpty) {
-        print('✅ Mostrando ${codigosEncontrados.length} códigos al usuario');
+        debugPrint('✅ Mostrando ${codigosEncontrados.length} códigos al usuario');
         setState(() {
           _codigosEncontrados = codigosEncontrados;
           _mostrarSeleccionCodigos = true;
           _showOptionsModal = false;
         });
       } else {
-        print('❌ No se pudieron extraer códigos válidos');
+        debugPrint('❌ No se pudieron extraer códigos válidos');
         _mostrarMensajeNoEncontrado();
       }
     } catch (e) {
-      print('❌ Error extrayendo códigos del texto: $e');
+      debugPrint('❌ Error extrayendo códigos del texto: $e');
     }
   }
 
@@ -5260,7 +5274,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
     // Buscar coincidencias exactas primero
     for (var entrada in mapeoCategorias.entries) {
       if (temaLower.contains(entrada.key)) {
-        print('✅ Categoría encontrada por palabra clave "${entrada.key}": ${entrada.value}');
+        debugPrint('✅ Categoría encontrada por palabra clave "${entrada.key}": ${entrada.value}');
         return entrada.value;
       }
     }
@@ -5271,7 +5285,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
       final palabraLower = palabra.toLowerCase();
       for (var entrada in mapeoCategorias.entries) {
         if (palabraLower.contains(entrada.key) || entrada.key.contains(palabraLower)) {
-          print('✅ Categoría encontrada por palabra "${palabra}": ${entrada.value}');
+          debugPrint('✅ Categoría encontrada por palabra "${palabra}": ${entrada.value}');
           return entrada.value;
         }
       }
@@ -5282,12 +5296,12 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
     final primeraPalabra = palabrasSignificativas.first;
     if (primeraPalabra.length > 3 && primeraPalabra.toLowerCase() != 'codigo') {
       final categoriaNueva = primeraPalabra[0].toUpperCase() + primeraPalabra.substring(1).toLowerCase();
-      print('🆕 Nueva categoría creada: $categoriaNueva');
+      debugPrint('🆕 Nueva categoría creada: $categoriaNueva');
       return categoriaNueva;
     }
     
     // Fallback a categoría por defecto válida
-    print('⚠️ No se pudo determinar categoría, usando "Abundancia" por defecto');
+    debugPrint('⚠️ No se pudo determinar categoría, usando "Abundancia" por defecto');
     return 'Abundancia';
   }
 
@@ -5326,7 +5340,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
   // Actualizar la lista de códigos después de guardar uno nuevo
   Future<void> _actualizarListaCodigos() async {
     try {
-      print('🔄 Actualizando lista de códigos después del guardado...');
+      debugPrint('🔄 Actualizando lista de códigos después del guardado...');
       
       // Recargar códigos desde Supabase
       final nuevosCodigos = await SupabaseService.getCodigos();
@@ -5334,14 +5348,14 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
         setState(() {
           _codigos = nuevosCodigos;
         });
-        print('✅ Lista de códigos actualizada: ${nuevosCodigos.length} códigos');
+        debugPrint('✅ Lista de códigos actualizada: ${nuevosCodigos.length} códigos');
         
         // También actualizar el repositorio para que esté disponible en otras pantallas
         await CodigosRepository().refreshCodigos();
-        print('✅ Repositorio de códigos actualizado');
+        debugPrint('✅ Repositorio de códigos actualizado');
       }
     } catch (e) {
-      print('⚠️ Error al actualizar lista de códigos: $e');
+      debugPrint('⚠️ Error al actualizar lista de códigos: $e');
     }
   }
 
@@ -5377,14 +5391,14 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
       );
       
       await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
-      print('✅ Respuesta seleccionada guardada en busquedas_profundas: $respuestaSeleccionada');
+      debugPrint('✅ Respuesta seleccionada guardada en busquedas_profundas: $respuestaSeleccionada');
     } catch (e) {
-      print('⚠️ Error al guardar respuesta seleccionada: $e');
+      debugPrint('⚠️ Error al guardar respuesta seleccionada: $e');
     }
   }
 
   void _seleccionarCodigo(CodigoGrabovoi codigo) async {
-    print('🎯 Código seleccionado: ${codigo.codigo} - ${codigo.nombre}');
+    debugPrint('🎯 Código seleccionado: ${codigo.codigo} - ${codigo.nombre}');
     
     // Guardar la respuesta seleccionada en la tabla busquedas_profundas (inicialmente no guardado)
     await _actualizarRespuestaIaSeleccionada(codigo, false);
@@ -5394,11 +5408,11 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
     
     if (!codigoExiste) {
       // CASO: Código NO existe - Agregarlo a la BD
-      print('💾 Agregando código nuevo a la BD: ${codigo.codigo}');
+      debugPrint('💾 Agregando código nuevo a la BD: ${codigo.codigo}');
       try {
         final codigoId = await _guardarCodigoEnBaseDatos(codigo);
         if (codigoId != null) {
-          print('✅ Código nuevo guardado con ID: $codigoId');
+          debugPrint('✅ Código nuevo guardado con ID: $codigoId');
           
           // Actualizar codigo_guardado en busquedas_profundas
           await _actualizarRespuestaIaSeleccionada(codigo, true);
@@ -5412,11 +5426,11 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
           // 3. Recargar códigos después del refresh para actualizar el contador en el front
           await _loadCodigos();
           
-          print('✅ Contador de secuencias actualizado: ${_codigos.length} códigos disponibles');
+          debugPrint('✅ Contador de secuencias actualizado: ${_codigos.length} códigos disponibles');
           // NO mostrar mensaje aquí porque _guardarCodigoEnBaseDatos ya lo muestra
         }
       } catch (e) {
-        print('⚠️ Error al guardar código nuevo: $e');
+        debugPrint('⚠️ Error al guardar código nuevo: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Error al guardar secuencia: $e'),
@@ -5428,7 +5442,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
       }
     } else {
       // CASO: Código EXISTE - Verificar si es una sugerencia
-      print('🔍 Código existe en BD, verificando tema...');
+      debugPrint('🔍 Código existe en BD, verificando tema...');
       
       // Actualizar codigo_guardado en busquedas_profundas (el código ya existe, así que está guardado)
       await _actualizarRespuestaIaSeleccionada(codigo, true);
@@ -5440,7 +5454,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
         
         if (temaExistente != temaNuevo) {
           // Crear sugerencia para aprobación
-          print('⚠️ Creando sugerencia para código con tema diferente');
+          debugPrint('⚠️ Creando sugerencia para código con tema diferente');
           
           try {
             await _crearSugerencia(codigoExistente, codigo.nombre, codigo.descripcion);
@@ -5453,7 +5467,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
               ),
             );
           } catch (e) {
-            print('⚠️ Error al crear sugerencia: $e');
+            debugPrint('⚠️ Error al crear sugerencia: $e');
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -5890,7 +5904,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
       // Obtener códigos sincrónicos
       return await CodigosRepository().getSincronicosByCategoria(categoria);
     } catch (e) {
-      print('⚠️ Error al obtener códigos sincrónicos: $e');
+      debugPrint('⚠️ Error al obtener códigos sincrónicos: $e');
       return [];
     }
   }
@@ -5905,7 +5919,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
           .single();
       return codigoData['categoria'] ?? 'General';
     } catch (e) {
-      print('⚠️ Error al obtener categoría del código: $e');
+      debugPrint('⚠️ Error al obtener categoría del código: $e');
       return 'General';
     }
   }

@@ -61,7 +61,14 @@ class LegalLinksService {
       }
     } catch (e) {
       // Si la tabla no existe o hay error, marcar como intentado y usar valores por defecto
-      print('⚠️ Error obteniendo links legales desde DB: $e');
+      // Si la tabla no existe o hay error, marcar como intentado y usar valores por defecto
+      // No imprimimos error rojo alarmante porque es comportamiento esperado si no se ha configurado la tabla.
+      if (e is PostgrestException) {
+        print('ℹ️ Info: Error Supabase app_config: ${e.message} (Code: ${e.code}, Details: ${e.details})');
+      } else {
+        print('ℹ️ Info: Error general app_config: $e');
+      }
+      print('ℹ️ Info: Usando links legales por defecto (tabla app_config no configurada o inaccesible).');
       print('📝 Usando valores por defecto. Para configurar desde DB, crea la tabla app_config con columnas: key (text), value (text)');
       _hasTriedDB = true;
     }

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/env.dart';
 import '../models/supabase_models.dart';
 
 class ProxyApiService {
@@ -11,13 +13,12 @@ class ProxyApiService {
     'https://manifestacion-proxy.vercel.app/api/codigos', // Vercel proxy
     'https://grabovoi-proxy.netlify.app/api/codigos', // Netlify proxy
   ];
-  
+
   static const String fallbackUrl = 'https://whtiazgcxdnemrrgjjqf.supabase.co/functions/v1/get-codigos';
-  static const String apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndodGlhemdjeGRuZW1ycmdqanFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MjM2MzgsImV4cCI6MjA3NjA5OTYzOH0.1CFkusMrMKcvSU_-5RyGYPoKDM_yizuQMVGo7W3mXHU';
 
   static Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer $apiKey',
+    'Authorization': 'Bearer ${Env.supabaseAnonKey}',
     'User-Agent': 'ManifestacionApp/1.0',
     'Accept': 'application/json',
     'Cache-Control': 'no-cache',
@@ -26,16 +27,16 @@ class ProxyApiService {
   /// Verifica conectividad antes de hacer peticiones
   static Future<bool> _checkConnectivity() async {
     try {
-      print('🔍 [PROXY CONNECTIVITY] Verificando conectividad...');
+      debugPrint('🔍 [PROXY CONNECTIVITY] Verificando conectividad...');
       final result = await InternetAddress.lookup('google.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        print('✅ [PROXY CONNECTIVITY] Conectividad OK');
+        debugPrint('✅ [PROXY CONNECTIVITY] Conectividad OK');
         return true;
       }
     } catch (e) {
-      print('❌ [PROXY CONNECTIVITY] Error: $e');
+      debugPrint('❌ [PROXY CONNECTIVITY] Error: $e');
     }
-    print('❌ [PROXY CONNECTIVITY] Sin conectividad');
+    debugPrint('❌ [PROXY CONNECTIVITY] Sin conectividad');
     return false;
   }
 
@@ -45,8 +46,8 @@ class ProxyApiService {
     String? categoria,
     String? search,
   }) async {
-    print('🔍 [PROXY API] Iniciando getCodigos con proxy...');
-    print('   📍 Parámetros: categoria=$categoria, search=$search');
+    debugPrint('🔍 [PROXY API] Iniciando getCodigos con proxy...');
+    debugPrint('   📍 Parámetros: categoria=$categoria, search=$search');
     
     // Verificar conectividad primero
     final connected = await _checkConnectivity();
@@ -57,7 +58,7 @@ class ProxyApiService {
     // Probar cada proxy en orden
     for (int i = 0; i < proxyUrls.length; i++) {
       final proxyUrl = proxyUrls[i];
-      print('🌐 [PROXY $i] Probando proxy: $proxyUrl');
+      debugPrint('🌐 [PROXY $i] Probando proxy: $proxyUrl');
       
       try {
         final uri = Uri.parse(proxyUrl).replace(queryParameters: {
@@ -65,25 +66,25 @@ class ProxyApiService {
           if (search != null && search.isNotEmpty) 'search': search,
         });
 
-        print('📡 [PROXY $i] URI construida: $uri');
+        debugPrint('📡 [PROXY $i] URI construida: $uri');
         
         final response = await http
             .get(uri, headers: _headers)
             .timeout(const Duration(seconds: 15));
 
-        print('📊 [PROXY $i] Status: ${response.statusCode}');
-        print('📊 [PROXY $i] Body length: ${response.body.length}');
+        debugPrint('📊 [PROXY $i] Status: ${response.statusCode}');
+        debugPrint('📊 [PROXY $i] Body length: ${response.body.length}');
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          print('🔍 [PROXY $i] JSON decodificado: ${data.runtimeType}');
-          print('🔍 [PROXY $i] Keys: ${data.keys.toList()}');
-          print('🔍 [PROXY $i] Success: ${data['success']}');
-          print('🔍 [PROXY $i] Count: ${data['count']}');
+          debugPrint('🔍 [PROXY $i] JSON decodificado: ${data.runtimeType}');
+          debugPrint('🔍 [PROXY $i] Keys: ${data.keys.toList()}');
+          debugPrint('🔍 [PROXY $i] Success: ${data['success']}');
+          debugPrint('🔍 [PROXY $i] Count: ${data['count']}');
           
           if (data['success'] == true) {
             final rawData = data['data'] as List;
-            print('🔍 [PROXY $i] Total elementos: ${rawData.length}');
+            debugPrint('🔍 [PROXY $i] Total elementos: ${rawData.length}');
             
             final codigos = rawData
                 .map((json) {
@@ -91,32 +92,32 @@ class ProxyApiService {
                     final codigo = CodigoGrabovoi.fromJson(json);
                     return codigo;
                   } catch (e) {
-                    print('❌ [PROXY $i] Error parseando elemento: $json');
-                    print('❌ [PROXY $i] Error: $e');
+                    debugPrint('❌ [PROXY $i] Error parseando elemento: $json');
+                    debugPrint('❌ [PROXY $i] Error: $e');
                     rethrow;
                   }
                 })
                 .toList();
             
-            print('✅ [PROXY $i] ${codigos.length} códigos parseados exitosamente');
-            print('🎉 [PROXY $i] ¡Proxy funcionando correctamente!');
+            debugPrint('✅ [PROXY $i] ${codigos.length} códigos parseados exitosamente');
+            debugPrint('🎉 [PROXY $i] ¡Proxy funcionando correctamente!');
             return codigos;
           } else {
-            print('❌ [PROXY $i] Error en respuesta: ${data['error']}');
+            debugPrint('❌ [PROXY $i] Error en respuesta: ${data['error']}');
             continue; // Probar siguiente proxy
           }
         } else {
-          print('❌ [PROXY $i] HTTP Error: ${response.statusCode}');
+          debugPrint('❌ [PROXY $i] HTTP Error: ${response.statusCode}');
           continue; // Probar siguiente proxy
         }
       } catch (e) {
-        print('❌ [PROXY $i] Error: $e');
+        debugPrint('❌ [PROXY $i] Error: $e');
         continue; // Probar siguiente proxy
       }
     }
 
     // Si todos los proxies fallan, probar URL directa como último recurso
-    print('🔄 [FALLBACK] Todos los proxies fallaron, probando URL directa...');
+    debugPrint('🔄 [FALLBACK] Todos los proxies fallaron, probando URL directa...');
     try {
       final uri = Uri.parse(fallbackUrl).replace(queryParameters: {
         if (categoria != null && categoria != 'Todos') 'categoria': categoria,
@@ -135,12 +136,12 @@ class ProxyApiService {
               .map((json) => CodigoGrabovoi.fromJson(json))
               .toList();
           
-          print('✅ [FALLBACK] ${codigos.length} códigos obtenidos via URL directa');
+          debugPrint('✅ [FALLBACK] ${codigos.length} códigos obtenidos via URL directa');
           return codigos;
         }
       }
     } catch (e) {
-      print('❌ [FALLBACK] Error en URL directa: $e');
+      debugPrint('❌ [FALLBACK] Error en URL directa: $e');
     }
 
     throw Exception('Todos los proxies y la URL directa fallaron. Verifica tu conexión.');
@@ -149,7 +150,7 @@ class ProxyApiService {
   // ===== CATEGORÍAS CON PROXY =====
   
   static Future<List<String>> getCategorias() async {
-    print('🔍 [PROXY API] Obteniendo categorías con proxy...');
+    debugPrint('🔍 [PROXY API] Obteniendo categorías con proxy...');
     
     final connected = await _checkConnectivity();
     if (!connected) {
@@ -162,7 +163,7 @@ class ProxyApiService {
       final categoriasUrl = proxyUrl.replaceAll('/codigos', '/categorias');
       
       try {
-        print('🌐 [PROXY $i] Probando categorías: $categoriasUrl');
+        debugPrint('🌐 [PROXY $i] Probando categorías: $categoriasUrl');
         
         final uri = Uri.parse(categoriasUrl);
         final response = await http
@@ -173,12 +174,12 @@ class ProxyApiService {
           final data = json.decode(response.body);
           if (data['success'] == true) {
             final categorias = List<String>.from(data['data']);
-            print('✅ [PROXY $i] ${categorias.length} categorías obtenidas');
+            debugPrint('✅ [PROXY $i] ${categorias.length} categorías obtenidas');
             return categorias;
           }
         }
       } catch (e) {
-        print('❌ [PROXY $i] Error categorías: $e');
+        debugPrint('❌ [PROXY $i] Error categorías: $e');
         continue;
       }
     }

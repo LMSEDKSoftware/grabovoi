@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -59,7 +59,7 @@ class NotificationService {
     // En web, no inicializar notificaciones locales
     if (kIsWeb) {
       _isInitialized = true;
-      print('⚠️ NotificationService: Web no soporta notificaciones locales');
+      debugPrint('⚠️ NotificationService: Web no soporta notificaciones locales');
       return;
     }
     
@@ -93,9 +93,9 @@ class NotificationService {
       
       _isInitialized = true;
       
-      print('✅ NotificationService inicializado');
+      debugPrint('✅ NotificationService inicializado');
     } catch (e) {
-      print('⚠️ Error inicializando NotificationService: $e');
+      debugPrint('⚠️ Error inicializando NotificationService: $e');
       _isInitialized = true; // Marcar como inicializado para no volver a intentar
     }
   }
@@ -108,29 +108,29 @@ class NotificationService {
     }
     
     try {
-      print('📱 [iOS] Verificando permisos de notificaciones...');
+      debugPrint('📱 [iOS] Verificando permisos de notificaciones...');
       
       // IMPORTANTE: Con DarwinInitializationSettings(requestAlertPermission: true),
       // los permisos se solicitan automáticamente durante initialize().
       // Este método solo verifica que funcionen correctamente.
       
-      print('💡 [iOS] Los permisos deberían haberse solicitado automáticamente durante initialize()');
-      print('💡 [iOS] Verifica en Configuración > MANIGRAB > Notificaciones');
+      debugPrint('💡 [iOS] Los permisos deberían haberse solicitado automáticamente durante initialize()');
+      debugPrint('💡 [iOS] Verifica en Configuración > MANIGRAB > Notificaciones');
       
       // Verificar que los permisos funcionen correctamente
       final verified = await _verifyIOSPermissions();
       
       if (verified) {
-        print('✅ [iOS] Permisos verificados correctamente');
+        debugPrint('✅ [iOS] Permisos verificados correctamente');
         return true;
       } else {
-        print('⚠️ [iOS] No se pudieron verificar los permisos');
-        print('💡 [iOS] El usuario debe habilitar notificaciones en Configuración > MANIGRAB > Notificaciones');
+        debugPrint('⚠️ [iOS] No se pudieron verificar los permisos');
+        debugPrint('💡 [iOS] El usuario debe habilitar notificaciones en Configuración > MANIGRAB > Notificaciones');
         return false;
       }
     } catch (e, stackTrace) {
-      print('❌ [iOS] Error solicitando permisos: $e');
-      print('❌ [iOS] Stack trace: $stackTrace');
+      debugPrint('❌ [iOS] Error solicitando permisos: $e');
+      debugPrint('❌ [iOS] Stack trace: $stackTrace');
       return false;
     }
   }
@@ -140,13 +140,13 @@ class NotificationService {
     try {
       // Intentar obtener notificaciones pendientes como verificación
       final pending = await _notifications.pendingNotificationRequests();
-      print('📱 [iOS] Verificación: ${pending.length} notificaciones pendientes');
+      debugPrint('📱 [iOS] Verificación: ${pending.length} notificaciones pendientes');
       
       // Si podemos obtener notificaciones pendientes, los permisos probablemente están bien
       // (aunque esto no garantiza que se puedan mostrar)
       return true;
     } catch (e) {
-      print('⚠️ [iOS] Error en verificación de permisos: $e');
+      debugPrint('⚠️ [iOS] Error en verificación de permisos: $e');
       // No fallar por esto, puede que los permisos estén bien pero haya otro problema
       return true; // Asumir que está bien para no bloquear
     }
@@ -165,7 +165,7 @@ class NotificationService {
 
   /// Callback cuando el usuario toca una notificación
   void _onNotificationTapped(NotificationResponse response) {
-    print('📱 Notificación tocada: ${response.payload}');
+    debugPrint('📱 Notificación tocada: ${response.payload}');
     // Aquí se puede manejar la navegación específica según el payload
   }
 
@@ -227,7 +227,7 @@ class NotificationService {
     
     if (similarIndex != -1 && type.priority != NotificationPriority.high) {
       // Consolidar: actualizar la más reciente o eliminar la duplicada
-      print('🔄 Consolidando notificación duplicada: ${type.toString()}');
+      debugPrint('🔄 Consolidando notificación duplicada: ${type.toString()}');
       if (type.priority == NotificationPriority.high) {
         // La nueva es más importante, reemplazar
         _notificationQueue[similarIndex] = pending;
@@ -249,7 +249,7 @@ class NotificationService {
     while (_notificationQueue.isNotEmpty) {
       // Verificar rate limiting
       if (!_canSendNotification()) {
-        print('⏸️ Rate limit alcanzado, esperando...');
+        debugPrint('⏸️ Rate limit alcanzado, esperando...');
         // Esperar hasta que podamos enviar más
         await Future.delayed(const Duration(seconds: 30));
         continue;
@@ -301,7 +301,7 @@ class NotificationService {
     
     // En web, no mostrar notificaciones
     if (kIsWeb) {
-      print('⚠️ Notificaciones locales no disponibles en web');
+      debugPrint('⚠️ Notificaciones locales no disponibles en web');
       return;
     }
     
@@ -309,10 +309,10 @@ class NotificationService {
     if (Platform.isIOS) {
       final hasPermissions = await checkIOSPermissions();
       if (!hasPermissions) {
-        print('⚠️ Permisos de notificaciones iOS no otorgados, solicitando...');
+        debugPrint('⚠️ Permisos de notificaciones iOS no otorgados, solicitando...');
         final requested = await _requestIOSPermissions();
         if (!requested) {
-          print('❌ No se pueden mostrar notificaciones: permisos denegados');
+          debugPrint('❌ No se pueden mostrar notificaciones: permisos denegados');
           return;
         }
       }
@@ -321,14 +321,14 @@ class NotificationService {
     // Obtener preferencias del usuario
     final preferences = await NotificationPreferences.load();
     if (!preferences.enabled) {
-      print('🔕 Notificaciones deshabilitadas por el usuario');
+      debugPrint('🔕 Notificaciones deshabilitadas por el usuario');
       return;
     }
 
     // Verificar si es día silencioso
     final now = DateTime.now();
     if (preferences.isDaySilent(now.weekday % 7)) {
-      print('🔇 Día silencioso, notificación omitida');
+      debugPrint('🔇 Día silencioso, notificación omitida');
       return;
     }
 
@@ -364,8 +364,8 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    print('📤 [iOS] Intentando mostrar notificación: $title');
-    print('📤 [iOS] Configuración iOS: presentAlert=${iosDetails.presentAlert}, interruptionLevel=${iosDetails.interruptionLevel}');
+    debugPrint('📤 [iOS] Intentando mostrar notificación: $title');
+    debugPrint('📤 [iOS] Configuración iOS: presentAlert=${iosDetails.presentAlert}, interruptionLevel=${iosDetails.interruptionLevel}');
     
     try {
       await _notifications.show(
@@ -376,7 +376,7 @@ class NotificationService {
         payload: payload ?? type.toString(),
       );
       
-      print('✅ [iOS] Notificación mostrada exitosamente: $title');
+      debugPrint('✅ [iOS] Notificación mostrada exitosamente: $title');
       
       // Guardar en historial
       await NotificationHistory.addNotification(
@@ -388,10 +388,10 @@ class NotificationService {
       // Actualizar conteo inmediatamente
       await NotificationCountService().updateCount();
       
-      print('📤 Notificación enviada: $title');
+      debugPrint('📤 Notificación enviada: $title');
     } catch (e, stackTrace) {
-      print('❌ [iOS] Error al mostrar notificación: $e');
-      print('❌ [iOS] Stack trace: $stackTrace');
+      debugPrint('❌ [iOS] Error al mostrar notificación: $e');
+      debugPrint('❌ [iOS] Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -408,14 +408,14 @@ class NotificationService {
     
     // En web, no mostrar notificaciones
     if (kIsWeb) {
-      print('⚠️ Notificaciones locales no disponibles en web');
+      debugPrint('⚠️ Notificaciones locales no disponibles en web');
       return;
     }
     
     // Verificar si se debe mostrar (evitar spam de baja prioridad)
     if (type.priority == NotificationPriority.low) {
       if (!_shouldShowLowPriorityNotification()) {
-        print('⏭️ Notificación de baja prioridad omitida por intervalo mínimo');
+        debugPrint('⏭️ Notificación de baja prioridad omitida por intervalo mínimo');
         return;
       }
       _lastLowPriorityNotification = DateTime.now();
@@ -433,7 +433,7 @@ class NotificationService {
         _recordNotificationSent();
         return;
       } else {
-        print('⚠️ Rate limit activo, pero notificación de alta prioridad, agregando a cola prioritaria');
+        debugPrint('⚠️ Rate limit activo, pero notificación de alta prioridad, agregando a cola prioritaria');
       }
     }
 
@@ -458,7 +458,7 @@ class NotificationService {
     
     // En web, no programar notificaciones
     if (kIsWeb) {
-      print('⚠️ Programación de notificaciones no disponible en web');
+      debugPrint('⚠️ Programación de notificaciones no disponible en web');
       return;
     }
 
@@ -510,14 +510,14 @@ class NotificationService {
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
     
-    print('📅 Notificación programada: $title para ${scheduledDate.toString()}');
+    debugPrint('📅 Notificación programada: $title para ${scheduledDate.toString()}');
   }
 
   /// Cancelar todas las notificaciones
   Future<void> cancelAll() async {
     await initialize();
     await _notifications.cancelAll();
-    print('🗑️ Todas las notificaciones canceladas');
+    debugPrint('🗑️ Todas las notificaciones canceladas');
   }
 
   /// Cancelar notificación específica por ID
@@ -655,7 +655,7 @@ class NotificationService {
       
       return true;
     } catch (e) {
-      print('❌ Error verificando estado de notificación de racha: $e');
+      debugPrint('❌ Error verificando estado de notificación de racha: $e');
       // En caso de error, permitir la notificación para no perder alertas críticas,
       // pero intentar usar caché local como fallback
       return !_isStreakAlreadyNotified(statusType);
@@ -666,7 +666,7 @@ class NotificationService {
   Future<void> notifyStreakAtRisk(String userName, int streakDays) async {
     // Verificar persistencia para evitar duplicados
     if (!await _shouldNotifyStreakStatus('streak_at_risk')) {
-      print('⏭️ Notificación de racha en riesgo omitida: ya enviada hoy');
+      debugPrint('⏭️ Notificación de racha en riesgo omitida: ya enviada hoy');
       return;
     }
 
@@ -681,7 +681,7 @@ class NotificationService {
   Future<void> notifyStreakLost(String userName, int streakDays) async {
     // Verificar persistencia para evitar duplicados
     if (!await _shouldNotifyStreakStatus('streak_lost')) {
-      print('⏭️ Notificación de racha perdida omitida: ya enviada hoy');
+      debugPrint('⏭️ Notificación de racha perdida omitida: ya enviada hoy');
       return;
     }
 
@@ -720,7 +720,7 @@ class NotificationService {
     // Verificar si ya fue notificado
     final streakKey = 'streak_$days';
     if (_isStreakAlreadyNotified(streakKey)) {
-      print('⏭️ Milestone de racha omitido: $days días ya fue notificado');
+      debugPrint('⏭️ Milestone de racha omitido: $days días ya fue notificado');
       return;
     }
     
@@ -789,7 +789,7 @@ class NotificationService {
   Future<void> notifyEnergyLevelUp(int newLevel) async {
     // Verificar si ya fue notificado para este nivel
     if (_isEnergyLevelAlreadyNotified(newLevel)) {
-      print('⏭️ Notificación de nivel energético omitida: nivel $newLevel ya fue notificado');
+      debugPrint('⏭️ Notificación de nivel energético omitida: nivel $newLevel ya fue notificado');
       return;
     }
     
@@ -836,7 +836,7 @@ class NotificationService {
   Future<void> notifyFirstPilotage(String userName) async {
     // Solo notificar una vez
     if (_firstPilotageNotified) {
-      print('⏭️ Notificación de primer pilotaje omitida: ya fue notificado');
+      debugPrint('⏭️ Notificación de primer pilotaje omitida: ya fue notificado');
       return;
     }
     
@@ -877,7 +877,7 @@ class NotificationService {
     // Verificar si ya fue notificado
     final milestoneKey = 'pilotage_$totalPilotages';
     if (_isMilestoneAlreadyNotified(milestoneKey)) {
-      print('⏭️ Milestone de pilotajes omitido: $totalPilotages ya fue notificado');
+      debugPrint('⏭️ Milestone de pilotajes omitido: $totalPilotages ya fue notificado');
       return;
     }
     
@@ -1036,7 +1036,7 @@ class NotificationService {
 
       return existing != null;
     } catch (e) {
-      print('❌ Error verificando si ya se notificó acción completada: $e');
+      debugPrint('❌ Error verificando si ya se notificó acción completada: $e');
       return false;
     }
   }
@@ -1067,12 +1067,12 @@ class NotificationService {
         'sent_at': DateTime.now().toIso8601String(),
       });
       
-      print('✅ Notificación de acción completada marcada como enviada en BD (tipo: $actionType, código: ${finalCodeId ?? finalCodeName})');
+      debugPrint('✅ Notificación de acción completada marcada como enviada en BD (tipo: $actionType, código: ${finalCodeId ?? finalCodeName})');
     } catch (e) {
-      print('❌ Error marcando acción completada como notificada: $e');
+      debugPrint('❌ Error marcando acción completada como notificada: $e');
       // Si es un error de duplicado (unique constraint), está bien, significa que ya existe
       if (e.toString().contains('duplicate') || e.toString().contains('unique') || e.toString().contains('violates unique constraint')) {
-        print('⚠️ Notificación ya existía en BD (duplicado evitado)');
+        debugPrint('⚠️ Notificación ya existía en BD (duplicado evitado)');
       }
     }
   }
@@ -1096,7 +1096,7 @@ class NotificationService {
       );
 
       if (yaNotificado) {
-        print('⏭️ Notificación omitida: acción "$actionName" con código "$codeNumber" ya fue notificada');
+        debugPrint('⏭️ Notificación omitida: acción "$actionName" con código "$codeNumber" ya fue notificada');
         return;
       }
     }

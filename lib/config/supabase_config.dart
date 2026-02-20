@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb, FlutterError;
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'env.dart';
 
@@ -29,7 +29,7 @@ class SupabaseConfig {
   static SupabaseClient get serviceClient {
     // Verificar que serviceRoleKey esté configurada
     if (serviceRoleKey.isEmpty) {
-      print('⚠️ ADVERTENCIA: SB_SERVICE_ROLE_KEY no está configurada. Usando cliente normal.');
+      debugPrint('⚠️ ADVERTENCIA: SB_SERVICE_ROLE_KEY no está configurada. Usando cliente normal.');
       // Retornar cliente normal si no hay serviceRoleKey
       return Supabase.instance.client;
     }
@@ -38,7 +38,7 @@ class SupabaseConfig {
       url,
       serviceRoleKey,
       authOptions: const FlutterAuthClientOptions(
-        authFlowType: AuthFlowType.pkce,
+        authFlowType: AuthFlowType.implicit,
       ),
     );
   }
@@ -54,6 +54,9 @@ class SupabaseConfig {
     await Supabase.initialize(
       url: url,
       anonKey: anonKey,
+      authOptions: FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.implicit,
+      ),
     );
   }
 }

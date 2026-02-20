@@ -379,7 +379,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
             'assets/audios/forest_meditation.mp3',
           ];
           await audioManager.playTrack(tracks[0], autoPlay: true);
-          print('✅ Audio iniciado automáticamente');
+          debugPrint('✅ Audio iniciado automáticamente');
           
           // Voz numérica (Premium): si está habilitada, iniciar sesión de voz
           try {
@@ -407,7 +407,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
             setState(() {});
           }
         } catch (e) {
-          print('❌ Error iniciando audio: $e');
+          debugPrint('❌ Error iniciando audio: $e');
         }
         
         // Notificar al servicio global
@@ -624,7 +624,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
         codeName: widget.nombre ?? widget.codigo,
       );
     } catch (e) {
-      print('Error al compartir imagen: $e');
+      debugPrint('Error al compartir imagen: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1178,8 +1178,9 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
           Scaffold(
             body: Stack(
               children: [
-                GlowBackground(
-              child: SafeArea(
+                Positioned.fill(
+                  child: GlowBackground(
+                    child: SafeArea(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -1440,8 +1441,9 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
                     ],
                   ),
                 ),
+                ),
               ),
-            ),
+              ),
             // Widget para capturar (completamente fuera de la vista pero renderizado)
             Positioned(
               left: -1000,
@@ -2173,7 +2175,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
         );
       }
     } catch (e) {
-      print('⚠️ Error registrando repetición y obteniendo recompensas: $e');
+      debugPrint('⚠️ Error registrando repetición y obteniendo recompensas: $e');
       // Mostrar modal sin recompensas si hay error
       if (mounted) {
         _mostrarMensajeFinalizacion();
@@ -2346,7 +2348,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
       // Obtener códigos sincrónicos
       return await CodigosRepository().getSincronicosByCategoria(categoria);
     } catch (e) {
-      print('⚠️ Error al obtener códigos sincrónicos: $e');
+      debugPrint('⚠️ Error al obtener códigos sincrónicos: $e');
       return [];
     }
   }
@@ -2361,7 +2363,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
           .single();
       return codigoData['categoria'] ?? 'General';
     } catch (e) {
-      print('⚠️ Error al obtener categoría del código: $e');
+      debugPrint('⚠️ Error al obtener categoría del código: $e');
       return 'General';
     }
   }
@@ -2387,7 +2389,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
         });
       }
     } catch (e) {
-      print('Error verificando favorito: $e');
+      debugPrint('Error verificando favorito: $e');
     }
   }
 
@@ -2488,7 +2490,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
         }
       }
     } catch (e) {
-      print('Error al cambiar favorito: $e');
+      debugPrint('Error al cambiar favorito: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

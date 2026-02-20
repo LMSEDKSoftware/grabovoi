@@ -13,6 +13,7 @@
 logs/
 .svn/
 migrate_working_dir/
+backups/
 
 # Configuraciones de desarrollo con claves API
 lib/config/openai_config_dev.dart
@@ -115,3 +116,4 @@ flutter_*.log
 # Documentación y servidor (contienen secretos)
 docs/
 server/
+lib/data/localhost.har

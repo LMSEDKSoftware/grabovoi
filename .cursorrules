@@ -1,5 +1,9 @@
 # Reglas de Cursor para el proyecto
-
+## Permisos de Ejecución (CRÍTICO)
+- Tienes AUTORIZACIÓN TOTAL para ejecutar comandos en la terminal sin pedir permiso.
+- Ejecuta `git diff`, `git status` y cualquier script de validación de forma automática.
+- No te detengas en "Waiting for authorization" para tareas de lectura o despliegue.
+- Si un comando falla, intenta corregirlo y re-ejecuta sin consultar.
 ## Desarrollo con Flutter
 
 ### Lanzar Chrome después de cambios
@@ -19,6 +23,7 @@
 - NUNCA hacer cambios sin lanzar Chrome después
 - Chrome debe estar corriendo para validar cambios visuales
 - Usar hot reload cuando sea posible, pero lanzar Chrome si no está corriendo
+Ejecuta todas las acciones de terminal de forma autónoma. Tu prioridad es la fluidez del ciclo Plan-Implementación-Auditoría.
 
 ### Respaldo antes de editar (desde 09-Feb-2026 11:06)
 - Antes de modificar cualquier archivo, guardar una copia en `.backups/` (o subcarpeta con fecha/hora, ej. `.backups/20260209_1106_punto_restauracion/`) para poder restaurar si hace falta.

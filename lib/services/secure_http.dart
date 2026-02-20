@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
@@ -8,9 +9,9 @@ class SecureHttp {
   static http.Client createUnsafeClient() {
     final ioClient = HttpClient()
       ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        print('🔓 [SSL BYPASS] Certificado SSL bypasseado para: $host:$port');
-        print('🔓 [SSL BYPASS] Certificado: ${cert.subject}');
-        print('🔓 [SSL BYPASS] Emisor: ${cert.issuer}');
+        debugPrint('🔓 [SSL BYPASS] Certificado SSL bypasseado para: $host:$port');
+        debugPrint('🔓 [SSL BYPASS] Certificado: ${cert.subject}');
+        debugPrint('🔓 [SSL BYPASS] Emisor: ${cert.issuer}');
         return true; // Aceptar cualquier certificado
       };
     return IOClient(ioClient);

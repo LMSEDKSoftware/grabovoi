@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,7 +24,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
   final AuthServiceSimple _authService = AuthServiceSimple();
   final UserProgressService _progressService = UserProgressService();
   final OnboardingService _onboardingService = OnboardingService();
-  
+
+  StreamSubscription<AuthState>? _authSubscription;
+  bool _isCheckingAuth = false;
+
   bool _isLoading = true;
   bool _isAuthenticated = false;
   bool _needsAssessment = false;
@@ -34,23 +38,29 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void initState() {
     super.initState();
     _checkAuthStatus();
-    
+
     // Escuchar cambios de autenticación (para OAuth/Google)
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       if (data.event == AuthChangeEvent.signedIn && mounted) {
         // Verificar si estamos en modo recuperación - NO redirigir en ese caso
         final prefs = await SharedPreferences.getInstance();
         final isRecoveryMode = prefs.getBool('is_recovery_mode') ?? false;
-        
+
         if (isRecoveryMode) {
-          print('🚩 Modo recuperación activo - ignorando evento de autenticación para evitar redirección al tour');
+          debugPrint('🚩 Modo recuperación activo - ignorando evento de autenticación para evitar redirección al tour');
           return;
         }
-        
-        print('🔄 Cambio de autenticación detectado (OAuth/Google), verificando estado...');
+
+        debugPrint('🔄 Cambio de autenticación detectado (OAuth/Google), verificando estado...');
         _checkAuthStatus();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -68,6 +78,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkAuthStatus() async {
+    if (_isCheckingAuth) return;
+    _isCheckingAuth = true;
     try {
       await _authService.initialize();
       // TEMPORAL: Resetear onboarding para que el usuario pueda ver el tour
@@ -75,7 +87,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       
       final isAuth = await _authService.checkAuthStatus();
       
-      print('🔐 Estado de autenticación: $isAuth');
+      debugPrint('🔐 Estado de autenticación: $isAuth');
         final prefs = await SharedPreferences.getInstance();
         _forceLogin = prefs.getBool('force_login') ?? false;
       
@@ -83,8 +95,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
         // Verificar si el usuario ya completó la evaluación
         final assessment = await _progressService.getUserAssessment();
         
-        print('📋 Usuario autenticado');
-        print('📋 Assessment data: $assessment');
+        debugPrint('📋 Usuario autenticado');
+        debugPrint('📋 Assessment data: $assessment');
         
         // Verificar si la evaluación está completa
         final needsAssessment = assessment == null || !_isAssessmentComplete(assessment);
@@ -93,16 +105,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
         final hasSeenTour = await _onboardingService.hasSeenOnboarding();
         final needsTour = !hasSeenTour;
         
-        print('📋 Necesita evaluación: $needsAssessment');
-        print('📋 Necesita tour: $needsTour');
+        debugPrint('📋 Necesita evaluación: $needsAssessment');
+        debugPrint('📋 Necesita tour: $needsTour');
         
         // IMPORTANTE: Verificar estado de suscripción después de autenticación
         // Esto asegura que usuarios nuevos obtengan su período de prueba de 7 días
         try {
           await SubscriptionService().checkSubscriptionStatus();
-          print('✅ Estado de suscripción verificado después de autenticación');
+          debugPrint('✅ Estado de suscripción verificado después de autenticación');
         } catch (e) {
-          print('⚠️ Error verificando suscripción después de autenticación: $e');
+          debugPrint('⚠️ Error verificando suscripción después de autenticación: $e');
         }
         
         if (mounted) {
@@ -128,13 +140,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
         }
       }
     } catch (e) {
-      print('❌ Error verificando estado de autenticación: $e');
+      debugPrint('❌ Error verificando estado de autenticación: $e');
       if (mounted) {
         setState(() {
           _isAuthenticated = false;
           _isLoading = false;
         });
       }
+    } finally {
+      _isCheckingAuth = false;
     }
   }
 
@@ -143,7 +157,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _isAssessmentComplete(Map<String, dynamic> assessment) {
     // Verificar primero el flag is_complete (prioritario)
     if (assessment['is_complete'] == true) {
-      print('✅ Evaluación marcada como completa');
+      debugPrint('✅ Evaluación marcada como completa');
       return true;
     }
     
@@ -159,7 +173,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     
     for (final field in requiredFields) {
       if (!assessment.containsKey(field) || assessment[field] == null) {
-        print('❌ Campo faltante en evaluación: $field');
+        debugPrint('❌ Campo faltante en evaluación: $field');
         return false;
       }
       
@@ -167,7 +181,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       if (field == 'goals' || field == 'preferences') {
         final value = assessment[field];
         if (value is! List || value.isEmpty) {
-          print('❌ Lista vacía en evaluación: $field');
+          debugPrint('❌ Lista vacía en evaluación: $field');
           return false;
         }
       }
@@ -177,22 +191,22 @@ class _AuthWrapperState extends State<AuthWrapper> {
           field == 'time_available' || field == 'motivation') {
         final value = assessment[field];
         if (value is! String || value.isEmpty) {
-          print('❌ String vacío en evaluación: $field');
+          debugPrint('❌ String vacío en evaluación: $field');
           return false;
         }
       }
     }
     
-    print('✅ Evaluación completa y válida');
+    debugPrint('✅ Evaluación completa y válida');
     return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    print('🏗️ AuthWrapper build - isLoading: $_isLoading, isAuthenticated: $_isAuthenticated, needsAssessment: $_needsAssessment, needsTour: $_needsTour');
+    debugPrint('🏗️ AuthWrapper build - isLoading: $_isLoading, isAuthenticated: $_isAuthenticated, needsAssessment: $_needsAssessment, needsTour: $_needsTour');
     
     if (_isLoading) {
-      print('⏳ Mostrando loading...');
+      debugPrint('⏳ Mostrando loading...');
       return const Scaffold(
         body: Center(
           child: Column(
@@ -222,7 +236,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     // 3. Después de evaluación, mostrar WelcomeModal y MuralModal
     if (_isAuthenticated && _needsTour) {
       // Mostrar tour primero
-      print('✨ Mostrando MainNavigation con tour');
+      debugPrint('✨ Mostrando MainNavigation con tour');
       return MainNavigation(
         showTour: true,
         onTourFinished: () {
@@ -232,7 +246,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       );
     } else if (_isAuthenticated && _needsAssessment) {
       // Después del tour, mostrar evaluación si es necesaria
-      print('📋 Mostrando UserAssessmentScreen - Evaluación necesaria (después del tour)');
+      debugPrint('📋 Mostrando UserAssessmentScreen - Evaluación necesaria (después del tour)');
       
       // Mostrar modal de permisos después de la evaluación
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -250,7 +264,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     } else if (_isAuthenticated && !_needsAssessment) {
       // Usuario autenticado sin tour ni evaluación pendiente
       // Mostrar MainNavigation y activar WelcomeModal/MuralModal
-      print('✅ Usuario autenticado - Mostrando MainNavigation (sin tour, sin evaluación)');
+      debugPrint('✅ Usuario autenticado - Mostrando MainNavigation (sin tour, sin evaluación)');
       
       // Mostrar modal de permisos después de que se construya la pantalla
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -265,7 +279,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         return const LoginScreen();
       } else {
         // Mostrar onboarding comercial antes del login cada vez que esté desautenticado
-        print('❌ Mostrando Onboarding antes de Login - Usuario no autenticado');
+        debugPrint('❌ Mostrando Onboarding antes de Login - Usuario no autenticado');
         return const OnboardingScreen();
       }
   }
@@ -282,7 +296,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         );
       }
     } catch (e) {
-      print('⚠️ Error mostrando modal de permisos: $e');
+      debugPrint('⚠️ Error mostrando modal de permisos: $e');
     }
   }
 }

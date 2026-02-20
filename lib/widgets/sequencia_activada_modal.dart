@@ -128,7 +128,7 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
       }
     } catch (e) {
       // Ignorar errores si el controller ya no está disponible
-      print('⚠️ Error en _checkScrollPosition: $e');
+      debugPrint('⚠️ Error en _checkScrollPosition: $e');
     }
   }
 

@@ -177,7 +177,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         child: Column(
                           children: [
                             Text(
-                              'Manifestación Numérica',
+                              'Manifestación Gravitacional',
                               style: GoogleFonts.playfairDisplay(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
@@ -195,7 +195,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             const SizedBox(height: 16),
                             
                             Text(
-                              'Grabovoi',
+                              '',
                               style: GoogleFonts.playfairDisplay(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w300,

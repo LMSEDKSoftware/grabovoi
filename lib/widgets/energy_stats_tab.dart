@@ -84,10 +84,10 @@ class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProvid
           _rewards = rewards;
           _isLoading = false;
         });
-        print('📊 EnergyStatsTab actualizado: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
+        debugPrint('📊 EnergyStatsTab actualizado: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
       }
     } catch (e) {
-      print('Error cargando recompensas: $e');
+      debugPrint('Error cargando recompensas: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

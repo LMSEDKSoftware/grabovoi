@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../config/supabase_config.dart';
 import '../models/store_config_model.dart';
 import '../models/rewards_model.dart';
@@ -38,7 +39,7 @@ class StoreConfigService {
       _lastFetch = DateTime.now();
       return _paquetesCache!;
     } catch (e) {
-      print('Error cargando paquetes cristales: $e');
+      debugPrint('Error cargando paquetes cristales: $e');
       return _paquetesCache ?? [];
     }
   }
@@ -61,7 +62,7 @@ class StoreConfigService {
       _lastFetch = DateTime.now();
       return _elementosCache!;
     } catch (e) {
-      print('Error cargando elementos tienda: $e');
+      debugPrint('Error cargando elementos tienda: $e');
       return _elementosCache ?? [];
     }
   }
@@ -114,7 +115,7 @@ class StoreConfigService {
       _lastFetch = DateTime.now();
       return _codigosCache!;
     } catch (e) {
-      print('Error cargando códigos premium: $e');
+      debugPrint('Error cargando códigos premium: $e');
       return _codigosCache ?? [];
     }
   }
@@ -148,7 +149,7 @@ class StoreConfigService {
       _lastFetch = DateTime.now();
       return _meditacionesCache!;
     } catch (e) {
-      print('Error cargando meditaciones especiales: $e');
+      debugPrint('Error cargando meditaciones especiales: $e');
       return _meditacionesCache ?? [];
     }
   }

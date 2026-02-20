@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 
 class AudioManagerService {
   static final AudioManagerService _instance = AudioManagerService._internal();
@@ -59,7 +60,7 @@ class AudioManagerService {
       await _globalPlayer.setSource(AssetSource(trackFile.replaceFirst('assets/', '')));
       if (autoPlay) await _globalPlayer.resume();
     } catch (e) {
-      print('Error reproduciendo audio: $e');
+      debugPrint('Error reproduciendo audio: $e');
     }
   }
 

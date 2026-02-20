@@ -52,7 +52,7 @@ class _RewardsDisplayState extends State<RewardsDisplay> {
         });
       }
     } catch (e) {
-      print('Error cargando recompensas: $e');
+      debugPrint('Error cargando recompensas: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

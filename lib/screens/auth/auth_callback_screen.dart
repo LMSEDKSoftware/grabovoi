@@ -40,8 +40,31 @@ class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
         print('🔐 Callback recibido - access_token: ${accessToken != null ? "presente" : "ausente"}');
         print('🔐 Callback recibido - type: $type');
         print('🔐 Callback recibido - token: ${token != null ? "presente" : "ausente"}');
+        final code = uri.queryParameters['code'];
+        print('🔐 Callback recibido - code (PKCE): ${code != null ? "presente" : "ausente"}');
         print('🔐 Callback recibido - error: $error');
         print('🔐 Callback recibido - error_description: $errorDescription');
+        
+        // Flujo PKCE (OAuth): Supabase redirige con ?code=... en lugar de access_token
+        if (code != null && code.isNotEmpty) {
+          print('🔐 Intercambiando code por sesión (PKCE)...');
+          try {
+            await Supabase.instance.client.auth.exchangeCodeForSession(code);
+            final session = Supabase.instance.client.auth.currentSession;
+            if (session != null && mounted) {
+              print('✅ Sesión obtenida correctamente tras PKCE');
+              _navigateToApp();
+              return;
+            }
+          } catch (e) {
+            print('❌ Error intercambiando code por sesión: $e');
+            setState(() {
+              _errorMessage = 'No se pudo completar el inicio de sesión. Intenta de nuevo.';
+              _isProcessing = false;
+            });
+            return;
+          }
+        }
         
         // Si hay un error en la URL, manejarlo apropiadamente
         if (error != null) {

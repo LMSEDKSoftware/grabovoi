@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -92,7 +92,7 @@ class ShareHelper {
         );
       }
     } catch (e) {
-      print('❌ Error al compartir imagen: $e');
+      debugPrint('❌ Error al compartir imagen: $e');
       rethrow;
     }
   }
@@ -159,7 +159,7 @@ class ShareHelper {
         await Share.share(text);
       }
     } catch (e) {
-      print('❌ Error al compartir texto: $e');
+      debugPrint('❌ Error al compartir texto: $e');
       rethrow;
     }
   }

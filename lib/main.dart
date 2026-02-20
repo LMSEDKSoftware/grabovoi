@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation, SystemUiOverlayStyle, SystemUiMode;
 import 'package:google_fonts/google_fonts.dart';
+import 'config/env.dart';
 import 'config/supabase_config.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/migration_service.dart';
 import 'services/app_time_tracker.dart';
@@ -45,7 +46,7 @@ import 'services/auth_service_simple.dart';
 // import 'services/in_app_update_service.dart'; // Servicio no disponible
 import 'screens/auth/auth_callback_screen.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,20 +58,21 @@ void main() async {
     } catch (_) {}
   }
 
+  // Validar configuración Supabase antes de inicializar
+  if (Env.supabaseUrl.isEmpty || Env.supabaseAnonKey.isEmpty) {
+    debugPrint('⚠️ SUPABASE_URL o SUPABASE_ANON_KEY vacíos.');
+    if (kIsWeb) {
+      debugPrint('   En web usa: ./scripts/launch_chrome.sh (inyecta --dart-define desde .env)');
+    } else {
+      debugPrint('   Verifica que .env tenga SUPABASE_URL y SUPABASE_ANON_KEY');
+    }
+  }
+
   // Inicializar Supabase
   await SupabaseConfig.initialize();
-  
-  // Manejar deep links de OAuth (Google Sign In)
-  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-    final AuthChangeEvent event = data.event;
-    final Session? session = data.session;
-    
-    if (event == AuthChangeEvent.signedIn && session != null) {
-      print('✅ Usuario autenticado con OAuth (Google)');
-      // El AuthWrapper se encargará de cargar el usuario y navegar
-    }
-  });
-  
+
+  // El AuthWrapper escucha onAuthStateChange y cancela en dispose
+
   // Inicializar rastreador de tiempo
   AppTimeTracker().startSession();
   
@@ -86,12 +88,12 @@ void main() async {
       try {
         final notificationService = NotificationService();
         await notificationService.initialize();
-        print('✅ NotificationService inicializado en main');
+        debugPrint('✅ NotificationService inicializado en main');
       } catch (e) {
-        print('⚠️ Error inicializando NotificationService en main: $e');
+        debugPrint('⚠️ Error inicializando NotificationService en main: $e');
       }
     } catch (e) {
-      print('⚠️ Error inicializando NotificationScheduler: $e');
+      debugPrint('⚠️ Error inicializando NotificationScheduler: $e');
     }
     
     // NOTA: Los permisos NO se solicitan automáticamente aquí
@@ -103,7 +105,7 @@ void main() async {
   try {
     await SubscriptionService().initialize();
   } catch (e) {
-    print('⚠️ Error inicializando SubscriptionService: $e');
+    debugPrint('⚠️ Error inicializando SubscriptionService: $e');
   }
   
   // Verificar actualizaciones in-app (solo en Android)
@@ -113,10 +115,10 @@ void main() async {
   //   Future.delayed(const Duration(seconds: 2), () {
   //     try {
   //       InAppUpdateService().checkAndUpdate().catchError((e) {
-  //         print('⚠️ Error verificando actualizaciones: $e');
+  //         debugPrint('⚠️ Error verificando actualizaciones: $e');
   //       });
   //     } catch (e) {
-  //       print('⚠️ Error inicializando InAppUpdateService: $e');
+  //       debugPrint('⚠️ Error inicializando InAppUpdateService: $e');
   //     }
   //   });
   // }
@@ -198,6 +200,16 @@ class MyApp extends StatelessWidget {
               settings: settings,
             );
           }
+          // En web, si llegamos a / (o ruta por defecto) con ?code=... es callback OAuth (PKCE)
+          if (kIsWeb && Uri.base.queryParameters.containsKey('code')) {
+            final routeName = settings.name ?? Uri.base.path;
+            if (routeName == '/' || routeName.isEmpty || routeName == '/auth/callback') {
+              return MaterialPageRoute(
+                builder: (context) => const AuthCallbackScreen(),
+                settings: settings,
+              );
+            }
+          }
           // En web, capturar la ruta /recovery para cambio de contraseña
           // IMPORTANTE: Verificar tanto el path como si la URL contiene /recovery
           final isRecoveryRoute = kIsWeb && (
@@ -221,7 +233,7 @@ class MyApp extends StatelessWidget {
               accessToken = hashParams['access_token'];
               refreshToken = hashParams['refresh_token'];
               type = hashParams['type'];
-              print('🔍 Recovery route - Tokens encontrados en HASH:');
+              debugPrint('🔍 Recovery route - Tokens encontrados en HASH:');
             }
             
             // PRIORIDAD 2: Si no están en hash, intentar query params (por si acaso)
@@ -229,18 +241,18 @@ class MyApp extends StatelessWidget {
               accessToken = uri.queryParameters['access_token'];
               refreshToken = uri.queryParameters['refresh_token'];
               type = uri.queryParameters['type'];
-              print('🔍 Recovery route - Tokens encontrados en QUERY PARAMS:');
+              debugPrint('🔍 Recovery route - Tokens encontrados en QUERY PARAMS:');
             }
             
-            print('   URL completa: ${uri.toString()}');
-            print('   Path: ${uri.path}');
-            print('   Fragment presente: ${uri.hasFragment}');
+            debugPrint('   URL completa: ${uri.toString()}');
+            debugPrint('   Path: ${uri.path}');
+            debugPrint('   Fragment presente: ${uri.hasFragment}');
             if (uri.hasFragment) {
-              print('   Fragment (primeros 100 chars): ${uri.fragment.substring(0, uri.fragment.length > 100 ? 100 : uri.fragment.length)}...');
+              debugPrint('   Fragment (primeros 100 chars): ${uri.fragment.substring(0, uri.fragment.length > 100 ? 100 : uri.fragment.length)}...');
             }
-            print('   Access Token: ${accessToken != null ? "✅ presente (${accessToken.substring(0, 20)}...)" : "❌ ausente"}');
-            print('   Refresh Token: ${refreshToken != null ? "✅ presente" : "❌ ausente"}');
-            print('   Type: $type');
+            debugPrint('   Access Token: ${accessToken != null ? "✅ presente (${accessToken.substring(0, 20)}...)" : "❌ ausente"}');
+            debugPrint('   Refresh Token: ${refreshToken != null ? "✅ presente" : "❌ ausente"}');
+            debugPrint('   Type: $type');
             
             return MaterialPageRoute(
               builder: (context) => RecoverySetPasswordScreen(
@@ -253,8 +265,10 @@ class MyApp extends StatelessWidget {
           // Para otras rutas, usar el comportamiento por defecto (home)
           return null;
         },
-        // Verificar si estamos en /recovery al iniciar (para manejar hash en URL)
-        home: kIsWeb && Uri.base.path == '/recovery' && Uri.base.hasFragment
+        // En web, si la URL tiene ?code=... es callback OAuth (PKCE): mostrar pantalla que intercambia code por sesión
+        home: kIsWeb && Uri.base.queryParameters.containsKey('code')
+          ? const AuthCallbackScreen()
+          : kIsWeb && Uri.base.path == '/recovery' && Uri.base.hasFragment
           ? Builder(
               builder: (context) {
                 final uri = Uri.base;
@@ -266,7 +280,7 @@ class MyApp extends StatelessWidget {
                   final hashParams = Uri.splitQueryString(fragment);
                   accessToken = hashParams['access_token'];
                   refreshToken = hashParams['refresh_token'];
-                  print('🔍 Recovery detectado en home - Tokens en HASH');
+                  debugPrint('🔍 Recovery detectado en home - Tokens en HASH');
                 }
                 
                 if (accessToken != null) {
@@ -342,7 +356,7 @@ class _MainNavigationState extends State<MainNavigation> {
             try {
               (homeState as dynamic).triggerWelcomeAndMuralFlow();
             } catch (e) {
-              print('⚠️ Error llamando triggerWelcomeAndMuralFlow: $e');
+              debugPrint('⚠️ Error llamando triggerWelcomeAndMuralFlow: $e');
             }
           }
         }
@@ -654,7 +668,7 @@ class _MainNavigationState extends State<MainNavigation> {
                     try {
                       (homeState as dynamic).triggerWelcomeAndMuralFlow();
                     } catch (e) {
-                      print('⚠️ Error llamando triggerWelcomeAndMuralFlow: $e');
+                      debugPrint('⚠️ Error llamando triggerWelcomeAndMuralFlow: $e');
                     }
                   }
                 }

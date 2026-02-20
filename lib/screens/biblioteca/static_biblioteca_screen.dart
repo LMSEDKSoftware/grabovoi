@@ -250,7 +250,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         _pilotedCodes = pilotedCodes;
       });
     } catch (e) {
-      print('⚠️ Error loading piloted codes: $e');
+      debugPrint('⚠️ Error loading piloted codes: $e');
     }
       // Cargar y cachear favoritos
       await _cargarFavoritosCache();
@@ -292,11 +292,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         final goals = assessment['goals'];
         if (goals is List) {
           _userGoals = List<String>.from(goals.map((e) => e.toString()));
-          print('✅ Objetivos del usuario cargados para ordenamiento: $_userGoals');
+          debugPrint('✅ Objetivos del usuario cargados para ordenamiento: $_userGoals');
         }
       }
     } catch (e) {
-      print('⚠️ Error cargando las preferencias del usuario (evaluación): $e');
+      debugPrint('⚠️ Error cargando las preferencias del usuario (evaluación): $e');
       _userGoals = [];
     }
   }
@@ -321,7 +321,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         });
       }
     } catch (e) {
-      print('⚠️ Error al refrescar estados de pilotaje: $e');
+      debugPrint('⚠️ Error al refrescar estados de pilotaje: $e');
     }
   }
 
@@ -366,7 +366,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     preferredCategories.sort((a, b) => a.compareTo(b));
     remainingCategories.sort((a, b) => a.compareTo(b));
 
-    print('🔀 Categorías ordenadas: ${[...preferredCategories, ...remainingCategories]}');
+    debugPrint('🔀 Categorías ordenadas: ${[...preferredCategories, ...remainingCategories]}');
     return [...preferredCategories, ...remainingCategories];
   }
 
@@ -459,7 +459,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     try {
       return SupabaseConfig.client.auth.currentUser?.id;
     } catch (e) {
-      print('⚠️ No se pudo obtener el ID del usuario actual: $e');
+      debugPrint('⚠️ No se pudo obtener el ID del usuario actual: $e');
       return null;
     }
   }
@@ -519,10 +519,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         try {
           codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(queryLower);
           if (codigosPorTitulo.isNotEmpty) {
-            print('🔍 [FILTRAR] Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
+            debugPrint('🔍 [FILTRAR] Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
           }
         } catch (e) {
-          print('⚠️ Error buscando en títulos relacionados durante filtrado: $e');
+          debugPrint('⚠️ Error buscando en títulos relacionados durante filtrado: $e');
         }
       }
     }
@@ -613,7 +613,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       return;
     }
     
-    print('🔍 Confirmando búsqueda para: $_queryBusqueda');
+    debugPrint('🔍 Confirmando búsqueda para: $_queryBusqueda');
     
     final exactCode = exactCodeFromQuery(_queryBusqueda);
     final isNumeric = isNumericQuery(_queryBusqueda);
@@ -652,10 +652,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       try {
         codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(_queryBusqueda);
         if (codigosPorTitulo.isNotEmpty) {
-          print('🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
+          debugPrint('🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
         }
       } catch (e) {
-        print('⚠️ Error buscando en títulos relacionados: $e');
+        debugPrint('⚠️ Error buscando en títulos relacionados: $e');
       }
     }
     
@@ -684,7 +684,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     final resultadoFinal = todosLosResultados.values.toList();
     
     if (resultadoFinal.isNotEmpty) {
-      print('✅ Resultados encontrados: ${resultadoFinal.length} códigos (${coincidenciasExactas.length} exactos, ${coincidenciasSimilares.length} locales, ${codigosPorTitulo.length} por títulos relacionados)');
+      debugPrint('✅ Resultados encontrados: ${resultadoFinal.length} códigos (${coincidenciasExactas.length} exactos, ${coincidenciasSimilares.length} locales, ${codigosPorTitulo.length} por títulos relacionados)');
       final esBusquedaCodigo = _esBusquedaPorCodigo(_queryBusqueda);
       final sinCoincidenciaExacta = coincidenciasExactas.isEmpty;
       setState(() {
@@ -706,7 +706,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     }
     
     // 5. Si no hay resultados, mostrar modal de búsqueda profunda (el banner "¿No está tu código?" se mantiene)
-    print('❌ No se encontraron coincidencias para: $_queryBusqueda');
+    debugPrint('❌ No se encontraron coincidencias para: $_queryBusqueda');
     setState(() {
       visible = [];
       _codigoNoEncontrado = _queryBusqueda;
@@ -721,11 +721,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       // Solo recargar si el caché expiró
       if (_favoritosCacheTime != null && 
           DateTime.now().difference(_favoritosCacheTime!) < _cacheDuration) {
-        print('✅ Usando caché de favoritos');
+        debugPrint('✅ Usando caché de favoritos');
         return;
       }
       
-      print('🔄 Cargando favoritos en caché...');
+      debugPrint('🔄 Cargando favoritos en caché...');
       final favoritesWithDetails = await UserFavoritesService().getFavoritesWithDetails();
       
       _favoritosCache.clear();
@@ -748,9 +748,9 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       }
       
       _favoritosCacheTime = DateTime.now();
-      print('✅ Caché de favoritos cargado: ${_favoritosCache.length} códigos');
+      debugPrint('✅ Caché de favoritos cargado: ${_favoritosCache.length} códigos');
     } catch (e) {
-      print('⚠️ Error cargando caché de favoritos: $e');
+      debugPrint('⚠️ Error cargando caché de favoritos: $e');
     }
   }
   
@@ -773,7 +773,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   Future<void> _precargarTitulosRelacionados(List<CodigoGrabovoi> codigos) async {
     if (_titulosRelacionadosCargados) return;
     
-    print('🔄 Precargando títulos relacionados para ${codigos.length} códigos...');
+    debugPrint('🔄 Precargando títulos relacionados para ${codigos.length} códigos...');
     try {
       // Cargar títulos relacionados en paralelo para los primeros 50 códigos (para no sobrecargar)
       final codigosALimitar = codigos.take(50).toList();
@@ -782,16 +782,16 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           final titulos = await SupabaseService.getTitulosRelacionados(codigo.codigo);
           _titulosRelacionadosCache[codigo.codigo] = titulos;
         } catch (e) {
-          print('⚠️ Error precargando títulos para ${codigo.codigo}: $e');
+          debugPrint('⚠️ Error precargando títulos para ${codigo.codigo}: $e');
           _titulosRelacionadosCache[codigo.codigo] = [];
         }
       });
       
       await Future.wait(futures);
       _titulosRelacionadosCargados = true;
-      print('✅ Títulos relacionados precargados para ${_titulosRelacionadosCache.length} códigos');
+      debugPrint('✅ Títulos relacionados precargados para ${_titulosRelacionadosCache.length} códigos');
     } catch (e) {
-      print('⚠️ Error precargando títulos relacionados: $e');
+      debugPrint('⚠️ Error precargando títulos relacionados: $e');
     }
   }
   
@@ -812,21 +812,21 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         visible = favoritos;
       });
     } catch (e) {
-      print('Error filtrando favoritos por etiqueta: $e');
+      debugPrint('Error filtrando favoritos por etiqueta: $e');
     }
   }
 
   Future<void> _recargarFavoritosFallback() async {
     try {
-      print('DEBUG → Fallback: Recargando favoritos desde Supabase');
+      debugPrint('DEBUG → Fallback: Recargando favoritos desde Supabase');
       final favoritos = await BibliotecaSupabaseService.getFavoritos();
       setState(() {
         favoritosFiltrados = favoritos;
         visible = favoritos;
       });
-      print('DEBUG → Fallback: Favoritos recargados: ${favoritos.length}');
+      debugPrint('DEBUG → Fallback: Favoritos recargados: ${favoritos.length}');
     } catch (e) {
-      print('Error en fallback al recargar favoritos: $e');
+      debugPrint('Error en fallback al recargar favoritos: $e');
     }
   }
 
@@ -846,7 +846,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       });
       _aplicarFiltros();
     } catch (e) {
-      print('Error cargando favoritos por etiqueta: $e');
+      debugPrint('Error cargando favoritos por etiqueta: $e');
     }
   }
 
@@ -882,7 +882,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         }
       });
     } catch (e) {
-      print('Error actualizando estado de favoritos: $e');
+      debugPrint('Error actualizando estado de favoritos: $e');
     }
   }
 
@@ -931,7 +931,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           categoriaSeleccionada = 'Todos';
         });
       } catch (e) {
-        print('Error cargando favoritos: $e');
+        debugPrint('Error cargando favoritos: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error cargando favoritos: $e'),
@@ -960,12 +960,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
 
   Future<String?> _guardarCodigoEnBaseDatos(CodigoGrabovoi codigo) async {
     try {
-      print('💾 Verificando si el código ya existe: ${codigo.codigo}');
+      debugPrint('💾 Verificando si el código ya existe: ${codigo.codigo}');
       
       final existe = await SupabaseService.codigoExiste(codigo.codigo);
       
       if (existe) {
-        print('⚠️ El código ${codigo.codigo} ya existe en la base de datos');
+        debugPrint('⚠️ El código ${codigo.codigo} ya existe en la base de datos');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -979,14 +979,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         return null;
       }
       
-      print('💾 Guardando código nuevo en base de datos: ${codigo.codigo}');
+      debugPrint('💾 Guardando código nuevo en base de datos: ${codigo.codigo}');
       final codigoCreado = await SupabaseService.crearCodigo(codigo);
       
-      print('✅ Código guardado exitosamente en la base de datos con ID: ${codigoCreado.id}');
+      debugPrint('✅ Código guardado exitosamente en la base de datos con ID: ${codigoCreado.id}');
       
       // 1. Refrescar el repositorio para asegurar que el código nuevo esté disponible
       await CodigosRepository().refreshCodigos();
-      print('🔄 Repositorio refrescado');
+      debugPrint('🔄 Repositorio refrescado');
       
       // 2. Mostrar modal de confirmación elegante
       if (mounted) {
@@ -998,13 +998,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       
       // 3. Recargar la lista de códigos
       await _load();
-      print('🔄 Lista de códigos recargada');
+      debugPrint('🔄 Lista de códigos recargada');
       
       // 4. Si hay una búsqueda activa, aplicar el filtro automáticamente
       // para que el código recién guardado aparezca en los resultados
       if (query.isNotEmpty || _queryBusqueda.isNotEmpty) {
         final queryActiva = query.isNotEmpty ? query : _queryBusqueda;
-        print('🔄 Aplicando filtro automático después de guardar código: "$queryActiva"');
+        debugPrint('🔄 Aplicando filtro automático después de guardar código: "$queryActiva"');
         // Pequeño delay para asegurar que los datos estén completamente cargados
         await Future.delayed(const Duration(milliseconds: 300));
         if (mounted) {
@@ -1012,13 +1012,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             // Aplicar el filtro para mostrar el código recién guardado
             _aplicarFiltros();
           });
-          print('✅ Filtro aplicado, códigos visibles: ${visible.length}');
+          debugPrint('✅ Filtro aplicado, códigos visibles: ${visible.length}');
         }
       }
       
       return codigoCreado.id;
     } catch (e) {
-      print('❌ Error al guardar en la base de datos: $e');
+      debugPrint('❌ Error al guardar en la base de datos: $e');
       
       // Determinar el tipo de error y mostrar mensaje apropiado
       String mensajeError = 'No se pudo guardar la secuencia.';
@@ -1088,7 +1088,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       ).timeout(const Duration(seconds: 3));
       return response.statusCode >= 200 && response.statusCode < 500;
     } catch (e) {
-      print('⚠️ Verificación de conexión: $e');
+      debugPrint('⚠️ Verificación de conexión: $e');
       // En caso de error, asumir que hay conexión y dejar que la llamada real falle si no hay
       // Esto evita falsos negativos
       return true;
@@ -1099,8 +1099,22 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     // Verificar conexión a internet antes de iniciar
     final tieneInternet = await _verificarConexionInternet();
     
+    if (Env.openAiKey.isEmpty) {
+      debugPrint('⚠️ OPENAI_API_KEY no configurada. Búsqueda con IA deshabilitada.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('La búsqueda con IA no está configurada. Configura OPENAI_API_KEY.'),
+            backgroundColor: Colors.orange.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+    
     if (!tieneInternet) {
-      print('⚠️ No hay conexión a internet, no se puede usar IA');
+      debugPrint('⚠️ No hay conexión a internet, no se puede usar IA');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1144,7 +1158,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     }
     
     try {
-      print('🚀 Iniciando búsqueda profunda para código: $codigo');
+      debugPrint('🚀 Iniciando búsqueda profunda para código: $codigo');
       
       _inicioBusqueda = DateTime.now();
       
@@ -1161,9 +1175,9 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       
       try {
         _busquedaActualId = await BusquedasProfundasService.guardarBusquedaProfunda(busqueda);
-        print('📝 Búsqueda registrada con ID: $_busquedaActualId');
+        debugPrint('📝 Búsqueda registrada con ID: $_busquedaActualId');
       } catch (e) {
-        print('⚠️ Error al registrar búsqueda inicial: $e');
+        debugPrint('⚠️ Error al registrar búsqueda inicial: $e');
         _busquedaActualId = null;
       }
       
@@ -1199,7 +1213,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             );
             await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
           } catch (e) {
-            print('⚠️ Error al actualizar búsqueda: $e');
+            debugPrint('⚠️ Error al actualizar búsqueda: $e');
           }
         }
       } else {
@@ -1212,12 +1226,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             );
             await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
           } catch (e) {
-            print('⚠️ Error al actualizar búsqueda: $e');
+            debugPrint('⚠️ Error al actualizar búsqueda: $e');
           }
         }
       }
     } catch (e) {
-      print('❌ Error en búsqueda profunda: $e');
+      debugPrint('❌ Error en búsqueda profunda: $e');
       // Ocultar overlay si hay error
       if (mounted) {
         setState(() {
@@ -1243,7 +1257,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     final tieneInternet = await _verificarConexionInternet();
     
     if (!tieneInternet) {
-      print('❌ Sin conexión a internet, no se puede usar OpenAI');
+      debugPrint('❌ Sin conexión a internet, no se puede usar OpenAI');
       // Ocultar overlay si no hay conexión
       if (mounted) {
         setState(() {
@@ -1292,7 +1306,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     }
     
     try {
-      print('🔍 Buscando código $codigo con OpenAI...');
+      debugPrint('🔍 Buscando código $codigo con OpenAI...');
       final exactCode = exactCodeFromQuery(codigo);
       final isNumeric = isNumericQuery(codigo);
       const systemFase1 =
@@ -1335,11 +1349,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             String cleanedContent = content.trim();
             
             if (cleanedContent.contains('1.') && cleanedContent.contains('—')) {
-              print('📋 Detectado formato de lista numerada');
+              debugPrint('📋 Detectado formato de lista numerada');
               final codigosEncontrados = await _parsearListaNumerada(cleanedContent);
               
               if (codigosEncontrados.isNotEmpty) {
-                print('✅ Códigos extraídos de lista: ${codigosEncontrados.length}');
+                debugPrint('✅ Códigos extraídos de lista: ${codigosEncontrados.length}');
                 setState(() {
                   _codigosEncontrados = codigosEncontrados;
                   _mostrarSeleccionCodigos = true;
@@ -1347,7 +1361,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                 });
                 return null;
               } else {
-                print('❌ No se pudieron extraer códigos de la lista');
+                debugPrint('❌ No se pudieron extraer códigos de la lista');
                 _mostrarMensajeNoEncontrado();
               }
               return null;
@@ -1373,7 +1387,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             // Flujo B: si no hay fuente externa → Fase 2 fallback (3 relacionados desde BD)
             final sinFuente = responseData['sin_fuente'] == true;
             if (sinFuente) {
-              print('ℹ️ OpenAI indica que no hay fuentes (sin_fuente = true). Ejecutando Fase 2 fallback.');
+              debugPrint('ℹ️ OpenAI indica que no hay fuentes (sin_fuente = true). Ejecutando Fase 2 fallback.');
               if (mounted) {
                 setState(() {
                   _buscandoConIA = false;
@@ -1431,7 +1445,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   // Validar siempre contra la base, no inventar códigos inexistentes
                   final codigoExiste = await _validarCodigoEnBaseDatos(codigoNumero);
                   if (!codigoExiste) {
-                    print('❌ Código sugerido sin respaldo en BD: $codigoNumero. Se descarta.');
+                    debugPrint('❌ Código sugerido sin respaldo en BD: $codigoNumero. Se descarta.');
                     continue;
                   }
 
@@ -1475,18 +1489,18 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
               }
             }
           } catch (e) {
-            print('❌ Error parseando respuesta de OpenAI: $e');
+            debugPrint('❌ Error parseando respuesta de OpenAI: $e');
             await _extraerCodigosDelTexto(content);
             return null;
           }
         }
       } else {
-        print('❌ Error en respuesta de OpenAI: ${response.statusCode}');
+        debugPrint('❌ Error en respuesta de OpenAI: ${response.statusCode}');
       }
       
       return null;
     } catch (e) {
-      print('❌ Error en búsqueda con OpenAI: $e');
+      debugPrint('❌ Error en búsqueda con OpenAI: $e');
       
       // Mostrar mensaje amigable al usuario si hay error de conexión
       if (mounted) {
@@ -1559,12 +1573,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         candidates = candidates.where((c) =>
             codigoSoloDigitos(normalizarCodigo(c.codigo)).contains(queryDigitos)).toList();
         if (candidates.length < 3) {
-          print('ℹ️ Fase 2: búsqueda por código "$userQueryText": solo ${candidates.length} códigos contienen la secuencia. Se guía a pilotaje manual.');
+          debugPrint('ℹ️ Fase 2: búsqueda por código "$userQueryText": solo ${candidates.length} códigos contienen la secuencia. Se guía a pilotaje manual.');
           return null;
         }
       }
       if (candidates.length < 3) {
-        print('⚠️ Fase 2: menos de 3 candidatos (${candidates.length}), no se puede recomendar 3.');
+        debugPrint('⚠️ Fase 2: menos de 3 candidatos (${candidates.length}), no se puede recomendar 3.');
         return null;
       }
       final jsonCandidates = candidates.map((c) => {
@@ -1626,7 +1640,7 @@ OUTPUT (JSON ESTRICTO)
         }),
       );
       if (response.statusCode != 200) {
-        print('❌ Fase 2 OpenAI error: ${response.statusCode}');
+        debugPrint('❌ Fase 2 OpenAI error: ${response.statusCode}');
         return null;
       }
       final data = jsonDecode(response.body);
@@ -1654,12 +1668,12 @@ OUTPUT (JSON ESTRICTO)
         }
       }
       if (items.length < 3) {
-        print('⚠️ Fase 2: solo ${items.length} códigos válidos en BD.');
+        debugPrint('⚠️ Fase 2: solo ${items.length} códigos válidos en BD.');
         return null;
       }
       return {'items': items, 'safety_note': safetyNote};
     } catch (e) {
-      print('❌ _buscarRelacionadosFase2: $e');
+      debugPrint('❌ _buscarRelacionadosFase2: $e');
       return null;
     }
   }
@@ -1668,7 +1682,7 @@ OUTPUT (JSON ESTRICTO)
     try {
       final codigoExiste = _codigos.any((c) => c.codigo == codigo);
       if (codigoExiste) {
-        print('✅ Código $codigo encontrado en la base de datos local');
+        debugPrint('✅ Código $codigo encontrado en la base de datos local');
         return true;
       }
       
@@ -1679,41 +1693,41 @@ OUTPUT (JSON ESTRICTO)
           .limit(1);
       
       final existe = response.isNotEmpty;
-      print('${existe ? "✅" : "❌"} Código $codigo ${existe ? "existe" : "NO existe"} en Supabase');
+      debugPrint('${existe ? "✅" : "❌"} Código $codigo ${existe ? "existe" : "NO existe"} en Supabase');
       return existe;
     } catch (e) {
-      print('❌ Error validando código $codigo: $e');
+      debugPrint('❌ Error validando código $codigo: $e');
       return false;
     }
   }
 
   Future<void> _seleccionarCodigo(CodigoGrabovoi codigo) async {
-    print('🎯 Código seleccionado: ${codigo.codigo} - ${codigo.nombre}');
+    debugPrint('🎯 Código seleccionado: ${codigo.codigo} - ${codigo.nombre}');
     
     // PASO 1: Verificar si el código existe en Supabase (no solo en lista local)
     final existeEnSupabase = await SupabaseService.codigoExiste(codigo.codigo);
     
     if (!existeEnSupabase) {
       // CASO 1: El código NO existe en Supabase → INSERTAR directamente sin aprobación
-      print('💾 Código NO existe en Supabase, insertando directamente: ${codigo.codigo}');
+      debugPrint('💾 Código NO existe en Supabase, insertando directamente: ${codigo.codigo}');
       try {
         final codigoId = await _guardarCodigoEnBaseDatos(codigo);
         if (codigoId != null) {
-          print('✅ Código nuevo guardado con ID: $codigoId');
+          debugPrint('✅ Código nuevo guardado con ID: $codigoId');
           
           // 1. Refrescar el repositorio para asegurar que el código nuevo esté disponible
           await CodigosRepository().refreshCodigos();
-          print('🔄 Repositorio refrescado');
+          debugPrint('🔄 Repositorio refrescado');
           
           // 2. Actualizar lista de códigos para que el contador se actualice
           await _load();
-          print('🔄 Lista de códigos recargada');
+          debugPrint('🔄 Lista de códigos recargada');
           
           // 3. Si hay una búsqueda activa, aplicar el filtro automáticamente
           // para que el código recién guardado aparezca en los resultados
           if (query.isNotEmpty || _queryBusqueda.isNotEmpty) {
             final queryActiva = query.isNotEmpty ? query : _queryBusqueda;
-            print('🔄 Aplicando filtro automático después de guardar código desde selección: "$queryActiva"');
+            debugPrint('🔄 Aplicando filtro automático después de guardar código desde selección: "$queryActiva"');
             // Pequeño delay para asegurar que los datos estén completamente cargados
             await Future.delayed(const Duration(milliseconds: 300));
             if (mounted) {
@@ -1721,15 +1735,15 @@ OUTPUT (JSON ESTRICTO)
                 // Aplicar el filtro para mostrar el código recién guardado
                 _aplicarFiltros();
               });
-              print('✅ Filtro aplicado, códigos visibles: ${visible.length}');
+              debugPrint('✅ Filtro aplicado, códigos visibles: ${visible.length}');
             }
           }
           
-          print('✅ Contador de secuencias actualizado: ${_codigos.length} códigos disponibles');
+          debugPrint('✅ Contador de secuencias actualizado: ${_codigos.length} códigos disponibles');
           // El modal de confirmación ya se muestra en _guardarCodigoEnBaseDatos
         }
       } catch (e) {
-        print('⚠️ Error al guardar código nuevo: $e');
+        debugPrint('⚠️ Error al guardar código nuevo: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Error al guardar secuencia: $e'),
@@ -1741,7 +1755,7 @@ OUTPUT (JSON ESTRICTO)
       }
     } else {
       // CASO 2: El código EXISTE en Supabase → Verificar si tiene diferente descripción
-      print('🔍 Código existe en Supabase, verificando si tiene diferente descripción...');
+      debugPrint('🔍 Código existe en Supabase, verificando si tiene diferente descripción...');
       
       final codigoExistente = await SupabaseService.getCodigoExistente(codigo.codigo);
       if (codigoExistente != null) {
@@ -1755,9 +1769,9 @@ OUTPUT (JSON ESTRICTO)
         
         if (tieneDiferenteDescripcion) {
           // CASO 2A: Código existe pero con diferente descripción → Crear sugerencia para aprobación
-          print('⚠️ Código existe con diferente descripción. Creando sugerencia para aprobación');
-          print('   Existente: "$nombreExistente"');
-          print('   Nuevo: "$nombreNuevo"');
+          debugPrint('⚠️ Código existe con diferente descripción. Creando sugerencia para aprobación');
+          debugPrint('   Existente: "$nombreExistente"');
+          debugPrint('   Nuevo: "$nombreNuevo"');
           
           try {
             await _crearSugerencia(codigoExistente, codigo.nombre, codigo.descripcion);
@@ -1770,7 +1784,7 @@ OUTPUT (JSON ESTRICTO)
               ),
             );
           } catch (e) {
-            print('⚠️ Error al crear sugerencia: $e');
+            debugPrint('⚠️ Error al crear sugerencia: $e');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('⚠️ Error al crear sugerencia: $e'),
@@ -1781,7 +1795,7 @@ OUTPUT (JSON ESTRICTO)
           }
         } else {
           // CASO 2B: Código existe con la misma descripción → Solo confirmar
-          print('✅ Código existe con la misma descripción');
+          debugPrint('✅ Código existe con la misma descripción');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('✅ Secuencia seleccionada: ${codigo.nombre}'),
@@ -1813,7 +1827,7 @@ OUTPUT (JSON ESTRICTO)
 
   Future<void> _crearSugerencia(CodigoGrabovoi codigoExistente, String temaSugerido, String descripcionSugerida) async {
     try {
-      print('💾 Creando sugerencia para código: ${codigoExistente.codigo}');
+      debugPrint('💾 Creando sugerencia para código: ${codigoExistente.codigo}');
       
       final existeSimilar = await SugerenciasCodigosService.existeSugerenciaSimilar(
         _busquedaActualId ?? 0,
@@ -1823,7 +1837,7 @@ OUTPUT (JSON ESTRICTO)
       );
       
       if (existeSimilar) {
-        print('ℹ️ Ya existe una sugerencia similar para este código');
+        debugPrint('ℹ️ Ya existe una sugerencia similar para este código');
         return;
       }
       
@@ -1840,9 +1854,9 @@ OUTPUT (JSON ESTRICTO)
       );
       
       final sugerenciaId = await SugerenciasCodigosService.crearSugerencia(sugerencia);
-      print('✅ Sugerencia creada con ID: $sugerenciaId');
+      debugPrint('✅ Sugerencia creada con ID: $sugerenciaId');
     } catch (e) {
-      print('❌ Error creando sugerencia: $e');
+      debugPrint('❌ Error creando sugerencia: $e');
     }
   }
 
@@ -1899,7 +1913,7 @@ OUTPUT (JSON ESTRICTO)
             }
           } else {
             // Si el código no existe, aún lo mostramos como sugerencia relacionada con descripción real
-            print('⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
+            debugPrint('⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
             codigosEncontrados.add(CodigoGrabovoi(
               id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
               codigo: codigoStr,
@@ -1914,13 +1928,13 @@ OUTPUT (JSON ESTRICTO)
       
       return codigosEncontrados;
     } catch (e) {
-      print('❌ Error parseando lista numerada: $e');
+      debugPrint('❌ Error parseando lista numerada: $e');
       return [];
     }
   }
 
   Future<void> _extraerCodigosDelTexto(String content) async {
-    print('🔍 Intentando extraer códigos del texto...');
+    debugPrint('🔍 Intentando extraer códigos del texto...');
     
     try {
       final codigosEncontrados = <CodigoGrabovoi>[];
@@ -1974,7 +1988,7 @@ OUTPUT (JSON ESTRICTO)
             }
           } else {
             // Si el código no existe, aún lo mostramos como sugerencia relacionada con descripción real
-            print('⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
+            debugPrint('⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
             codigosEncontrados.add(CodigoGrabovoi(
               id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
               codigo: codigoStr,
@@ -1988,18 +2002,18 @@ OUTPUT (JSON ESTRICTO)
       }
       
       if (codigosEncontrados.isNotEmpty) {
-        print('✅ Mostrando ${codigosEncontrados.length} códigos relacionados encontrados por IA');
+        debugPrint('✅ Mostrando ${codigosEncontrados.length} códigos relacionados encontrados por IA');
         setState(() {
           _codigosEncontrados = codigosEncontrados;
           _mostrarSeleccionCodigos = true;
           _showOptionsModal = false;
         });
       } else {
-        print('⚠️ No se pudieron extraer códigos del texto de OpenAI');
+        debugPrint('⚠️ No se pudieron extraer códigos del texto de OpenAI');
         _mostrarMensajeNoEncontrado();
       }
     } catch (e) {
-      print('❌ Error extrayendo códigos del texto: $e');
+      debugPrint('❌ Error extrayendo códigos del texto: $e');
       _mostrarMensajeNoEncontrado();
     }
   }
@@ -2113,7 +2127,7 @@ OUTPUT (JSON ESTRICTO)
     // Buscar coincidencias exactas primero
     for (var entrada in mapeoCategorias.entries) {
       if (nombreLower.contains(entrada.key)) {
-        print('✅ Categoría encontrada por palabra clave "${entrada.key}": ${entrada.value}');
+        debugPrint('✅ Categoría encontrada por palabra clave "${entrada.key}": ${entrada.value}');
         return entrada.value;
       }
     }
@@ -2124,7 +2138,7 @@ OUTPUT (JSON ESTRICTO)
       final palabraLower = palabra.toLowerCase();
       for (var entrada in mapeoCategorias.entries) {
         if (palabraLower.contains(entrada.key) || entrada.key.contains(palabraLower)) {
-          print('✅ Categoría encontrada por palabra "${palabra}": ${entrada.value}');
+          debugPrint('✅ Categoría encontrada por palabra "${palabra}": ${entrada.value}');
           return entrada.value;
         }
       }
@@ -2135,12 +2149,12 @@ OUTPUT (JSON ESTRICTO)
     final primeraPalabra = palabrasSignificativas.first;
     if (primeraPalabra.length > 3 && primeraPalabra.toLowerCase() != 'codigo') {
       final categoriaNueva = primeraPalabra[0].toUpperCase() + primeraPalabra.substring(1).toLowerCase();
-      print('🆕 Nueva categoría creada: $categoriaNueva');
+      debugPrint('🆕 Nueva categoría creada: $categoriaNueva');
       return categoriaNueva;
     }
     
     // Fallback a categoría por defecto válida
-    print('⚠️ No se pudo determinar categoría, usando "Abundancia" por defecto');
+    debugPrint('⚠️ No se pudo determinar categoría, usando "Abundancia" por defecto');
     return 'Abundancia';
   }
 
@@ -2243,10 +2257,10 @@ OUTPUT (JSON ESTRICTO)
           codeName: codigo.nombre,
         );
       } catch (e) {
-        print('⚠️ Error registrando pilotaje compartido: $e');
+        debugPrint('⚠️ Error registrando pilotaje compartido: $e');
       }
     } catch (e) {
-      print('❌ Error al compartir imagen: $e');
+      debugPrint('❌ Error al compartir imagen: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2635,15 +2649,15 @@ OUTPUT (JSON ESTRICTO)
                                 // Recarga los favoritos directamente desde Supabase
                                 final favoritos = await BibliotecaSupabaseService.getFavoritos();
                                 
-                                print('DEBUG → Favoritos cargados: ${favoritos.length}');
-                                print('DEBUG → Etiqueta seleccionada: $etiquetaSeleccionada');
+                                debugPrint('DEBUG → Favoritos cargados: ${favoritos.length}');
+                                debugPrint('DEBUG → Etiqueta seleccionada: $etiquetaSeleccionada');
 
                                 setState(() {
                                   favoritosFiltrados = favoritos;
                                   visible = favoritos;
                                 });
                               } catch (e) {
-                                print('Error al recargar todos los favoritos: $e');
+                                debugPrint('Error al recargar todos los favoritos: $e');
                               }
                             },
                             child: Container(
@@ -4296,7 +4310,7 @@ OUTPUT (JSON ESTRICTO)
                                             );
                                           }
                                         } catch (e) {
-                                          print('Error eliminando secuencia personalizada: $e');
+                                          debugPrint('Error eliminando secuencia personalizada: $e');
                                           if (mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
@@ -4330,7 +4344,7 @@ OUTPUT (JSON ESTRICTO)
                                         );
                                           }
                                       } catch (e) {
-                                        print('Error removiendo favorito: $e');
+                                        debugPrint('Error removiendo favorito: $e');
                                           if (mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
@@ -4784,7 +4798,7 @@ OUTPUT (JSON ESTRICTO)
       // Mostrar notificación elegante de éxito
       _mostrarNotificacionExito();
     } catch (e) {
-      print('❌ Error enviando reporte: $e');
+      debugPrint('❌ Error enviando reporte: $e');
       _mostrarNotificacionError('Error al enviar el reporte. Por favor intenta nuevamente.');
     }
   }
@@ -4945,7 +4959,7 @@ OUTPUT (JSON ESTRICTO)
               ),
             );
           } catch (e) {
-            print('Error agregando favorito con etiqueta: $e');
+            debugPrint('Error agregando favorito con etiqueta: $e');
             if (mounted) {
               scaffoldMessenger.showSnackBar(
                 SnackBar(

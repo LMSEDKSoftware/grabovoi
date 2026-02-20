@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/env.dart';
 import '../models/supabase_models.dart';
 
 class CustomDomainService {
@@ -9,13 +11,12 @@ class CustomDomainService {
   static const List<String> customDomains = [
     'https://whtiazgcxdnemrrgjjqf.supabase.co/functions/v1', // URL directa que funciona
   ];
-  
+
   static const String fallbackUrl = 'https://whtiazgcxdnemrrgjjqf.supabase.co/functions/v1';
-  static const String apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndodGlhemdjeGRuZW1ycmdqanFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MjM2MzgsImV4cCI6MjA3NjA5OTYzOH0.1CFkusMrMKcvSU_-5RyGYPoKDM_yizuQMVGo7W3mXHU';
 
   static Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer $apiKey',
+    'Authorization': 'Bearer ${Env.supabaseAnonKey}',
     'User-Agent': 'ManifestacionApp/1.0',
     'Accept': 'application/json',
     'Cache-Control': 'no-cache',
@@ -24,16 +25,16 @@ class CustomDomainService {
   /// Verifica conectividad antes de hacer peticiones
   static Future<bool> _checkConnectivity() async {
     try {
-      print('🔍 [CUSTOM DOMAIN] Verificando conectividad...');
+      debugPrint('🔍 [CUSTOM DOMAIN] Verificando conectividad...');
       final result = await InternetAddress.lookup('google.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        print('✅ [CUSTOM DOMAIN] Conectividad OK');
+        debugPrint('✅ [CUSTOM DOMAIN] Conectividad OK');
         return true;
       }
     } catch (e) {
-      print('❌ [CUSTOM DOMAIN] Error: $e');
+      debugPrint('❌ [CUSTOM DOMAIN] Error: $e');
     }
-    print('❌ [CUSTOM DOMAIN] Sin conectividad');
+    debugPrint('❌ [CUSTOM DOMAIN] Sin conectividad');
     return false;
   }
 
@@ -43,14 +44,14 @@ class CustomDomainService {
     String? categoria,
     String? search,
   }) async {
-    print('🔍 [CUSTOM DOMAIN] ===========================================');
-    print('🔍 [CUSTOM DOMAIN] INICIANDO CUSTOM DOMAIN SERVICE');
-    print('🔍 [CUSTOM DOMAIN] ===========================================');
-    print('🔍 [CUSTOM DOMAIN] Parámetros: categoria=$categoria, search=$search');
-    print('🔍 [CUSTOM DOMAIN] Timestamp: ${DateTime.now()}');
-    print('🔍 [CUSTOM DOMAIN] Dominios disponibles: ${customDomains.length}');
-    print('🔍 [CUSTOM DOMAIN] Dominios: $customDomains');
-    print('🔍 [CUSTOM DOMAIN] ===========================================');
+    debugPrint('🔍 [CUSTOM DOMAIN] ===========================================');
+    debugPrint('🔍 [CUSTOM DOMAIN] INICIANDO CUSTOM DOMAIN SERVICE');
+    debugPrint('🔍 [CUSTOM DOMAIN] ===========================================');
+    debugPrint('🔍 [CUSTOM DOMAIN] Parámetros: categoria=$categoria, search=$search');
+    debugPrint('🔍 [CUSTOM DOMAIN] Timestamp: ${DateTime.now()}');
+    debugPrint('🔍 [CUSTOM DOMAIN] Dominios disponibles: ${customDomains.length}');
+    debugPrint('🔍 [CUSTOM DOMAIN] Dominios: $customDomains');
+    debugPrint('🔍 [CUSTOM DOMAIN] ===========================================');
     
     // Verificar conectividad primero
     final connected = await _checkConnectivity();
@@ -61,57 +62,57 @@ class CustomDomainService {
     // Probar cada dominio personalizado en orden
     for (int i = 0; i < customDomains.length; i++) {
       final customDomain = customDomains[i];
-      print('🌐 [CUSTOM DOMAIN $i] ===========================================');
-      print('🌐 [CUSTOM DOMAIN $i] PROBANDO DOMINIO: $customDomain');
-      print('🌐 [CUSTOM DOMAIN $i] ===========================================');
-      print('🌐 [CUSTOM DOMAIN $i] Timestamp: ${DateTime.now()}');
-      print('🌐 [CUSTOM DOMAIN $i] Índice: $i de ${customDomains.length}');
+      debugPrint('🌐 [CUSTOM DOMAIN $i] ===========================================');
+      debugPrint('🌐 [CUSTOM DOMAIN $i] PROBANDO DOMINIO: $customDomain');
+      debugPrint('🌐 [CUSTOM DOMAIN $i] ===========================================');
+      debugPrint('🌐 [CUSTOM DOMAIN $i] Timestamp: ${DateTime.now()}');
+      debugPrint('🌐 [CUSTOM DOMAIN $i] Índice: $i de ${customDomains.length}');
       
       try {
         final baseUrl = '$customDomain/get-codigos';
-        print('🌐 [CUSTOM DOMAIN $i] URL base: $baseUrl');
+        debugPrint('🌐 [CUSTOM DOMAIN $i] URL base: $baseUrl');
         
         final queryParams = <String, String>{};
         if (categoria != null && categoria != 'Todos') {
           queryParams['categoria'] = categoria;
-          print('🌐 [CUSTOM DOMAIN $i] Agregando categoría: $categoria');
+          debugPrint('🌐 [CUSTOM DOMAIN $i] Agregando categoría: $categoria');
         }
         if (search != null && search.isNotEmpty) {
           queryParams['search'] = search;
-          print('🌐 [CUSTOM DOMAIN $i] Agregando búsqueda: $search');
+          debugPrint('🌐 [CUSTOM DOMAIN $i] Agregando búsqueda: $search');
         }
         
         final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
-        print('📡 [CUSTOM DOMAIN $i] URI construida: $uri');
-        print('📡 [CUSTOM DOMAIN $i] Query parameters: $queryParams');
-        print('📡 [CUSTOM DOMAIN $i] Headers: $_headers');
+        debugPrint('📡 [CUSTOM DOMAIN $i] URI construida: $uri');
+        debugPrint('📡 [CUSTOM DOMAIN $i] Query parameters: $queryParams');
+        debugPrint('📡 [CUSTOM DOMAIN $i] Headers: $_headers');
         
-        print('📡 [CUSTOM DOMAIN $i] Iniciando petición HTTP...');
-        print('📡 [CUSTOM DOMAIN $i] Timeout: 20 segundos');
+        debugPrint('📡 [CUSTOM DOMAIN $i] Iniciando petición HTTP...');
+        debugPrint('📡 [CUSTOM DOMAIN $i] Timeout: 20 segundos');
         
         final response = await http
             .get(uri, headers: _headers)
             .timeout(const Duration(seconds: 20));
 
-        print('📊 [CUSTOM DOMAIN $i] ===========================================');
-        print('📊 [CUSTOM DOMAIN $i] RESPUESTA HTTP RECIBIDA');
-        print('📊 [CUSTOM DOMAIN $i] ===========================================');
-        print('📊 [CUSTOM DOMAIN $i] Status Code: ${response.statusCode}');
-        print('📊 [CUSTOM DOMAIN $i] Reason Phrase: ${response.reasonPhrase}');
-        print('📊 [CUSTOM DOMAIN $i] Body Length: ${response.body.length}');
-        print('📊 [CUSTOM DOMAIN $i] Headers: ${response.headers}');
-        print('📊 [CUSTOM DOMAIN $i] Body Preview: ${response.body.length > 200 ? response.body.substring(0, 200) + '...' : response.body}');
+        debugPrint('📊 [CUSTOM DOMAIN $i] ===========================================');
+        debugPrint('📊 [CUSTOM DOMAIN $i] RESPUESTA HTTP RECIBIDA');
+        debugPrint('📊 [CUSTOM DOMAIN $i] ===========================================');
+        debugPrint('📊 [CUSTOM DOMAIN $i] Status Code: ${response.statusCode}');
+        debugPrint('📊 [CUSTOM DOMAIN $i] Reason Phrase: ${response.reasonPhrase}');
+        debugPrint('📊 [CUSTOM DOMAIN $i] Body Length: ${response.body.length}');
+        debugPrint('📊 [CUSTOM DOMAIN $i] Headers: ${response.headers}');
+        debugPrint('📊 [CUSTOM DOMAIN $i] Body Preview: ${response.body.length > 200 ? response.body.substring(0, 200) + '...' : response.body}');
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          print('🔍 [CUSTOM DOMAIN $i] JSON decodificado: ${data.runtimeType}');
-          print('🔍 [CUSTOM DOMAIN $i] Keys: ${data.keys.toList()}');
-          print('🔍 [CUSTOM DOMAIN $i] Success: ${data['success']}');
-          print('🔍 [CUSTOM DOMAIN $i] Count: ${data['count']}');
+          debugPrint('🔍 [CUSTOM DOMAIN $i] JSON decodificado: ${data.runtimeType}');
+          debugPrint('🔍 [CUSTOM DOMAIN $i] Keys: ${data.keys.toList()}');
+          debugPrint('🔍 [CUSTOM DOMAIN $i] Success: ${data['success']}');
+          debugPrint('🔍 [CUSTOM DOMAIN $i] Count: ${data['count']}');
           
           if (data['success'] == true) {
             final rawData = data['data'] as List;
-            print('🔍 [CUSTOM DOMAIN $i] Total elementos: ${rawData.length}');
+            debugPrint('🔍 [CUSTOM DOMAIN $i] Total elementos: ${rawData.length}');
             
             final codigos = rawData
                 .map((json) {
@@ -119,32 +120,32 @@ class CustomDomainService {
                     final codigo = CodigoGrabovoi.fromJson(json);
                     return codigo;
                   } catch (e) {
-                    print('❌ [CUSTOM DOMAIN $i] Error parseando elemento: $json');
-                    print('❌ [CUSTOM DOMAIN $i] Error: $e');
+                    debugPrint('❌ [CUSTOM DOMAIN $i] Error parseando elemento: $json');
+                    debugPrint('❌ [CUSTOM DOMAIN $i] Error: $e');
                     rethrow;
                   }
                 })
                 .toList();
             
-            print('✅ [CUSTOM DOMAIN $i] ${codigos.length} códigos parseados exitosamente');
-            print('🎉 [CUSTOM DOMAIN $i] ¡Dominio personalizado funcionando!');
+            debugPrint('✅ [CUSTOM DOMAIN $i] ${codigos.length} códigos parseados exitosamente');
+            debugPrint('🎉 [CUSTOM DOMAIN $i] ¡Dominio personalizado funcionando!');
             return codigos;
           } else {
-            print('❌ [CUSTOM DOMAIN $i] Error en respuesta: ${data['error']}');
+            debugPrint('❌ [CUSTOM DOMAIN $i] Error en respuesta: ${data['error']}');
             continue; // Probar siguiente dominio
           }
         } else {
-          print('❌ [CUSTOM DOMAIN $i] HTTP Error: ${response.statusCode}');
+          debugPrint('❌ [CUSTOM DOMAIN $i] HTTP Error: ${response.statusCode}');
           continue; // Probar siguiente dominio
         }
       } catch (e) {
-        print('❌ [CUSTOM DOMAIN $i] Error: $e');
+        debugPrint('❌ [CUSTOM DOMAIN $i] Error: $e');
         continue; // Probar siguiente dominio
       }
     }
 
     // Si todos los dominios personalizados fallan, probar URL directa como último recurso
-    print('🔄 [FALLBACK] Todos los dominios personalizados fallaron, probando URL directa...');
+    debugPrint('🔄 [FALLBACK] Todos los dominios personalizados fallaron, probando URL directa...');
     try {
       final uri = Uri.parse('$fallbackUrl/get-codigos').replace(queryParameters: {
         if (categoria != null && categoria != 'Todos') 'categoria': categoria,
@@ -163,12 +164,12 @@ class CustomDomainService {
               .map((json) => CodigoGrabovoi.fromJson(json))
               .toList();
           
-          print('✅ [FALLBACK] ${codigos.length} códigos obtenidos via URL directa');
+          debugPrint('✅ [FALLBACK] ${codigos.length} códigos obtenidos via URL directa');
           return codigos;
         }
       }
     } catch (e) {
-      print('❌ [FALLBACK] Error en URL directa: $e');
+      debugPrint('❌ [FALLBACK] Error en URL directa: $e');
     }
 
     throw Exception('Todos los dominios personalizados y la URL directa fallaron. Verifica tu conexión.');
@@ -177,7 +178,7 @@ class CustomDomainService {
   // ===== CATEGORÍAS CON DOMINIO PERSONALIZADO =====
   
   static Future<List<String>> getCategorias() async {
-    print('🔍 [CUSTOM DOMAIN] Obteniendo categorías con dominio personalizado...');
+    debugPrint('🔍 [CUSTOM DOMAIN] Obteniendo categorías con dominio personalizado...');
     
     final connected = await _checkConnectivity();
     if (!connected) {
@@ -189,7 +190,7 @@ class CustomDomainService {
       final customDomain = customDomains[i];
       
       try {
-        print('🌐 [CUSTOM DOMAIN $i] Probando categorías: $customDomain/get-categorias');
+        debugPrint('🌐 [CUSTOM DOMAIN $i] Probando categorías: $customDomain/get-categorias');
         
         final uri = Uri.parse('$customDomain/get-categorias');
         final response = await http
@@ -200,12 +201,12 @@ class CustomDomainService {
           final data = json.decode(response.body);
           if (data['success'] == true) {
             final categorias = List<String>.from(data['data']);
-            print('✅ [CUSTOM DOMAIN $i] ${categorias.length} categorías obtenidas');
+            debugPrint('✅ [CUSTOM DOMAIN $i] ${categorias.length} categorías obtenidas');
             return categorias;
           }
         }
       } catch (e) {
-        print('❌ [CUSTOM DOMAIN $i] Error categorías: $e');
+        debugPrint('❌ [CUSTOM DOMAIN $i] Error categorías: $e');
         continue;
       }
     }

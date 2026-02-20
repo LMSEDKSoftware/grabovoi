@@ -30,15 +30,15 @@ class SubscriptionWelcomeModal extends StatefulWidget {
       // 1. Es usuario FREE (sin suscripción activa después del período de prueba)
       // 2. O está en período de prueba (remainingDays != null y > 0)
       if (remainingDays != null && remainingDays > 0) {
-        print('✅ Modal debe mostrarse: Usuario en período de prueba ($remainingDays días restantes)');
+        debugPrint('✅ Modal debe mostrarse: Usuario en período de prueba ($remainingDays días restantes)');
         return true;
       }
       
       final isFreeUser = subscriptionService.isFreeUser;
-      print('✅ Modal debe mostrarse: isFreeUser = $isFreeUser');
+      debugPrint('✅ Modal debe mostrarse: isFreeUser = $isFreeUser');
       return isFreeUser;
     } catch (e) {
-      print('Error verificando si debe mostrar modal: $e');
+      debugPrint('Error verificando si debe mostrar modal: $e');
       return false;
     }
   }
@@ -60,6 +60,7 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
   Future<void> _loadRemainingDays() async {
     final subscriptionService = SubscriptionService();
     final remaining = await subscriptionService.getRemainingTrialDays();
+    if (!mounted) return;
     setState(() {
       _remainingDays = remaining;
       _isLoading = false;
@@ -67,14 +68,12 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
   }
 
   void _navigateToSubscription() {
-    // Cerrar el modal primero
-    Navigator.of(context, rootNavigator: true).pop();
-    
-    // Navegar al perfil (tab index 5) y luego abrir la sección de suscripciones
-    // Usar un pequeño delay para asegurar que el modal se cierre primero
+    final navigator = Navigator.of(context, rootNavigator: true);
+    navigator.pop();
+
+    // Navegar a SubscriptionScreen tras delay; usar navigator capturado (no context)
     Future.delayed(const Duration(milliseconds: 300), () {
-      // Navegar a SubscriptionScreen directamente
-      Navigator.of(context).push(
+      navigator.push(
         MaterialPageRoute(
           builder: (context) => const SubscriptionScreen(),
         ),

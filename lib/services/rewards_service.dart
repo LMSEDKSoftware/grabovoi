@@ -40,11 +40,11 @@ class RewardsService {
   Future<UserRewards> getUserRewards({bool forceRefresh = false}) async {
     final userId = _authService.currentUser?.id;
     if (userId == null) {
-      print('❌ ERROR: Usuario no autenticado en getUserRewards');
+      debugPrint('❌ ERROR: Usuario no autenticado en getUserRewards');
       throw Exception('Usuario no autenticado');
     }
 
-    print('🔍 [DIAGNÓSTICO] getUserRewards llamado para usuario: $userId, forceRefresh: $forceRefresh');
+    debugPrint('🔍 [DIAGNÓSTICO] getUserRewards llamado para usuario: $userId, forceRefresh: $forceRefresh');
 
     try {
       // Intentar obtener de Supabase primero
@@ -59,12 +59,12 @@ class RewardsService {
         queryBuilder = queryBuilder.order('updated_at', ascending: false);
       }
       
-      print('🔍 [DIAGNÓSTICO] Ejecutando query a Supabase...');
+      debugPrint('🔍 [DIAGNÓSTICO] Ejecutando query a Supabase...');
       final response = await queryBuilder.maybeSingle();
-      print('🔍 [DIAGNÓSTICO] Respuesta de Supabase: ${response != null ? "ENCONTRADA" : "NO ENCONTRADA"}');
+      debugPrint('🔍 [DIAGNÓSTICO] Respuesta de Supabase: ${response != null ? "ENCONTRADA" : "NO ENCONTRADA"}');
 
       if (response != null && response.isNotEmpty) {
-        print('🔍 [DIAGNÓSTICO] Datos RAW de Supabase: cristales_energia=${response['cristales_energia']}, luz_cuantica=${response['luz_cuantica']}');
+        debugPrint('🔍 [DIAGNÓSTICO] Datos RAW de Supabase: cristales_energia=${response['cristales_energia']}, luz_cuantica=${response['luz_cuantica']}');
         
         final rewards = UserRewards(
           userId: userId,
@@ -83,10 +83,10 @@ class RewardsService {
           voiceGender: (response['voice_gender'] as String?) ?? 'female',
         );
         
-        print('✅ [DIAGNÓSTICO] Recompensas leídas de SUPABASE para usuario $userId: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
+        debugPrint('✅ [DIAGNÓSTICO] Recompensas leídas de SUPABASE para usuario $userId: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
         return rewards;
       } else {
-        print('⚠️ [DIAGNÓSTICO] No se encontró registro en Supabase para usuario $userId');
+        debugPrint('⚠️ [DIAGNÓSTICO] No se encontró registro en Supabase para usuario $userId');
       }
 
       // Si no existe en Supabase, crear uno nuevo Y GUARDARLO
@@ -107,21 +107,21 @@ class RewardsService {
       // Guardar el nuevo registro en Supabase para que quede persistido
       try {
         await saveUserRewards(newRewards);
-        print('✅ Registro inicial de recompensas creado para usuario: $userId');
+        debugPrint('✅ Registro inicial de recompensas creado para usuario: $userId');
       } catch (e) {
-        print('⚠️ Error creando registro inicial de recompensas: $e');
+        debugPrint('⚠️ Error creando registro inicial de recompensas: $e');
         // Si falla al guardar, continuar con el objeto local
       }
       
-      print('⚠️ [DIAGNÓSTICO] No se encontró registro en Supabase, creando nuevo registro con valores en 0');
+      debugPrint('⚠️ [DIAGNÓSTICO] No se encontró registro en Supabase, creando nuevo registro con valores en 0');
       return newRewards;
     } catch (e, stackTrace) {
-      print('❌ [DIAGNÓSTICO] ERROR obteniendo recompensas de Supabase: $e');
-      print('❌ [DIAGNÓSTICO] Stack trace: $stackTrace');
-      print('⚠️ [DIAGNÓSTICO] Haciendo FALLBACK a SharedPreferences...');
+      debugPrint('❌ [DIAGNÓSTICO] ERROR obteniendo recompensas de Supabase: $e');
+      debugPrint('❌ [DIAGNÓSTICO] Stack trace: $stackTrace');
+      debugPrint('⚠️ [DIAGNÓSTICO] Haciendo FALLBACK a SharedPreferences...');
       // Fallback a SharedPreferences
       final prefsRewards = await _getRewardsFromPrefs(userId);
-      print('⚠️ [DIAGNÓSTICO] Recompensas leídas de SHAREDPREFERENCES (fallback): ${prefsRewards.cristalesEnergia} cristales, ${prefsRewards.luzCuantica}% luz cuántica');
+      debugPrint('⚠️ [DIAGNÓSTICO] Recompensas leídas de SHAREDPREFERENCES (fallback): ${prefsRewards.cristalesEnergia} cristales, ${prefsRewards.luzCuantica}% luz cuántica');
       return prefsRewards;
     }
   }
@@ -174,23 +174,23 @@ class RewardsService {
 
   /// Guardar recompensas
   Future<void> saveUserRewards(UserRewards rewards) async {
-    print('💾 [DIAGNÓSTICO] saveUserRewards llamado para usuario ${rewards.userId}');
-    print('💾 [DIAGNÓSTICO] Datos a guardar: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
+    debugPrint('💾 [DIAGNÓSTICO] saveUserRewards llamado para usuario ${rewards.userId}');
+    debugPrint('💾 [DIAGNÓSTICO] Datos a guardar: ${rewards.cristalesEnergia} cristales, ${rewards.luzCuantica}% luz cuántica');
     
     // Verificar autenticación antes de guardar
     final currentUser = SupabaseConfig.client.auth.currentUser;
     if (currentUser == null) {
-      print('❌ ERROR: Usuario no autenticado en Supabase. No se puede guardar recompensas.');
+      debugPrint('❌ ERROR: Usuario no autenticado en Supabase. No se puede guardar recompensas.');
       throw Exception('Usuario no autenticado en Supabase');
     }
     
     // Verificar que el userId coincida con el usuario autenticado
     if (currentUser.id != rewards.userId) {
-      print('❌ ERROR: userId no coincide con usuario autenticado. userId: ${rewards.userId}, auth.uid: ${currentUser.id}');
+      debugPrint('❌ ERROR: userId no coincide con usuario autenticado. userId: ${rewards.userId}, auth.uid: ${currentUser.id}');
       throw Exception('userId no coincide con usuario autenticado');
     }
     
-    print('✅ [DIAGNÓSTICO] Usuario autenticado verificado: ${currentUser.id}');
+    debugPrint('✅ [DIAGNÓSTICO] Usuario autenticado verificado: ${currentUser.id}');
     
     try {
       final dataToSave = {
@@ -209,18 +209,18 @@ class RewardsService {
         'updated_at': DateTime.now().toIso8601String(),
       };
       
-      print('💾 [DIAGNÓSTICO] Ejecutando upsert en Supabase con datos: $dataToSave');
+      debugPrint('💾 [DIAGNÓSTICO] Ejecutando upsert en Supabase con datos: $dataToSave');
       
       final response = await SupabaseConfig.client.from('user_rewards').upsert(
         dataToSave,
         onConflict: 'user_id'
       ).select().single();
       
-      print('✅ [DIAGNÓSTICO] Recompensas GUARDADAS en Supabase para usuario ${rewards.userId}');
-      print('✅ [DIAGNÓSTICO] Confirmación de Supabase: ${response['cristales_energia']} cristales, ${response['luz_cuantica']}% luz cuántica');
+      debugPrint('✅ [DIAGNÓSTICO] Recompensas GUARDADAS en Supabase para usuario ${rewards.userId}');
+      debugPrint('✅ [DIAGNÓSTICO] Confirmación de Supabase: ${response['cristales_energia']} cristales, ${response['luz_cuantica']}% luz cuántica');
     } catch (e, stackTrace) {
-      print('❌ [DIAGNÓSTICO] ERROR guardando recompensas en Supabase: $e');
-      print('❌ [DIAGNÓSTICO] Stack trace: $stackTrace');
+      debugPrint('❌ [DIAGNÓSTICO] ERROR guardando recompensas en Supabase: $e');
+      debugPrint('❌ [DIAGNÓSTICO] Stack trace: $stackTrace');
       rethrow; // Re-lanzar el error para que se pueda manejar arriba
     }
 
@@ -270,7 +270,7 @@ class RewardsService {
 
       return response != null;
     } catch (e) {
-      print('⚠️ Error verificando recompensas otorgadas: $e');
+      debugPrint('⚠️ Error verificando recompensas otorgadas: $e');
       // Si hay error, permitir otorgar recompensas (fallback)
       return false;
     }
@@ -300,9 +300,9 @@ class RewardsService {
         'created_at': hoy.toIso8601String(),
       });
 
-      print('✅ Recompensa registrada: $tipoAccion para código $codigoId');
+      debugPrint('✅ Recompensa registrada: $tipoAccion para código $codigoId');
     } catch (e) {
-      print('⚠️ Error registrando recompensa otorgada: $e');
+      debugPrint('⚠️ Error registrando recompensa otorgada: $e');
       // No lanzar error, solo registrar
     }
   }
@@ -338,14 +338,14 @@ class RewardsService {
     final rewards = await getUserRewards(forceRefresh: true);
     final luzCuanticaAnterior = rewards.luzCuantica;
     
-    print('💎 Otorgando ${cristalesPorRepeticion} cristales por repetición. Cristales actuales: ${rewards.cristalesEnergia}');
+    debugPrint('💎 Otorgando ${cristalesPorRepeticion} cristales por repetición. Cristales actuales: ${rewards.cristalesEnergia}');
     
     final updatedRewards = rewards.copyWith(
       cristalesEnergia: rewards.cristalesEnergia + cristalesPorRepeticion,
       ultimaActualizacion: DateTime.now(),
     );
 
-    print('💎 Guardando ${updatedRewards.cristalesEnergia} cristales totales después de la repetición');
+    debugPrint('💎 Guardando ${updatedRewards.cristalesEnergia} cristales totales después de la repetición');
     await saveUserRewards(updatedRewards);
     await addToHistory(
       'cristales',
@@ -448,14 +448,14 @@ class RewardsService {
     final rewards = await getUserRewards(forceRefresh: true);
     final luzCuanticaAnterior = rewards.luzCuantica;
     
-    print('💎 Otorgando ${cristalesPorPilotajeCuantico} cristales por pilotaje cuántico. Cristales actuales: ${rewards.cristalesEnergia}');
+    debugPrint('💎 Otorgando ${cristalesPorPilotajeCuantico} cristales por pilotaje cuántico. Cristales actuales: ${rewards.cristalesEnergia}');
     
     final updatedRewards = rewards.copyWith(
       cristalesEnergia: rewards.cristalesEnergia + cristalesPorPilotajeCuantico,
       ultimaActualizacion: DateTime.now(),
     );
 
-    print('💎 Guardando ${updatedRewards.cristalesEnergia} cristales totales después del pilotaje');
+    debugPrint('💎 Guardando ${updatedRewards.cristalesEnergia} cristales totales después del pilotaje');
     await saveUserRewards(updatedRewards);
     await addToHistory(
       'cristales',

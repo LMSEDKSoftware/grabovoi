@@ -1,16 +1,17 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/env.dart';
 import '../models/supabase_models.dart';
 
 class RobustApiService {
   static const String _host = 'whtiazgcxdnemrrgjjqf.supabase.co';
   static const String _path = '/functions/v1/get-codigos';
-  static const String _apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndodGlhemdjeGRuZW1ycmdqanFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MjM2MzgsImV4cCI6MjA3NjA5OTYzOH0.1CFkusMrMKcvSU_-5RyGYPoKDM_yizuQMVGo7W3mXHU';
 
   static Map<String, String> get _headers => {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Authorization': 'Bearer $_apiKey',
+    'Authorization': 'Bearer ${Env.supabaseAnonKey}',
     'Cache-Control': 'no-cache',
   };
 
@@ -23,15 +24,15 @@ class RobustApiService {
       if (search != null && search.isNotEmpty) 'search': search,
     });
 
-    print('[ROBUST API] GET $uri');
+    debugPrint('[ROBUST API] GET $uri');
     
     final res = await http.get(uri, headers: _headers);
     final body = utf8.decode(res.bodyBytes);
 
     // LOGS ÚTILES EN RELEASE
-    print('[ROBUST API] Status: ${res.statusCode}');
-    print('[ROBUST API] Body length: ${body.length}');
-    print('[ROBUST API] Body preview: ${body.length > 200 ? body.substring(0, 200) + '...' : body}');
+    debugPrint('[ROBUST API] Status: ${res.statusCode}');
+    debugPrint('[ROBUST API] Body length: ${body.length}');
+    debugPrint('[ROBUST API] Body preview: ${body.length > 200 ? body.substring(0, 200) + '...' : body}');
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase} → $body');
@@ -42,19 +43,19 @@ class RobustApiService {
     // Soportar 2 formas: List directa o { data: List }
     List dataList;
     if (decoded is List) {
-      print('[ROBUST API] Formato: List directa');
+      debugPrint('[ROBUST API] Formato: List directa');
       dataList = decoded;
     } else if (decoded is Map && decoded['data'] is List) {
-      print('[ROBUST API] Formato: {data: List}');
+      debugPrint('[ROBUST API] Formato: {data: List}');
       dataList = decoded['data'];
     } else {
-      print('[ROBUST API] ERROR: Formato JSON inesperado');
-      print('[ROBUST API] Tipo: ${decoded.runtimeType}');
-      print('[ROBUST API] Keys: ${decoded is Map ? decoded.keys.toList() : 'N/A'}');
+      debugPrint('[ROBUST API] ERROR: Formato JSON inesperado');
+      debugPrint('[ROBUST API] Tipo: ${decoded.runtimeType}');
+      debugPrint('[ROBUST API] Keys: ${decoded is Map ? decoded.keys.toList() : 'N/A'}');
       throw Exception('Formato JSON inesperado. Se esperaba List o {data: List}');
     }
 
-    print('[ROBUST API] DataList length: ${dataList.length}');
+    debugPrint('[ROBUST API] DataList length: ${dataList.length}');
 
     final items = dataList
         .whereType<Map<String, dynamic>>()
@@ -62,16 +63,16 @@ class RobustApiService {
           try {
             return CodigoGrabovoi.fromJson(e);
           } catch (parseError) {
-            print('[ROBUST API] ERROR parseando elemento: $e');
-            print('[ROBUST API] Parse error: $parseError');
+            debugPrint('[ROBUST API] ERROR parseando elemento: $e');
+            debugPrint('[ROBUST API] Parse error: $parseError');
             rethrow;
           }
         })
         .toList();
 
-    print('[ROBUST API] PARSED ITEMS: ${items.length}');
+    debugPrint('[ROBUST API] PARSED ITEMS: ${items.length}');
     if (items.isNotEmpty) {
-      print('[ROBUST API] Primer item: ${items.first.nombre} - ${items.first.codigo}');
+      debugPrint('[ROBUST API] Primer item: ${items.first.nombre} - ${items.first.codigo}');
     }
     
     return items;
@@ -91,7 +92,7 @@ class RobustApiService {
       }
       throw Exception('Error obteniendo categorías: ${res.statusCode}');
     } catch (e) {
-      print('[ROBUST API] Error categorías: $e');
+      debugPrint('[ROBUST API] Error categorías: $e');
       rethrow;
     }
   }
@@ -112,7 +113,7 @@ class RobustApiService {
       }
       throw Exception('Error obteniendo favoritos: ${res.statusCode}');
     } catch (e) {
-      print('[ROBUST API] Error favoritos: $e');
+      debugPrint('[ROBUST API] Error favoritos: $e');
       rethrow;
     }
   }
@@ -132,7 +133,7 @@ class RobustApiService {
         throw Exception('Error toggle favorito: ${res.statusCode}');
       }
     } catch (e) {
-      print('[ROBUST API] Error toggle favorito: $e');
+      debugPrint('[ROBUST API] Error toggle favorito: $e');
       rethrow;
     }
   }
@@ -149,7 +150,7 @@ class RobustApiService {
         throw Exception('Error incrementar popularidad: ${res.statusCode}');
       }
     } catch (e) {
-      print('[ROBUST API] Error incrementar popularidad: $e');
+      debugPrint('[ROBUST API] Error incrementar popularidad: $e');
       rethrow;
     }
   }

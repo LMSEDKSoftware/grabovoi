@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     //   // Verificar actualizaciones y mostrar diálogo si hay una disponible
     //   await UpdateAvailableDialog.showIfUpdateAvailable(context);
     // } catch (e) {
-    //   print('⚠️ Error verificando actualizaciones en HomeScreen: $e');
+    //   debugPrint('⚠️ Error verificando actualizaciones en HomeScreen: $e');
     // }
   }
   
@@ -145,31 +145,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     try {
       // Si solo debe mostrarse la primera vez y ya se mostró, no hacer nada
       if (onlyIfFirstTime && _muralModalShownThisSession) {
-        print('ℹ️ MuralModal ya se mostró en esta sesión, omitiendo...');
+        debugPrint('ℹ️ MuralModal ya se mostró en esta sesión, omitiendo...');
         return;
       }
       
-      print('🔍 Verificando mensajes del tablero...');
+      debugPrint('🔍 Verificando mensajes del tablero...');
       final count = await _muralService.getUnreadCount();
-      print('📊 Mensajes no leídos: $count');
+      debugPrint('📊 Mensajes no leídos: $count');
       
       if (count > 0 && mounted) {
         // Verificar si hay algún modal abierto antes de mostrar el MuralModal
         // Esto evita que se muestre encima de otros modales como SequenciaActivadaModal
         final navigator = Navigator.of(context, rootNavigator: true);
         if (navigator.canPop()) {
-          print('⚠️ Hay un modal abierto, esperando a que se cierre antes de mostrar MuralModal');
+          debugPrint('⚠️ Hay un modal abierto, esperando a que se cierre antes de mostrar MuralModal');
           // Esperar un momento y verificar de nuevo
           await Future.delayed(const Duration(milliseconds: 500));
           if (!mounted) return;
           // Verificar de nuevo si aún hay un modal
           if (navigator.canPop()) {
-            print('⚠️ Aún hay un modal abierto, cancelando mostrar MuralModal');
+            debugPrint('⚠️ Aún hay un modal abierto, cancelando mostrar MuralModal');
             return;
           }
         }
         
-        print('✅ Mostrando MuralModal');
+        debugPrint('✅ Mostrando MuralModal');
         _muralModalShownThisSession = true;
         // Si hay mensajes no leídos, mostrar el modal automáticamente
         // Usamos addPostFrameCallback para asegurar que el contexto esté listo
@@ -179,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           }
         });
       } else {
-        print('ℹ️ No hay mensajes del tablero para mostrar');
+        debugPrint('ℹ️ No hay mensajes del tablero para mostrar');
       }
     } catch (e) {
       debugPrint('Error verificando mensajes del mural: $e');
@@ -247,14 +247,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                                  assessment.containsKey('preferences') && 
                                  assessment.containsKey('motivation')));
 
-    print('🔍 Verificando WelcomeModal - tourCompleted: $tourCompleted, assessmentComplete: $assessmentComplete, welcomeModalShown: $welcomeModalShown');
+    debugPrint('🔍 Verificando WelcomeModal - tourCompleted: $tourCompleted, assessmentComplete: $assessmentComplete, welcomeModalShown: $welcomeModalShown');
 
     // Mostrar solo si:
     // 1. El tour ya terminó (tourCompleted == true)
     // 2. La evaluación está completa (assessmentComplete == true)
     // 3. El modal de bienvenida nunca se mostró
     if (tourCompleted && assessmentComplete && !welcomeModalShown && mounted) {
-      print('✅ Mostrando WelcomeModal');
+      debugPrint('✅ Mostrando WelcomeModal');
       _hasCheckedModalThisSession = true;
 
       // Pequeño delay para esperar que la UI esté lista
@@ -271,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
         barrierDismissible: false,
         builder: (context) => WelcomeModal(
           onContinue: () async {
-            print('✅ WelcomeModal cerrado, verificando tablero...');
+            debugPrint('✅ WelcomeModal cerrado, verificando tablero...');
             // Después de WelcomeModal, mostrar tablero si hay mensajes
             // Solo si es el flujo inicial (después del tour)
             if (_shouldShowMuralAfterWelcome && !_muralModalShownThisSession) {
