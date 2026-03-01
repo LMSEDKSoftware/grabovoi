@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'lib/config/supabase_config.dart';
 import 'lib/services/auth_service_simple.dart';
 import 'lib/services/subscription_service.dart';
@@ -45,7 +44,7 @@ void main() async {
     // Test 5: Verificar que el servicio detecta usuarios no autenticados
     await testUnauthenticatedUser();
     
-    print('\n' + '=' * 60);
+    print('\n${'=' * 60}');
     print('✅ TODAS LAS PRUEBAS COMPLETADAS');
     print('=' * 60);
     
@@ -69,8 +68,8 @@ Future<void> testNewUserGetsTrial() async {
   
   // Crear un usuario de prueba único
   final testEmail = 'test_trial_${DateTime.now().millisecondsSinceEpoch}@test.com';
-  final testPassword = 'TestPassword123!';
-  final testName = 'Usuario Prueba';
+  const testPassword = 'TestPassword123!';
+  const testName = 'Usuario Prueba';
   
   try {
     print('📝 Creando usuario de prueba: $testEmail');
@@ -129,7 +128,7 @@ Future<void> testTrialIsSaved() async {
   final subscriptionService = SubscriptionService();
   
   final testEmail = 'test_trial_save_${DateTime.now().millisecondsSinceEpoch}@test.com';
-  final testPassword = 'TestPassword123!';
+  const testPassword = 'TestPassword123!';
   
   try {
     print('📝 Creando usuario: $testEmail');
@@ -194,7 +193,7 @@ Future<void> testPremiumAccessDuringTrial() async {
   final subscriptionService = SubscriptionService();
   
   final testEmail = 'test_premium_${DateTime.now().millisecondsSinceEpoch}@test.com';
-  final testPassword = 'TestPassword123!';
+  const testPassword = 'TestPassword123!';
   
   try {
     print('📝 Creando usuario: $testEmail');
@@ -248,7 +247,7 @@ Future<void> testSharedPreferences() async {
   final subscriptionService = SubscriptionService();
   
   final testEmail = 'test_prefs_${DateTime.now().millisecondsSinceEpoch}@test.com';
-  final testPassword = 'TestPassword123!';
+  const testPassword = 'TestPassword123!';
   
   try {
     print('📝 Creando usuario: $testEmail');

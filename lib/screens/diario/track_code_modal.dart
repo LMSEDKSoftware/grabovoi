@@ -126,26 +126,11 @@ class TrackCodeModal extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
+                    child: CustomButton(
+                      text: 'Omitir',
                       onPressed: onSkip,
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: Colors.white.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: Text(
-                        'Omitir',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white70,
-                        ),
-                      ),
+                      isOutlined: true,
+                      color: Colors.white54,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -154,7 +139,6 @@ class TrackCodeModal extends StatelessWidget {
                     child: CustomButton(
                       text: 'Sí, Dar Seguimiento',
                       onPressed: onAccept,
-                      color: const Color(0xFFFFD700),
                     ),
                   ),
                 ],

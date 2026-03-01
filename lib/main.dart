@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show SystemChrome, DeviceOrientation, SystemUiOverlayStyle, SystemUiMode;
+import 'package:flutter/services.dart'
+    show SystemChrome, DeviceOrientation, SystemUiOverlayStyle, SystemUiMode;
 import 'package:google_fonts/google_fonts.dart';
 import 'config/env.dart';
 import 'config/supabase_config.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'services/migration_service.dart';
 import 'services/app_time_tracker.dart';
 import 'services/pilotage_state_service.dart';
 import 'services/audio_service.dart';
@@ -14,11 +13,7 @@ import 'services/audio_manager_service.dart';
 import 'services/numbers_voice_service.dart';
 import 'services/notification_scheduler.dart';
 import 'services/notification_service.dart';
-import 'services/permissions_service.dart';
-import 'dart:io' show Platform;
-import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/onboarding/user_assessment_screen.dart';
-import 'screens/onboarding/app_tour_screen.dart';
 import 'screens/onboarding/static_screens/static_home_screen.dart';
 import 'screens/onboarding/static_screens/static_search_screen.dart';
 import 'screens/onboarding/static_screens/static_challenge_screen.dart';
@@ -30,7 +25,7 @@ import 'screens/home/home_screen.dart';
 import 'widgets/auth_wrapper.dart';
 import 'widgets/glow_background.dart';
 import 'screens/biblioteca/static_biblioteca_screen.dart';
-import 'screens/pilotaje/quantum_pilotage_screen.dart';
+
 import 'screens/diario/diario_screen.dart';
 import 'screens/desafios/desafios_screen.dart';
 import 'screens/evolucion/evolucion_screen.dart';
@@ -38,19 +33,22 @@ import 'screens/auth/auth_callback_screen.dart';
 import 'screens/auth/recovery_set_password_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'repositories/codigos_repository.dart';
-import 'models/notification_history_item.dart';
 import 'services/notification_count_service.dart';
 import 'services/subscription_service.dart';
 import 'widgets/subscription_required_modal.dart';
-import 'services/auth_service_simple.dart';
-// import 'services/in_app_update_service.dart'; // Servicio no disponible
-import 'screens/auth/auth_callback_screen.dart';
+
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+
+const List<String> kNotoFontFallback = <String>[
+  'Noto Color Emoji',
+  'Noto Sans Symbols2',
+  'Noto Sans Symbols',
+  'Noto Sans',
+];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Cargar variables de entorno locales solo en no-web
   if (!kIsWeb) {
     try {
@@ -62,7 +60,8 @@ void main() async {
   if (Env.supabaseUrl.isEmpty || Env.supabaseAnonKey.isEmpty) {
     debugPrint('⚠️ SUPABASE_URL o SUPABASE_ANON_KEY vacíos.');
     if (kIsWeb) {
-      debugPrint('   En web usa: ./scripts/launch_chrome.sh (inyecta --dart-define desde .env)');
+      debugPrint(
+          '   En web usa: ./scripts/launch_chrome.sh (inyecta --dart-define desde .env)');
     } else {
       debugPrint('   Verifica que .env tenga SUPABASE_URL y SUPABASE_ANON_KEY');
     }
@@ -75,10 +74,10 @@ void main() async {
 
   // Inicializar rastreador de tiempo
   AppTimeTracker().startSession();
-  
+
   // Inicializar códigos con caché local y actualización automática
   await CodigosRepository().initCodigos();
-  
+
   // Inicializar notificaciones (solo en no-web)
   if (!kIsWeb) {
     try {
@@ -95,11 +94,11 @@ void main() async {
     } catch (e) {
       debugPrint('⚠️ Error inicializando NotificationScheduler: $e');
     }
-    
+
     // NOTA: Los permisos NO se solicitan automáticamente aquí
     // Se solicitarán después del login mediante un modal amigable
   }
-  
+
   // Inicializar servicio de suscripciones (todas las plataformas, incluida web)
   // En web no hay IAP pero sí se debe cargar estado desde Supabase para restringir pestañas igual que en app
   try {
@@ -107,34 +106,21 @@ void main() async {
   } catch (e) {
     debugPrint('⚠️ Error inicializando SubscriptionService: $e');
   }
-  
-  // Verificar actualizaciones in-app (solo en Android)
-  // Se hace en segundo plano para no bloquear el inicio de la app
-  // COMENTADO: Servicio no disponible actualmente
-  // if (!kIsWeb) {
-  //   Future.delayed(const Duration(seconds: 2), () {
-  //     try {
-  //       InAppUpdateService().checkAndUpdate().catchError((e) {
-  //         debugPrint('⚠️ Error verificando actualizaciones: $e');
-  //       });
-  //     } catch (e) {
-  //       debugPrint('⚠️ Error inicializando InAppUpdateService: $e');
-  //     }
-  //   });
-  // }
-  
+
+  // ☝️ Verificación de versión: se realiza en AuthWrapper tras autenticarse (vía Supabase)
+
   // Configurar orientación
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
+
   // Configurar pantalla completa inmersiva
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.immersiveSticky,
     overlays: [],
   );
-  
+
   runApp(const MyApp());
 }
 
@@ -145,7 +131,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
-        textScaleFactor: MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2),
+        textScaler: TextScaler.linear(MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2)),
       ),
       child: MaterialApp(
         title: 'ManiGraB - Manifestaciones Numéricas',
@@ -153,6 +139,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           useMaterial3: true,
           brightness: Brightness.dark,
+          fontFamilyFallback: kNotoFontFallback,
           colorScheme: const ColorScheme.dark(
             primary: Color(0xFFFFD700), // Dorado
             secondary: Color(0xFF1C2541), // Azul medio
@@ -186,9 +173,12 @@ class MyApp extends StatelessWidget {
         builder: (context, child) {
           return MediaQuery(
             data: MediaQuery.of(context).copyWith(
-              textScaleFactor: MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2),
+              textScaler: TextScaler.linear(MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2)),
             ),
-            child: child!,
+            child: DefaultTextStyle.merge(
+              style: const TextStyle(fontFamilyFallback: kNotoFontFallback),
+              child: child!,
+            ),
           );
         },
         // Manejar rutas web para callbacks de autenticación y recovery
@@ -203,7 +193,9 @@ class MyApp extends StatelessWidget {
           // En web, si llegamos a / (o ruta por defecto) con ?code=... es callback OAuth (PKCE)
           if (kIsWeb && Uri.base.queryParameters.containsKey('code')) {
             final routeName = settings.name ?? Uri.base.path;
-            if (routeName == '/' || routeName.isEmpty || routeName == '/auth/callback') {
+            if (routeName == '/' ||
+                routeName.isEmpty ||
+                routeName == '/auth/callback') {
               return MaterialPageRoute(
                 builder: (context) => const AuthCallbackScreen(),
                 settings: settings,
@@ -212,19 +204,18 @@ class MyApp extends StatelessWidget {
           }
           // En web, capturar la ruta /recovery para cambio de contraseña
           // IMPORTANTE: Verificar tanto el path como si la URL contiene /recovery
-          final isRecoveryRoute = kIsWeb && (
-            settings.name == '/recovery' || 
-            settings.name?.startsWith('/recovery') == true ||
-            (settings.name == null && Uri.base.path == '/recovery')
-          );
-          
+          final isRecoveryRoute = kIsWeb &&
+              (settings.name == '/recovery' ||
+                  settings.name?.startsWith('/recovery') == true ||
+                  (settings.name == null && Uri.base.path == '/recovery'));
+
           if (isRecoveryRoute) {
             final uri = Uri.base;
-            
+
             String? accessToken;
             String? refreshToken;
             String? type;
-            
+
             // PRIORIDAD 1: Los tokens vienen en el HASH (después de #)
             // Supabase redirige a: https://manigrab.app/recovery#access_token=...
             if (uri.hasFragment) {
@@ -235,25 +226,29 @@ class MyApp extends StatelessWidget {
               type = hashParams['type'];
               debugPrint('🔍 Recovery route - Tokens encontrados en HASH:');
             }
-            
+
             // PRIORIDAD 2: Si no están en hash, intentar query params (por si acaso)
             if (accessToken == null) {
               accessToken = uri.queryParameters['access_token'];
               refreshToken = uri.queryParameters['refresh_token'];
               type = uri.queryParameters['type'];
-              debugPrint('🔍 Recovery route - Tokens encontrados en QUERY PARAMS:');
+              debugPrint(
+                  '🔍 Recovery route - Tokens encontrados en QUERY PARAMS:');
             }
-            
+
             debugPrint('   URL completa: ${uri.toString()}');
             debugPrint('   Path: ${uri.path}');
             debugPrint('   Fragment presente: ${uri.hasFragment}');
             if (uri.hasFragment) {
-              debugPrint('   Fragment (primeros 100 chars): ${uri.fragment.substring(0, uri.fragment.length > 100 ? 100 : uri.fragment.length)}...');
+              debugPrint(
+                  '   Fragment (primeros 100 chars): ${uri.fragment.substring(0, uri.fragment.length > 100 ? 100 : uri.fragment.length)}...');
             }
-            debugPrint('   Access Token: ${accessToken != null ? "✅ presente (${accessToken.substring(0, 20)}...)" : "❌ ausente"}');
-            debugPrint('   Refresh Token: ${refreshToken != null ? "✅ presente" : "❌ ausente"}');
+            debugPrint(
+                '   Access Token: ${accessToken != null ? "✅ presente (${accessToken.substring(0, 20)}...)" : "❌ ausente"}');
+            debugPrint(
+                '   Refresh Token: ${refreshToken != null ? "✅ presente" : "❌ ausente"}');
             debugPrint('   Type: $type');
-            
+
             return MaterialPageRoute(
               builder: (context) => RecoverySetPasswordScreen(
                 accessToken: accessToken,
@@ -267,32 +262,33 @@ class MyApp extends StatelessWidget {
         },
         // En web, si la URL tiene ?code=... es callback OAuth (PKCE): mostrar pantalla que intercambia code por sesión
         home: kIsWeb && Uri.base.queryParameters.containsKey('code')
-          ? const AuthCallbackScreen()
-          : kIsWeb && Uri.base.path == '/recovery' && Uri.base.hasFragment
-          ? Builder(
-              builder: (context) {
-                final uri = Uri.base;
-                String? accessToken;
-                String? refreshToken;
-                
-                if (uri.hasFragment) {
-                  final fragment = uri.fragment;
-                  final hashParams = Uri.splitQueryString(fragment);
-                  accessToken = hashParams['access_token'];
-                  refreshToken = hashParams['refresh_token'];
-                  debugPrint('🔍 Recovery detectado en home - Tokens en HASH');
-                }
-                
-                if (accessToken != null) {
-                  return RecoverySetPasswordScreen(
-                    accessToken: accessToken,
-                    refreshToken: refreshToken,
-                  );
-                }
-                return const AuthWrapper();
-              },
-            )
-          : const AuthWrapper(),
+            ? const AuthCallbackScreen()
+            : kIsWeb && Uri.base.path == '/recovery' && Uri.base.hasFragment
+                ? Builder(
+                    builder: (context) {
+                      final uri = Uri.base;
+                      String? accessToken;
+                      String? refreshToken;
+
+                      if (uri.hasFragment) {
+                        final fragment = uri.fragment;
+                        final hashParams = Uri.splitQueryString(fragment);
+                        accessToken = hashParams['access_token'];
+                        refreshToken = hashParams['refresh_token'];
+                        debugPrint(
+                            '🔍 Recovery detectado en home - Tokens en HASH');
+                      }
+
+                      if (accessToken != null) {
+                        return RecoverySetPasswordScreen(
+                          accessToken: accessToken,
+                          refreshToken: refreshToken,
+                        );
+                      }
+                      return const AuthWrapper();
+                    },
+                  )
+                : const AuthWrapper(),
       ),
     );
   }
@@ -301,7 +297,7 @@ class MyApp extends StatelessWidget {
 class MainNavigation extends StatefulWidget {
   final bool showTour;
   final VoidCallback? onTourFinished; // Callback cuando el tour termina
-  
+
   const MainNavigation({super.key, this.showTour = false, this.onTourFinished});
 
   @override
@@ -310,9 +306,10 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
-  
+
   late final List<Widget> _screens;
-  final NotificationCountService _notificationCountService = NotificationCountService();
+  final NotificationCountService _notificationCountService =
+      NotificationCountService();
   bool _showTourOverlay = false;
   final GlobalKey _homeScreenKey = GlobalKey();
   final GlobalKey _diarioScreenKey = GlobalKey();
@@ -324,27 +321,28 @@ class _MainNavigationState extends State<MainNavigation> {
     _screens = [
       HomeScreen(key: _homeScreenKey as Key?),
       StaticBibliotecaScreen(key: _bibliotecaScreenKey),
-      DiarioScreen(key: _diarioScreenKey), // Índice 2 - Diario (visualmente entre Biblioteca y Desafíos)
-      const QuantumPilotageScreen(), // Índice 3 - Oculto en menú
+      DiarioScreen(
+          key:
+              _diarioScreenKey), // Índice 2 - Diario (visualmente entre Biblioteca y Desafíos)
       const DesafiosScreen(),
       const EvolucionScreen(),
       const ProfileScreen(),
     ];
     _notificationCountService.initialize();
-    
+
     // Verificar si necesita mostrar el tour
     // Si showTour es false, verificar si el usuario nunca ha visto el tour
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
         bool shouldShowTour = widget.showTour;
-        
+
         // Si showTour es false, verificar si necesita tour
         if (!shouldShowTour) {
           final onboardingService = OnboardingService();
           final hasSeenTour = await onboardingService.hasSeenOnboarding();
           shouldShowTour = !hasSeenTour;
         }
-        
+
         if (shouldShowTour) {
           setState(() {
             _showTourOverlay = true;
@@ -363,7 +361,7 @@ class _MainNavigationState extends State<MainNavigation> {
       }
     });
   }
-  
+
   @override
   void dispose() {
     // No cerramos el servicio aquí porque es un singleton compartido
@@ -388,10 +386,10 @@ class _MainNavigationState extends State<MainNavigation> {
     } catch (_) {}
     final audioService = AudioService();
     audioService.stopMusic();
-    
+
     final audioManagerService = AudioManagerService();
     audioManagerService.stop();
-    
+
     // Resetear estado del pilotaje
     final pilotageService = PilotageStateService();
     pilotageService.resetAllPilotageStates();
@@ -423,7 +421,7 @@ class _MainNavigationState extends State<MainNavigation> {
             ],
           ),
           content: Text(
-            '¿Estás seguro de que deseas abandonar el pilotaje cuántico y detener la música?',
+            '¿Estás seguro de que deseas abandonar la sesión actual y detener la música?',
             style: GoogleFonts.inter(
               color: Colors.white70,
               fontSize: 14,
@@ -432,7 +430,8 @@ class _MainNavigationState extends State<MainNavigation> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(false); // Cancelar - no cambiar de tab
+                Navigator.of(context)
+                    .pop(false); // Cancelar - no cambiar de tab
               },
               child: Text(
                 'Cancelar',
@@ -468,21 +467,21 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-
   Future<void> _handleTabSelection(int index) async {
     final subscriptionService = SubscriptionService();
-    
+
     // Verificar si el usuario es gratuito (sin suscripción después de los 7 días)
     final isFreeUser = subscriptionService.isFreeUser;
-    
-    // Permitir acceso a Inicio (index 0) y Perfil (index 6) siempre
+
+    // Permitir acceso a Inicio (index 0) y Perfil (index 5) siempre
     // Solo restringir otras pestañas para usuarios gratuitos
-    if (isFreeUser && index != 0 && index != 6) {
+    if (isFreeUser && index != 0 && index != 5) {
       // Mostrar modal de suscripción requerida
       if (mounted) {
         SubscriptionRequiredModal.show(
           context,
-          message: 'Esta función está disponible solo para usuarios Premium. Suscríbete para acceder a todas las funciones de la app.',
+          message:
+              'Esta función está disponible solo para usuarios Premium. Suscríbete para acceder a todas las funciones de la app.',
           onDismiss: () {
             // Mantener en la pantalla actual (Inicio) después de cerrar el modal
             setState(() {
@@ -493,10 +492,11 @@ class _MainNavigationState extends State<MainNavigation> {
       }
       return;
     }
-    
+
     // Interceptar cambio de tab si hay pilotaje activo
     // Nota: El pilotaje ahora está integrado en biblioteca (índice 1)
-    if (_currentIndex == 1 && index != 1) { // Biblioteca ahora tiene el pilotaje
+    if (_currentIndex == 1 && index != 1) {
+      // Biblioteca ahora tiene el pilotaje
       final pilotageService = PilotageStateService();
       if (pilotageService.isAnyPilotageActive) {
         final result = await _showPilotageActiveDialog();
@@ -506,7 +506,7 @@ class _MainNavigationState extends State<MainNavigation> {
         }
       }
     }
-    
+
     setState(() {
       _currentIndex = index;
     });
@@ -516,7 +516,8 @@ class _MainNavigationState extends State<MainNavigation> {
     // Si el usuario añade/edita una entrada desde otra pantalla, puede refrescar desde el propio Diario (pull-to-refresh o similar).
 
     // Actualizar conteo de notificaciones cuando se cambia a la pestaña de Perfil
-    if (index == 6) { // Perfil ahora es índice 6
+    if (index == 6) {
+      // Perfil ahora es índice 6
       _notificationCountService.updateCount();
     }
   }
@@ -558,7 +559,7 @@ class _MainNavigationState extends State<MainNavigation> {
             ),
             bottomNavigationBar: MediaQuery(
               data: MediaQuery.of(context).copyWith(
-                textScaleFactor: MediaQuery.of(context).textScaleFactor.clamp(0.9, 1.05),
+                textScaler: TextScaler.linear(MediaQuery.of(context).textScaleFactor.clamp(0.9, 1.05)),
               ),
               child: Container(
                 decoration: BoxDecoration(
@@ -581,7 +582,8 @@ class _MainNavigationState extends State<MainNavigation> {
                 child: SafeArea(
                   top: false,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -601,26 +603,20 @@ class _MainNavigationState extends State<MainNavigation> {
                           index: 2,
                         ),
                         // Cuántico oculto (índice 3) - funcionalidad preservada pero no visible en menú
-                        // _buildNavItem(
-                        //   icon: Icons.auto_awesome,
-                        //   label: 'Cuántico',
-                        //   index: 3,
-                        //   isCenter: true,
-                        // ),
                         _buildNavItem(
                           icon: Icons.emoji_events,
                           label: 'Desafíos',
-                          index: 4,
+                          index: 3,
                         ),
                         _buildNavItem(
                           icon: Icons.show_chart,
                           label: 'Evolución',
-                          index: 5,
+                          index: 4,
                         ),
                         _buildNavItem(
                           icon: Icons.person,
                           label: 'Perfil',
-                          index: 6,
+                          index: 5,
                         ),
                       ],
                     ),
@@ -636,26 +632,27 @@ class _MainNavigationState extends State<MainNavigation> {
                 setState(() {
                   _showTourOverlay = false;
                 });
-                
+
                 // Después del tour, verificar si necesita evaluación
                 await Future.delayed(const Duration(milliseconds: 500));
-                
+
                 // Verificar si necesita evaluación
                 final progressService = UserProgressService();
                 final assessment = await progressService.getUserAssessment();
-                final needsAssessment = assessment == null || 
-                  !(assessment['is_complete'] == true || 
-                    (assessment.containsKey('knowledge_level') && 
-                     assessment.containsKey('goals') && 
-                     assessment.containsKey('experience_level') && 
-                     assessment.containsKey('time_available') && 
-                     assessment.containsKey('preferences') && 
-                     assessment.containsKey('motivation')));
-                
+                final needsAssessment = assessment == null ||
+                    !(assessment['is_complete'] == true ||
+                        (assessment.containsKey('knowledge_level') &&
+                            assessment.containsKey('goals') &&
+                            assessment.containsKey('experience_level') &&
+                            assessment.containsKey('time_available') &&
+                            assessment.containsKey('preferences') &&
+                            assessment.containsKey('motivation')));
+
                 if (needsAssessment && mounted) {
                   // Navegar a UserAssessmentScreen
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const UserAssessmentScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const UserAssessmentScreen()),
                   );
                 } else {
                   // Si no necesita evaluación, activar WelcomeModal y MuralModal
@@ -668,7 +665,8 @@ class _MainNavigationState extends State<MainNavigation> {
                     try {
                       (homeState as dynamic).triggerWelcomeAndMuralFlow();
                     } catch (e) {
-                      debugPrint('⚠️ Error llamando triggerWelcomeAndMuralFlow: $e');
+                      debugPrint(
+                          '⚠️ Error llamando triggerWelcomeAndMuralFlow: $e');
                     }
                   }
                 }
@@ -683,13 +681,10 @@ class _MainNavigationState extends State<MainNavigation> {
     required IconData icon,
     required String label,
     required int index,
-    bool isCenter = false,
   }) {
     final isSelected = _currentIndex == index;
     final textScale = MediaQuery.of(context).textScaleFactor;
     final showLabel = textScale <= 1.15;
-    final subscriptionService = SubscriptionService();
-    
     return GestureDetector(
       onTap: () => _handleTabSelection(index),
       child: Tooltip(
@@ -716,8 +711,8 @@ class _MainNavigationState extends State<MainNavigation> {
                         : Colors.white.withOpacity(0.5),
                     size: 22, // Tamaño uniforme para todos los iconos
                   ),
-                  // Burbuja de notificaciones solo para el icono de Perfil (index 6)
-                  if (index == 6)
+                  // Burbuja de notificaciones solo para el icono de Perfil (index 5)
+                  if (index == 5)
                     StreamBuilder<int>(
                       stream: _notificationCountService.countStream,
                       initialData: _notificationCountService.currentCount,
@@ -767,7 +762,8 @@ class _MainNavigationState extends State<MainNavigation> {
                     color: isSelected
                         ? const Color(0xFFFFD700)
                         : Colors.white.withOpacity(0.5),
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -785,9 +781,9 @@ class _MainNavigationState extends State<MainNavigation> {
 // Widget para mostrar el tour como overlay sobre MainNavigation
 class _TourOverlay extends StatefulWidget {
   final VoidCallback onFinish;
-  
+
   const _TourOverlay({required this.onFinish});
-  
+
   @override
   State<_TourOverlay> createState() => _TourOverlayState();
 }
@@ -808,19 +804,23 @@ class _TourOverlayState extends State<_TourOverlay> {
   final List<Map<String, String>> _tourData = [
     {
       'title': 'Bienvenido al Portal',
-      'description': 'Tu espacio cuántico para la transformación personal a través de las secuencias vibracionales.',
+      'description':
+          'Tu espacio cuántico para la transformación personal a través de las secuencias vibracionales.',
     },
     {
       'title': 'Encuentra tu Secuencia',
-      'description': 'Explora nuestra biblioteca de secuencias para salud, abundancia, amor y protección.',
+      'description':
+          'Explora nuestra biblioteca de secuencias para salud, abundancia, amor y protección.',
     },
     {
       'title': 'Desafíos Vibracionales',
-      'description': 'Participa en desafíos guiados de 7, 14 o 21 días para crear hábitos poderosos.',
+      'description':
+          'Participa en desafíos guiados de 7, 14 o 21 días para crear hábitos poderosos.',
     },
     {
       'title': 'Sigue tu Evolución',
-      'description': 'Visualiza tu progreso, mantén tu racha y desbloquea logros en tu camino.',
+      'description':
+          'Visualiza tu progreso, mantén tu racha y desbloquea logros en tu camino.',
     },
   ];
 
@@ -834,7 +834,7 @@ class _TourOverlayState extends State<_TourOverlay> {
     await _onboardingService.markOnboardingAsSeen();
     widget.onFinish();
   }
-  
+
   Widget _buildTourDescription(int pageIndex) {
     if (pageIndex == 0) {
       // Primera página con tarjetas profesionales para Luz Cuántica y Cristales
@@ -1096,7 +1096,8 @@ class _TourOverlayState extends State<_TourOverlay> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 8,
-                            shadowColor: const Color(0xFFFFD700).withOpacity(0.5),
+                            shadowColor:
+                                const Color(0xFFFFD700).withOpacity(0.5),
                           ),
                           child: Text(
                             _isLastPage ? 'Comenzar' : 'Siguiente',

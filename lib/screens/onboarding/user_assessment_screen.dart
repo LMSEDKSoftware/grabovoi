@@ -23,10 +23,10 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
 
   // Respuestas de la encuesta
   String _knowledgeLevel = '';
-  List<String> _goals = [];
+  final List<String> _goals = [];
   String _experienceLevel = '';
   String _timeAvailable = '';
-  List<String> _preferences = [];
+  final List<String> _preferences = [];
   String _motivation = '';
 
   final List<Map<String, dynamic>> _pages = [

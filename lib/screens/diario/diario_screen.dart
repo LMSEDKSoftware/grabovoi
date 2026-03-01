@@ -310,10 +310,10 @@ class _DiarioScreenState extends State<DiarioScreen> {
                     // Información de entradas
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.repeat_one,
                           size: 14,
-                          color: const Color(0xFFFFD700),
+                          color: Color(0xFFFFD700),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
@@ -328,7 +328,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                         ),
                         if (diasUnicos > 1) ...[
                           const SizedBox(width: 12),
-                          Icon(
+                          const Icon(
                             Icons.calendar_today,
                             size: 14,
                             color: Colors.white70,
@@ -351,10 +351,10 @@ class _DiarioScreenState extends State<DiarioScreen> {
                     ),
                   ),
               // Icono de flecha
-              Icon(
+              const Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: const Color(0xFFFFD700),
+                color: Color(0xFFFFD700),
               ),
             ],
           ),
@@ -536,7 +536,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                 const SizedBox(height: 8),
                 Row(
                 children: [
-                    Icon(
+                    const Icon(
                       Icons.repeat_one,
                       size: 14,
                       color: Colors.white70,
@@ -683,10 +683,10 @@ class _DiarioScreenState extends State<DiarioScreen> {
                     color: const Color(0xFFFFD700).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.calendar_today,
                     size: 18,
-                    color: const Color(0xFFFFD700),
+                    color: Color(0xFFFFD700),
                   ),
                 ),
           const SizedBox(width: 12),
@@ -721,10 +721,10 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   ),
                   child: Row(
                     children: [
-                        Icon(
+                        const Icon(
                           Icons.repeat,
                           size: 14,
-                          color: const Color(0xFFFFD700),
+                          color: Color(0xFFFFD700),
                         ),
                       const SizedBox(width: 4),
                       Text(
@@ -779,7 +779,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                     _buildSingleEntryContent(entrada, idx: idx > 0 ? idx : null),
               ],
             );
-          }).toList(),
+          }),
         ],
         ),
       ),
@@ -864,7 +864,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, color: const Color(0xFFFFD700), size: 20),
+                  const Icon(Icons.info_outline, color: Color(0xFFFFD700), size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -906,7 +906,7 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   ),
                   child: Row(
                     children: [
-            Icon(Icons.info_outline, size: 16, color: Colors.white70),
+            const Icon(Icons.info_outline, size: 16, color: Colors.white70),
             const SizedBox(width: 8),
                       Text(
               'Entrada registrada sin detalles adicionales',
@@ -1161,29 +1161,262 @@ class _DiarioScreenState extends State<DiarioScreen> {
     );
   }
 
-  void _mostrarFiltros() {
-    // TODO: Implementar diálogo de filtros
-    showDialog(
+  Future<void> _mostrarFiltros() async {
+    // Variables temporales para el diálogo
+    DateTime? tmpFechaDesde = _fechaDesde;
+    DateTime? tmpFechaHasta = _fechaHasta;
+    String? tmpCodigo = _filtroCodigo;
+    final codigoCtrl = TextEditingController(text: tmpCodigo ?? '');
+
+    await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        title: Text(
-          'Filtros',
-          style: GoogleFonts.inter(
-            color: const Color(0xFFFFD700),
-            fontWeight: FontWeight.bold,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocalState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1C2541),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: const Color(0xFFFFD700).withOpacity(0.4),
+                  width: 1.5,
+                ),
+              ),
+              title: Row(
+                children: [
+                  const Icon(Icons.filter_list, color: Color(0xFFFFD700), size: 24),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Filtrar Diario',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Filtro por código ──────────────────────────
+                    Text(
+                      'Secuencia / Código',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: codigoCtrl,
+                      style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Ej: 8888 o nombre del código',
+                        hintStyle: GoogleFonts.inter(color: Colors.white38, fontSize: 13),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.07),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: const Color(0xFFFFD700).withOpacity(0.3)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: const Color(0xFFFFD700).withOpacity(0.3)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFFFD700), width: 1.5),
+                        ),
+                        suffixIcon: codigoCtrl.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, color: Colors.white54, size: 18),
+                                onPressed: () {
+                                  codigoCtrl.clear();
+                                  setLocalState(() => tmpCodigo = null);
+                                },
+                              )
+                            : null,
+                      ),
+                      onChanged: (v) => setLocalState(() => tmpCodigo = v.trim().isEmpty ? null : v.trim()),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // ── Rango de fechas ────────────────────────────
+                    Text(
+                      'Rango de Fechas',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Desde
+                    _buildDatePickerRow(
+                      label: 'Desde',
+                      date: tmpFechaDesde,
+                      icon: Icons.calendar_today,
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: ctx,
+                          initialDate: tmpFechaDesde ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                          builder: (c, child) => Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: Color(0xFFFFD700),
+                                surface: Color(0xFF1C2541),
+                              ),
+                            ),
+                            child: child!,
+                          ),
+                        );
+                        if (picked != null) setLocalState(() => tmpFechaDesde = picked);
+                      },
+                      onClear: tmpFechaDesde != null
+                          ? () => setLocalState(() => tmpFechaDesde = null)
+                          : null,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Hasta
+                    _buildDatePickerRow(
+                      label: 'Hasta',
+                      date: tmpFechaHasta,
+                      icon: Icons.calendar_month,
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: ctx,
+                          initialDate: tmpFechaHasta ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                          builder: (c, child) => Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: Color(0xFFFFD700),
+                                surface: Color(0xFF1C2541),
+                              ),
+                            ),
+                            child: child!,
+                          ),
+                        );
+                        if (picked != null) setLocalState(() => tmpFechaHasta = picked);
+                      },
+                      onClear: tmpFechaHasta != null
+                          ? () => setLocalState(() => tmpFechaHasta = null)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+              actionsAlignment: MainAxisAlignment.spaceBetween,
+              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              actions: [
+                // Limpiar filtros
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _filtroCodigo = null;
+                      _fechaDesde = null;
+                      _fechaHasta = null;
+                    });
+                    Navigator.of(ctx).pop();
+                    _loadDiario();
+                  },
+                  icon: const Icon(Icons.clear_all, size: 18, color: Colors.white54),
+                  label: Text(
+                    'Limpiar',
+                    style: GoogleFonts.inter(color: Colors.white54, fontSize: 14),
+                  ),
+                ),
+                // Aplicar filtros
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _filtroCodigo = (codigoCtrl.text.trim().isEmpty) ? null : codigoCtrl.text.trim();
+                      _fechaDesde = tmpFechaDesde;
+                      _fechaHasta = tmpFechaHasta;
+                    });
+                    Navigator.of(ctx).pop();
+                    _loadDiario();
+                  },
+                  icon: const Icon(Icons.check, size: 18),
+                  label: Text('Aplicar', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD700),
+                    foregroundColor: const Color(0xFF0B132B),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Fila reutilizable de selector de fecha con ícono, label y botón de limpiar.
+  Widget _buildDatePickerRow({
+    required String label,
+    required DateTime? date,
+    required IconData icon,
+    required VoidCallback onTap,
+    VoidCallback? onClear,
+  }) {
+    final formatted = date != null ? DateFormat('dd/MM/yyyy').format(date) : 'Sin seleccionar';
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: date != null
+                ? const Color(0xFFFFD700).withOpacity(0.6)
+                : const Color(0xFFFFD700).withOpacity(0.25),
           ),
         ),
-        content: const Text(
-          'Los filtros estarán disponibles próximamente',
-          style: TextStyle(color: Colors.white70),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: const Color(0xFFFFD700)),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                formatted,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: date != null ? Colors.white : Colors.white38,
+                  fontWeight: date != null ? FontWeight.w600 : FontWeight.normal,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+            if (onClear != null) ...[
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: onClear,
+                child: const Icon(Icons.close, size: 16, color: Colors.white54),
+              ),
+            ],
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cerrar'),
-          ),
-        ],
       ),
     );
   }

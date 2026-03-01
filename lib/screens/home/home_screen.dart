@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
 import '../../widgets/illuminated_code_text.dart';
@@ -16,8 +16,6 @@ import '../../repositories/codigos_repository.dart';
 import '../../widgets/energy_stats_tab.dart';
 import '../../widgets/mural_modal.dart';
 import '../../services/mural_service.dart';
-// import '../../widgets/update_available_dialog.dart'; // Widget no disponible
-// import '../../services/in_app_update_service.dart'; // Servicio no disponible
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -52,30 +50,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     // NO mostrar tablero automáticamente al inicio
     // Se mostrará después del WelcomeModal si es necesario
     _checkOnboarding();
-    // NO verificar WelcomeModal aquí - se verificará cuando sea necesario desde MainNavigation
-    // Verificar actualizaciones después de que la pantalla esté lista
-    _checkForUpdates();
-  }
-  
-  /// Verifica si hay actualizaciones disponibles
-  Future<void> _checkForUpdates() async {
-    // COMENTADO: Servicios de actualización no disponibles actualmente
-    // Solo verificar en Android, no en web ni iOS
-    // if (kIsWeb || !Platform.isAndroid) {
-    //   return;
-    // }
-
-    // // Esperar un poco para que la pantalla se cargue completamente
-    // await Future.delayed(const Duration(seconds: 3));
-    
-    // if (!mounted) return;
-
-    // try {
-    //   // Verificar actualizaciones y mostrar diálogo si hay una disponible
-    //   await UpdateAvailableDialog.showIfUpdateAvailable(context);
-    // } catch (e) {
-    //   debugPrint('⚠️ Error verificando actualizaciones en HomeScreen: $e');
-    // }
+    // La verificación de nueva versión se realiza via Supabase en AppVersionService
   }
   
   @override
@@ -204,17 +179,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   /// Método público para activar la verificación del WelcomeModal y MuralModal
   /// Puede ser llamado desde MainNavigation cuando el tour y la evaluación terminen
   Future<void> triggerWelcomeAndMuralFlow() async {
-    // Para usuarios nuevos, verificar mural primero si hay mensajes activos
-    // incluso si no se muestra el WelcomeModal
-    final prefs = await SharedPreferences.getInstance();
-    final isFirstAccess = !(prefs.getBool('welcome_modal_shown') ?? false);
-    
-    if (isFirstAccess) {
-      // Verificar mural en primer acceso
+    final showedWelcome = await _checkWelcomeModal();
+    // Si no hubo WelcomeModal, el mural debe mostrarse solo si hay mensajes nuevos.
+    if (!showedWelcome) {
       await _checkMuralMessages(onlyIfFirstTime: true);
     }
-    
-    await _checkWelcomeModal();
   }
   
   /// Método público para activar la verificación del WelcomeModal
@@ -225,11 +194,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
   
   /// Verifica y muestra el modal de bienvenida
   /// Solo se muestra después de que el tour y la evaluación terminen
-  Future<void> _checkWelcomeModal() async {
-    if (_hasCheckedModalThisSession) return;
+  Future<bool> _checkWelcomeModal() async {
+    if (_hasCheckedModalThisSession) return false;
+    _hasCheckedModalThisSession = true;
 
-    final prefs = await SharedPreferences.getInstance();
-    final welcomeModalShown = prefs.getBool('welcome_modal_shown') ?? false;
+    final welcomeDontShowAgain = await _getWelcomeDontShowAgainFromDb();
     
     // Verificar si el tour ya terminó
     final onboardingService = OnboardingService();
@@ -247,20 +216,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                                  assessment.containsKey('preferences') && 
                                  assessment.containsKey('motivation')));
 
-    debugPrint('🔍 Verificando WelcomeModal - tourCompleted: $tourCompleted, assessmentComplete: $assessmentComplete, welcomeModalShown: $welcomeModalShown');
+    debugPrint('🔍 Verificando WelcomeModal - tourCompleted: $tourCompleted, assessmentComplete: $assessmentComplete, welcomeDontShowAgain: $welcomeDontShowAgain');
 
-    // Mostrar solo si:
+    // Mostrar si:
     // 1. El tour ya terminó (tourCompleted == true)
     // 2. La evaluación está completa (assessmentComplete == true)
-    // 3. El modal de bienvenida nunca se mostró
-    if (tourCompleted && assessmentComplete && !welcomeModalShown && mounted) {
+    // 3. El usuario NO marcó "No volver a mostrar este mensaje" en DB
+    if (tourCompleted && assessmentComplete && !welcomeDontShowAgain && mounted) {
       debugPrint('✅ Mostrando WelcomeModal');
-      _hasCheckedModalThisSession = true;
 
       // Pequeño delay para esperar que la UI esté lista
       await Future.delayed(const Duration(milliseconds: 800));
 
-      if (!mounted) return;
+      if (!mounted) return false;
 
       // Marcar que se debe mostrar el MuralModal después del WelcomeModal
       _shouldShowMuralAfterWelcome = true;
@@ -284,9 +252,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           },
         ),
       );
+      return true;
+    }
+    return false;
+  }
 
-      // Marcar como mostrado (solo una vez)
-      await prefs.setBool('welcome_modal_shown', true);
+  Future<bool> _getWelcomeDontShowAgainFromDb() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return false;
+    try {
+      final row = await Supabase.instance.client
+          .from('users')
+          .select('welcome_dont_show_again')
+          .eq('id', user.id)
+          .maybeSingle();
+      return row?['welcome_dont_show_again'] == true;
+    } catch (e) {
+      debugPrint('⚠️ Error leyendo preferencia WelcomeModal desde DB: $e');
+      return false;
     }
   }
 
@@ -334,9 +317,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            GoldenSphere(
+                            const GoldenSphere(
                               size: 180,
-                              color: const Color(0xFFFFD700), // Color dorado fijo
+                              color: Color(0xFFFFD700), // Color dorado fijo
                               glowIntensity: 0.7,
                               isAnimated: true,
                             ),
@@ -439,10 +422,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                 ),
               ),
             // Solapa flotante de estadísticas de energía (esquina superior derecha)
-            Positioned(
+            const Positioned(
               top: 0,
               right: 0,
-              child: const EnergyStatsTab(),
+              child: EnergyStatsTab(),
             ),
           ],
         ),
@@ -632,12 +615,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFF0B132B), width: 1),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.diamond, color: Color(0xFF0B132B), size: 14),
-                        const SizedBox(width: 4),
-                        const Text(
+                        Icon(Icons.diamond, color: Color(0xFF0B132B), size: 14),
+                        SizedBox(width: 4),
+                        Text(
                           '+5',
                           style: TextStyle(
                             color: Color(0xFF0B132B),
@@ -948,9 +931,9 @@ class _NivelEnergeticoModalState extends State<_NivelEnergeticoModal> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.keyboard_arrow_up,
-                          color: const Color(0xFFFFD700),
+                          color: Color(0xFFFFD700),
                           size: 28,
                         ),
                         const SizedBox(height: 4),

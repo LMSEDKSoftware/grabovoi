@@ -6,6 +6,7 @@
 ///    dan el mismo resultado (espacio se interpreta como "_").
 /// 3) Si comienza con número: solo dígitos y "_" o espacio. Un espacio en blanco
 ///    se muestra en el input como "_". No letras, no "-" ni otros símbolos.
+library;
 
 /// Normaliza una secuencia de código para comparación y búsqueda.
 /// - trim

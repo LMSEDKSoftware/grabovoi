@@ -8,6 +8,7 @@
 /// 2. Ejecuta: dart run scripts/migrate_wallpapers_to_supabase.dart
 /// 
 /// IMPORTANTE: Este script requiere que el bucket 'wallpapers' exista y sea público en Supabase
+library;
 
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -108,7 +109,7 @@ Future<void> main() async {
       
       await client.storage
           .from('wallpapers')
-          .upload(fileName, response.bodyBytes, fileOptions: FileOptions(
+          .upload(fileName, response.bodyBytes, fileOptions: const FileOptions(
             upsert: true,
             contentType: 'image/png',
           ));

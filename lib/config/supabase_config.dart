@@ -54,7 +54,7 @@ class SupabaseConfig {
     await Supabase.initialize(
       url: url,
       anonKey: anonKey,
-      authOptions: FlutterAuthClientOptions(
+      authOptions: const FlutterAuthClientOptions(
         authFlowType: AuthFlowType.implicit,
       ),
     );

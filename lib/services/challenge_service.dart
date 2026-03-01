@@ -150,7 +150,7 @@ class ChallengeService extends ChangeNotifier {
   // Crear desafíos por defecto
   List<Challenge> _createDefaultChallenges() {
     return [
-      Challenge(
+      const Challenge(
         id: 'iniciacion_energetica',
         title: 'Desafío de Iniciación Energética',
         description: 'Comienza tu viaje de manifestación con las secuencias básicas.',
@@ -171,14 +171,14 @@ class ChallengeService extends ChangeNotifier {
             type: ActionType.tiempoEnApp,
             description: 'Pasar al menos 15 minutos en la app al día',
             requiredCount: 1,
-            requiredDuration: const Duration(minutes: 15),
+            requiredDuration: Duration(minutes: 15),
           ),
         ],
         icon: '🌟',
         color: '#4CAF50',
         rewards: ['Badge de Iniciación', 'Acceso a códigos avanzados'],
       ),
-      Challenge(
+      const Challenge(
         id: 'armonizacion_intermedia',
         title: 'Desafío de Armonización Intermedia',
         description: 'Profundiza en tu conexión interior y expande tu campo energético.',
@@ -204,14 +204,14 @@ class ChallengeService extends ChangeNotifier {
             type: ActionType.tiempoEnApp,
             description: 'Pasar al menos 20 minutos en la app al día',
             requiredCount: 1,
-            requiredDuration: const Duration(minutes: 20),
+            requiredDuration: Duration(minutes: 20),
           ),
         ],
         icon: '⭐',
         color: '#2196F3',
         rewards: ['Badge de Armonización', 'Códigos exclusivos', 'Meditación guiada'],
       ),
-      Challenge(
+      const Challenge(
         id: 'luz_dorada_avanzada',
         title: 'Desafío Avanzado de Luz Dorada',
         description: 'Expande tu campo vibracional al máximo nivel de manifestación.',
@@ -244,7 +244,7 @@ class ChallengeService extends ChangeNotifier {
         color: '#FFD700',
         rewards: ['Badge de Luz Dorada', 'Códigos maestros', 'Acceso VIP', 'Consultoría personalizada'],
       ),
-      Challenge(
+      const Challenge(
         id: 'maestro_abundancia',
         title: 'Desafío Maestro de Abundancia',
         description: 'Transforma tu realidad hacia la abundancia infinita.',

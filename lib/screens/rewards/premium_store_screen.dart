@@ -1035,7 +1035,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
               ],
             ),
           ),
-          CustomButton(
+          const CustomButton(
             text: 'Próximamente',
             onPressed: null,
             color: Colors.grey,
@@ -1205,7 +1205,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
     final puedeComprar = (_rewards?.cristalesEnergia ?? 0) >= codigo.costoCristales;
     final tieneWallpaper = (codigo.wallpaperUrl != null && codigo.wallpaperUrl!.isNotEmpty);
 
-    void _abrirRecompensa() {
+    void abrirRecompensa() {
       if (!estaDesbloqueado) {
         return;
       }
@@ -1233,7 +1233,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: GestureDetector(
-        onTap: estaDesbloqueado && tieneWallpaper ? _abrirRecompensa : null,
+        onTap: estaDesbloqueado && tieneWallpaper ? abrirRecompensa : null,
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -1448,7 +1448,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Icon(Icons.timer, color: Colors.white70, size: 16),
+                  const Icon(Icons.timer, color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     '${meditacion.duracionMinutos} min',

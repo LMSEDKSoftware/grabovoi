@@ -45,14 +45,16 @@ class AIService {
     int nivel = 1;
     
     // Por días consecutivos (ajustado para ser más accesible)
-    if (diasConsecutivos >= 21) nivel += 4;
-    else if (diasConsecutivos >= 14) nivel += 3;
+    if (diasConsecutivos >= 21) {
+      nivel += 4;
+    } else if (diasConsecutivos >= 14) nivel += 3;
     else if (diasConsecutivos >= 7) nivel += 2;
     else if (diasConsecutivos >= 3) nivel += 1;
     
     // Por total de pilotajes (ajustado para ser más accesible)
-    if (totalPilotajes >= 100) nivel += 3;
-    else if (totalPilotajes >= 50) nivel += 2;
+    if (totalPilotajes >= 100) {
+      nivel += 3;
+    } else if (totalPilotajes >= 50) nivel += 2;
     else if (totalPilotajes >= 20) nivel += 1;
     else if (totalPilotajes >= 5) nivel += 1;
     

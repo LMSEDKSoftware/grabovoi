@@ -3,9 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../models/notification_preferences.dart';
-import '../../models/notification_history_item.dart';
 import '../../services/notification_scheduler.dart';
-import '../../services/notification_service.dart';
 
 class NotificationsSettingsScreen extends StatefulWidget {
   const NotificationsSettingsScreen({super.key});
@@ -232,9 +230,9 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.notifications_active,
-            color: const Color(0xFFFFD700),
+            color: Color(0xFFFFD700),
             size: 32,
           ),
           const SizedBox(width: 16),

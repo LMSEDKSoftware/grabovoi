@@ -338,7 +338,7 @@ class RewardsService {
     final rewards = await getUserRewards(forceRefresh: true);
     final luzCuanticaAnterior = rewards.luzCuantica;
     
-    debugPrint('💎 Otorgando ${cristalesPorRepeticion} cristales por repetición. Cristales actuales: ${rewards.cristalesEnergia}');
+    debugPrint('💎 Otorgando $cristalesPorRepeticion cristales por repetición. Cristales actuales: ${rewards.cristalesEnergia}');
     
     final updatedRewards = rewards.copyWith(
       cristalesEnergia: rewards.cristalesEnergia + cristalesPorRepeticion,
@@ -448,7 +448,7 @@ class RewardsService {
     final rewards = await getUserRewards(forceRefresh: true);
     final luzCuanticaAnterior = rewards.luzCuantica;
     
-    debugPrint('💎 Otorgando ${cristalesPorPilotajeCuantico} cristales por pilotaje cuántico. Cristales actuales: ${rewards.cristalesEnergia}');
+    debugPrint('💎 Otorgando $cristalesPorPilotajeCuantico cristales por pilotaje cuántico. Cristales actuales: ${rewards.cristalesEnergia}');
     
     final updatedRewards = rewards.copyWith(
       cristalesEnergia: rewards.cristalesEnergia + cristalesPorPilotajeCuantico,
@@ -748,7 +748,7 @@ class RewardsService {
 
     // Desbloquear mantra por 21 días (solo una vez)
     if (diasConsecutivos >= diasParaMantra) {
-      final mantra21Id = 'mantra_21_dias';
+      const mantra21Id = 'mantra_21_dias';
       if (!rewards.mantrasDesbloqueados.contains(mantra21Id)) {
         return await desbloquearMantra(mantra21Id);
       }

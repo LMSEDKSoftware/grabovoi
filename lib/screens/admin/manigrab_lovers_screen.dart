@@ -255,7 +255,7 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.lock_outline,
                             size: 64,
                             color: Colors.white38,
@@ -372,11 +372,11 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
               fillColor: Colors.white10,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white24),
+                borderSide: const BorderSide(color: Colors.white24),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white24),
+                borderSide: const BorderSide(color: Colors.white24),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -587,7 +587,7 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 16, color: Colors.white54),
+                      const Icon(Icons.calendar_today, size: 16, color: Colors.white54),
                       const SizedBox(width: 8),
                       Text(
                         'Expira: ${DateFormat('dd/MM/yyyy').format(expiresAt)}',
@@ -614,7 +614,7 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
                 ],
               ),
             );
-          }).toList(),
+          }),
       ],
     );
   }

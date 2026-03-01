@@ -1,17 +1,11 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../utils/share_helper.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/golden_sphere.dart';
-import '../../widgets/streamed_music_controller.dart';
 import '../../widgets/session_tools_block.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/custom_button.dart';
@@ -101,7 +95,7 @@ class _RepetitionSessionScreenState extends State<RepetitionSessionScreen>
   int _currentStepIndex = 0;
   List<bool> _stepCompleted = [false, false, false, false, false, false];
   String _intencionPersonal = '';
-  TextEditingController _intencionPersonalController = TextEditingController();
+  final TextEditingController _intencionPersonalController = TextEditingController();
 
   @override
   void initState() {
@@ -825,9 +819,9 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
         ),
         title: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.pause_circle,
-              color: const Color(0xFFFF6B6B),
+              color: Color(0xFFFF6B6B),
               size: 28,
             ),
             const SizedBox(width: 12),
@@ -1156,6 +1150,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
     );
   }
 
+  @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
@@ -1233,13 +1228,15 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(
-                                      titulo,
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFFFFD700),
+                                    Flexible(
+                                      child: Text(
+                                        titulo,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFFFFD700),
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -1258,6 +1255,8 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
                                     color: Colors.white.withOpacity(0.9),
                                     height: 1.4,
                                   ),
+                                  maxLines: 5,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 if (_showSequentialSteps && _currentStepIndex == 5) ...[
                                   const SizedBox(height: 20),
@@ -1376,12 +1375,15 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
                                               size: 16,
                                             ),
                                             const SizedBox(width: 6),
-                                            Text(
-                                              'También relacionado con:',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: const Color(0xFFFFD700),
+                                            Flexible(
+                                              child: Text(
+                                                'También relacionado con:',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: const Color(0xFFFFD700),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           ],
@@ -1400,6 +1402,8 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
                                                     fontWeight: FontWeight.w600,
                                                     color: Colors.white,
                                                   ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                                 if (tituloRel['descripcion'] != null &&
                                                     (tituloRel['descripcion'] as String).isNotEmpty) ...[
@@ -1421,7 +1425,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
                                               ],
                                             ),
                                           );
-                                        }).toList(),
+                                        }),
                                       ],
                                     ),
                                   ),
@@ -1886,7 +1890,6 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
     required IconData icon,
     required String label,
     required int index,
-    bool isCenter = false,
   }) {
     return GestureDetector(
       onTap: () {
@@ -1994,7 +1997,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
                   : null,
             ),
           );
-        }).toList(),
+        }),
         const SizedBox(width: 16),
         GestureDetector(
           onTap: _toggleConcentrationMode,
@@ -2057,7 +2060,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
             mediaQuery.textScaleFactor.clamp(1.0, 1.25);
 
         return MediaQuery(
-          data: mediaQuery.copyWith(textScaleFactor: constrainedScale),
+          data: mediaQuery.copyWith(textScaler: TextScaler.linear(constrainedScale)),
           child: AlertDialog(
             backgroundColor: const Color(0xFF363636),
             insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),

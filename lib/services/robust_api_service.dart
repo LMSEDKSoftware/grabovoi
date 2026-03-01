@@ -32,7 +32,7 @@ class RobustApiService {
     // LOGS ÚTILES EN RELEASE
     debugPrint('[ROBUST API] Status: ${res.statusCode}');
     debugPrint('[ROBUST API] Body length: ${body.length}');
-    debugPrint('[ROBUST API] Body preview: ${body.length > 200 ? body.substring(0, 200) + '...' : body}');
+    debugPrint('[ROBUST API] Body preview: ${body.length > 200 ? '${body.substring(0, 200)}...' : body}');
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase} → $body');

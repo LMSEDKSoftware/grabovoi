@@ -3,8 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
-import '../../services/onboarding_service.dart';
-import '../home/home_screen.dart';
 import '../../main.dart';
 
 class WelcomeScreen extends StatefulWidget {

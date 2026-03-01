@@ -1,5 +1,4 @@
 import '../models/supabase_models.dart';
-import '../config/supabase_config.dart';
 import '../repositories/codigos_repository.dart';
 import 'supabase_service.dart';
 import 'auth_service_simple.dart';
@@ -8,7 +7,6 @@ import 'user_custom_codes_service.dart';
 import 'user_progress_service.dart';
 import 'daily_code_service.dart';
 import 'notification_scheduler.dart';
-import 'rewards_service.dart';
 import 'mensajes_diarios_service.dart';
 
 class BibliotecaSupabaseService {

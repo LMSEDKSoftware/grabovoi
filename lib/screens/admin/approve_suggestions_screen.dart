@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../models/sugerencia_codigo_model.dart';
-import '../../models/supabase_models.dart';
 import '../../services/sugerencias_codigos_service.dart';
 import '../../services/admin_service.dart';
 import '../../services/supabase_service.dart';
@@ -133,10 +132,10 @@ class _ApproveSuggestionsScreenState extends State<ApproveSuggestionsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('❌ Sugerencia rechazada'),
             backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -502,7 +501,7 @@ class _ApproveSuggestionsScreenState extends State<ApproveSuggestionsScreen> {
           // Información adicional
           Row(
             children: [
-              Icon(Icons.source, size: 14, color: Colors.white54),
+              const Icon(Icons.source, size: 14, color: Colors.white54),
               const SizedBox(width: 4),
               Text(
                 'Fuente: ${sugerencia.fuente}',

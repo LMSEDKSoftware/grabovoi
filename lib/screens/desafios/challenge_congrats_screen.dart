@@ -1,12 +1,6 @@
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../utils/share_helper.dart';
 import '../../services/challenge_progress_tracker.dart';
 import '../../widgets/glow_background.dart';
@@ -185,7 +179,7 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
 
   Widget _buildShareableImage(String descripcion) {
     // Código genérico para retos de iniciación (usando código de iniciación)
-    final codigoReto = '1884321'; // Norma Absoluta - código de iniciación
+    const codigoReto = '1884321'; // Norma Absoluta - código de iniciación
     final String codigoFormateado = CodeFormatter.formatCodeForDisplay(codigoReto);
     final double fontSize = CodeFormatter.calculateFontSize(codigoReto);
 
@@ -225,9 +219,9 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
             clipBehavior: Clip.none,
             children: [
               // Esfera dorada
-              GoldenSphere(
+              const GoldenSphere(
                 size: 280,
-                color: const Color(0xFFFFD700),
+                color: Color(0xFFFFD700),
                 glowIntensity: 0.8,
                 isAnimated: false,
               ),

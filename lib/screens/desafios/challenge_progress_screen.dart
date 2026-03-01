@@ -269,7 +269,7 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          ..._getRequiredActionsForToday().map((action) => _buildActionItem(action)).toList(),
+          ..._getRequiredActionsForToday().map((action) => _buildActionItem(action)),
         ],
       ),
     );
@@ -509,7 +509,7 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
       ),
       builder: (_) {
         final days = perDay.keys.toList()..sort();
-        final accent = const Color(0xFFFFD700);
+        const accent = Color(0xFFFFD700);
         return Padding(
           padding: const EdgeInsets.all(16),
           child: SingleChildScrollView(
@@ -576,7 +576,7 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
                       ],
                     ),
                   );
-                }).toList(),
+                }),
                 const SizedBox(height: 8),
               ],
             ),

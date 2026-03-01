@@ -11,7 +11,7 @@ class IlluminatedCodeText extends StatelessWidget {
   final Animation<double>? animation;
 
   const IlluminatedCodeText({
-    Key? key,
+    super.key,
     required this.code,
     this.fontSize = 36,
     this.color,
@@ -19,7 +19,7 @@ class IlluminatedCodeText extends StatelessWidget {
     this.textAlign = TextAlign.center,
     this.isAnimated = false,
     this.animation,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

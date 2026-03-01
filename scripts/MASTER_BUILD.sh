@@ -145,6 +145,10 @@ echo -e "   👉 WEB: build/web/"
 echo -e "   👉 APK: build/app/outputs/flutter-apk/app-release.apk"
 echo -e "   👉 AAB: build/app/outputs/bundle/release/app-release.aab"
 
+# Actualizar versión en Supabase automáticamente
+bash "$SCRIPT_DIR/update_supabase_version.sh" "$NEW_VERSION_NAME"
+
 # Notificaciones macOS
 osascript -e 'display notification "Web, APK y AAB listos para distribución" with title "ManiGrab Build Exitosa" sound name "Glass"'
 say "Proceso maestro terminado exitosamente"
+

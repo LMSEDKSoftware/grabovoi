@@ -1,19 +1,13 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../utils/share_helper.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/golden_sphere.dart';
-import '../../widgets/streamed_music_controller.dart';
 import '../../widgets/session_tools_block.dart';
-import '../../widgets/audio_preload_indicator.dart';
 import '../../widgets/illuminated_code_text.dart';
 import '../../widgets/sequencia_activada_modal.dart';
 import '../../services/audio_preload_service.dart';
@@ -24,10 +18,8 @@ import '../../services/pilotage_state_service.dart';
 import '../../services/biblioteca_supabase_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/rewards_service.dart';
-import '../../models/supabase_models.dart';
 import '../../repositories/codigos_repository.dart';
 import '../../utils/code_formatter.dart';
-import '../pilotaje/pilotaje_screen.dart';
 import '../diario/track_code_modal.dart';
 import '../diario/nueva_entrada_diario_screen.dart';
 import '../../services/subscription_service.dart';
@@ -75,7 +67,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   /// Si el usuario tiene adquirida la repetición guiada en la tienda cuántica (muestra u oculta la card).
   bool _hasGuidedRepetition = false;
   String _voiceGender = 'female';
-  int _musicControllerKeySeed = 0;
+  final int _musicControllerKeySeed = 0;
   
 
   @override
@@ -498,7 +490,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
             mediaQuery.textScaleFactor.clamp(1.0, 1.25);
 
         return MediaQuery(
-          data: mediaQuery.copyWith(textScaleFactor: constrainedScale),
+          data: mediaQuery.copyWith(textScaler: TextScaler.linear(constrainedScale)),
           child: AlertDialog(
             backgroundColor: const Color(0xFF363636),
             insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -575,11 +567,6 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
   Future<Uint8List?> _generateImageBytes() async {
     try {
       if (!mounted) return null;
-      
-      // Verificar que el screenshot controller esté inicializado
-      if (_screenshotController == null) {
-        return null;
-      }
 
       // Esperar a que el widget se renderice completamente
       await WidgetsBinding.instance.endOfFrame;
@@ -765,10 +752,10 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       if (mounted) {
         Navigator.of(context).pop(); // Cerrar cualquier diálogo abierto
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Error al generar la vista previa. Por favor, intenta nuevamente.'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -829,10 +816,10 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Error inesperado al compartir. Por favor, intenta nuevamente.'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -1192,9 +1179,9 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
         ),
         title: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.pause_circle,
-              color: const Color(0xFFFF6B6B),
+              color: Color(0xFFFF6B6B),
               size: 28,
             ),
             const SizedBox(width: 12),
@@ -1477,7 +1464,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                                                   ],
                                                 ),
                                               );
-                                            }).toList(),
+                                            }),
                                           ],
                                         ),
                                       ),
@@ -1608,7 +1595,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                   : null,
             ),
           );
-        }).toList(),
+        }),
         const SizedBox(width: 16),
         GestureDetector(
           onTap: () {
@@ -2067,7 +2054,7 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
                   ),
                 ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

@@ -1,7 +1,6 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
-import 'package:image_picker/image_picker.dart';
 import 'ios_photo_permission_helper.dart';
 
 /// Servicio para gestionar solicitud de permisos al inicio de la app

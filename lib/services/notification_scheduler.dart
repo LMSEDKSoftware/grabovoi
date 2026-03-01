@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../models/notification_preferences.dart';
-import '../models/notification_type.dart';
 import '../models/challenge_model.dart';
 import 'notification_service.dart';
 import 'auth_service_simple.dart';
 import 'user_progress_service.dart';
-import 'supabase_service.dart';
 import 'challenge_service.dart';
 
 /// Servicio para gestionar la programación y lógica de notificaciones
@@ -207,10 +204,8 @@ class NotificationScheduler {
           (c) => c.status == ChallengeStatus.enProgreso,
           orElse: () => userChallenges.first,
         );
-        if (activeChallenge != null) {
-          challengeName = activeChallenge.title;
-        }
-      } catch (e) {
+        challengeName = activeChallenge.title;
+            } catch (e) {
         // Si no hay desafío activo, usar el nombre por defecto
       }
       

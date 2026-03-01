@@ -4,7 +4,6 @@ import '../../widgets/glow_background.dart';
 import '../../services/supabase_service.dart';
 import '../../models/notification_history_item.dart';
 import '../../services/notification_count_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ReportDetailScreen extends StatefulWidget {
   final Map<String, dynamic> reporte;
@@ -385,7 +384,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                     // Botones de estatus
                     ...['pendiente', 'revisado', 'aceptado', 'rechazado', 'resuelto']
                         .map((estatus) => _buildEstatusButton(estatus))
-                        .toList(),
+                        ,
                     if (_error != null) ...[
                       const SizedBox(height: 16),
                       Container(

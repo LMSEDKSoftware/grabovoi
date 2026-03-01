@@ -16,7 +16,7 @@ Future<void> main() async {
   print('🔌 Conectando a Supabase...');
   final client = SupabaseClient(supabaseUrl, supabaseServiceRoleKey);
 
-  final email = 'ifernandez@lmsedk.com';
+  const email = 'ifernandez@lmsedk.com';
   print('🔍 Buscando usuario: $email');
 
   try {

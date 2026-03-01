@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../models/user_model.dart' as app_models;
 import 'auth_service_simple.dart';
 import 'rewards_service.dart';
 
@@ -261,31 +260,36 @@ class UserProgressService {
     int nivel = 1;
     
     // Por días consecutivos (base de uso continuo)
-    if (diasConsecutivos >= 21) nivel += 4;
-    else if (diasConsecutivos >= 14) nivel += 3;
+    if (diasConsecutivos >= 21) {
+      nivel += 4;
+    } else if (diasConsecutivos >= 14) nivel += 3;
     else if (diasConsecutivos >= 7) nivel += 2;
     else if (diasConsecutivos >= 3) nivel += 1;
     
     // Por total de pilotajes (práctica profunda)
-    if (totalPilotajes >= 100) nivel += 3;
-    else if (totalPilotajes >= 50) nivel += 2;
+    if (totalPilotajes >= 100) {
+      nivel += 3;
+    } else if (totalPilotajes >= 50) nivel += 2;
     else if (totalPilotajes >= 20) nivel += 1;
     else if (totalPilotajes >= 5) nivel += 1;
     
     // Por total de repeticiones (disciplina y constancia)
-    if (totalRepeticiones >= 200) nivel += 2;
-    else if (totalRepeticiones >= 100) nivel += 1;
+    if (totalRepeticiones >= 200) {
+      nivel += 2;
+    } else if (totalRepeticiones >= 100) nivel += 1;
     else if (totalRepeticiones >= 50) nivel += 1;
     
     // Por pilotajes compartidos (impacto y difusión)
-    if (totalCompartidos >= 100) nivel += 2;
-    else if (totalCompartidos >= 50) nivel += 1;
+    if (totalCompartidos >= 100) {
+      nivel += 2;
+    } else if (totalCompartidos >= 50) nivel += 1;
     else if (totalCompartidos >= 20) nivel += 1;
     else if (totalCompartidos >= 5) nivel += 1;
     
     // Por minutos de uso en la app (tiempo invertido)
-    if (totalMinutos >= 300) nivel += 2; // 5 horas
-    else if (totalMinutos >= 180) nivel += 1; // 3 horas
+    if (totalMinutos >= 300) {
+      nivel += 2; // 5 horas
+    } else if (totalMinutos >= 180) nivel += 1; // 3 horas
     else if (totalMinutos >= 60) nivel += 1; // 1 hora
 
     // Nivel mínimo de 3 para usuarios activos, máximo 10
@@ -562,13 +566,15 @@ class UserProgressService {
   /// Calcular nivel energético (1-10) basado en días y totales
   int _calcularNivelEnergetico(int diasConsecutivos, int totalPilotajes) {
     int nivel = 1;
-    if (diasConsecutivos >= 21) nivel += 4;
-    else if (diasConsecutivos >= 14) nivel += 3;
+    if (diasConsecutivos >= 21) {
+      nivel += 4;
+    } else if (diasConsecutivos >= 14) nivel += 3;
     else if (diasConsecutivos >= 7) nivel += 2;
     else if (diasConsecutivos >= 3) nivel += 1;
 
-    if (totalPilotajes >= 100) nivel += 3;
-    else if (totalPilotajes >= 50) nivel += 2;
+    if (totalPilotajes >= 100) {
+      nivel += 3;
+    } else if (totalPilotajes >= 50) nivel += 2;
     else if (totalPilotajes >= 20) nivel += 1;
     else if (totalPilotajes >= 5) nivel += 1;
 

@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/mural_message.dart';
 
@@ -9,7 +8,8 @@ class MuralService {
   MuralService._internal();
 
   final SupabaseClient _supabase = Supabase.instance.client;
-  static const String _readMessagesKey = 'mural_read_messages';
+  static const String _readsTable = 'mural_message_reads';
+  bool _readsDbAvailable = true;
 
   /// Obtener mensajes activos del mural
   Future<List<MuralMessage>> getActiveMessages() async {
@@ -48,24 +48,48 @@ class MuralService {
     }
   }
 
-  /// Obtener IDs de mensajes leídos localmente
+  /// Obtener IDs de mensajes leídos (persistente en DB por usuario)
   Future<List<int>> getReadMessageIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    final readIdsString = prefs.getStringList(_readMessagesKey) ?? [];
-    final readIds = readIdsString.map((id) => int.parse(id)).toList();
-    debugPrint('📖 [MURAL] Mensajes leídos: $readIds');
-    return readIds;
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return [];
+
+      final response = await _supabase
+          .from(_readsTable)
+          .select('message_id')
+          .eq('user_id', user.id);
+
+      final data = response as List<dynamic>;
+      final readIds = data
+          .map((row) => (row['message_id'] as num).toInt())
+          .toList(growable: false);
+      _readsDbAvailable = true;
+      debugPrint('📖 [MURAL] Mensajes leídos (DB): ${readIds.length}');
+      return readIds;
+    } catch (e) {
+      _readsDbAvailable = false;
+      debugPrint('❌ Error obteniendo mensajes leídos (DB): $e');
+      return [];
+    }
   }
 
   /// Marcar mensaje como leído
   Future<void> markAsRead(int messageId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final readIds = await getReadMessageIds();
-    
-    if (!readIds.contains(messageId)) {
-      readIds.add(messageId);
-      await prefs.setStringList(_readMessagesKey, readIds.map((id) => id.toString()).toList());
-      debugPrint('✅ [MURAL] Mensaje $messageId marcado como leído');
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+
+      await _supabase.from(_readsTable).upsert(
+        {
+          'user_id': user.id,
+          'message_id': messageId,
+          'seen_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'user_id,message_id',
+      );
+      debugPrint('✅ [MURAL] Mensaje $messageId marcado como leído (DB)');
+    } catch (e) {
+      debugPrint('❌ Error marcando mensaje como leído (DB): $e');
     }
   }
 
@@ -75,6 +99,7 @@ class MuralService {
     if (messages.isEmpty) return false;
 
     final readIds = await getReadMessageIds();
+    if (!_readsDbAvailable) return false;
     
     // Si hay algún mensaje activo que no esté en la lista de leídos
     final hasUnread = messages.any((msg) => !readIds.contains(msg.id));
@@ -89,6 +114,7 @@ class MuralService {
       if (messages.isEmpty) return 0;
 
       final readIds = await getReadMessageIds();
+      if (!_readsDbAvailable) return 0;
       
       return messages.where((msg) => !readIds.contains(msg.id)).length;
     } catch (e) {

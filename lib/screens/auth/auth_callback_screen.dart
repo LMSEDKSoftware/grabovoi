@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/auth_wrapper.dart';
-import 'reset_password_screen.dart';
 import 'recovery_set_password_screen.dart';
 
 /// Pantalla que maneja el callback de autenticación desde Supabase
@@ -128,8 +127,8 @@ class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
         if (finalAccessToken != null && finalRefreshToken != null && isRecovery) {
           // Es un recovery link con tokens - redirigir a RecoverySetPasswordScreen
           print('🔑 Recovery link detectado con tokens, redirigiendo a pantalla de nueva contraseña...');
-          print('   Access Token: ${finalAccessToken!.substring(0, 20)}...');
-          print('   Refresh Token: ${finalRefreshToken!.substring(0, 20)}...');
+          print('   Access Token: ${finalAccessToken.substring(0, 20)}...');
+          print('   Refresh Token: ${finalRefreshToken.substring(0, 20)}...');
           if (mounted) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
@@ -178,9 +177,9 @@ class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
                 print('   📊 Respuesta de exchangeCodeForSession:');
                 print('      Session: ${exchangeResponse.session != null ? "✅ presente" : "❌ ausente"}');
                 
-                if (exchangeResponse.session != null && mounted) {
+                if (mounted) {
                   print('✅ Sesión de recuperación creada exitosamente');
-                  final session = exchangeResponse.session!;
+                  final session = exchangeResponse.session;
                   print('   Access Token: ${session.accessToken.substring(0, 30)}...');
                   print('   Refresh Token: ${session.refreshToken?.substring(0, 30) ?? "N/A"}...');
                   
@@ -204,9 +203,9 @@ class _AuthCallbackScreenState extends State<AuthCallbackScreen> {
                 try {
                   // Nota: Esto puede no funcionar en Flutter, pero lo intentamos
                   final exchangeResponse2 = await Supabase.instance.client.auth.exchangeCodeForSession(token);
-                  if (exchangeResponse2.session != null && mounted) {
+                  if (mounted) {
                     print('✅ Sesión creada con formato alternativo');
-                    final session = exchangeResponse2.session!;
+                    final session = exchangeResponse2.session;
                     Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(
                         builder: (context) => RecoverySetPasswordScreen(

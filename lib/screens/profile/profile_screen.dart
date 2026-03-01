@@ -5,14 +5,12 @@ import 'dart:math' as math;
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../services/auth_service_simple.dart';
 import '../../services/user_progress_service.dart';
 import '../../services/audio_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/supabase_service.dart';
-import '../../repositories/codigos_repository.dart';
 import '../auth/login_screen.dart';
 import '../sugerencias/sugerencias_screen.dart';
 import 'edit_profile_screen.dart';
@@ -21,18 +19,15 @@ import 'notification_history_screen.dart';
 import 'voice_numbers_settings_screen.dart';
 import '../mural/mural_history_screen.dart';
 import '../../services/admin_service.dart';
-import '../../screens/home/home_screen.dart';
 import '../admin/approve_suggestions_screen.dart';
 import '../admin/view_reports_screen.dart';
 import '../admin/manigrab_lovers_screen.dart';
 import '../rewards/premium_store_screen.dart';
-import '../rewards/mantras_screen.dart';
 import '../resources/resources_screen.dart';
 import '../subscription/subscription_screen.dart';
 import '../../models/notification_history_item.dart';
 import '../../services/notification_count_service.dart';
 import '../../services/subscription_service.dart';
-import '../../widgets/subscription_required_modal.dart';
 import '../../services/biometric_auth_service.dart';
 import '../../scripts/test_all_notifications.dart';
 import '../../services/legal_links_service.dart';
@@ -1151,8 +1146,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                                           borderSide:
                                                               BorderSide(
                                                             color: Colors.white
-                                                                .withOpacity(
-                                                                    0.2),
+                                                                .withOpacity(0.2),
                                                           ),
                                                         ),
                                                         focusedBorder:
@@ -1947,10 +1941,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+              const SnackBar(
                 content: Text('Error al abrir el enlace. Verifica tu conexión a internet.'),
                 backgroundColor: Colors.red,
-                duration: const Duration(seconds: 3),
+                duration: Duration(seconds: 3),
               ),
             );
           }
@@ -2052,8 +2046,8 @@ class _QuantumFieldPainter extends CustomPainter {
     
     for (int i = 0; i < 2; i++) {
       final path = Path();
-      final startRadius = 20.0;
-      final turns = 1.5;
+      const startRadius = 20.0;
+      const turns = 1.5;
       
       for (double angle = 0; angle < turns * 2 * math.pi; angle += 0.1) {
         final radius = startRadius + (angle * 3);

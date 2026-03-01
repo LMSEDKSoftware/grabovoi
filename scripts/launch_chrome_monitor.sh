@@ -6,6 +6,7 @@ set +e
 
 PROJECT_DIR="/Users/ifernandez/development/grabovoi_build"
 LOG_FILE="/tmp/flutter_launch.log"
+WEB_RENDERER="${WEB_RENDERER:-html}"
 
 echo "🚀 Iniciando Flutter + Chrome con monitoreo completo (puerto automático)..."
 
@@ -61,6 +62,7 @@ extract_port() {
 # Iniciar Flutter SIN especificar puerto
 echo "📦 Compilando e iniciando servidor Flutter (puerto automático)..."
 flutter run -d chrome \
+    --web-renderer="${WEB_RENDERER}" \
     --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY}" \
     --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
     --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \

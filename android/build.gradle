@@ -22,7 +22,7 @@ allprojects {
     }
 }
 
-// Forzar Kotlin 2.2.0 en todos los subproyectos (plugins como in_app_update)
+// Forzar Kotlin 2.2.0 en todos los subproyectos
 subprojects { subproject ->
     subproject.buildscript {
         ext.kotlin_version = '2.2.0'

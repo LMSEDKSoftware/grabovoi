@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:audioplayers/audioplayers.dart';
 import '../services/audio_manager_service.dart';
 
 class StreamedMusicController extends StatefulWidget {
@@ -304,7 +303,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
         children: [
           IconButton(
             onPressed: _isBuffering ? null : _prev,
-            icon: Icon(Icons.skip_previous, color: const Color(0xFFFFD700), size: 24),
+            icon: const Icon(Icons.skip_previous, color: Color(0xFFFFD700), size: 24),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -323,7 +322,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.timer, color: const Color(0xFFFFD700), size: 14),
+                    const Icon(Icons.timer, color: Color(0xFFFFD700), size: 14),
                     const SizedBox(width: 4),
                     Text(
                       _formatDuration(_position),
@@ -380,7 +379,7 @@ class _StreamedMusicControllerState extends State<StreamedMusicController> with 
           ),
           IconButton(
             onPressed: _isBuffering ? null : _next,
-            icon: Icon(Icons.skip_next, color: const Color(0xFFFFD700), size: 24),
+            icon: const Icon(Icons.skip_next, color: Color(0xFFFFD700), size: 24),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),

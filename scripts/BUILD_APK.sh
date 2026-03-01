@@ -88,3 +88,7 @@ echo "✅ ¡APK compilada exitosamente!"
 echo "📍 Ubicación: $(pwd)/build/app/outputs/flutter-apk/app-release.apk"
 echo ""
 ls -lh build/app/outputs/flutter-apk/app-release.apk
+
+# Actualizar versión en Supabase automáticamente
+bash "$(dirname "$0")/update_supabase_version.sh" "$NEW_VERSION_NAME"
+

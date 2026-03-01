@@ -74,7 +74,7 @@ class DailyCodeService {
         // Usar el día del año como índice para rotar códigos
         final dayOfYear = date.difference(DateTime(date.year, 1, 1)).inDays;
         final codigoIndex = dayOfYear % allCodigos.length;
-        final selectedCode = allCodigos[codigoIndex] as Map<String, dynamic>;
+        final selectedCode = allCodigos[codigoIndex];
         final codigo = selectedCode['codigo'] as String;
         final nombre = selectedCode['nombre'] as String;
 
@@ -86,7 +86,7 @@ class DailyCodeService {
       // Esto asegura que el mismo código no se repita hasta el próximo año
       final dayOfYear = date.difference(DateTime(date.year, 1, 1)).inDays;
       final codigoIndex = dayOfYear % codesResponse.length;
-      final selectedCode = codesResponse[codigoIndex] as Map<String, dynamic>;
+      final selectedCode = codesResponse[codigoIndex];
       final codigoId = selectedCode['id'] as int;
       final codigo = selectedCode['codigo'] as String;
       final nombre = selectedCode['nombre'] as String;

@@ -96,7 +96,7 @@ class DebugFunctional {
 
     try {
       // Verificar conectividad a Supabase
-      final supabaseUrl = 'https://whtiazgcxdnemrrgjjqf.supabase.co';
+      const supabaseUrl = 'https://whtiazgcxdnemrrgjjqf.supabase.co';
       final response = await HttpClient().getUrl(Uri.parse('$supabaseUrl/rest/v1/'));
       final httpResponse = await response.close();
       
@@ -107,7 +107,7 @@ class DebugFunctional {
       }
 
       // Verificar Edge Functions
-      final functionsUrl = '$supabaseUrl/functions/v1/';
+      const functionsUrl = '$supabaseUrl/functions/v1/';
       final functionsResponse = await HttpClient().getUrl(Uri.parse(functionsUrl));
       final functionsHttpResponse = await functionsResponse.close();
       
@@ -129,7 +129,7 @@ class DebugFunctional {
 
     try {
       // Verificar Google Fonts
-      final googleFontsUrl = 'https://fonts.googleapis.com';
+      const googleFontsUrl = 'https://fonts.googleapis.com';
       final googleResponse = await HttpClient().getUrl(Uri.parse(googleFontsUrl));
       final googleHttpResponse = await googleResponse.close();
       

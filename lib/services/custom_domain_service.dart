@@ -101,7 +101,7 @@ class CustomDomainService {
         debugPrint('📊 [CUSTOM DOMAIN $i] Reason Phrase: ${response.reasonPhrase}');
         debugPrint('📊 [CUSTOM DOMAIN $i] Body Length: ${response.body.length}');
         debugPrint('📊 [CUSTOM DOMAIN $i] Headers: ${response.headers}');
-        debugPrint('📊 [CUSTOM DOMAIN $i] Body Preview: ${response.body.length > 200 ? response.body.substring(0, 200) + '...' : response.body}');
+        debugPrint('📊 [CUSTOM DOMAIN $i] Body Preview: ${response.body.length > 200 ? '${response.body.substring(0, 200)}...' : response.body}');
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);

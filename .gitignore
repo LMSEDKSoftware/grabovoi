@@ -14,6 +14,7 @@ logs/
 .svn/
 migrate_working_dir/
 backups/
+_backups/
 
 # Configuraciones de desarrollo con claves API
 lib/config/openai_config_dev.dart

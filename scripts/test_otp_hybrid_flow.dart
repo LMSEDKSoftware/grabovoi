@@ -33,7 +33,7 @@ void main() async {
     print('✅ Código OTP recibido: $otpCode\n');
     
     // Esperar un momento
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2));
     
     // PASO 2: Verificar OTP y obtener recovery_link
     print('🔐 PASO 2: Verificando OTP y obteniendo recovery_link');

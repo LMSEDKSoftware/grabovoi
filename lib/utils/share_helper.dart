@@ -37,12 +37,12 @@ class ShareHelper {
       // Para iOS, necesitamos sharePositionOrigin si está disponible
       if (Platform.isIOS && context != null) {
         // Guardar valores del contexto antes de operaciones asíncronas
-        final BuildContext? safeContext = context;
+        final BuildContext safeContext = context;
         Rect? sharePositionOrigin;
         
         try {
           // Obtener el RenderBox del contexto para calcular la posición
-          final RenderBox? box = safeContext?.findRenderObject() as RenderBox?;
+          final RenderBox? box = safeContext.findRenderObject() as RenderBox?;
           if (box != null && box.hasSize) {
             final Offset position = box.localToGlobal(Offset.zero);
             final Size size = box.size;
@@ -62,7 +62,7 @@ class ShareHelper {
         }
         
         // Si no pudimos obtener la posición válida, usar el centro de la pantalla como fallback
-        if (sharePositionOrigin == null && safeContext != null) {
+        if (sharePositionOrigin == null) {
           try {
             final mediaQuery = MediaQuery.of(safeContext);
             final screenSize = mediaQuery.size;
@@ -111,12 +111,12 @@ class ShareHelper {
     try {
       if (Platform.isIOS && context != null) {
         // Guardar valores del contexto antes de operaciones asíncronas
-        final BuildContext? safeContext = context;
+        final BuildContext safeContext = context;
         Rect? sharePositionOrigin;
         
         try {
           // Para iOS, intentar obtener la posición del contexto
-          final RenderBox? box = safeContext?.findRenderObject() as RenderBox?;
+          final RenderBox? box = safeContext.findRenderObject() as RenderBox?;
           if (box != null && box.hasSize) {
             final Offset position = box.localToGlobal(Offset.zero);
             final Size size = box.size;
@@ -135,7 +135,7 @@ class ShareHelper {
         }
         
         // Si no pudimos obtener la posición válida, usar el centro de la pantalla como fallback
-        if (sharePositionOrigin == null && safeContext != null) {
+        if (sharePositionOrigin == null) {
           try {
             final mediaQuery = MediaQuery.of(safeContext);
             final screenSize = mediaQuery.size;

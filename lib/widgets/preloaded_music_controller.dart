@@ -222,9 +222,9 @@ class _PreloadedMusicControllerState extends State<PreloadedMusicController> {
           // Header con título y estado
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.music_note,
-                color: const Color(0xFFFFD700),
+                color: Color(0xFFFFD700),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -283,9 +283,9 @@ class _PreloadedMusicControllerState extends State<PreloadedMusicController> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.timer,
-                  color: const Color(0xFFFFD700),
+                  color: Color(0xFFFFD700),
                   size: 16,
                 ),
                 const SizedBox(width: 6),
@@ -310,9 +310,9 @@ class _PreloadedMusicControllerState extends State<PreloadedMusicController> {
               // Botón anterior
               IconButton(
                 onPressed: _playPrevious,
-                icon: Icon(
+                icon: const Icon(
                   Icons.skip_previous,
-                  color: const Color(0xFFFFD700),
+                  color: Color(0xFFFFD700),
                   size: 32,
                 ),
               ),
@@ -332,9 +332,9 @@ class _PreloadedMusicControllerState extends State<PreloadedMusicController> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.play_arrow,
-                        color: const Color(0xFFFFD700),
+                        color: Color(0xFFFFD700),
                         size: 16,
                       ),
                       const SizedBox(width: 4),
@@ -357,9 +357,9 @@ class _PreloadedMusicControllerState extends State<PreloadedMusicController> {
               // Botón siguiente
               IconButton(
                 onPressed: _playNext,
-                icon: Icon(
+                icon: const Icon(
                   Icons.skip_next,
-                  color: const Color(0xFFFFD700),
+                  color: Color(0xFFFFD700),
                   size: 32,
                 ),
               ),

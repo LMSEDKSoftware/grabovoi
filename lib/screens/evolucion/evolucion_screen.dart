@@ -1068,9 +1068,9 @@ class _HelpDialogModalState extends State<_HelpDialogModal> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.keyboard_arrow_up,
-                          color: const Color(0xFFFFD700),
+                          color: Color(0xFFFFD700),
                           size: 28,
                         ),
                         const SizedBox(height: 4),

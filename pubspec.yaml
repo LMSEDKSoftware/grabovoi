@@ -1,7 +1,7 @@
 name: manifestacion_numerica_grabovoi
 description: App espiritual basada en los códigos de Grigori Grabovoi
 publish_to: 'none'
-version: 2.3.45+59
+version: 2.3.52+67
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -62,9 +62,6 @@ dependencies:
   in_app_purchase: ^3.1.11
   local_auth: ^2.2.0
   
-  # Actualizaciones In-App
-  in_app_update: ^4.2.5
-
   # Mantener pantalla encendida (p. ej. durante pilotaje con audio)
   wakelock_plus: ^1.2.8
 
@@ -78,6 +75,8 @@ dev_dependencies:
   json_serializable: ^6.7.2
   flutter_launcher_icons: ^0.13.1
 
+  dotenv: any
+  supabase: any
 flutter:
   uses-material-design: true
   
@@ -90,6 +89,20 @@ flutter:
     - assets/lottie/
     - assets/icons/
     - .env
+
+  fonts:
+    - family: Noto Sans
+      fonts:
+        - asset: assets/fonts/noto/NotoSans-Regular.ttf
+    - family: Noto Sans Symbols
+      fonts:
+        - asset: assets/fonts/noto/NotoSansSymbols-Regular.ttf
+    - family: Noto Sans Symbols2
+      fonts:
+        - asset: assets/fonts/noto/NotoSansSymbols2-Regular.ttf
+    - family: Noto Color Emoji
+      fonts:
+        - asset: assets/fonts/noto/Noto-COLRv1.ttf
 
 # Configuración de íconos de la app
 flutter_launcher_icons:
@@ -112,4 +125,3 @@ flutter_launcher_icons:
   #         weight: 600
   #       - asset: assets/fonts/Poppins-Bold.ttf
   #         weight: 700
-

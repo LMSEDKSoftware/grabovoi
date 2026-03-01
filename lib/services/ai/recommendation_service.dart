@@ -219,10 +219,10 @@ class RecommendationService {
   }
 
   String _formatHora(int hora) {
-    if (hora >= 5 && hora < 12) return 'Mañana (${hora}:00)';
-    if (hora >= 12 && hora < 18) return 'Tarde (${hora}:00)';
-    if (hora >= 18 && hora < 22) return 'Noche (${hora}:00)';
-    return 'Madrugada (${hora}:00)';
+    if (hora >= 5 && hora < 12) return 'Mañana ($hora:00)';
+    if (hora >= 12 && hora < 18) return 'Tarde ($hora:00)';
+    if (hora >= 18 && hora < 22) return 'Noche ($hora:00)';
+    return 'Madrugada ($hora:00)';
   }
 }
 

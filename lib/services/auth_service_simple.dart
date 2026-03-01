@@ -3,9 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
-import 'dart:io' show Platform;
 import '../models/user_model.dart' as app_models;
-import '../config/supabase_config.dart';
 import 'subscription_service.dart';
 import 'biometric_auth_service.dart';
 
@@ -143,7 +141,7 @@ class AuthServiceSimple {
             print('⚠️ Usuario creado solo localmente');
           }
         } else {
-          throw insertError;
+          rethrow;
         }
       }
     } catch (e) {
@@ -559,8 +557,8 @@ class AuthServiceSimple {
         if (isLocalhost) {
           // En desarrollo, incluir el puerto actual para que el link funcione en Chrome
           final port = currentUrl.hasPort ? ':${currentUrl.port}' : '';
-          redirectTo = 'http://localhost${port}/auth/callback';
-          print('   🔧 Modo desarrollo detectado - usando localhost${port}');
+          redirectTo = 'http://localhost$port/auth/callback';
+          print('   🔧 Modo desarrollo detectado - usando localhost$port');
         } else {
           // En producción, usar el dominio de producción
           redirectTo = 'https://manigrab.app/auth/callback';
@@ -692,7 +690,7 @@ class AuthServiceSimple {
       
       // Nueva implementación: verificar continue_url (solución IVO)
       final continueUrl = (data as Map)['continue_url'] as String?;
-      final recoveryLink = (data as Map)['recovery_link'] as String?; // Fallback para compatibilidad
+      final recoveryLink = (data)['recovery_link'] as String?; // Fallback para compatibilidad
       
       final urlToOpen = continueUrl ?? recoveryLink;
       

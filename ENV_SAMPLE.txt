@@ -5,6 +5,32 @@ SB_SERVICE_ROLE_KEY=
 ENV=dev
 ; Copia este archivo a .env en la raíz y rellena las claves.
 
+; Deep search (Edge Functions)
+; - deep-search-codes: NO usa web search (solo encola requests por usuario)
+; - deep-search-tavily: web search (Tavily)
+; - process-deep-search-queue: crawler por fuentes + resuelve requests pendientes (sin Tavily por query).
+; Recomendado: configurar estas llaves como secrets del proyecto Supabase (nunca en el cliente).
+TAVILY_API_KEY=
+OPENAI_MODEL_DEEP_SEARCH=gpt-4o-mini
+DEEP_SEARCH_BATCH_SIZE=10
+CRON_SECRET=
+
+; Crawler controls (server-side)
+DEEP_SEARCH_SOURCES_PER_RUN=20
+DEEP_SEARCH_MAX_CODES_PER_SOURCE=250
+DEEP_SEARCH_REQUESTS_PER_RUN=200
+DEEP_SEARCH_CLEANUP_MAX=2000
+; Limpia nombres importados que traen el código pegado (best-effort).
+DEEP_SEARCH_CLEANUP_NOMBRE_MAX=200
+
+; Discovery controlado (Tavily solo para descubrir fuentes, NO por cada búsqueda de usuario)
+DEEP_SEARCH_DISCOVERY_QUERIES_PER_RUN=5
+DEEP_SEARCH_DISCOVERY_SOURCES_PER_QUERY=2
+DEEP_SEARCH_DISCOVERY_MAX_RESULTS=5
+DEEP_SEARCH_DISCOVERY_CODES_PER_QUERY=2
+; Importa hasta N códigos extra por query como "ganancia" (no se asocian al request del usuario).
+DEEP_SEARCH_DISCOVERY_GAIN_CODES_PER_QUERY=8
+
 
 SENDGRID_API_KEY=
 SENDGRID_FROM_EMAIL=noreply@manigrab.com

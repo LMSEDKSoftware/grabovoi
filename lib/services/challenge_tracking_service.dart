@@ -542,7 +542,7 @@ class ChallengeTrackingService extends ChangeNotifier {
         // Obtener información del desafío y usuario para el mensaje
         final challengeService = ChallengeService();
         final challenge = challengeService.getChallenge(challengeId);
-        final userName = _authService.currentUser?.email?.split('@').first ?? 'Usuario';
+        final userName = _authService.currentUser?.email.split('@').first ?? 'Usuario';
         
         // Calcular días completados para el mensaje
         final daysCompleted = updatedProgress.dayProgress.values.where((dp) => dp.isCompleted).length;
@@ -745,7 +745,7 @@ class ChallengeTrackingService extends ChangeNotifier {
     // Notificar si el día se completó y no estaba completado antes
     if (isDayCompleted && !dayProgress.isCompleted) {
       final challenge = ChallengeService().getChallenge(challengeId);
-      final userName = _authService.currentUser?.email?.split('@').first ?? 'Usuario';
+      final userName = _authService.currentUser?.email.split('@').first ?? 'Usuario';
       final daysCompleted = updatedDayProgressMap.values.where((dp) => dp.isCompleted).length;
 
       await _notificationService.showNotification(
@@ -955,12 +955,9 @@ class ChallengeTrackingService extends ChangeNotifier {
           .gte('recorded_at', startOfHistory.toIso8601String())
           .lte('recorded_at', now.toIso8601String());
 
-      if (response == null) return;
-
       // 2. Inicializar progreso
       var progress = _challengesProgress[challengeId];
-      if (progress == null) {
-        progress = ChallengeProgress(
+      progress ??= ChallengeProgress(
           challengeId: challengeId,
           currentDay: 1,
           dayProgress: {},
@@ -969,7 +966,6 @@ class ChallengeTrackingService extends ChangeNotifier {
           recentActions: [],
           lastActivity: DateTime.now(),
         );
-      }
 
       // 3. Agrupar acciones por día del desafío
       final Map<int, Map<ActionType, int>> dailyCounts = {};

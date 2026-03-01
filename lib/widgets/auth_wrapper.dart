@@ -9,9 +9,9 @@ import '../services/onboarding_service.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/onboarding/user_assessment_screen.dart';
-import '../screens/onboarding/app_tour_screen.dart';
 import '../main.dart';
 import 'permissions_request_modal.dart';
+import '../services/app_update_dialog.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -116,6 +116,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
         } catch (e) {
           debugPrint('⚠️ Error verificando suscripción después de autenticación: $e');
         }
+
+        // Verificar si hay nueva versión disponible (no bloqueante — se muestra en background)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                AppUpdateDialog.checkAndShow(context);
+              }
+            });
+          }
+        });
         
         if (mounted) {
           setState(() {
@@ -273,7 +284,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         }
       });
       
-      return MainNavigation(showTour: false);
+      return const MainNavigation(showTour: false);
     } else if (_forceLogin) {
         // Forzar pantalla de login después de registro
         return const LoginScreen();

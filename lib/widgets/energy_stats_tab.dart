@@ -246,18 +246,18 @@ class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProvid
   Widget _buildCollapsedContent() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      child: Column(
+      child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Ícono de cristal (💎)
-          const Icon(
+          Icon(
             Icons.diamond,
             color: Color(0xFFFFD700),
             size: 20,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           // Ícono de luz cuántica (✨)
-          const Icon(
+          Icon(
             Icons.auto_awesome,
             color: Color(0xFFFFD700),
             size: 20,

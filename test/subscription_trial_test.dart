@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manifestacion_numerica_grabovoi/services/subscription_service.dart';
 import 'package:manifestacion_numerica_grabovoi/services/auth_service_simple.dart';
@@ -61,8 +60,8 @@ void main() {
       print('\n📋 TEST: SharedPreferences funciona correctamente');
       
       final prefs = await SharedPreferences.getInstance();
-      final testUserId = 'test_user_123';
-      final trialStartKey = 'free_trial_start_$testUserId';
+      const testUserId = 'test_user_123';
+      const trialStartKey = 'free_trial_start_$testUserId';
       
       // Limpiar cualquier valor previo
       await prefs.remove(trialStartKey);
@@ -95,8 +94,8 @@ void main() {
       print('\n📋 TEST: Lógica de expiración del período de prueba');
       
       final prefs = await SharedPreferences.getInstance();
-      final testUserId = 'test_user_expiry';
-      final trialStartKey = 'free_trial_start_$testUserId';
+      const testUserId = 'test_user_expiry';
+      const trialStartKey = 'free_trial_start_$testUserId';
       
       // Simular período de prueba que acaba de empezar
       final trialStart = DateTime.now().subtract(const Duration(seconds: 1));
@@ -143,7 +142,7 @@ void main() {
 
   group('Instrucciones para Pruebas Manuales', () {
     test('INSTRUCCIONES: Cómo probar con usuario real', () {
-      print('\n' + '=' * 60);
+      print('\n${'=' * 60}');
       print('📋 INSTRUCCIONES PARA PRUEBAS MANUALES');
       print('=' * 60);
       print('');

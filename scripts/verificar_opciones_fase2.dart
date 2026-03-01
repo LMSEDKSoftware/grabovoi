@@ -6,6 +6,8 @@
 ///   dart run scripts/verificar_opciones_fase2.dart
 ///
 /// Requiere: .env con SUPABASE_URL y SUPABASE_ANON_KEY.
+library;
+
 
 import 'dart:io';
 import 'dart:convert';
@@ -91,8 +93,8 @@ void main(List<String> args) async {
   try {
     // 1) Búsqueda local por título (ILIKE en codigos_grabovoi y codigos_titulos_relacionados)
     print('1️⃣ Búsqueda local por título/descripción: "$_query"');
-    final pattern = '%$_query%';
-    final orFilter = '(nombre.ilike.$pattern,descripcion.ilike.$pattern)';
+    const pattern = '%$_query%';
+    const orFilter = '(nombre.ilike.$pattern,descripcion.ilike.$pattern)';
 
     final codigosDirect = await supabaseGet(
       baseUrl,
@@ -103,7 +105,7 @@ void main(List<String> args) async {
     );
 
     // Tabla de relacionados usa titulo/descripcion (no nombre)
-    final orFilterRel = '(titulo.ilike.$pattern,descripcion.ilike.$pattern)';
+    const orFilterRel = '(titulo.ilike.$pattern,descripcion.ilike.$pattern)';
     final titulosRel = await supabaseGet(
       baseUrl,
       anonKey,

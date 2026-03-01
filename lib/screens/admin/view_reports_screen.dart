@@ -4,7 +4,6 @@ import '../../widgets/glow_background.dart';
 import '../../services/admin_service.dart';
 import '../../services/supabase_service.dart';
 import 'report_detail_screen.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ViewReportsScreen extends StatefulWidget {
   const ViewReportsScreen({super.key});

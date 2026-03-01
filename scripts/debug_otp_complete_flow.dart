@@ -31,7 +31,7 @@ void main() async {
     print('✅ Código OTP recibido: $otpCode\n');
     
     // Esperar un momento
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2));
     
     // PASO 2: Verificar OTP y actualizar contraseña
     print('🔐 PASO 2: Verificando OTP y actualizando contraseña');
@@ -47,7 +47,7 @@ void main() async {
     
     // Esperar un momento para propagación
     print('⏳ Esperando 3 segundos para propagación de cambios...\n');
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(const Duration(seconds: 3));
     
     // PASO 3: Verificar estado del usuario después de actualizar
     print('🔍 PASO 3: Verificando estado del usuario en Supabase');

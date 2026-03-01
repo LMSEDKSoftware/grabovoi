@@ -10,6 +10,8 @@
 ///   flutter test test/verificar_fase2_futbol_test.dart
 ///
 /// Requiere: .env con SUPABASE_URL y SUPABASE_ANON_KEY.
+library;
+
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

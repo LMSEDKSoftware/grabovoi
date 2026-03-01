@@ -74,15 +74,13 @@ class _RecoverySetPasswordScreenState extends State<RecoverySetPasswordScreen> {
       try {
         final response = await Supabase.instance.client.auth.exchangeCodeForSession(widget.recoveryToken!);
         
-        if (response.session != null) {
-          print('✅ Sesión de recuperación creada exitosamente con exchangeCodeForSession');
-          setState(() {
-            _sessionSet = true;
-            _isLoading = false;
-          });
-          return;
-        }
-      } catch (e) {
+        print('✅ Sesión de recuperación creada exitosamente con exchangeCodeForSession');
+        setState(() {
+          _sessionSet = true;
+          _isLoading = false;
+        });
+        return;
+            } catch (e) {
         print('⚠️ Error con exchangeCodeForSession: $e');
       }
       

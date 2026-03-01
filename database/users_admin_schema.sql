@@ -14,14 +14,10 @@ create index if not exists idx_users_admin_user_id on public.users_admin (user_i
 alter table public.users_admin enable row level security;
 
 -- Política: Solo los admins pueden ver la tabla completa
+-- IMPORTANTE: evitar recursión infinita. Usamos una función SECURITY DEFINER.
 create policy "Admins can view all admin users" on public.users_admin
   for select
-  using (
-    exists (
-      select 1 from public.users_admin
-      where user_id = auth.uid()
-    )
-  );
+  using (public.es_admin(auth.uid()));
 
 -- Política: Solo los admins pueden insertar nuevos admins (usando service client)
 -- Esta operación normalmente se hace con service client para bypass RLS
@@ -41,6 +37,7 @@ create or replace function public.es_admin(user_uuid uuid)
 returns boolean
 language plpgsql
 security definer
+set search_path = public, auth
 as $$
 begin
   return exists (
@@ -54,4 +51,3 @@ $$;
 comment on table public.users_admin is 'Tabla de usuarios administradores de la aplicación. Solo almacena el UUID del usuario, el resto de datos se obtiene de la tabla users';
 comment on column public.users_admin.user_id is 'ID del usuario en auth.users';
 comment on function public.es_admin is 'Función helper para verificar si un usuario es administrador';
-

@@ -360,7 +360,7 @@ class _PremiumWallpaperScreenState extends State<PremiumWallpaperScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.image_not_supported,
                                   size: 64,
                                   color: Colors.white38,

@@ -86,3 +86,5 @@ echo ""
 echo "🔍 Verificando que la versión del AAB coincida con el proyecto..."
 ./scripts/verificar_version_aab.sh build/app/outputs/bundle/release/app-release.aab
 
+# Actualizar versión en Supabase automáticamente
+bash "$(dirname "$0")/update_supabase_version.sh" "$NEW_VERSION_NAME"

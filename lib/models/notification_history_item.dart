@@ -57,7 +57,7 @@ class NotificationHistory {
 
     // Verificar si ya existe una notificación idéntica en los últimos 5 minutos
     final now = DateTime.now();
-    final duplicateThreshold = const Duration(minutes: 5);
+    const duplicateThreshold = Duration(minutes: 5);
     
     final isDuplicate = history.any((item) {
       final timeDifference = now.difference(item.timestamp);

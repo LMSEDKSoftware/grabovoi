@@ -28,7 +28,7 @@ class CodigoGrabovoi {
     // Algunos códigos pueden venir con guiones o underscores; NO castees a num.
     final String rawCodigo = (json['codigo'] ?? '').toString().trim();
 
-    DateTime? _parseDate(dynamic v) {
+    DateTime? parseDate(dynamic v) {
       if (v == null) return null;
       try { 
         return DateTime.parse(v.toString()); 
@@ -44,8 +44,8 @@ class CodigoGrabovoi {
       descripcion: (json['descripcion'] ?? '').toString(),
       categoria: (json['categoria'] ?? 'General').toString(),
       color: (json['color'] ?? '#FFD700').toString(),
-      createdAt: _parseDate(json['created_at']),
-      updatedAt: _parseDate(json['updated_at']),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
     );
   }
   

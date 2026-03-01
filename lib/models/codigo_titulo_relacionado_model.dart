@@ -24,7 +24,7 @@ class CodigoTituloRelacionado {
   });
 
   factory CodigoTituloRelacionado.fromJson(Map<String, dynamic> json) {
-    DateTime? _parseDate(dynamic v) {
+    DateTime? parseDate(dynamic v) {
       if (v == null) return null;
       try {
         return DateTime.parse(v.toString());
@@ -42,8 +42,8 @@ class CodigoTituloRelacionado {
       fuente: (json['fuente'] ?? 'sugerencia_aprobada').toString(),
       sugerenciaId: json['sugerencia_id'] != null ? int.tryParse(json['sugerencia_id'].toString()) : null,
       usuarioId: json['usuario_id']?.toString(),
-      createdAt: _parseDate(json['created_at']) ?? DateTime.now(),
-      updatedAt: _parseDate(json['updated_at']),
+      createdAt: parseDate(json['created_at']) ?? DateTime.now(),
+      updatedAt: parseDate(json['updated_at']),
     );
   }
 

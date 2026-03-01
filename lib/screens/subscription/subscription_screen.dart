@@ -85,10 +85,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Compra iniciada. Completa el proceso en Google Play.'),
-            backgroundColor: const Color(0xFFFFD700),
-            duration: const Duration(seconds: 3),
+          const SnackBar(
+            content: Text('Compra iniciada. Completa el proceso en Google Play.'),
+            backgroundColor: Color(0xFFFFD700),
+            duration: Duration(seconds: 3),
           ),
         );
       } else if (mounted) {
@@ -323,7 +323,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                 Flexible(
                                   child: Text(
                                     _remainingDays != null && _remainingDays! > 0
-                                        ? '${_remainingDays} ${_remainingDays == 1 ? 'Día' : 'Días'} Premium GRATIS'
+                                        ? '$_remainingDays ${_remainingDays == 1 ? 'Día' : 'Días'} Premium GRATIS'
                                         : '0 Días Premium GRATIS',
                                     style: GoogleFonts.inter(
                                       color: const Color(0xFFFFD700),

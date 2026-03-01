@@ -47,10 +47,12 @@ class _VoiceNumbersSettingsScreenState extends State<VoiceNumbersSettingsScreen>
         enabled: value,
         gender: _voiceGender,
       );
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _voiceNumbersEnabled = value;
         _isSaving = false;
       });
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -71,10 +73,12 @@ class _VoiceNumbersSettingsScreenState extends State<VoiceNumbersSettingsScreen>
         enabled: _voiceNumbersEnabled,
         gender: value,
       );
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _voiceGender = value;
         _isSaving = false;
       });
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

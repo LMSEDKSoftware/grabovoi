@@ -1,9 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/supabase_models.dart';
-import '../models/codigo_titulo_relacionado_model.dart';
 import '../config/supabase_config.dart';
 import 'cache_service.dart';
 
@@ -151,8 +149,11 @@ class SupabaseService {
           }
         }
         print('📊 Página: ${offset + 1}-${offset + list.length} (total acumulado: ${codigos.length})');
-        if (list.length < _getCodigosPageSize) hasMore = false;
-        else offset += _getCodigosPageSize;
+        if (list.length < _getCodigosPageSize) {
+          hasMore = false;
+        } else {
+          offset += _getCodigosPageSize;
+        }
       }
 
       print('✅ getCodigos completado: ${codigos.length} secuencias');
@@ -715,7 +716,7 @@ class SupabaseService {
 
   static Future<String> getAudioUrl(String archivo) async {
     try {
-      final response = await _client.storage
+      final response = _client.storage
           .from('audios')
           .getPublicUrl(archivo);
       
@@ -740,7 +741,7 @@ class SupabaseService {
       // Subir al bucket 'images' con la ruta específica del usuario
       await _client.storage
           .from('images')
-          .upload(filePath, file, fileOptions: FileOptions(
+          .upload(filePath, file, fileOptions: const FileOptions(
             upsert: true, // Sobrescribir si existe
             contentType: 'image/jpeg',
           ));
@@ -876,14 +877,16 @@ class SupabaseService {
     int nivel = 1;
     
     // Por días consecutivos
-    if (diasConsecutivos >= 21) nivel += 4;
-    else if (diasConsecutivos >= 14) nivel += 3;
+    if (diasConsecutivos >= 21) {
+      nivel += 4;
+    } else if (diasConsecutivos >= 14) nivel += 3;
     else if (diasConsecutivos >= 7) nivel += 2;
     else if (diasConsecutivos >= 3) nivel += 1;
     
     // Por total de pilotajes
-    if (totalPilotajes >= 100) nivel += 3;
-    else if (totalPilotajes >= 50) nivel += 2;
+    if (totalPilotajes >= 100) {
+      nivel += 3;
+    } else if (totalPilotajes >= 50) nivel += 2;
     else if (totalPilotajes >= 20) nivel += 1;
     else if (totalPilotajes >= 5) nivel += 1;
     

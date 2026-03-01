@@ -6,7 +6,7 @@ import 'dart:io';
 Future<void> main(List<String> args) async {
   final email = args.isNotEmpty ? args[0] : 'pagam18659@httpsu.com';
   final userId = args.length > 1 ? args[1] : '6170400e-a0e5-4414-912b-a4cdb084c295';
-  final name = 'Usuario de Prueba';
+  const name = 'Usuario de Prueba';
   
   print('🧪 Probando envío de email de bienvenida');
   print('');

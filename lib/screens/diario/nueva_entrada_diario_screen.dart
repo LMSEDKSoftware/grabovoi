@@ -243,9 +243,9 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.tag,
-                                  color: const Color(0xFFFFD700),
+                                  color: Color(0xFFFFD700),
                                   size: 20,
                                 ),
                                 const SizedBox(width: 12),

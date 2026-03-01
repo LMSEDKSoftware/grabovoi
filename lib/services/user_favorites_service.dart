@@ -1,8 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/user_model.dart' as app_models;
 import 'auth_service_simple.dart';
 import 'user_custom_codes_service.dart';
-import '../models/supabase_models.dart';
 
 class UserFavoritesService {
   static final UserFavoritesService _instance = UserFavoritesService._internal();

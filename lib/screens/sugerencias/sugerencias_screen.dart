@@ -237,7 +237,7 @@ class _SugerenciasScreenState extends State<SugerenciasScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.filter_list, color: Colors.amber, size: 16),
+                const Icon(Icons.filter_list, color: Colors.amber, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   'Filtro: ${_filtroEstado.toUpperCase()}',

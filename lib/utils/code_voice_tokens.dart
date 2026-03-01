@@ -1,5 +1,6 @@
 /// Tokens para reproducción de voz numérica (dígito a dígito).
 /// Preserva "_" como micro-pausa; no usa codigoSoloDigitos.
+library;
 
 /// Convierte un código/secuencia en lista de tokens para voz:
 /// - Dígitos '0'-'9' → un token por dígito.

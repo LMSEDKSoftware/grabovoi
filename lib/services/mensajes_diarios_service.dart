@@ -1,4 +1,3 @@
-import '../config/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Servicio para obtener mensajes diarios desde la tabla mensajes_diarios

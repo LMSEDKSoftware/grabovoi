@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -286,7 +285,7 @@ class SubscriptionService {
       }
       
       final accountCreatedAt = DateTime.parse(userData['created_at']);
-      final trialEnd = accountCreatedAt.add(Duration(days: freeTrialDays));
+      final trialEnd = accountCreatedAt.add(const Duration(days: freeTrialDays));
       final now = DateTime.now();
 
       print('🔍 Fecha de creación de cuenta: $accountCreatedAt');
@@ -441,7 +440,9 @@ class SubscriptionService {
         for (final e in _recentlyProcessedPurchaseIds.entries) {
           if (DateTime.now().difference(e.value) > _dedupeWindow) toRemove.add(e.key);
         }
-        for (final k in toRemove) _recentlyProcessedPurchaseIds.remove(k);
+        for (final k in toRemove) {
+          _recentlyProcessedPurchaseIds.remove(k);
+        }
       }
     } finally {
       _handlingPurchaseLock = false;

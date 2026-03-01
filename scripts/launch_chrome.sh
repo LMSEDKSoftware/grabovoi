@@ -18,7 +18,11 @@ echo "🚀 Iniciando proceso de lanzamiento de Flutter + Chrome..."
     
 MAX_WAIT=180  # Máximo 3 minutos esperando
 LOG_FILE="/tmp/flutter_launch.log"
+PID_FILE="/tmp/flutter_launch.pid"
 FIXED_PORT=49181  # Puerto fijo para Flutter Web
+# En Flutter Web, CanvasKit a veces emite warning de "Noto fonts" al usar emojis/símbolos.
+# HTML renderer usa las fuentes del sistema (incluye emojis) y evita ese warning en dev.
+WEB_RENDERER="${WEB_RENDERER:-html}"
 
 # Colores para output
 RED='\033[0;31m'
@@ -33,6 +37,15 @@ cleanup() {
     # Detener procesos Flutter
     pkill -f "flutter run" 2>/dev/null || true
     pkill -f "flutter_tools" 2>/dev/null || true
+
+    # Detener PID previo si existe (mejor esfuerzo)
+    if [ -f "${PID_FILE}" ]; then
+        PREV_PID="$(cat "${PID_FILE}" 2>/dev/null)"
+        if [ -n "${PREV_PID}" ]; then
+            kill "${PREV_PID}" 2>/dev/null || true
+        fi
+        rm -f "${PID_FILE}" 2>/dev/null || true
+    fi
     
     # Liberar el puerto si está en uso
     lsof -ti:${FIXED_PORT} | xargs kill -9 2>/dev/null || true
@@ -131,20 +144,23 @@ main() {
         fi
     fi
     
-    echo -e "${GREEN}📦 Compilando e iniciando servidor Flutter en puerto ${FIXED_PORT}...${NC}"
+    echo -e "${GREEN}📦 Compilando e iniciando servidor Flutter (web-server) en puerto ${FIXED_PORT}...${NC}"
     
-    # Iniciar Flutter con puerto fijo usando --web-port
-    # Usamos nohup y & para mantener el proceso en background pero activo
-    # Redirigimos salida a log pero mantenemos el proceso vivo
-    nohup flutter run -d chrome \
+    # Iniciar Flutter como "web-server" (sin depender de la pestaña de depuración de Chrome).
+    # Esto evita el estado "Waiting for connection from debug service on Chrome..." y hace el
+    # servidor más estable para pruebas manuales.
+    nohup flutter run -d web-server \
+        --web-renderer="${WEB_RENDERER}" \
+        --web-hostname=127.0.0.1 \
         --web-port=${FIXED_PORT} \
         --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY}" \
         --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
         --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
         --dart-define=SB_SERVICE_ROLE_KEY="${SB_SERVICE_ROLE_KEY}" \
-        > "${LOG_FILE}" 2>&1 &
+        > "${LOG_FILE}" 2>&1 < /dev/null &
     
     FLUTTER_PID=$!
+    echo "${FLUTTER_PID}" > "${PID_FILE}" 2>/dev/null || true
     echo -e "${YELLOW}📝 PID del proceso Flutter: ${FLUTTER_PID}${NC}"
     echo -e "${YELLOW}📝 Logs disponibles en: ${LOG_FILE}${NC}"
     echo ""
@@ -161,43 +177,52 @@ main() {
     echo -e "${GREEN}✅ Servidor disponible en: ${CHROME_URL}${NC}"
     echo ""
     
-    # Abrir Chrome usando AppleScript
-    echo -e "${GREEN}🌐 Abriendo Chrome con AppleScript...${NC}"
-    sleep 1
-    
-    osascript <<APPLESCRIPT
-tell application "System Events"
-    set chromeRunning to (name of processes) contains "Google Chrome"
-    if chromeRunning then
-        tell application "Google Chrome"
-            activate
-            if (count of windows) > 0 then
-                set URL of active tab of front window to "${CHROME_URL}"
-            else
-                make new window
-                set URL of active tab of front window to "${CHROME_URL}"
-            end if
-        end tell
-    else
-        tell application "Google Chrome"
-            activate
-            make new window
-            set URL of active tab of front window to "${CHROME_URL}"
-        end tell
-    end if
+    # Importante: NO cambiamos la URL del tab de depuración que abrió Flutter.
+    # En su lugar, abrimos (o enfocamos) otra pestaña/ventana apuntando al localhost.
+    echo -e "${GREEN}🌐 Activando Chrome...${NC}"
+    osascript 2>/dev/null <<APPLESCRIPT || true
+tell application "Google Chrome"
+  activate
+  set targetUrl to "${CHROME_URL}/"
+
+  set found to false
+  try
+    repeat with w in windows
+      repeat with t in tabs of w
+        if (URL of t as text) starts with targetUrl then
+          set active tab index of w to (index of t)
+          set index of w to 1
+          set found to true
+          exit repeat
+        end if
+      end repeat
+      if found then exit repeat
+    end repeat
+  end try
+
+  if not found then
+    make new window
+    set URL of active tab of front window to targetUrl
+  end if
 end tell
 APPLESCRIPT
-    
-    sleep 2
-    
-    # Verificar que Chrome esté abierto y navegando a la URL correcta
-    URL_CHECK=$(osascript -e "tell application \"Google Chrome\" to get URL of active tab of front window" 2>/dev/null)
-    if echo "$URL_CHECK" | grep -q "localhost:${FIXED_PORT}"; then
-        echo -e "${GREEN}✅ ¡Chrome abierto correctamente y navegando a localhost:${FIXED_PORT}!${NC}"
-    else
-        echo -e "${GREEN}✅ Chrome abierto${NC}"
-        echo -e "${YELLOW}⚠️ Si la página está en blanco, espera unos segundos más a que compile${NC}"
+    sleep 1
+
+    # Sanidad: confirmar que el servidor sigue vivo tras abrir/activar Chrome
+    if ! ps -p ${FLUTTER_PID} > /dev/null 2>&1; then
+        echo -e "${RED}❌ El proceso Flutter terminó inesperadamente tras activar Chrome${NC}"
+        echo -e "${YELLOW}📋 Últimas líneas del log:${NC}"
+        tail -30 "${LOG_FILE}"
+        exit 1
     fi
+    if ! curl -fsS -o /dev/null "http://localhost:${FIXED_PORT}/" 2>/dev/null; then
+        echo -e "${RED}❌ El servidor dejó de responder en http://localhost:${FIXED_PORT}/${NC}"
+        echo -e "${YELLOW}📋 Últimas líneas del log:${NC}"
+        tail -30 "${LOG_FILE}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✅ Chrome activado; app disponible en ${CHROME_URL}${NC}"
     echo -e "${GREEN}✅ URL: ${CHROME_URL}${NC}"
     echo ""
     echo -e "${YELLOW}💡 Para detener el servidor: kill ${FLUTTER_PID}${NC}"

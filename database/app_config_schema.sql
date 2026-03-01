@@ -22,14 +22,28 @@ CREATE POLICY "Public can read app config" ON public.app_config
   FOR SELECT
   USING (true);
 
--- Política: Solo admins pueden insertar/actualizar
+-- Política: Solo admins pueden insertar/actualizar/eliminar
+-- IMPORTANTE: NO usar "FOR ALL" aquí, porque también aplica a SELECT y puede
+-- provocar errores si la verificación de admin depende de RLS (p.ej. users_admin).
 CREATE POLICY "Admins can modify app config" ON public.app_config
-  FOR ALL
+  FOR INSERT
+  WITH CHECK (
+    public.es_admin(auth.uid())
+  );
+
+CREATE POLICY "Admins can update app config" ON public.app_config
+  FOR UPDATE
   USING (
-    EXISTS (
-      SELECT 1 FROM public.users_admin
-      WHERE user_id = auth.uid()
-    )
+    public.es_admin(auth.uid())
+  )
+  WITH CHECK (
+    public.es_admin(auth.uid())
+  );
+
+CREATE POLICY "Admins can delete app config" ON public.app_config
+  FOR DELETE
+  USING (
+    public.es_admin(auth.uid())
   );
 
 -- Función para actualizar updated_at automáticamente
@@ -63,4 +77,3 @@ COMMENT ON TABLE public.app_config IS 'Tabla para almacenar configuración de la
 COMMENT ON COLUMN public.app_config.key IS 'Clave única de la configuración (ej: legal_privacy_policy_url)';
 COMMENT ON COLUMN public.app_config.value IS 'Valor de la configuración (ej: URL del link legal)';
 COMMENT ON COLUMN public.app_config.description IS 'Descripción opcional de la configuración';
-

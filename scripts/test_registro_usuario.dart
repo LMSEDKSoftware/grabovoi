@@ -6,7 +6,7 @@ import 'dart:io';
 Future<void> main(List<String> args) async {
   // Generar email único con timestamp
   final timestamp = DateTime.now().millisecondsSinceEpoch;
-  final email = args.isNotEmpty ? args[0] : 'test${timestamp}@httpsu.com';
+  final email = args.isNotEmpty ? args[0] : 'test$timestamp@httpsu.com';
   final name = args.length > 1 ? args[1] : 'Usuario de Prueba';
   final password = args.length > 2 ? args[2] : 'Test123456!';
   

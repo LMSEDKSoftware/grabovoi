@@ -16,8 +16,8 @@ class ChallengeProgressTracker extends ChangeNotifier {
   final AuthServiceSimple _authService = AuthServiceSimple();
   
   // Mapas para rastrear el progreso diario
-  Map<String, Map<String, bool>> _dailyProgress = {};
-  Map<String, Map<String, int>> _dailyCounts = {};
+  final Map<String, Map<String, bool>> _dailyProgress = {};
+  final Map<String, Map<String, int>> _dailyCounts = {};
   
   // Timers para rastrear tiempo en la app
   Timer? _appUsageTimer;
@@ -297,7 +297,7 @@ class ChallengeProgressTracker extends ChangeNotifier {
           .lte('recorded_at', end.toIso8601String());
 
       // Repeticiones: contar SECUENCIAS ÚNICAS (la misma secuencia no cuenta dos veces)
-      final Set<String> _secuenciasRepetidasUnicas = {};
+      final Set<String> secuenciasRepetidasUnicas = {};
       int codesPiloted = 0;
       int pilotagesShared = 0;
       int appUsageSeconds = 0;
@@ -311,9 +311,9 @@ class ChallengeProgressTracker extends ChangeNotifier {
             // Normalizar solo espacios → _ (333 333 3 = 333_333_3). NO colapsar: 3333333 ≠ 333_333_3
             final key = codeId.replaceAll(RegExp(r'\s+'), '_');
             if (key.isNotEmpty) {
-              _secuenciasRepetidasUnicas.add(key);
+              secuenciasRepetidasUnicas.add(key);
             } else {
-              _secuenciasRepetidasUnicas.add('legacy_${_secuenciasRepetidasUnicas.length}');
+              secuenciasRepetidasUnicas.add('legacy_${secuenciasRepetidasUnicas.length}');
             }
             break;
           }
@@ -330,7 +330,7 @@ class ChallengeProgressTracker extends ChangeNotifier {
         }
       }
 
-      final codesRepeated = _secuenciasRepetidasUnicas.length;
+      final codesRepeated = secuenciasRepetidasUnicas.length;
 
       _dailyCounts[todayKey] = {
         if (codesRepeated > 0) 'codes_repeated': codesRepeated,
@@ -372,6 +372,7 @@ class ChallengeProgressTracker extends ChangeNotifier {
   }
 
   // Limpiar recursos
+  @override
   void dispose() {
     stopAppUsageTracking();
   }

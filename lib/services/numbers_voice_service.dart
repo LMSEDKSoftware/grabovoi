@@ -53,7 +53,7 @@ class NumbersVoiceService {
 
     // En Android: pedir "transient may duck" para que la música siga sonando (reducida) y no se pare.
     await _voicePlayer.setAudioContext(AudioContext(
-      android: AudioContextAndroid(audioFocus: AndroidAudioFocus.gainTransientMayDuck),
+      android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.gainTransientMayDuck),
     ));
     await _voicePlayer.setVolume(1.0);
     await AudioManagerService().setVolume(0.4);

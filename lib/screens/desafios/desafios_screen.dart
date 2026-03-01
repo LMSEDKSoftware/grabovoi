@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../services/challenge_service.dart';
 import '../../services/challenge_tracking_service.dart';
@@ -110,12 +109,12 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          ..._userChallenges.map((challenge) => _buildActiveChallengeCard(challenge)).toList(),
+                          ..._userChallenges.map((challenge) => _buildActiveChallengeCard(challenge)),
                           const SizedBox(height: 30),
                         ],
                         
                         // Desafíos Disponibles
-                        ..._availableChallenges.map((challenge) => _buildChallengeCard(challenge)).toList(),
+                        ..._availableChallenges.map((challenge) => _buildChallengeCard(challenge)),
                         
                         const SizedBox(height: 40),
                       ],
@@ -249,7 +248,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                     ),
                       // Mostrar flecha solo si está desbloqueado; si está bloqueado, no mostrar nada (el ícono de candado ya está en la esquina superior derecha)
                       if (!isLocked)
-                        Icon(
+                        const Icon(
                           Icons.arrow_forward_ios,
                           color: Colors.white54,
                           size: 16,
@@ -368,7 +367,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.trending_up, color: Colors.white70, size: 16),
+                              const Icon(Icons.trending_up, color: Colors.white70, size: 16),
                               const SizedBox(width: 4),
                               Text(
                                 'Día ${challenge.currentDay} de ${challenge.durationDays}',
@@ -488,7 +487,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Icon(Icons.timer, color: Colors.white70, size: 16),
+                const Icon(Icons.timer, color: Colors.white70, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   'Duración: ${challenge.durationDays} días',
@@ -502,7 +501,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.trending_up, color: Colors.white70, size: 16),
+                const Icon(Icons.trending_up, color: Colors.white70, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   'Dificultad: ${_getDifficultyText(challenge.difficulty)}',
@@ -516,7 +515,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.card_giftcard, color: Colors.white70, size: 16),
+                const Icon(Icons.card_giftcard, color: Colors.white70, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

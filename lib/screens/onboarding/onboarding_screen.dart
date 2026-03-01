@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/golden_sphere.dart';
 import '../../services/permissions_service.dart';
 import '../auth/login_screen.dart';
 
@@ -25,63 +24,63 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       description: 'No es solo una imagen, es una antena cuántica de propósito.\n\nAquí, el enfoque se convierte en dirección.\n\nEl número en vibración.',
       mentalShift: 'No estás enfocando la mente. Estás alineando tu campo.',
       icon: Icons.auto_awesome,
-      color: const Color(0xFFFFD700),
+      color: Color(0xFFFFD700),
     ),
     OnboardingSlide(
       title: 'Biblioteca Viva',
       description: 'Cada número es una llave.\n\nLa app no busca secuencias, despierta rutas. Puedes explorar con intención o dejar que la Inteligencia Cuántica Vibracional sugiera lo que tu alma ya sabe que necesita.',
       mentalShift: 'No estás navegando una base de datos. Estás explorando el lenguaje de tu destino.',
       icon: Icons.search,
-      color: const Color(0xFF42A5F5),
+      color: Color(0xFF42A5F5),
     ),
     OnboardingSlide(
       title: 'Sesión de Repetición',
       description: 'La constancia es un llamado.\n\nAquí no solo repites un número: lo vibras.',
       mentalShift: 'No estás haciendo un ritual. Estás habitando tu nueva frecuencia.',
       icon: Icons.access_time,
-      color: const Color(0xFF26A69A),
+      color: Color(0xFF26A69A),
     ),
     OnboardingSlide(
       title: 'Pilotaje Consciente',
       description: 'Manifestar no es desear. Es conducir.\n\nEl pilotaje no guía al universo. Te guía a ti.\n\nEs el momento en que la app deja de ser app… y se convierte en brújula energética.',
       mentalShift: 'No estás esperando un milagro. Estás activando tu rol de creador.',
       icon: Icons.self_improvement,
-      color: const Color(0xFF4CAF50),
+      color: Color(0xFF4CAF50),
     ),
     OnboardingSlide(
       title: 'Portal Energético',
       description: 'Sí, tu frecuencia tiene forma.\n\nCada pilotaje sube tu nivel. Cada sesión suma luz.\n\nVisualiza tu energía con 💎 y ✨ porque lo que no se ve, aquí… se revela.',
       mentalShift: 'No estás acumulando puntos. Estás calibrando tu campo.',
       icon: Icons.show_chart,
-      color: const Color(0xFF9C27B0),
+      color: Color(0xFF9C27B0),
     ),
     OnboardingSlide(
       title: 'Notificaciones',
       description: 'No es spam. Es sincronía.\n\nLas notificaciones son mensajes diseñados para llegar en el momento exacto.\n\nNada es casual. Todo es secuencia.',
       mentalShift: 'No son alertas. Son llamados vibracionales.',
       icon: Icons.notifications_active,
-      color: const Color(0xFFFF7043),
+      color: Color(0xFFFF7043),
     ),
     OnboardingSlide(
       title: 'Recompensas de Luz',
       description: 'Cada sesión te devuelve energía.\n\nCristales, luz cuántica, restauradores… no son premios.\n\nSon anclas que confirman que estás en expansión.',
       mentalShift: 'No estás gamificando tu progreso. Estás recibiendo evidencia energética.',
       icon: Icons.diamond,
-      color: const Color(0xFFFFD54F),
+      color: Color(0xFFFFD54F),
     ),
     OnboardingSlide(
       title: 'Comparte tu Vibración',
       description: 'Una imagen que lleva intención',
       mentalShift: 'No estás mandando una imagen. Estás irradiando una activación',
       icon: Icons.share,
-      color: const Color(0xFF7E57C2),
+      color: Color(0xFF7E57C2),
     ),
     OnboardingSlide(
       title: 'Inteligencia Cuántica Vibracional',
       description: 'El sistema reconoce si tu secuencia existe, vibra o necesita otro camino.\n\nLa Inteligencia Cuántica Vibracional no reemplaza tu intención, la respalda.',
       mentalShift: 'No es un sistema que aprueba o rechaza. Es un oráculo digital que confirma tu frecuencia.',
       icon: Icons.verified,
-      color: const Color(0xFF00BCD4),
+      color: Color(0xFF00BCD4),
     ),
   ];
 

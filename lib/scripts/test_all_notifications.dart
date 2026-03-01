@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
 import '../models/notification_type.dart';
 
@@ -124,7 +123,7 @@ class TestAllNotifications {
     
     await _notificationService.initialize();
     
-    final userName = 'Piloto Consciente';
+    const userName = 'Piloto Consciente';
     
     // Enviar todas al mismo tiempo - el sistema de rate limiting las procesará
     await Future.wait([

@@ -93,7 +93,6 @@ class DebugSimple {
       'lib/models/supabase_models.dart',
       'lib/screens/home/home_screen.dart',
       'lib/screens/biblioteca/static_biblioteca_screen.dart',
-      'lib/screens/pilotaje/pilotaje_screen.dart',
       'lib/screens/desafios/desafios_screen.dart',
       'lib/screens/evolucion/evolucion_screen.dart',
       'lib/screens/profile/profile_screen.dart',

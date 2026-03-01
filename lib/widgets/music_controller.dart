@@ -327,7 +327,7 @@ class _MusicControllerState extends State<MusicController> {
           // Lista de música (si está habilitada)
           if (widget.showMusicList) ...[
             const SizedBox(height: 16),
-            Container(
+            SizedBox(
               height: 120,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,

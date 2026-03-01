@@ -10,13 +10,13 @@
 ///   dart run scripts/verificar_fase2_futbol.dart
 ///
 /// Requiere: .env con SUPABASE_URL y SUPABASE_ANON_KEY.
+library;
+
 
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dotenv/dotenv.dart';
-import '../lib/config/supabase_config.dart';
-import '../lib/models/supabase_models.dart';
-import '../lib/services/supabase_service.dart';
+import 'package:manifestacion_numerica_grabovoi/services/supabase_service.dart';
 
 Future<void> main(List<String> args) async {
   print('═══════════════════════════════════════════════════════════════');

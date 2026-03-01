@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 import '../services/permissions_service.dart';
-import '../services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Modal para solicitar permisos de forma amigable después del login
@@ -16,7 +15,7 @@ class PermissionsRequestModal extends StatefulWidget {
 
     final prefs = await SharedPreferences.getInstance();
     final hasSeenModal = prefs.getBool('permissions_modal_shown') ?? false;
-    
+
     // Si ya se mostró, no mostrar de nuevo
     if (hasSeenModal) {
       return false;
@@ -25,7 +24,7 @@ class PermissionsRequestModal extends StatefulWidget {
     // Verificar si los permisos ya están otorgados
     final permissionsService = PermissionsService();
     final status = await permissionsService.checkPermissionsStatus();
-    
+
     // Si ya tiene todos los permisos, no mostrar
     if (status['notifications'] == true && status['photos'] == true) {
       // Marcar como visto para no mostrar de nuevo
@@ -37,7 +36,8 @@ class PermissionsRequestModal extends StatefulWidget {
   }
 
   @override
-  State<PermissionsRequestModal> createState() => _PermissionsRequestModalState();
+  State<PermissionsRequestModal> createState() =>
+      _PermissionsRequestModalState();
 }
 
 class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
@@ -54,7 +54,7 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
   Future<void> _checkCurrentPermissions() async {
     final permissionsService = PermissionsService();
     final status = await permissionsService.checkPermissionsStatus();
-    
+
     setState(() {
       _notificationsGranted = status['notifications'] ?? false;
       _photosGranted = status['photos'] ?? false;
@@ -68,22 +68,22 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
 
     try {
       final permissionsService = PermissionsService();
-      
+
       // Solicitar permisos
       await permissionsService.requestInitialPermissions();
-      
+
       // Verificar estado después de solicitar
       await _checkCurrentPermissions();
-      
+
       // Marcar como visto
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('permissions_modal_shown', true);
-      
+
       // Si se otorgaron los permisos, cerrar el modal
       if (_notificationsGranted && _photosGranted) {
         if (mounted) {
           Navigator.of(context).pop();
-          
+
           // Mostrar mensaje de éxito
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -98,7 +98,8 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ Algunos permisos no fueron otorgados. La opción de Fotos aparecerá en Configuración > MANIGRAB cuando intentes usar la galería por primera vez (por ejemplo, al seleccionar un avatar).'),
+              content: Text(
+                  '⚠ Algunos permisos no fueron otorgados. La opción de Fotos aparecerá en Configuración > MANIGRAB cuando intentes usar la galería por primera vez (por ejemplo, al seleccionar un avatar).'),
               backgroundColor: Colors.orange,
               duration: Duration(seconds: 6),
             ),
@@ -129,7 +130,7 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
     // Marcar como visto para no mostrar de nuevo
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('permissions_modal_shown', true);
-    
+
     if (mounted) {
       Navigator.of(context).pop();
     }
@@ -162,7 +163,7 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Título
             const Text(
               'Permisos Necesarios',
@@ -174,7 +175,7 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            
+
             // Descripción
             const Text(
               'Para brindarte la mejor experiencia, necesitamos algunos permisos:',
@@ -185,7 +186,7 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            
+
             // Lista de permisos
             _buildPermissionItem(
               icon: Icons.notifications,
@@ -201,7 +202,7 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
               granted: _photosGranted,
             ),
             const SizedBox(height: 32),
-            
+
             // Botones
             Row(
               children: [
@@ -226,7 +227,7 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                
+
                 // Botón "Permitir"
                 Expanded(
                   flex: 2,
@@ -246,7 +247,8 @@ class _PermissionsRequestModalState extends State<PermissionsRequestModal> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.black),
                             ),
                           )
                         : const Text(

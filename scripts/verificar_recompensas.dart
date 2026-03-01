@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../lib/config/supabase_config.dart';
-import '../lib/services/auth_service_simple.dart';
-import '../lib/services/rewards_service.dart';
+import 'package:manifestacion_numerica_grabovoi/config/supabase_config.dart';
+import 'package:manifestacion_numerica_grabovoi/services/auth_service_simple.dart';
+import 'package:manifestacion_numerica_grabovoi/services/rewards_service.dart';
 import 'package:dotenv/dotenv.dart';
 
 /// Script para verificar el estado de las recompensas en la base de datos

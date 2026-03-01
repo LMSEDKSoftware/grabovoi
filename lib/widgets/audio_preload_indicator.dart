@@ -114,9 +114,9 @@ class _AudioPreloadIndicatorState extends State<AudioPreloadIndicator>
                         alignment: Alignment.center,
                         children: [
                           // Icono de audio
-                          Icon(
+                          const Icon(
                             Icons.audiotrack,
-                            color: const Color(0xFFFFD700),
+                            color: Color(0xFFFFD700),
                             size: 32,
                           ),
                           

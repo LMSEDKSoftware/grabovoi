@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:screenshot/screenshot.dart';
@@ -11,7 +10,6 @@ import '../../services/supabase_service.dart';
 import '../../models/supabase_models.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/favorite_label_modal.dart';
-import '../../widgets/custom_button.dart';
 import '../../repositories/codigos_repository.dart';
 import '../../config/env.dart';
 import '../../config/supabase_config.dart';
@@ -38,6 +36,118 @@ class StaticBibliotecaScreen extends StatefulWidget {
 }
 
 class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
+  static const String _kRelatedSafetyNote =
+      'Nota: estas recomendaciones son una alternativa basada en el catálogo interno y pueden no coincidir exactamente con tu intención. '
+      'Si es un tema de salud, consulta a un profesional para un diagnóstico preciso.';
+
+  static const Map<String, List<String>> _kQuerySynonyms =
+      <String, List<String>>{
+    // Dental / odontología
+    'dentista': <String>[
+      'diente',
+      'dientes',
+      'dental',
+      'odont',
+      'odontologia',
+      'odontología',
+      'odontologo',
+      'odontólogo',
+      'boca',
+      'muela',
+      'muelas',
+      'encia',
+      'encía',
+      'encias',
+      'oral',
+    ],
+    'odontologia': <String>[
+      'dentista',
+      'diente',
+      'dientes',
+      'dental',
+      'boca',
+      'muela',
+      'muelas',
+      'oral',
+      'odont'
+    ],
+    'odontología': <String>[
+      'dentista',
+      'diente',
+      'dientes',
+      'dental',
+      'boca',
+      'muela',
+      'muelas',
+      'oral',
+      'odont'
+    ],
+    'odontologo': <String>[
+      'dentista',
+      'diente',
+      'dientes',
+      'dental',
+      'boca',
+      'muela',
+      'muelas',
+      'oral',
+      'odont'
+    ],
+    'odontólogo': <String>[
+      'dentista',
+      'diente',
+      'dientes',
+      'dental',
+      'boca',
+      'muela',
+      'muelas',
+      'oral',
+      'odont'
+    ],
+    'dental': <String>[
+      'diente',
+      'dientes',
+      'boca',
+      'oral',
+      'muela',
+      'muelas',
+      'dentista',
+      'odont'
+    ],
+    'diente': <String>[
+      'dientes',
+      'dental',
+      'boca',
+      'oral',
+      'muela',
+      'muelas',
+      'odont'
+    ],
+    'dientes': <String>[
+      'diente',
+      'dental',
+      'boca',
+      'oral',
+      'muela',
+      'muelas',
+      'odont'
+    ],
+    // Inglés básico
+    'dentist': <String>[
+      'dentista',
+      'diente',
+      'dientes',
+      'dental',
+      'odont',
+      'tooth',
+      'teeth',
+      'mouth',
+      'oral'
+    ],
+    'tooth': <String>['diente', 'dientes', 'dental', 'dentista', 'odont'],
+    'teeth': <String>['diente', 'dientes', 'dental', 'dentista', 'odont'],
+  };
+
   final ScrollController _scrollController = ScrollController();
   bool _showFab = false;
   List<CodigoGrabovoi> _codigos = [];
@@ -47,7 +157,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   String query = '';
   bool loading = true;
   String? error;
-  
+
   // Variables para favoritos
   List<String> etiquetasFavoritos = [];
   String? etiquetaSeleccionada;
@@ -55,40 +165,46 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   List<CodigoGrabovoi> favoritosFiltrados = [];
   DateTime? _lastLoadTime;
   bool _tieneFavoritos = false; // Flag para saber si hay favoritos disponibles
-  
+
   // Caché de favoritos para optimizar consultas
-  Map<String, bool> _favoritosCache = {}; // codigo -> isFavorite
-  Map<String, String?> _etiquetasCache = {}; // codigo -> etiqueta
-  Set<String> _customCodesCache = {}; // códigos personalizados
+  final Map<String, bool> _favoritosCache = {}; // codigo -> isFavorite
+  final Map<String, String?> _etiquetasCache = {}; // codigo -> etiqueta
+  final Set<String> _customCodesCache = {}; // códigos personalizados
   DateTime? _favoritosCacheTime;
   static const Duration _cacheDuration = Duration(minutes: 5);
-  
+
   // Caché de títulos relacionados para evitar consultas repetitivas durante scroll
-  Map<String, List<Map<String, dynamic>>> _titulosRelacionadosCache = {}; // codigo -> titulos relacionados
+  final Map<String, List<Map<String, dynamic>>> _titulosRelacionadosCache =
+      {}; // codigo -> titulos relacionados
   bool _titulosRelacionadosCargados = false;
-  
+
   // Variables para ordenamiento inteligente basado en evaluación
   List<String> _userGoals = []; // Objetivos del usuario desde la evaluación
   final UserProgressService _progressService = UserProgressService();
-  
+
   // Variables para búsqueda profunda con IA
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   String _queryBusqueda = '';
   bool _mostrarResultados = false;
   String? _codigoNoEncontrado;
   bool _showOptionsModal = false;
+
   /// Cuando hay búsqueda por código con resultados parciales pero sin coincidencia exacta,
   /// mostrar opción "Buscar código exacto" / búsqueda profunda / pilotaje manual.
   bool _mostrarOpcionBusquedaExacta = false;
+
   /// Si no hay resultados pero el usuario tiene en Favoritos (pilotaje manual) una secuencia que coincide.
   bool _tieneSecuenciaEnFavoritosPilotajeManual = false;
   String? _nombreSecuenciaEnFavoritosPilotajeManual;
   CodigoGrabovoi? _codigoFavoritoPilotajeManualCoincidente;
   bool _buscandoConIA = false;
   String? _codigoBuscando;
+  bool _busquedaProfundaEnCurso = false;
+  String? _busquedaProfundaQueryEnCurso;
   bool _mostrarConfirmacionGuardado = false;
   String? _codigoGuardadoNombre;
   int? _busquedaActualId;
+  BusquedaProfunda? _busquedaActual;
   DateTime? _inicioBusqueda;
   List<CodigoGrabovoi> _codigosEncontrados = [];
   bool _mostrarSeleccionCodigos = false;
@@ -96,26 +212,212 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   double _costoEstimadoOpenAI = 0.0;
   // Flujo B Fase 2: fallback relacionados cuando no hay fuente externa
   bool _mostrarFallbackFase2 = false;
-  List<Map<String, dynamic>> _fallbackFase2Items = []; // [{ 'codigo': CodigoGrabovoi, 'why_recommended': String }]
+  List<Map<String, dynamic>> _fallbackFase2Items =
+      []; // [{ 'codigo': CodigoGrabovoi, 'why_recommended': String }]
   String? _safetyNoteFase2;
   String _queryFallbackFase2 = '';
   bool _buscandoRelacionadosFase2 = false;
   String? _codigoBuscandoFase2;
-  
+
   // Compartir código desde la biblioteca
   final ScreenshotController _shareController = ScreenshotController();
   CodigoGrabovoi? _codigoParaCompartir;
-  Set<String> _pilotedCodes = {}; // Códigos con codigoRepetido (habilita compartir)
-  
+  Set<String> _pilotedCodes =
+      {}; // Códigos con codigoRepetido (habilita compartir)
+
   // Variables para pilotaje manual
   bool _showManualPilotage = false;
-  TextEditingController _manualCodeController = TextEditingController();
-  TextEditingController _manualTitleController = TextEditingController();
-  TextEditingController _manualDescriptionController = TextEditingController();
+  final TextEditingController _manualCodeController = TextEditingController();
+  final TextEditingController _manualTitleController = TextEditingController();
+  final TextEditingController _manualDescriptionController = TextEditingController();
   String _manualCategory = 'Abundancia y Prosperidad';
-  
+
   /// Usa util compartido (flujo B): código = dígitos/espacios/_; no "-".
   bool _esBusquedaPorCodigo(String query) => esBusquedaPorCodigo(query);
+
+  String _normalizeText(String input) {
+    var s = input.toLowerCase();
+    s = s
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ü', 'u')
+        .replaceAll('ñ', 'n');
+    s = s.replaceAll(RegExp(r'[_\\-]+'), ' ');
+    s = s.replaceAll(RegExp(r'\\s+'), ' ').trim();
+    return s;
+  }
+
+  Set<String> _tokenizeQuery(String rawQuery) {
+    final normalized = _normalizeText(rawQuery);
+    final parts = normalized
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((p) => p.trim().isNotEmpty);
+    return parts.toSet();
+  }
+
+  Set<String> _expandQueryTokens(String rawQuery) {
+    final base = _tokenizeQuery(rawQuery);
+    final expanded = <String>{...base};
+    for (final t in base) {
+      final syn = _kQuerySynonyms[t];
+      if (syn != null) expanded.addAll(syn.map(_normalizeText));
+      if (t.startsWith('odont')) {
+        expanded.addAll(<String>[
+          'odont',
+          'odontologia',
+          'dentista',
+          'dental',
+          'diente',
+          'dientes',
+          'boca',
+          'oral'
+        ]);
+      }
+    }
+    return expanded;
+  }
+
+  ({int score, List<String> matchedTokens}) _scoreCodigoForQuery(
+      CodigoGrabovoi codigo, Set<String> queryTokens) {
+    final title = _normalizeText(codigo.nombre);
+    final desc = _normalizeText(codigo.descripcion);
+    final cat = _normalizeText(codigo.categoria);
+
+    int score = 0;
+    final matched = <String>[];
+
+    bool containsToken(String haystack, String token) {
+      if (token.isEmpty) return false;
+      if (token.length <= 3) {
+        // Evitar el ancla `$` para no chocar con interpolación en strings de Dart.
+        return RegExp('(^|[^a-z0-9])${RegExp.escape(token)}([^a-z0-9])')
+            .hasMatch('$haystack ');
+      }
+      return haystack.contains(token);
+    }
+
+    for (final token in queryTokens) {
+      var tokenScore = 0;
+      if (containsToken(title, token)) tokenScore += 6;
+      if (containsToken(desc, token)) tokenScore += 3;
+      if (containsToken(cat, token)) tokenScore += 2;
+      if (tokenScore > 0) {
+        score += tokenScore;
+        matched.add(token);
+      }
+    }
+
+    final normalizedQuery = _normalizeText(_queryBusqueda);
+    if (normalizedQuery.isNotEmpty && title.contains(normalizedQuery)) {
+      score += 10;
+    }
+
+    return (score: score, matchedTokens: matched);
+  }
+
+  List<CodigoGrabovoi> _buscarLocalPorTexto(String rawQuery,
+      {String? categoria}) {
+    final query = rawQuery.trim();
+    if (query.isEmpty) return [];
+    final queryTokens = _expandQueryTokens(query);
+    final results =
+        <({CodigoGrabovoi codigo, int score, List<String> matched})>[];
+
+    for (final c in _codigos) {
+      if (categoria != null && categoria != 'Todos' && c.categoria != categoria) {
+        continue;
+      }
+      final scored = _scoreCodigoForQuery(c, queryTokens);
+      if (scored.score > 0) {
+        results.add(
+            (codigo: c, score: scored.score, matched: scored.matchedTokens));
+      }
+    }
+
+    results.sort((a, b) => b.score.compareTo(a.score));
+    return results.map((r) => r.codigo).toList();
+  }
+
+  List<Map<String, dynamic>> _buildRelatedItemsFromLocalSearch(String rawQuery,
+      {int limit = 3}) {
+    final queryTokens = _expandQueryTokens(rawQuery);
+    final scored =
+        <({CodigoGrabovoi codigo, int score, List<String> matched})>[];
+    for (final c in _codigos) {
+      final s = _scoreCodigoForQuery(c, queryTokens);
+      if (s.score > 0) {
+        scored.add((codigo: c, score: s.score, matched: s.matchedTokens));
+      }
+    }
+    scored.sort((a, b) => b.score.compareTo(a.score));
+    final items = <Map<String, dynamic>>[];
+    for (final r in scored) {
+      if (items.length >= limit) break;
+      final matched = r.matched.toSet().take(5).toList();
+      final why = matched.isEmpty
+          ? 'Coincide con tu intención de búsqueda.'
+          : 'Coincide con: ${matched.join(', ')}.';
+      items.add({'codigo': r.codigo, 'why_recommended': why});
+    }
+
+    // Si no hay suficientes coincidencias directas, completar con opciones de apoyo general.
+    if (items.length < limit) {
+      final usedCodes =
+          items.map((e) => (e['codigo'] as CodigoGrabovoi).codigo).toSet();
+      final looksHealthRelated = queryTokens.intersection(<String>{
+        'salud',
+        'sanacion',
+        'sanación',
+        'dolor',
+        'enfermedad',
+        'diente',
+        'dientes',
+        'dental',
+        'boca',
+        'oral',
+        'odont',
+      }).isNotEmpty;
+      final targetCategory = looksHealthRelated ? 'Salud' : null;
+      final supportiveTokens = looksHealthRelated
+          ? <String>{
+              'salud',
+              'general',
+              'equilibrio',
+              'armonizacion',
+              'regeneracion'
+            }
+          : <String>{'equilibrio', 'armonizacion', 'energia', 'proteccion'};
+
+      final supportiveScored =
+          <({CodigoGrabovoi codigo, int score, List<String> matched})>[];
+      for (final c in _codigos) {
+        if (usedCodes.contains(c.codigo)) continue;
+        if (targetCategory != null &&
+            _normalizeText(c.categoria) != _normalizeText(targetCategory)) {
+          continue;
+        }
+        final s = _scoreCodigoForQuery(c, supportiveTokens);
+        if (s.score > 0) {
+          supportiveScored
+              .add((codigo: c, score: s.score, matched: s.matchedTokens));
+        }
+      }
+      supportiveScored.sort((a, b) => b.score.compareTo(a.score));
+      for (final r in supportiveScored) {
+        if (items.length >= limit) break;
+        items.add({
+          'codigo': r.codigo,
+          'why_recommended':
+              'Apoyo general (${targetCategory ?? r.codigo.categoria}).',
+        });
+      }
+    }
+
+    return items;
+  }
 
   /// Si la secuencia ya está guardada en pilotajes manuales del usuario, devuelve ese código; si no, null.
   Future<CodigoGrabovoi?> _secuenciaYaEnPilotajeManual(String secuencia) async {
@@ -126,14 +428,17 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     try {
       final customCodes = await UserCustomCodesService().getUserCustomCodes();
       for (final c in customCodes) {
-        if (codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos) return c;
+        if (codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos) {
+          return c;
+        }
       }
     } catch (_) {}
     return null;
   }
 
   /// Redirige a la vista que muestra el card de la secuencia guardada en Favoritos (sin abrir el formulario).
-  void _redirigirAVistaSecuenciaGuardadaEnFavoritos(CodigoGrabovoi c, String queryBusqueda) {
+  void _redirigirAVistaSecuenciaGuardadaEnFavoritos(
+      CodigoGrabovoi c, String queryBusqueda) {
     setState(() {
       _showManualPilotage = false;
       _showOptionsModal = false;
@@ -149,12 +454,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
 
   /// Abre el modal de pilotaje manual precargando el campo adecuado.
   /// Si la secuencia ya existe en pilotajes manuales del usuario, redirige a ver esa secuencia guardada.
-  Future<void> _abrirPilotajeManualDesdeBusqueda(String consultaOriginal) async {
+  Future<void> _abrirPilotajeManualDesdeBusqueda(
+      String consultaOriginal) async {
     final consulta = consultaOriginal.trim();
     if (consulta.isEmpty) return;
-    
+
     final esCodigo = _esBusquedaPorCodigo(consulta);
-    
+
     if (esCodigo) {
       final normalizado = consulta.replaceAll(' ', '_');
       final yaGuardado = await _secuenciaYaEnPilotajeManual(normalizado);
@@ -163,14 +469,16 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         return;
       }
     }
-    
+
     if (!mounted) return;
     setState(() {
       _showManualPilotage = true;
       if (esCodigo) {
         final normalizado = consulta.replaceAll(' ', '_');
         _manualCodeController.text = normalizado;
-        if (_manualTitleController.text.isNotEmpty) _manualTitleController.clear();
+        if (_manualTitleController.text.isNotEmpty) {
+          _manualTitleController.clear();
+        }
       } else {
         _manualTitleController.text = consulta;
         _manualCodeController.clear();
@@ -183,10 +491,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   String _filtrarEntradaBusqueda(String value) {
     return filtrarEntradaCodigo(value);
   }
-  
+
   // Variables para el deslizamiento y reporte de códigos
-  final Map<String, double> _swipeOffsets = {}; // Almacena el offset de deslizamiento por código
-  final Map<String, String?> _reportReasons = {}; // Almacena la razón del reporte por código
+  final Map<String, double> _swipeOffsets =
+      {}; // Almacena el offset de deslizamiento por código
+  final Map<String, String?> _reportReasons =
+      {}; // Almacena la razón del reporte por código
 
   @override
   void initState() {
@@ -196,14 +506,15 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         _showFab = _scrollController.offset > 100;
       });
     });
-    
+
     // Verificar si el usuario es gratuito después de los 7 días
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final subscriptionService = SubscriptionService();
       if (subscriptionService.isFreeUser && mounted) {
         SubscriptionRequiredModal.show(
           context,
-          message: 'La Biblioteca Cuántica está disponible solo para usuarios Premium. Suscríbete para acceder a todas las secuencias.',
+          message:
+              'La Biblioteca Cuántica está disponible solo para usuarios Premium. Suscríbete para acceder a todas las secuencias.',
           onDismiss: () {
             // Redirigir a Inicio después de cerrar el modal
             Navigator.of(context).popUntil((route) => route.isFirst);
@@ -211,10 +522,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         );
       }
     });
-    
+
     _load();
   }
-  
+
   // Eliminado didChangeDependencies para evitar recargas innecesarias
   // Los datos se cargan una sola vez en initState y se actualizan solo con pull-to-refresh
 
@@ -243,18 +554,18 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       final cats = items.map((c) => c.categoria).toSet().toList();
       final etiquetas = await BibliotecaSupabaseService.getEtiquetasFavoritos();
       final favoritos = await BibliotecaSupabaseService.getFavoritos();
-      
+
       try {
-      final pilotedCodes = await UserProgressService().getRepeatedCodeIds();
-      setState(() {
-        _pilotedCodes = pilotedCodes;
-      });
-    } catch (e) {
-      debugPrint('⚠️ Error loading piloted codes: $e');
-    }
+        final pilotedCodes = await UserProgressService().getRepeatedCodeIds();
+        setState(() {
+          _pilotedCodes = pilotedCodes;
+        });
+      } catch (e) {
+        debugPrint('⚠️ Error loading piloted codes: $e');
+      }
       // Cargar y cachear favoritos
       await _cargarFavoritosCache();
-      
+
       // Precargar títulos relacionados para todos los códigos visibles (solo una vez)
       if (!_titulosRelacionadosCargados) {
         await _precargarTitulosRelacionados(items);
@@ -265,10 +576,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
 
       // Ordenar los códigos visibles iniciales alfabéticamente por nombre
       items.sort((a, b) => a.nombre.compareTo(b.nombre));
-      
+
       setState(() {
         _codigos = items;
-        visible = items; // La lista visible inicial contiene todos los códigos ordenados
+        visible =
+            items; // La lista visible inicial contiene todos los códigos ordenados
         categorias = ['Todos', ...sortedCategories];
         etiquetasFavoritos = etiquetas;
         _tieneFavoritos = favoritos.isNotEmpty;
@@ -292,11 +604,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         final goals = assessment['goals'];
         if (goals is List) {
           _userGoals = List<String>.from(goals.map((e) => e.toString()));
-          debugPrint('✅ Objetivos del usuario cargados para ordenamiento: $_userGoals');
+          debugPrint(
+              '✅ Objetivos del usuario cargados para ordenamiento: $_userGoals');
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Error cargando las preferencias del usuario (evaluación): $e');
+      debugPrint(
+          '⚠️ Error cargando las preferencias del usuario (evaluación): $e');
       _userGoals = [];
     }
   }
@@ -326,7 +640,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   }
 
   /// Ordena la lista de categorías para que las que coinciden con los objetivos del usuario aparezcan primero.
-  List<String> _applyCategorySorting(List<String> allCategories, List<String> userGoals) {
+  List<String> _applyCategorySorting(
+      List<String> allCategories, List<String> userGoals) {
     if (userGoals.isEmpty) {
       allCategories.sort((a, b) => a.compareTo(b));
       return allCategories;
@@ -338,10 +653,36 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     // Mapeo flexible de objetivos a posibles categorías
     final Map<String, List<String>> goalToCategoryMap = {
       'amor y relaciones': ['amor', 'relaciones', 'pareja', 'familia'],
-      'salud y bienestar': ['salud', 'sanación', 'bienestar', 'curación', 'medicina'],
-      'desarrollo personal y espiritual': ['desarrollo', 'crecimiento', 'espiritualidad', 'conciencia'],
-      'carrera y finanzas': ['abundancia', 'prosperidad', 'dinero', 'finanzas', 'trabajo', 'negocio', 'éxito'],
-      'protección y armonía': ['protección', 'seguridad', 'armonía', 'paz', 'equilibrio', 'limpieza'],
+      'salud y bienestar': [
+        'salud',
+        'sanación',
+        'bienestar',
+        'curación',
+        'medicina'
+      ],
+      'desarrollo personal y espiritual': [
+        'desarrollo',
+        'crecimiento',
+        'espiritualidad',
+        'conciencia'
+      ],
+      'carrera y finanzas': [
+        'abundancia',
+        'prosperidad',
+        'dinero',
+        'finanzas',
+        'trabajo',
+        'negocio',
+        'éxito'
+      ],
+      'protección y armonía': [
+        'protección',
+        'seguridad',
+        'armonía',
+        'paz',
+        'equilibrio',
+        'limpieza'
+      ],
     };
 
     // Crear una lista plana de todas las palabras clave de categorías preferidas
@@ -354,7 +695,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     }
 
     for (final category in allCategories) {
-      bool isPreferred = preferredKeywords.any((keyword) => category.toLowerCase().contains(keyword));
+      bool isPreferred = preferredKeywords
+          .any((keyword) => category.toLowerCase().contains(keyword));
       if (isPreferred) {
         preferredCategories.add(category);
       } else {
@@ -366,7 +708,10 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     preferredCategories.sort((a, b) => a.compareTo(b));
     remainingCategories.sort((a, b) => a.compareTo(b));
 
-    debugPrint('🔀 Categorías ordenadas: ${[...preferredCategories, ...remainingCategories]}');
+    debugPrint('🔀 Categorías ordenadas: ${[
+      ...preferredCategories,
+      ...remainingCategories
+    ]}');
     return [...preferredCategories, ...remainingCategories];
   }
 
@@ -375,17 +720,17 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     try {
       // Actualizar códigos desde Supabase
       await CodigosRepository().refreshCodigos();
-      
+
       // Recargar los datos en la pantalla (esto ya incluye la carga de preferencias)
       await _load();
-      
+
       // Reaplicar búsqueda/filtros actuales para no perder la vista filtrada (ej. "empleo" → 4 secuencias)
       if (mounted && _queryBusqueda.trim().isNotEmpty) {
         _filtrarCodigos(_queryBusqueda);
       } else if (mounted) {
         _aplicarFiltros();
       }
-      
+
       // Mostrar mensaje de éxito
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -425,14 +770,15 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
             mostrarFavoritos = false;
             _tieneFavoritos = false;
             visible = _codigos.where((codigo) {
-              final matchesQuery = query.isEmpty ||
-                  codigo.nombre.toLowerCase().contains(query.toLowerCase()) ||
-                  codigo.codigo.contains(query) ||
-                  codigo.descripcion.toLowerCase().contains(query.toLowerCase());
-              
+              final queryNorm = _normalizeText(query);
+              final matchesQuery = queryNorm.isEmpty ||
+                  _normalizeText(codigo.nombre).contains(queryNorm) ||
+                  _normalizeText(codigo.codigo).contains(queryNorm) ||
+                  _normalizeText(codigo.descripcion).contains(queryNorm);
+
               final matchesCategory = categoriaSeleccionada == 'Todos' ||
                   codigo.categoria == categoriaSeleccionada;
-              
+
               return matchesQuery && matchesCategory;
             }).toList();
           }
@@ -440,14 +786,15 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       } else {
         // Mostrar todos los códigos con filtros normales
         visible = _codigos.where((codigo) {
-          final matchesQuery = query.isEmpty ||
-              codigo.nombre.toLowerCase().contains(query.toLowerCase()) ||
-              codigo.codigo.contains(query) ||
-              codigo.descripcion.toLowerCase().contains(query.toLowerCase());
-          
+          final queryNorm = _normalizeText(query);
+          final matchesQuery = queryNorm.isEmpty ||
+              _normalizeText(codigo.nombre).contains(queryNorm) ||
+              _normalizeText(codigo.codigo).contains(queryNorm) ||
+              _normalizeText(codigo.descripcion).contains(queryNorm);
+
           final matchesCategory = categoriaSeleccionada == 'Todos' ||
               codigo.categoria == categoriaSeleccionada;
-          
+
           return matchesQuery && matchesCategory;
         }).toList();
       }
@@ -469,7 +816,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     setState(() {
       _queryBusqueda = query;
     });
-    
+
     if (query.isEmpty) {
       setState(() {
         _mostrarResultados = false;
@@ -481,31 +828,39 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       _aplicarFiltros();
       return;
     }
-    
+
     final queryLower = query.toLowerCase().trim();
+    final queryNorm = _normalizeText(query);
     final exactCode = exactCodeFromQuery(query);
     final isNumeric = isNumericQuery(query);
-    
+
     // Búsqueda por código: exactas + parciales; comparar por dígitos para que 5207418 y 520_741_8 coincidan.
     List<CodigoGrabovoi> coincidenciasExactas;
     List<CodigoGrabovoi> coincidenciasLocales;
     if (isNumeric && exactCode != null) {
       final queryDigitos = codigoSoloDigitos(exactCode);
-      coincidenciasExactas = _codigos.where((c) =>
-          codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos).toList();
+      coincidenciasExactas = _codigos
+          .where((c) =>
+              codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos)
+          .toList();
       // Parciales: códigos cuya secuencia (solo dígitos) contiene lo escrito (ej. 520741 incluye 5207418)
-      coincidenciasLocales = _codigos.where((c) =>
-          codigoSoloDigitos(normalizarCodigo(c.codigo)).contains(queryDigitos)).toList();
+      coincidenciasLocales = _codigos
+          .where((c) => codigoSoloDigitos(normalizarCodigo(c.codigo))
+              .contains(queryDigitos))
+          .toList();
     } else {
-      coincidenciasExactas = _codigos.where((c) => c.codigo.toLowerCase() == queryLower).toList();
+      coincidenciasExactas =
+          _codigos.where((c) => _normalizeText(c.codigo) == queryNorm).toList();
+      // Fase 1 (local) debe ser literal/estricta: no usar sinónimos aquí.
       coincidenciasLocales = _codigos.where((codigo) {
-        return codigo.codigo.toLowerCase().contains(queryLower) ||
-               codigo.nombre.toLowerCase().contains(queryLower) ||
-               codigo.categoria.toLowerCase().contains(queryLower) ||
-               codigo.descripcion.toLowerCase().contains(queryLower);
+        if (queryNorm.isEmpty) return true;
+        return _normalizeText(codigo.codigo).contains(queryNorm) ||
+            _normalizeText(codigo.nombre).contains(queryNorm) ||
+            _normalizeText(codigo.categoria).contains(queryNorm) ||
+            _normalizeText(codigo.descripcion).contains(queryNorm);
       }).toList();
     }
-    
+
     // Si numérico y no hay en lista local, intentar BD por variantes (codigo con _ o espacios)
     List<CodigoGrabovoi> codigosPorTitulo = [];
     if (coincidenciasExactas.isEmpty && coincidenciasLocales.isEmpty) {
@@ -517,36 +872,54 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         if (c2 != null && codigosPorTitulo.isEmpty) codigosPorTitulo = [c2];
       } else {
         try {
-          codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(queryLower);
+          codigosPorTitulo =
+              await SupabaseService.buscarCodigosPorTitulo(queryNorm);
+          if (codigosPorTitulo.isEmpty &&
+              queryNorm.isNotEmpty &&
+              queryNorm != queryLower) {
+            final extra =
+                await SupabaseService.buscarCodigosPorTitulo(queryLower);
+            for (final c in extra) {
+              if (!codigosPorTitulo.any((x) => x.codigo == c.codigo)) {
+                codigosPorTitulo.add(c);
+              }
+            }
+          }
           if (codigosPorTitulo.isNotEmpty) {
-            debugPrint('🔍 [FILTRAR] Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
+            debugPrint(
+                '🔍 [FILTRAR] Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
           }
         } catch (e) {
-          debugPrint('⚠️ Error buscando en títulos relacionados durante filtrado: $e');
+          debugPrint(
+              '⚠️ Error buscando en títulos relacionados durante filtrado: $e');
         }
       }
     }
-    
+
     final todosLosResultados = <String, CodigoGrabovoi>{};
     for (var codigo in coincidenciasExactas) {
       todosLosResultados[codigo.codigo] = codigo;
     }
     for (var codigo in coincidenciasLocales) {
-      if (!todosLosResultados.containsKey(codigo.codigo)) todosLosResultados[codigo.codigo] = codigo;
+      if (!todosLosResultados.containsKey(codigo.codigo)) {
+        todosLosResultados[codigo.codigo] = codigo;
+      }
     }
     for (var codigo in codigosPorTitulo) {
-      if (!todosLosResultados.containsKey(codigo.codigo)) todosLosResultados[codigo.codigo] = codigo;
+      if (!todosLosResultados.containsKey(codigo.codigo)) {
+        todosLosResultados[codigo.codigo] = codigo;
+      }
     }
-    
+
     final resultadoFinal = todosLosResultados.values.toList();
-    
+
     var resultadoFiltrado = resultadoFinal;
     if (resultadoFiltrado.isNotEmpty && categoriaSeleccionada != 'Todos') {
       resultadoFiltrado = resultadoFiltrado.where((codigo) {
         return codigo.categoria == categoriaSeleccionada;
       }).toList();
     }
-    
+
     if (mounted) {
       setState(() {
         visible = resultadoFiltrado;
@@ -612,20 +985,22 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       _aplicarFiltros();
       return;
     }
-    
+
     debugPrint('🔍 Confirmando búsqueda para: $_queryBusqueda');
-    
+
     final exactCode = exactCodeFromQuery(_queryBusqueda);
     final isNumeric = isNumericQuery(_queryBusqueda);
-    
+
     // Flujo B: numérico = SOLO exacto (normalizado). Texto = exactas + similares + títulos relacionados.
     List<CodigoGrabovoi> coincidenciasExactas;
     List<CodigoGrabovoi> coincidenciasSimilares;
     List<CodigoGrabovoi> codigosPorTitulo = [];
     if (isNumeric && exactCode != null) {
       final queryDigitos = codigoSoloDigitos(exactCode);
-      coincidenciasExactas = _codigos.where((c) =>
-          codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos).toList();
+      coincidenciasExactas = _codigos
+          .where((c) =>
+              codigoSoloDigitos(normalizarCodigo(c.codigo)) == queryDigitos)
+          .toList();
       coincidenciasSimilares = [];
       if (coincidenciasExactas.isEmpty) {
         final varianteEspacios = exactCodeWithSpaces(exactCode);
@@ -635,56 +1010,78 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         if (c2 != null && codigosPorTitulo.isEmpty) codigosPorTitulo = [c2];
       }
     } else {
-      coincidenciasExactas = _codigos.where((c) => c.codigo.toLowerCase() == _queryBusqueda.toLowerCase()).toList();
+      final queryNorm = _normalizeText(_queryBusqueda);
+      coincidenciasExactas = _codigos
+          .where((c) => _normalizeText(c.codigo) == queryNorm)
+          .toList();
+      // Confirmación Fase 1 (local) literal/estricta: sin sinónimos.
       coincidenciasSimilares = _codigos.where((codigo) {
-        final query = _queryBusqueda.toLowerCase();
-        return codigo.codigo.toLowerCase().contains(query) ||
-               codigo.nombre.toLowerCase().contains(query) ||
-               codigo.categoria.toLowerCase().contains(query) ||
-               codigo.descripcion.toLowerCase().contains(query) ||
-               (query.contains('salud') && codigo.categoria.toLowerCase().contains('salud')) ||
-               (query.contains('amor') && codigo.categoria.toLowerCase().contains('amor')) ||
-               (query.contains('dinero') && (codigo.categoria.toLowerCase().contains('abundancia') || codigo.categoria.toLowerCase().contains('manifestacion'))) ||
-               (query.contains('trabajo') && (codigo.categoria.toLowerCase().contains('abundancia') || codigo.categoria.toLowerCase().contains('manifestacion'))) ||
-               (query.contains('sanacion') && codigo.categoria.toLowerCase().contains('salud')) ||
-               (query.contains('prosperidad') && codigo.categoria.toLowerCase().contains('abundancia'));
+        final q = queryNorm;
+        if (q.isEmpty) return true;
+        final catNorm = _normalizeText(codigo.categoria);
+        return _normalizeText(codigo.codigo).contains(q) ||
+            _normalizeText(codigo.nombre).contains(q) ||
+            catNorm.contains(q) ||
+            _normalizeText(codigo.descripcion).contains(q) ||
+            (q.contains('salud') && catNorm.contains('salud')) ||
+            (q.contains('amor') && catNorm.contains('amor')) ||
+            (q.contains('dinero') &&
+                (catNorm.contains('abundancia') ||
+                    catNorm.contains('manifestacion'))) ||
+            (q.contains('trabajo') &&
+                (catNorm.contains('abundancia') ||
+                    catNorm.contains('manifestacion'))) ||
+            (q.contains('sanacion') && catNorm.contains('salud')) ||
+            (q.contains('prosperidad') && catNorm.contains('abundancia'));
       }).toList();
       try {
-        codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(_queryBusqueda);
+        codigosPorTitulo = await SupabaseService.buscarCodigosPorTitulo(queryNorm);
+        if (codigosPorTitulo.isEmpty &&
+            queryNorm.isNotEmpty &&
+            queryNorm != _queryBusqueda) {
+          final extra = await SupabaseService.buscarCodigosPorTitulo(_queryBusqueda);
+          for (final c in extra) {
+            if (!codigosPorTitulo.any((x) => x.codigo == c.codigo)) {
+              codigosPorTitulo.add(c);
+            }
+          }
+        }
         if (codigosPorTitulo.isNotEmpty) {
-          debugPrint('🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
+          debugPrint(
+              '🔍 Códigos encontrados por títulos relacionados: ${codigosPorTitulo.length}');
         }
       } catch (e) {
         debugPrint('⚠️ Error buscando en títulos relacionados: $e');
       }
     }
-    
+
     // 4. Combinar todos los resultados (eliminar duplicados por código)
     final todosLosResultados = <String, CodigoGrabovoi>{};
-    
+
     // Agregar coincidencias exactas primero (tienen prioridad)
     for (var codigo in coincidenciasExactas) {
       todosLosResultados[codigo.codigo] = codigo;
     }
-    
+
     // Agregar coincidencias similares locales
     for (var codigo in coincidenciasSimilares) {
       if (!todosLosResultados.containsKey(codigo.codigo)) {
         todosLosResultados[codigo.codigo] = codigo;
       }
     }
-    
+
     // Agregar códigos encontrados por títulos relacionados
     for (var codigo in codigosPorTitulo) {
       if (!todosLosResultados.containsKey(codigo.codigo)) {
         todosLosResultados[codigo.codigo] = codigo;
       }
     }
-    
+
     final resultadoFinal = todosLosResultados.values.toList();
-    
+
     if (resultadoFinal.isNotEmpty) {
-      debugPrint('✅ Resultados encontrados: ${resultadoFinal.length} códigos (${coincidenciasExactas.length} exactos, ${coincidenciasSimilares.length} locales, ${codigosPorTitulo.length} por títulos relacionados)');
+      debugPrint(
+          '✅ Resultados encontrados: ${resultadoFinal.length} códigos (${coincidenciasExactas.length} exactos, ${coincidenciasSimilares.length} locales, ${codigosPorTitulo.length} por títulos relacionados)');
       final esBusquedaCodigo = _esBusquedaPorCodigo(_queryBusqueda);
       final sinCoincidenciaExacta = coincidenciasExactas.isEmpty;
       setState(() {
@@ -694,7 +1091,9 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         _nombreSecuenciaEnFavoritosPilotajeManual = null;
         _codigoFavoritoPilotajeManualCoincidente = null;
         // Ocultar el banner solo si hubo coincidencia exacta; si no, mantenerlo al final
-        if (coincidenciasExactas.isNotEmpty) _mostrarOpcionBusquedaExacta = false;
+        if (coincidenciasExactas.isNotEmpty) {
+          _mostrarOpcionBusquedaExacta = false;
+        }
         // Si el usuario buscó una secuencia numérica y NO hay coincidencia exacta,
         // ofrecer igualmente la opción de Búsqueda Profunda con la secuencia exacta.
         if (esBusquedaCodigo && sinCoincidenciaExacta) {
@@ -704,7 +1103,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       });
       return;
     }
-    
+
     // 5. Si no hay resultados, mostrar modal de búsqueda profunda (el banner "¿No está tu código?" se mantiene)
     debugPrint('❌ No se encontraron coincidencias para: $_queryBusqueda');
     setState(() {
@@ -719,25 +1118,27 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   Future<void> _cargarFavoritosCache() async {
     try {
       // Solo recargar si el caché expiró
-      if (_favoritosCacheTime != null && 
+      if (_favoritosCacheTime != null &&
           DateTime.now().difference(_favoritosCacheTime!) < _cacheDuration) {
         debugPrint('✅ Usando caché de favoritos');
         return;
       }
-      
+
       debugPrint('🔄 Cargando favoritos en caché...');
-      final favoritesWithDetails = await UserFavoritesService().getFavoritesWithDetails();
-      
+      final favoritesWithDetails =
+          await UserFavoritesService().getFavoritesWithDetails();
+
       _favoritosCache.clear();
       _etiquetasCache.clear();
       _customCodesCache.clear();
-      
+
       for (final item in favoritesWithDetails) {
-        final codigoId = item['codigo_id'] as String? ?? 
-                        (item['codigos_grabovoi'] as Map?)?['codigo'] as String? ?? '';
+        final codigoId = item['codigo_id'] as String? ??
+            (item['codigos_grabovoi'] as Map?)?['codigo'] as String? ??
+            '';
         final etiqueta = item['etiqueta'] as String?;
         final isCustom = item['is_custom'] == true;
-        
+
         if (codigoId.isNotEmpty) {
           _favoritosCache[codigoId] = true;
           _etiquetasCache[codigoId] = etiqueta;
@@ -746,55 +1147,60 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           }
         }
       }
-      
+
       _favoritosCacheTime = DateTime.now();
-      debugPrint('✅ Caché de favoritos cargado: ${_favoritosCache.length} códigos');
+      debugPrint(
+          '✅ Caché de favoritos cargado: ${_favoritosCache.length} códigos');
     } catch (e) {
       debugPrint('⚠️ Error cargando caché de favoritos: $e');
     }
   }
-  
+
   // Verificar si un código es favorito (usando caché)
   bool _esFavoritoCached(String codigoId) {
     return _favoritosCache[codigoId] ?? false;
   }
-  
+
   // Obtener etiqueta de un favorito (usando caché)
   String? _getEtiquetaCached(String codigoId) {
     return _etiquetasCache[codigoId];
   }
-  
+
   // Verificar si un código es personalizado
   bool _esCodigoPersonalizado(String codigoId) {
     return _customCodesCache.contains(codigoId);
   }
-  
+
   // Precargar títulos relacionados para todos los códigos (solo una vez)
-  Future<void> _precargarTitulosRelacionados(List<CodigoGrabovoi> codigos) async {
+  Future<void> _precargarTitulosRelacionados(
+      List<CodigoGrabovoi> codigos) async {
     if (_titulosRelacionadosCargados) return;
-    
-    debugPrint('🔄 Precargando títulos relacionados para ${codigos.length} códigos...');
+
+    debugPrint(
+        '🔄 Precargando títulos relacionados para ${codigos.length} códigos...');
     try {
       // Cargar títulos relacionados en paralelo para los primeros 50 códigos (para no sobrecargar)
       final codigosALimitar = codigos.take(50).toList();
       final futures = codigosALimitar.map((codigo) async {
         try {
-          final titulos = await SupabaseService.getTitulosRelacionados(codigo.codigo);
+          final titulos =
+              await SupabaseService.getTitulosRelacionados(codigo.codigo);
           _titulosRelacionadosCache[codigo.codigo] = titulos;
         } catch (e) {
           debugPrint('⚠️ Error precargando títulos para ${codigo.codigo}: $e');
           _titulosRelacionadosCache[codigo.codigo] = [];
         }
       });
-      
+
       await Future.wait(futures);
       _titulosRelacionadosCargados = true;
-      debugPrint('✅ Títulos relacionados precargados para ${_titulosRelacionadosCache.length} códigos');
+      debugPrint(
+          '✅ Títulos relacionados precargados para ${_titulosRelacionadosCache.length} códigos');
     } catch (e) {
       debugPrint('⚠️ Error precargando títulos relacionados: $e');
     }
   }
-  
+
   // Obtener títulos relacionados desde cache o cargar si no están en cache
   List<Map<String, dynamic>> _getTitulosRelacionados(String codigo) {
     // Si está en cache, retornar inmediatamente
@@ -807,7 +1213,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
 
   Future<void> _filtrarFavoritosPorEtiqueta(String etiqueta) async {
     try {
-      final favoritos = await BibliotecaSupabaseService.getFavoritosPorEtiqueta(etiqueta);
+      final favoritos =
+          await BibliotecaSupabaseService.getFavoritosPorEtiqueta(etiqueta);
       setState(() {
         visible = favoritos;
       });
@@ -832,13 +1239,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
 
   Future<void> _cargarFavoritosPorEtiqueta(String etiqueta) async {
     try {
-      final favoritos = await BibliotecaSupabaseService.getFavoritosPorEtiqueta(etiqueta);
-      
+      final favoritos =
+          await BibliotecaSupabaseService.getFavoritosPorEtiqueta(etiqueta);
+
       // Precargar títulos relacionados para los favoritos si no se han cargado
       if (!_titulosRelacionadosCargados && favoritos.isNotEmpty) {
         await _precargarTitulosRelacionados(favoritos);
       }
-      
+
       setState(() {
         favoritosFiltrados = favoritos;
         etiquetaSeleccionada = etiqueta;
@@ -857,15 +1265,15 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     try {
       final favoritos = await BibliotecaSupabaseService.getFavoritos();
       final etiquetas = await BibliotecaSupabaseService.getEtiquetasFavoritos();
-      
+
       setState(() {
         _tieneFavoritos = favoritos.isNotEmpty;
-        
+
         // Si estamos mostrando favoritos, actualizar la lista
         if (mostrarFavoritos) {
           favoritosFiltrados = favoritos;
           etiquetasFavoritos = etiquetas;
-          
+
           // Si se eliminó el último favorito, volver a la vista normal
           if (favoritos.isEmpty) {
             mostrarFavoritos = false;
@@ -897,15 +1305,16 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       try {
         // Recargar caché antes de mostrar favoritos
         await _cargarFavoritosCache();
-        
+
         final favoritos = await BibliotecaSupabaseService.getFavoritos();
-        final etiquetas = await BibliotecaSupabaseService.getEtiquetasFavoritos();
-        
+        final etiquetas =
+            await BibliotecaSupabaseService.getEtiquetasFavoritos();
+
         // Precargar títulos relacionados para los favoritos si no se han cargado
         if (!_titulosRelacionadosCargados && favoritos.isNotEmpty) {
           await _precargarTitulosRelacionados(favoritos);
         }
-        
+
         if (favoritos.isEmpty) {
           // Si no hay favoritos, mostrar mensaje y no cambiar el estado
           ScaffoldMessenger.of(context).showSnackBar(
@@ -920,7 +1329,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           );
           return;
         }
-        
+
         setState(() {
           mostrarFavoritos = true;
           favoritosFiltrados = favoritos;
@@ -961,11 +1370,12 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   Future<String?> _guardarCodigoEnBaseDatos(CodigoGrabovoi codigo) async {
     try {
       debugPrint('💾 Verificando si el código ya existe: ${codigo.codigo}');
-      
+
       final existe = await SupabaseService.codigoExiste(codigo.codigo);
-      
+
       if (existe) {
-        debugPrint('⚠️ El código ${codigo.codigo} ya existe en la base de datos');
+        debugPrint(
+            '⚠️ El código ${codigo.codigo} ya existe en la base de datos');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -978,16 +1388,18 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         );
         return null;
       }
-      
-      debugPrint('💾 Guardando código nuevo en base de datos: ${codigo.codigo}');
+
+      debugPrint(
+          '💾 Guardando código nuevo en base de datos: ${codigo.codigo}');
       final codigoCreado = await SupabaseService.crearCodigo(codigo);
-      
-      debugPrint('✅ Código guardado exitosamente en la base de datos con ID: ${codigoCreado.id}');
-      
+
+      debugPrint(
+          '✅ Código guardado exitosamente en la base de datos con ID: ${codigoCreado.id}');
+
       // 1. Refrescar el repositorio para asegurar que el código nuevo esté disponible
       await CodigosRepository().refreshCodigos();
       debugPrint('🔄 Repositorio refrescado');
-      
+
       // 2. Mostrar modal de confirmación elegante
       if (mounted) {
         setState(() {
@@ -995,16 +1407,17 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           _codigoGuardadoNombre = codigo.nombre;
         });
       }
-      
+
       // 3. Recargar la lista de códigos
       await _load();
       debugPrint('🔄 Lista de códigos recargada');
-      
+
       // 4. Si hay una búsqueda activa, aplicar el filtro automáticamente
       // para que el código recién guardado aparezca en los resultados
       if (query.isNotEmpty || _queryBusqueda.isNotEmpty) {
         final queryActiva = query.isNotEmpty ? query : _queryBusqueda;
-        debugPrint('🔄 Aplicando filtro automático después de guardar código: "$queryActiva"');
+        debugPrint(
+            '🔄 Aplicando filtro automático después de guardar código: "$queryActiva"');
         // Pequeño delay para asegurar que los datos estén completamente cargados
         await Future.delayed(const Duration(milliseconds: 300));
         if (mounted) {
@@ -1015,23 +1428,28 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           debugPrint('✅ Filtro aplicado, códigos visibles: ${visible.length}');
         }
       }
-      
+
       return codigoCreado.id;
     } catch (e) {
       debugPrint('❌ Error al guardar en la base de datos: $e');
-      
+
       // Determinar el tipo de error y mostrar mensaje apropiado
       String mensajeError = 'No se pudo guardar la secuencia.';
       if (e.toString().contains('401') || e.toString().contains('No API key')) {
-        mensajeError = 'Error de autenticación: Verifica la configuración de la aplicación.';
-      } else if (e.toString().contains('duplicate') || e.toString().contains('unique')) {
+        mensajeError =
+            'Error de autenticación: Verifica la configuración de la aplicación.';
+      } else if (e.toString().contains('duplicate') ||
+          e.toString().contains('unique')) {
         mensajeError = 'La secuencia ya existe en la base de datos.';
-      } else if (e.toString().contains('permission') || e.toString().contains('RLS')) {
-        mensajeError = 'No tienes permisos para guardar secuencias. Contacta al administrador.';
+      } else if (e.toString().contains('permission') ||
+          e.toString().contains('RLS')) {
+        mensajeError =
+            'No tienes permisos para guardar secuencias. Contacta al administrador.';
       } else {
-        mensajeError = 'Error al guardar: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e.toString()}';
+        mensajeError =
+            'Error al guardar: ${e.toString().length > 100 ? "${e.toString().substring(0, 100)}..." : e.toString()}';
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -1079,13 +1497,15 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     if (kIsWeb) {
       return true;
     }
-    
+
     // Para mobile, intentar verificar con un endpoint más confiable
     try {
       // Intentar conectar a Supabase (nuestro propio servicio)
-      final response = await http.head(
-        Uri.parse('https://whtiazgcxdnemrrgjjqf.supabase.co'),
-      ).timeout(const Duration(seconds: 3));
+      final response = await http
+          .head(
+            Uri.parse('https://whtiazgcxdnemrrgjjqf.supabase.co'),
+          )
+          .timeout(const Duration(seconds: 3));
       return response.statusCode >= 200 && response.statusCode < 500;
     } catch (e) {
       debugPrint('⚠️ Verificación de conexión: $e');
@@ -1096,15 +1516,29 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   }
 
   Future<void> _busquedaProfunda(String codigo) async {
+    // Anti-loop: evitar disparos duplicados (doble tap / múltiples triggers)
+    if (_busquedaProfundaEnCurso) {
+      debugPrint(
+          'ℹ️ Búsqueda profunda ignorada: ya hay una en curso (${_busquedaProfundaQueryEnCurso ?? "?"}).');
+      return;
+    }
+    if (_buscandoConIA || _buscandoRelacionadosFase2) {
+      debugPrint(
+          'ℹ️ Búsqueda profunda ignorada: búsqueda ya en curso (IA/relacionados).');
+      return;
+    }
+
     // Verificar conexión a internet antes de iniciar
     final tieneInternet = await _verificarConexionInternet();
-    
+
     if (Env.openAiKey.isEmpty) {
-      debugPrint('⚠️ OPENAI_API_KEY no configurada. Búsqueda con IA deshabilitada.');
+      debugPrint(
+          '⚠️ OPENAI_API_KEY no configurada. Búsqueda con IA deshabilitada.');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('La búsqueda con IA no está configurada. Configura OPENAI_API_KEY.'),
+            content: const Text(
+                'La búsqueda con IA no está configurada. Configura OPENAI_API_KEY.'),
             backgroundColor: Colors.orange.shade700,
             behavior: SnackBarBehavior.floating,
           ),
@@ -1112,7 +1546,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       }
       return;
     }
-    
+
     if (!tieneInternet) {
       debugPrint('⚠️ No hay conexión a internet, no se puede usar IA');
       if (mounted) {
@@ -1156,12 +1590,15 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       }
       return;
     }
-    
+
     try {
+      _busquedaProfundaEnCurso = true;
+      _busquedaProfundaQueryEnCurso = codigo;
+
       debugPrint('🚀 Iniciando búsqueda profunda para código: $codigo');
-      
+
       _inicioBusqueda = DateTime.now();
-      
+
       final busqueda = BusquedaProfunda(
         codigoBuscado: codigo,
         usuarioId: _getCurrentUserId(),
@@ -1172,15 +1609,18 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
         fechaBusqueda: _inicioBusqueda!,
         modeloIa: 'gpt-3.5-turbo',
       );
-      
+      _busquedaActual = busqueda;
+
       try {
-        _busquedaActualId = await BusquedasProfundasService.guardarBusquedaProfunda(busqueda);
+        _busquedaActualId =
+            await BusquedasProfundasService.guardarBusquedaProfunda(busqueda);
         debugPrint('📝 Búsqueda registrada con ID: $_busquedaActualId');
       } catch (e) {
         debugPrint('⚠️ Error al registrar búsqueda inicial: $e');
         _busquedaActualId = null;
+        _busquedaActual = null;
       }
-      
+
       // Mostrar overlay elegante de búsqueda
       setState(() {
         _buscandoConIA = true;
@@ -1188,7 +1628,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       });
 
       final resultado = await _buscarConOpenAI(codigo);
-      
+
       // Ocultar overlay cuando termine
       if (mounted) {
         setState(() {
@@ -1196,22 +1636,24 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           _codigoBuscando = null;
         });
       }
-      
-      final duracion = _inicioBusqueda != null 
-          ? DateTime.now().difference(_inicioBusqueda!).inMilliseconds 
+
+      final duracion = _inicioBusqueda != null
+          ? DateTime.now().difference(_inicioBusqueda!).inMilliseconds
           : 0;
-      
+
       if (resultado != null || _codigosEncontrados.isNotEmpty) {
         if (_busquedaActualId != null) {
           try {
-            final busquedaActualizada = busqueda.copyWith(
+            final busquedaActualizada = (_busquedaActual ?? busqueda).copyWith(
               codigoEncontrado: true,
               codigoGuardado: true,
               duracionMs: duracion,
               tokensUsados: _tokensUsadosOpenAI,
               costoEstimado: _costoEstimadoOpenAI,
             );
-            await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
+            await BusquedasProfundasService.actualizarBusquedaProfunda(
+                _busquedaActualId!, busquedaActualizada);
+            _busquedaActual = busquedaActualizada;
           } catch (e) {
             debugPrint('⚠️ Error al actualizar búsqueda: $e');
           }
@@ -1219,12 +1661,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       } else {
         if (_busquedaActualId != null) {
           try {
-            final busquedaActualizada = busqueda.copyWith(
+            final busquedaActualizada = (_busquedaActual ?? busqueda).copyWith(
               codigoEncontrado: false,
               codigoGuardado: false,
               duracionMs: duracion,
             );
-            await BusquedasProfundasService.actualizarBusquedaProfunda(_busquedaActualId!, busquedaActualizada);
+            await BusquedasProfundasService.actualizarBusquedaProfunda(
+                _busquedaActualId!, busquedaActualizada);
+            _busquedaActual = busquedaActualizada;
           } catch (e) {
             debugPrint('⚠️ Error al actualizar búsqueda: $e');
           }
@@ -1249,13 +1693,16 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           duration: const Duration(seconds: 3),
         ),
       );
+    } finally {
+      _busquedaProfundaEnCurso = false;
+      _busquedaProfundaQueryEnCurso = null;
     }
   }
 
   Future<CodigoGrabovoi?> _buscarConOpenAI(String codigo) async {
     // Verificar conexión antes de llamar a OpenAI
     final tieneInternet = await _verificarConexionInternet();
-    
+
     if (!tieneInternet) {
       debugPrint('❌ Sin conexión a internet, no se puede usar OpenAI');
       // Ocultar overlay si no hay conexión
@@ -1304,7 +1751,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       }
       return null;
     }
-    
+
     try {
       debugPrint('🔍 Buscando código $codigo con OpenAI...');
       final exactCode = exactCodeFromQuery(codigo);
@@ -1314,46 +1761,54 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
       final userFase1 = isNumeric && exactCode != null
           ? 'El usuario busca el código Grabovoi exacto: "$codigo". Código normalizado (solo dígitos y _): "$exactCode". Busca SOLO en fuentes reales y verificables. Solo es válido si la fuente cita exactamente esa secuencia. Si no encuentras esa secuencia en una fuente, responde con "codigos": [] y "sin_fuente": true.'
           : 'El usuario busca códigos Grabovoi relacionados con: "$codigo". Busca SOLO en fuentes reales y verificables. Si existen códigos reales, respóndelos siguiendo exactamente el formato indicado (incluyendo el campo "fuente" por código). Si no encuentras nada fiable, responde con "codigos": [] y "sin_fuente": true, indicando que no hay códigos oficiales para este tema.';
-      
-      final response = await http.post(
-        Uri.parse('https://api.openai.com/v1/chat/completions'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${Env.openAiKey}',
-        },
-        body: jsonEncode({
-          'model': 'gpt-3.5-turbo',
-          'messages': [
-            {'role': 'system', 'content': systemFase1},
-            {'role': 'user', 'content': userFase1},
-          ],
-          'max_tokens': 1000,
-          'temperature': 0.7,
-        }),
+
+      // Búsqueda profunda (internet): se ejecuta en Edge Function para no exponer llaves en el cliente.
+      final functionResp = await SupabaseConfig.client.functions.invoke(
+        'deep-search-codes',
+        body: {'query': codigo},
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final content = data['choices'][0]['message']['content'];
-        
-        if (data['usage'] != null) {
-          final usage = data['usage'];
-          _tokensUsadosOpenAI = (usage['total_tokens'] ?? 0) as int;
-          final promptTokens = usage['prompt_tokens'] ?? 0;
-          final completionTokens = usage['completion_tokens'] ?? 0;
-          _costoEstimadoOpenAI = ((promptTokens / 1000) * 0.0015) + ((completionTokens / 1000) * 0.002);
-        }
-        
-        if (content != 'null' && content.isNotEmpty && content.toLowerCase() != 'null') {
+      if (functionResp.data != null &&
+          functionResp.data is Map &&
+          (functionResp.data as Map)['openai_content'] != null) {
+        final data = functionResp.data as Map;
+        final queued = data['queued'] == true ||
+            data['request_id'] != null ||
+            data['queue_id'] != null;
+        final webResults = (data['web_results'] as List?) ?? [];
+        debugPrint(
+            '🌐 Búsqueda web completada: ${webResults.length} resultados (query="$codigo")');
+
+        final content = (data['openai_content'] ?? '').toString();
+
+        // En este flujo, tokens/costo son desconocidos (corre server-side).
+        _tokensUsadosOpenAI = 0;
+        _costoEstimadoOpenAI = 0.0;
+
+        if (content != 'null' &&
+            content.isNotEmpty &&
+            content.toLowerCase() != 'null') {
           try {
             String cleanedContent = content.trim();
-            
+
+            // Robustez: si viene envuelto en ```json ... ```, extraer solo el objeto JSON.
+            final jsonStart = cleanedContent.indexOf('{');
+            final jsonEnd = cleanedContent.lastIndexOf('}');
+            if (jsonStart >= 0 && jsonEnd > jsonStart) {
+              cleanedContent = cleanedContent.substring(jsonStart, jsonEnd + 1);
+            }
+
+            // Guardar la respuesta cruda para auditoría/historial, aunque luego se filtre/valide.
+            await _persistirRespuestaBusquedaProfunda(cleanedContent);
+
             if (cleanedContent.contains('1.') && cleanedContent.contains('—')) {
               debugPrint('📋 Detectado formato de lista numerada');
-              final codigosEncontrados = await _parsearListaNumerada(cleanedContent);
-              
+              final codigosEncontrados =
+                  await _parsearListaNumerada(cleanedContent);
+
               if (codigosEncontrados.isNotEmpty) {
-                debugPrint('✅ Códigos extraídos de lista: ${codigosEncontrados.length}');
+                debugPrint(
+                    '✅ Códigos extraídos de lista: ${codigosEncontrados.length}');
                 setState(() {
                   _codigosEncontrados = codigosEncontrados;
                   _mostrarSeleccionCodigos = true;
@@ -1366,28 +1821,51 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
               }
               return null;
             }
-            
+
             // Intentar parsear como JSON (formato anterior)
-            if (!cleanedContent.endsWith('}') && !cleanedContent.endsWith(']')) {
+            if (!cleanedContent.endsWith('}') &&
+                !cleanedContent.endsWith(']')) {
               int lastCompleteObject = cleanedContent.lastIndexOf('}');
               if (lastCompleteObject > 0) {
                 int arrayStart = cleanedContent.indexOf('"codigos": [');
                 if (arrayStart > 0) {
-                  String validPart = cleanedContent.substring(0, lastCompleteObject + 1);
-                  if (validPart.contains('"codigos": [') && !validPart.contains(']')) {
-                    validPart = validPart + ']}';
+                  String validPart =
+                      cleanedContent.substring(0, lastCompleteObject + 1);
+                  if (validPart.contains('"codigos": [') &&
+                      !validPart.contains(']')) {
+                    validPart = '$validPart]}';
                   }
                   cleanedContent = validPart;
                 }
               }
             }
-            
+
             final responseData = jsonDecode(cleanedContent);
 
             // Flujo B: si no hay fuente externa → Fase 2 fallback (3 relacionados desde BD)
             final sinFuente = responseData['sin_fuente'] == true;
             if (sinFuente) {
-              debugPrint('ℹ️ OpenAI indica que no hay fuentes (sin_fuente = true). Ejecutando Fase 2 fallback.');
+              debugPrint(
+                  'ℹ️ OpenAI indica que no hay fuentes (sin_fuente = true). Ejecutando Fase 2 fallback.');
+
+              // UX: avisar que se guardó la búsqueda para revisión automática.
+              if (queued && mounted) {
+                final msg = (responseData['mensaje']?.toString().trim().isNotEmpty == true)
+                    ? responseData['mensaje']!.toString()
+                    : 'No encontramos evidencia confiable aún. Guardamos tu búsqueda para revisión automática. Mientras tanto te doy alternativas cercanas.';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      msg,
+                      style: GoogleFonts.inter(color: Colors.white),
+                    ),
+                    backgroundColor: Colors.blueGrey.shade700,
+                    duration: const Duration(seconds: 6),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+
               if (mounted) {
                 setState(() {
                   _buscandoConIA = false;
@@ -1403,10 +1881,13 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
                   _codigoBuscandoFase2 = null;
                 });
               }
-              if (mounted && fallbackResult != null && (fallbackResult['items'] as List).length >= 3) {
+              if (mounted &&
+                  fallbackResult != null &&
+                  (fallbackResult['items'] as List).length >= 3) {
                 setState(() {
                   _mostrarFallbackFase2 = true;
-                  _fallbackFase2Items = List<Map<String, dynamic>>.from(fallbackResult['items'] as List);
+                  _fallbackFase2Items = List<Map<String, dynamic>>.from(
+                      fallbackResult['items'] as List);
                   _queryFallbackFase2 = codigo;
                   _safetyNoteFase2 = fallbackResult['safety_note'] as String?;
                 });
@@ -1434,41 +1915,56 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
               return null;
             }
 
-            if (responseData['codigos'] != null && responseData['codigos'] is List) {
+            if (responseData['codigos'] != null &&
+                responseData['codigos'] is List) {
               final codigosList = responseData['codigos'] as List;
               final codigosEncontrados = <CodigoGrabovoi>[];
 
               for (var codigoData in codigosList) {
-                if (codigoData['codigo'] != null && codigoData['codigo'].toString().isNotEmpty) {
-                  var codigoNumero = codigoData['codigo'].toString().replaceAll(' ', '_').replaceAll('-', '_');
+                if (codigoData['codigo'] != null &&
+                    codigoData['codigo'].toString().isNotEmpty) {
+                  var codigoNumero = codigoData['codigo']
+                      .toString()
+                      .replaceAll(' ', '_')
+                      .replaceAll('-', '_');
 
                   // Validar siempre contra la base, no inventar códigos inexistentes
-                  final codigoExiste = await _validarCodigoEnBaseDatos(codigoNumero);
+                  final codigoExiste =
+                      await _validarCodigoEnBaseDatos(codigoNumero);
                   if (!codigoExiste) {
-                    debugPrint('❌ Código sugerido sin respaldo en BD: $codigoNumero. Se descarta.');
+                    debugPrint(
+                        '❌ Código sugerido sin respaldo en BD: $codigoNumero. Se descarta.');
                     continue;
                   }
 
-                  final nombre = codigoData['nombre']?.toString() ?? 'Secuencia relacionada';
-                  String descripcionReal = codigoData['descripcion']?.toString() ?? '';
-                  if (descripcionReal.isEmpty || descripcionReal.contains('Secuencia sugerida por IA')) {
+                  final nombre = codigoData['nombre']?.toString() ??
+                      'Secuencia relacionada';
+                  String descripcionReal =
+                      codigoData['descripcion']?.toString() ?? '';
+                  if (descripcionReal.isEmpty ||
+                      descripcionReal.contains('Secuencia sugerida por IA')) {
                     descripcionReal = _generarDescripcionDesdeNombre(nombre);
                   }
-                  final categoriaRaw = codigoData['categoria']?.toString() ?? '';
-                  final categoria = (categoriaRaw.isEmpty || categoriaRaw.toLowerCase() == 'codigo')
+                  final categoriaRaw =
+                      codigoData['categoria']?.toString() ?? '';
+                  final categoria = (categoriaRaw.isEmpty ||
+                          categoriaRaw.toLowerCase() == 'codigo')
                       ? _determinarCategoria(nombre)
                       : categoriaRaw;
 
-                  final codigoExistente = await SupabaseService.getCodigoExistente(codigoNumero);
+                  final codigoExistente =
+                      await SupabaseService.getCodigoExistente(codigoNumero);
                   if (codigoExistente != null) {
-                    final descripcionFinal = descripcionReal.isNotEmpty && descripcionReal.length > 20
+                    final descripcionFinal = descripcionReal.isNotEmpty &&
+                            descripcionReal.length > 20
                         ? descripcionReal
                         : codigoExistente.descripcion;
 
                     codigosEncontrados.add(CodigoGrabovoi(
                       id: codigoExistente.id,
                       codigo: codigoNumero,
-                      nombre: nombre.isNotEmpty ? nombre : codigoExistente.nombre,
+                      nombre:
+                          nombre.isNotEmpty ? nombre : codigoExistente.nombre,
                       descripcion: descripcionFinal,
                       categoria: categoria,
                       color: codigoExistente.color,
@@ -1495,20 +1991,21 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           }
         }
       } else {
-        debugPrint('❌ Error en respuesta de OpenAI: ${response.statusCode}');
+        debugPrint(
+            '❌ Error ejecutando deep-search-codes: ${functionResp.data}');
       }
-      
+
       return null;
     } catch (e) {
       debugPrint('❌ Error en búsqueda con OpenAI: $e');
-      
+
       // Mostrar mensaje amigable al usuario si hay error de conexión
       if (mounted) {
-        final esErrorConexion = e.toString().contains('SocketException') || 
-                               e.toString().contains('TimeoutException') ||
-                               e.toString().contains('Failed host lookup') ||
-                               e.toString().contains('Network is unreachable');
-        
+        final esErrorConexion = e.toString().contains('SocketException') ||
+            e.toString().contains('TimeoutException') ||
+            e.toString().contains('Failed host lookup') ||
+            e.toString().contains('Network is unreachable');
+
         if (esErrorConexion) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1549,129 +2046,65 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
           );
         }
       }
-      
+
       return null;
+    }
+  }
+
+  Future<void> _persistirRespuestaBusquedaProfunda(String respuestaIa) async {
+    final id = _busquedaActualId;
+    final base = _busquedaActual;
+    if (id == null || base == null) return;
+    if (respuestaIa.isEmpty) return;
+    if (base.respuestaIa == respuestaIa) return;
+
+    try {
+      final actualizada = base.copyWith(respuestaIa: respuestaIa);
+      await BusquedasProfundasService.actualizarBusquedaProfunda(
+          id, actualizada);
+      _busquedaActual = actualizada;
+    } catch (e) {
+      debugPrint('⚠️ Error guardando respuesta_ia en historial: $e');
     }
   }
 
   /// Flujo B Fase 2: recomienda 3 códigos relacionados desde catálogo local cuando no hay fuente externa.
   /// Retorna { 'items': [ { 'codigo': CodigoGrabovoi, 'why_recommended': String }, ... ], 'safety_note': String? } o null.
-  Future<Map<String, dynamic>?> _buscarRelacionadosFase2(String userQueryText) async {
+  Future<Map<String, dynamic>?> _buscarRelacionadosFase2(
+      String userQueryText) async {
     try {
       final exactCode = exactCodeFromQuery(userQueryText);
       final isNumeric = isNumericQuery(userQueryText);
-      List<CodigoGrabovoi> candidates = await SupabaseService.getCandidatosParaFallbackRelacionados(
-        userQueryText: userQueryText,
-        isNumericQuery: isNumeric,
-        exactCode: exactCode,
-        maxCandidatos: 60,
-      );
       // Búsqueda por código: solo recomendar códigos que CONTENGAN la secuencia (ej. 520_741 → 5207418).
       // Si no hay al menos 3, no mostrar recomendaciones no relacionadas; se guiará a pilotaje manual.
       if (isNumeric && exactCode != null) {
         final queryDigitos = codigoSoloDigitos(exactCode);
-        candidates = candidates.where((c) =>
-            codigoSoloDigitos(normalizarCodigo(c.codigo)).contains(queryDigitos)).toList();
+        final candidates = _codigos
+            .where((c) => codigoSoloDigitos(normalizarCodigo(c.codigo))
+                .contains(queryDigitos))
+            .toList();
         if (candidates.length < 3) {
-          debugPrint('ℹ️ Fase 2: búsqueda por código "$userQueryText": solo ${candidates.length} códigos contienen la secuencia. Se guía a pilotaje manual.');
+          debugPrint(
+              'ℹ️ Fase 2: búsqueda por código "$userQueryText": solo ${candidates.length} códigos contienen la secuencia. Se guía a pilotaje manual.');
           return null;
         }
+        final items = candidates
+            .take(3)
+            .map((c) => {
+                  'codigo': c,
+                  'why_recommended': 'Contiene la secuencia buscada.'
+                })
+            .toList();
+        return {'items': items, 'safety_note': _kRelatedSafetyNote};
       }
-      if (candidates.length < 3) {
-        debugPrint('⚠️ Fase 2: menos de 3 candidatos (${candidates.length}), no se puede recomendar 3.');
-        return null;
-      }
-      final jsonCandidates = candidates.map((c) => {
-        'code': normalizarCodigo(c.codigo),
-        'title': c.nombre,
-        'section': c.categoria,
-        'description': c.descripcion.length > 200 ? '${c.descripcion.substring(0, 200)}...' : c.descripcion,
-      }).toList();
-      const systemFase2 =
-          'Eres un motor de recomendación de secuencias numéricas basado en un catálogo local. No inventes códigos. Solo puedes elegir códigos que estén en CANDIDATES. No prometas curas; usa lenguaje de apoyo (armonización, regulación). Devuelve JSON válido y nada más.';
-      final userFase2 = '''
-TAREA
-El usuario no obtuvo una fuente externa confiable para su búsqueda exacta.
-Debes recomendar EXACTAMENTE 3 códigos RELACIONADOS CON LA INTENCIÓN O TEMA de la búsqueda, seleccionados SOLO del catálogo en CANDIDATES.
 
-REGLAS DE RELEVANCIA (OBLIGATORIAS)
-- La búsqueda del usuario fue: "$userQueryText". Las recomendaciones DEBEN ser temáticamente o semánticamente relacionadas con esa intención.
-- Para búsquedas de DEPORTE / ACTIVIDAD FÍSICA (futbol, deporte, ejercicio, correr, etc.): prioriza SOLO códigos sobre rendimiento físico, vitalidad, recuperación, lesiones, energía, músculos, articulaciones. NUNCA recomiendes códigos de Amor/relaciones, problemas digestivos o cardíacos específicos para una búsqueda de deporte.
-- Para otras búsquedas: no recomiendes códigos de temas no relacionados (ej. no Amor para una búsqueda de deporte).
-- relation_score debe reflejar la relación real: 70-100 = vínculo claro con el tema; 40-69 = apoyo relacionado (vitalidad, recuperación); 20-39 = solo si no hay 3 claramente relacionados, indica "apoyo general" en why_recommended.
-- Si en CANDIDATES no hay 3 códigos claramente relacionados con la búsqueda, elige los 3 más cercanos (ej. vitalidad, recuperación, energía, rendimiento) y pon relation_score bajo (20-40) explicando en why_recommended que son de apoyo general.
-- NO inventes secuencias. Solo devuelve códigos presentes en CANDIDATES.
-- Cada recomendación: code, title, section, relation_type, relation_score(0-100), why_recommended, usage_note.
-- relation_type: synonym_equivalent, symptom_related, cause_related, supportive_regulation, goal_higher_level, recovery_acceleration, prevention_protection
-- Devuelve siempre 3. No uses "cura", "sanar definitivamente", "garantiza". safety_note breve.
-
-INPUT
-USER_QUERY_TEXT: $userQueryText
-IS_NUMERIC_QUERY: $isNumeric
-EXACT_CODE: ${exactCode ?? 'null'}
-
-CANDIDATES:
-${jsonEncode(jsonCandidates)}
-
-OUTPUT (JSON ESTRICTO)
-{
-  "mode": "related_fallback",
-  "exact_query": { "is_numeric": $isNumeric, "code": ${exactCode != null ? '"$exactCode"' : 'null'}, "text": "$userQueryText" },
-  "related": [
-    { "code": "string", "title": "string", "section": "string", "relation_type": "string", "relation_score": number, "why_recommended": "string", "usage_note": "string" }
-  ],
-  "safety_note": "string"
-}
-''';
-      final response = await http.post(
-        Uri.parse('https://api.openai.com/v1/chat/completions'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${Env.openAiKey}',
-        },
-        body: jsonEncode({
-          'model': 'gpt-3.5-turbo',
-          'messages': [
-            {'role': 'system', 'content': systemFase2},
-            {'role': 'user', 'content': userFase2},
-          ],
-          'max_tokens': 800,
-          'temperature': 0.5,
-        }),
-      );
-      if (response.statusCode != 200) {
-        debugPrint('❌ Fase 2 OpenAI error: ${response.statusCode}');
-        return null;
-      }
-      final data = jsonDecode(response.body);
-      final content = data['choices']?[0]?['message']?['content']?.toString() ?? '';
-      if (content.isEmpty) return null;
-      String cleaned = content.trim();
-      final start = cleaned.indexOf('{');
-      final end = cleaned.lastIndexOf('}') + 1;
-      if (start >= 0 && end > start) cleaned = cleaned.substring(start, end);
-      final parsed = jsonDecode(cleaned) as Map<String, dynamic>;
-      final related = parsed['related'] as List? ?? [];
-      final safetyNote = parsed['safety_note']?.toString();
-      final items = <Map<String, dynamic>>[];
-      for (var i = 0; i < related.length && items.length < 3; i++) {
-        final r = related[i] as Map<String, dynamic>;
-        final codeStr = (r['code'] ?? '').toString().replaceAll(' ', '_').replaceAll('-', '_');
-        final normalized = normalizarCodigo(codeStr);
-        CodigoGrabovoi? c = await SupabaseService.getCodigoExistente(normalized);
-        if (c == null) c = await SupabaseService.getCodigoExistente(exactCodeWithSpaces(normalized));
-        if (c != null) {
-          items.add({
-            'codigo': c,
-            'why_recommended': (r['why_recommended'] ?? '').toString(),
-          });
-        }
-      }
+      final items = _buildRelatedItemsFromLocalSearch(userQueryText, limit: 3);
       if (items.length < 3) {
-        debugPrint('⚠️ Fase 2: solo ${items.length} códigos válidos en BD.');
+        debugPrint(
+            '⚠️ Fase 2: no se encontraron 3 relacionados para "$userQueryText".');
         return null;
       }
-      return {'items': items, 'safety_note': safetyNote};
+      return {'items': items, 'safety_note': _kRelatedSafetyNote};
     } catch (e) {
       debugPrint('❌ _buscarRelacionadosFase2: $e');
       return null;
@@ -1685,15 +2118,16 @@ OUTPUT (JSON ESTRICTO)
         debugPrint('✅ Código $codigo encontrado en la base de datos local');
         return true;
       }
-      
+
       final response = await SupabaseConfig.client
           .from('codigos_grabovoi')
           .select('codigo')
           .eq('codigo', codigo)
           .limit(1);
-      
+
       final existe = response.isNotEmpty;
-      debugPrint('${existe ? "✅" : "❌"} Código $codigo ${existe ? "existe" : "NO existe"} en Supabase');
+      debugPrint(
+          '${existe ? "✅" : "❌"} Código $codigo ${existe ? "existe" : "NO existe"} en Supabase');
       return existe;
     } catch (e) {
       debugPrint('❌ Error validando código $codigo: $e');
@@ -1703,31 +2137,33 @@ OUTPUT (JSON ESTRICTO)
 
   Future<void> _seleccionarCodigo(CodigoGrabovoi codigo) async {
     debugPrint('🎯 Código seleccionado: ${codigo.codigo} - ${codigo.nombre}');
-    
+
     // PASO 1: Verificar si el código existe en Supabase (no solo en lista local)
     final existeEnSupabase = await SupabaseService.codigoExiste(codigo.codigo);
-    
+
     if (!existeEnSupabase) {
       // CASO 1: El código NO existe en Supabase → INSERTAR directamente sin aprobación
-      debugPrint('💾 Código NO existe en Supabase, insertando directamente: ${codigo.codigo}');
+      debugPrint(
+          '💾 Código NO existe en Supabase, insertando directamente: ${codigo.codigo}');
       try {
         final codigoId = await _guardarCodigoEnBaseDatos(codigo);
         if (codigoId != null) {
           debugPrint('✅ Código nuevo guardado con ID: $codigoId');
-          
+
           // 1. Refrescar el repositorio para asegurar que el código nuevo esté disponible
           await CodigosRepository().refreshCodigos();
           debugPrint('🔄 Repositorio refrescado');
-          
+
           // 2. Actualizar lista de códigos para que el contador se actualice
           await _load();
           debugPrint('🔄 Lista de códigos recargada');
-          
+
           // 3. Si hay una búsqueda activa, aplicar el filtro automáticamente
           // para que el código recién guardado aparezca en los resultados
           if (query.isNotEmpty || _queryBusqueda.isNotEmpty) {
             final queryActiva = query.isNotEmpty ? query : _queryBusqueda;
-            debugPrint('🔄 Aplicando filtro automático después de guardar código desde selección: "$queryActiva"');
+            debugPrint(
+                '🔄 Aplicando filtro automático después de guardar código desde selección: "$queryActiva"');
             // Pequeño delay para asegurar que los datos estén completamente cargados
             await Future.delayed(const Duration(milliseconds: 300));
             if (mounted) {
@@ -1735,11 +2171,13 @@ OUTPUT (JSON ESTRICTO)
                 // Aplicar el filtro para mostrar el código recién guardado
                 _aplicarFiltros();
               });
-              debugPrint('✅ Filtro aplicado, códigos visibles: ${visible.length}');
+              debugPrint(
+                  '✅ Filtro aplicado, códigos visibles: ${visible.length}');
             }
           }
-          
-          debugPrint('✅ Contador de secuencias actualizado: ${_codigos.length} códigos disponibles');
+
+          debugPrint(
+              '✅ Contador de secuencias actualizado: ${_codigos.length} códigos disponibles');
           // El modal de confirmación ya se muestra en _guardarCodigoEnBaseDatos
         }
       } catch (e) {
@@ -1755,30 +2193,37 @@ OUTPUT (JSON ESTRICTO)
       }
     } else {
       // CASO 2: El código EXISTE en Supabase → Verificar si tiene diferente descripción
-      debugPrint('🔍 Código existe en Supabase, verificando si tiene diferente descripción...');
-      
-      final codigoExistente = await SupabaseService.getCodigoExistente(codigo.codigo);
+      debugPrint(
+          '🔍 Código existe en Supabase, verificando si tiene diferente descripción...');
+
+      final codigoExistente =
+          await SupabaseService.getCodigoExistente(codigo.codigo);
       if (codigoExistente != null) {
         final nombreExistente = codigoExistente.nombre.toLowerCase().trim();
-        final descripcionExistente = codigoExistente.descripcion.toLowerCase().trim();
+        final descripcionExistente =
+            codigoExistente.descripcion.toLowerCase().trim();
         final nombreNuevo = codigo.nombre.toLowerCase().trim();
         final descripcionNueva = codigo.descripcion.toLowerCase().trim();
-        
+
         // Comparar tanto nombre como descripción
-        final tieneDiferenteDescripcion = nombreExistente != nombreNuevo || descripcionExistente != descripcionNueva;
-        
+        final tieneDiferenteDescripcion = nombreExistente != nombreNuevo ||
+            descripcionExistente != descripcionNueva;
+
         if (tieneDiferenteDescripcion) {
           // CASO 2A: Código existe pero con diferente descripción → Crear sugerencia para aprobación
-          debugPrint('⚠️ Código existe con diferente descripción. Creando sugerencia para aprobación');
+          debugPrint(
+              '⚠️ Código existe con diferente descripción. Creando sugerencia para aprobación');
           debugPrint('   Existente: "$nombreExistente"');
           debugPrint('   Nuevo: "$nombreNuevo"');
-          
+
           try {
-            await _crearSugerencia(codigoExistente, codigo.nombre, codigo.descripcion);
-            
+            await _crearSugerencia(
+                codigoExistente, codigo.nombre, codigo.descripcion);
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✨ Sugerencia creada para aprobación: ${codigo.nombre}'),
+                content: Text(
+                    '✨ Sugerencia creada para aprobación: ${codigo.nombre}'),
                 backgroundColor: Colors.blue,
                 duration: const Duration(seconds: 3),
               ),
@@ -1787,7 +2232,7 @@ OUTPUT (JSON ESTRICTO)
             debugPrint('⚠️ Error al crear sugerencia: $e');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('⚠️ Error al crear sugerencia: $e'),
+                content: Text('⚠ Error al crear sugerencia: $e'),
                 backgroundColor: Colors.orange,
                 duration: const Duration(seconds: 3),
               ),
@@ -1806,7 +2251,7 @@ OUTPUT (JSON ESTRICTO)
         }
       }
     }
-    
+
     // Actualizar estado y precargar el código seleccionado
     setState(() {
       _mostrarSeleccionCodigos = false;
@@ -1817,30 +2262,33 @@ OUTPUT (JSON ESTRICTO)
       query = codigo.codigo;
       _mostrarResultados = false;
     });
-    
+
     // Recargar códigos para mostrar el nuevo código en la lista
     await _load();
-    
+
     // Filtrar para mostrar solo el código seleccionado (recientemente agregado)
     _filtrarCodigos(codigo.codigo);
   }
 
-  Future<void> _crearSugerencia(CodigoGrabovoi codigoExistente, String temaSugerido, String descripcionSugerida) async {
+  Future<void> _crearSugerencia(CodigoGrabovoi codigoExistente,
+      String temaSugerido, String descripcionSugerida) async {
     try {
-      debugPrint('💾 Creando sugerencia para código: ${codigoExistente.codigo}');
-      
-      final existeSimilar = await SugerenciasCodigosService.existeSugerenciaSimilar(
+      debugPrint(
+          '💾 Creando sugerencia para código: ${codigoExistente.codigo}');
+
+      final existeSimilar =
+          await SugerenciasCodigosService.existeSugerenciaSimilar(
         _busquedaActualId ?? 0,
         codigoExistente.codigo,
         temaSugerido,
         _getCurrentUserId(),
       );
-      
+
       if (existeSimilar) {
         debugPrint('ℹ️ Ya existe una sugerencia similar para este código');
         return;
       }
-      
+
       final sugerencia = SugerenciaCodigo(
         busquedaId: _busquedaActualId ?? 0,
         codigoExistente: codigoExistente.codigo,
@@ -1852,8 +2300,9 @@ OUTPUT (JSON ESTRICTO)
         estado: 'pendiente',
         fechaSugerencia: DateTime.now(),
       );
-      
-      final sugerenciaId = await SugerenciasCodigosService.crearSugerencia(sugerencia);
+
+      final sugerenciaId =
+          await SugerenciasCodigosService.crearSugerencia(sugerencia);
       debugPrint('✅ Sugerencia creada con ID: $sugerenciaId');
     } catch (e) {
       debugPrint('❌ Error creando sugerencia: $e');
@@ -1864,58 +2313,60 @@ OUTPUT (JSON ESTRICTO)
     try {
       final codigosEncontrados = <CodigoGrabovoi>[];
       final lineas = content.split('\n');
-      
+
       for (String linea in lineas) {
         linea = linea.trim();
         if (linea.isEmpty || !linea.contains('.')) continue;
-        
+
         final match = RegExp(r'^\d+\.\s+(.+)$').firstMatch(linea);
         if (match == null) continue;
-        
+
         final contenido = match.group(1)!.trim();
-        Match? codeMatch = RegExp(r'^([0-9_\s]+?)\s+-\s+(.+)$').firstMatch(contenido);
-        if (codeMatch == null) {
-          codeMatch = RegExp(r'^([0-9_\s]+?)\s+—\s+(.+)$').firstMatch(contenido);
-        }
-        if (codeMatch == null) {
-          codeMatch = RegExp(r'^([0-9_\s]+?)\s*[-—]\s*(.+)$').firstMatch(contenido);
-        }
-        
+        Match? codeMatch =
+            RegExp(r'^([0-9_\s]+?)\s+-\s+(.+)$').firstMatch(contenido);
+        codeMatch ??= RegExp(r'^([0-9_\s]+?)\s+—\s+(.+)$').firstMatch(contenido);
+        codeMatch ??= RegExp(r'^([0-9_\s]+?)\s*[-—]\s*(.+)$').firstMatch(contenido);
+
         if (codeMatch != null) {
           var codigoStr = codeMatch.group(1)!.trim();
           final nombre = codeMatch.group(2)!.trim();
-          
+
           codigoStr = codigoStr.replaceAll(' ', '_').replaceAll('__', '_');
-          
+
           // Siempre agregamos el código sugerido para mostrar opciones relacionadas
           final codigoExiste = await _validarCodigoEnBaseDatos(codigoStr);
           final categoria = _determinarCategoria(nombre);
-          
+
           // Generar descripción real basada en el nombre
           final descripcionReal = _generarDescripcionDesdeNombre(nombre);
-          
+
           if (codigoExiste) {
-            final codigoExistente = await SupabaseService.getCodigoExistente(codigoStr);
+            final codigoExistente =
+                await SupabaseService.getCodigoExistente(codigoStr);
             if (codigoExistente != null) {
               // Usar descripción generada si es más específica que la de BD
-              final descripcionFinal = descripcionReal.length > 20 && !codigoExistente.descripcion.contains('Código sugerido')
+              final descripcionFinal = descripcionReal.length > 20 &&
+                      !codigoExistente.descripcion.contains('Código sugerido')
                   ? descripcionReal
                   : codigoExistente.descripcion;
-              
+
               codigosEncontrados.add(CodigoGrabovoi(
                 id: codigoExistente.id,
                 codigo: codigoStr,
                 nombre: nombre.isNotEmpty ? nombre : codigoExistente.nombre,
                 descripcion: descripcionFinal, // Usar descripción real
-                categoria: categoria.isNotEmpty ? categoria : codigoExistente.categoria,
+                categoria: categoria.isNotEmpty
+                    ? categoria
+                    : codigoExistente.categoria,
                 color: codigoExistente.color,
               ));
             }
           } else {
             // Si el código no existe, aún lo mostramos como sugerencia relacionada con descripción real
-            debugPrint('⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
+            debugPrint(
+                '⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
             codigosEncontrados.add(CodigoGrabovoi(
-              id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
+              id: '${DateTime.now().millisecondsSinceEpoch}_${codigosEncontrados.length}',
               codigo: codigoStr,
               nombre: nombre,
               descripcion: descripcionReal, // Usar descripción real generada
@@ -1925,7 +2376,7 @@ OUTPUT (JSON ESTRICTO)
           }
         }
       }
-      
+
       return codigosEncontrados;
     } catch (e) {
       debugPrint('❌ Error parseando lista numerada: $e');
@@ -1935,62 +2386,64 @@ OUTPUT (JSON ESTRICTO)
 
   Future<void> _extraerCodigosDelTexto(String content) async {
     debugPrint('🔍 Intentando extraer códigos del texto...');
-    
+
     try {
       final codigosEncontrados = <CodigoGrabovoi>[];
       final lineas = content.split('\n');
-      
+
       for (String linea in lineas) {
         linea = linea.trim();
         if (linea.isEmpty) continue;
-        
+
         final match = RegExp(r'^\d+\.\s+(.+)$').firstMatch(linea);
         if (match == null) continue;
-        
+
         final contenido = match.group(1)!.trim();
-        Match? codeMatch = RegExp(r'^([0-9_\s]+?)\s+-\s+(.+)$').firstMatch(contenido);
-        if (codeMatch == null) {
-          codeMatch = RegExp(r'^([0-9_\s]+?)\s+—\s+(.+)$').firstMatch(contenido);
-        }
-        if (codeMatch == null) {
-          codeMatch = RegExp(r'^([0-9_\s]+?)\s*[-—]\s*(.+)$').firstMatch(contenido);
-        }
-        
+        Match? codeMatch =
+            RegExp(r'^([0-9_\s]+?)\s+-\s+(.+)$').firstMatch(contenido);
+        codeMatch ??= RegExp(r'^([0-9_\s]+?)\s+—\s+(.+)$').firstMatch(contenido);
+        codeMatch ??= RegExp(r'^([0-9_\s]+?)\s*[-—]\s*(.+)$').firstMatch(contenido);
+
         if (codeMatch != null) {
           var codigoStr = codeMatch.group(1)!.trim();
           final nombre = codeMatch.group(2)!.trim();
-          
+
           codigoStr = codigoStr.replaceAll(' ', '_').replaceAll('__', '_');
-          
+
           // Siempre agregamos el código sugerido para mostrar opciones relacionadas
           final codigoExiste = await _validarCodigoEnBaseDatos(codigoStr);
           final categoria = _determinarCategoria(nombre);
-          
+
           // Generar descripción real basada en el nombre
           final descripcionReal = _generarDescripcionDesdeNombre(nombre);
-          
+
           if (codigoExiste) {
-            final codigoExistente = await SupabaseService.getCodigoExistente(codigoStr);
+            final codigoExistente =
+                await SupabaseService.getCodigoExistente(codigoStr);
             if (codigoExistente != null) {
               // Usar descripción generada si es más específica que la de BD
-              final descripcionFinal = descripcionReal.length > 20 && !codigoExistente.descripcion.contains('Código sugerido')
+              final descripcionFinal = descripcionReal.length > 20 &&
+                      !codigoExistente.descripcion.contains('Código sugerido')
                   ? descripcionReal
                   : codigoExistente.descripcion;
-              
+
               codigosEncontrados.add(CodigoGrabovoi(
                 id: codigoExistente.id,
                 codigo: codigoStr,
                 nombre: nombre.isNotEmpty ? nombre : codigoExistente.nombre,
                 descripcion: descripcionFinal, // Usar descripción real
-                categoria: categoria.isNotEmpty ? categoria : codigoExistente.categoria,
+                categoria: categoria.isNotEmpty
+                    ? categoria
+                    : codigoExistente.categoria,
                 color: codigoExistente.color,
               ));
             }
           } else {
             // Si el código no existe, aún lo mostramos como sugerencia relacionada con descripción real
-            debugPrint('⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
+            debugPrint(
+                '⚠️ Código $codigoStr sugerido por IA (no en BD), mostrando como opción relacionada');
             codigosEncontrados.add(CodigoGrabovoi(
-              id: DateTime.now().millisecondsSinceEpoch.toString() + '_${codigosEncontrados.length}',
+              id: '${DateTime.now().millisecondsSinceEpoch}_${codigosEncontrados.length}',
               codigo: codigoStr,
               nombre: nombre,
               descripcion: descripcionReal, // Usar descripción real generada
@@ -2000,9 +2453,10 @@ OUTPUT (JSON ESTRICTO)
           }
         }
       }
-      
+
       if (codigosEncontrados.isNotEmpty) {
-        debugPrint('✅ Mostrando ${codigosEncontrados.length} códigos relacionados encontrados por IA');
+        debugPrint(
+            '✅ Mostrando ${codigosEncontrados.length} códigos relacionados encontrados por IA');
         setState(() {
           _codigosEncontrados = codigosEncontrados;
           _mostrarSeleccionCodigos = true;
@@ -2023,26 +2477,34 @@ OUTPUT (JSON ESTRICTO)
     if (nombre.isEmpty) {
       return 'Secuencia de manifestación numérica para transformación positiva.';
     }
-    
+
     // Generar descripciones basadas en el nombre
     final nombreLower = nombre.toLowerCase();
-    
+
     // Mapeo de palabras clave a descripciones
     if (nombreLower.contains('armonía') || nombreLower.contains('armonia')) {
       return 'Restaura el equilibrio y la armonía en las relaciones y situaciones.';
-    } else if (nombreLower.contains('amor') || nombreLower.contains('relacion')) {
+    } else if (nombreLower.contains('amor') ||
+        nombreLower.contains('relacion')) {
       return 'Fortalece las conexiones afectivas y mejora las relaciones interpersonales.';
-    } else if (nombreLower.contains('abundancia') || nombreLower.contains('prosperidad')) {
+    } else if (nombreLower.contains('abundancia') ||
+        nombreLower.contains('prosperidad')) {
       return 'Abre caminos hacia la abundancia y prosperidad en todos los aspectos de la vida.';
-    } else if (nombreLower.contains('salud') || nombreLower.contains('cura') || nombreLower.contains('sanación')) {
+    } else if (nombreLower.contains('salud') ||
+        nombreLower.contains('cura') ||
+        nombreLower.contains('sanación')) {
       return 'Acelera los procesos de sanación y restauración del bienestar físico y emocional.';
-    } else if (nombreLower.contains('protección') || nombreLower.contains('seguridad')) {
+    } else if (nombreLower.contains('protección') ||
+        nombreLower.contains('seguridad')) {
       return 'Proporciona protección y seguridad en situaciones desafiantes.';
-    } else if (nombreLower.contains('hermandad') || nombreLower.contains('familia')) {
+    } else if (nombreLower.contains('hermandad') ||
+        nombreLower.contains('familia')) {
       return 'Fomenta la unidad, comprensión y armonía en las relaciones familiares y grupales.';
-    } else if (nombreLower.contains('trabajo') || nombreLower.contains('profesional')) {
+    } else if (nombreLower.contains('trabajo') ||
+        nombreLower.contains('profesional')) {
       return 'Abre caminos de reconocimiento y crecimiento profesional.';
-    } else if (nombreLower.contains('dinero') || nombreLower.contains('finanza')) {
+    } else if (nombreLower.contains('dinero') ||
+        nombreLower.contains('finanza')) {
       return 'Atrae estabilidad financiera y oportunidades de prosperidad económica.';
     } else {
       // Descripción genérica pero útil basada en el nombre
@@ -2054,9 +2516,9 @@ OUTPUT (JSON ESTRICTO)
     if (nombre.isEmpty || nombre.toLowerCase() == 'codigo') {
       return 'Abundancia'; // Categoría por defecto válida
     }
-    
+
     final nombreLower = nombre.toLowerCase();
-    
+
     // Mapeo extenso de palabras clave a categorías existentes
     final mapeoCategorias = {
       // Salud y Sanación
@@ -2070,7 +2532,7 @@ OUTPUT (JSON ESTRICTO)
       'medicina': 'Salud',
       'vitalidad': 'Salud',
       'bienestar': 'Salud',
-      
+
       // Abundancia y Prosperidad
       'abundancia': 'Abundancia',
       'prosperidad': 'Abundancia',
@@ -2082,7 +2544,7 @@ OUTPUT (JSON ESTRICTO)
       'negocio': 'Abundancia',
       'exito': 'Abundancia',
       'éxito': 'Abundancia',
-      
+
       // Amor y Relaciones
       'amor': 'Amor',
       'relacion': 'Amor',
@@ -2094,7 +2556,7 @@ OUTPUT (JSON ESTRICTO)
       'humanos': 'Amor',
       'persona': 'Amor',
       'personas': 'Amor',
-      
+
       // Armonía y Paz
       'armonia': 'Armonía',
       'armonía': 'Armonía',
@@ -2102,13 +2564,13 @@ OUTPUT (JSON ESTRICTO)
       'tranquilidad': 'Paz',
       'equilibrio': 'Armonía',
       'balance': 'Armonía',
-      
+
       // Protección
       'proteccion': 'Protección',
       'protección': 'Protección',
       'seguridad': 'Protección',
       'defensa': 'Protección',
-      
+
       // Espiritualidad
       'espiritualidad': 'Espiritualidad',
       'espiritual': 'Espiritualidad',
@@ -2116,45 +2578,50 @@ OUTPUT (JSON ESTRICTO)
       'sagrado': 'Espiritualidad',
       'desarrollo': 'Espiritualidad',
       'crecimiento': 'Espiritualidad',
-      
+
       // Relaciones generales
       'relaciones': 'Relaciones',
       'social': 'Relaciones',
       'comunicacion': 'Relaciones',
       'comunicación': 'Relaciones',
     };
-    
+
     // Buscar coincidencias exactas primero
     for (var entrada in mapeoCategorias.entries) {
       if (nombreLower.contains(entrada.key)) {
-        debugPrint('✅ Categoría encontrada por palabra clave "${entrada.key}": ${entrada.value}');
+        debugPrint(
+            '✅ Categoría encontrada por palabra clave "${entrada.key}": ${entrada.value}');
         return entrada.value;
       }
     }
-    
+
     // Si no hay coincidencias, extraer palabra clave principal y buscar categoría similar
     final palabras = nombre.split(' ').where((p) => p.length > 3).toList();
     for (var palabra in palabras) {
       final palabraLower = palabra.toLowerCase();
       for (var entrada in mapeoCategorias.entries) {
-        if (palabraLower.contains(entrada.key) || entrada.key.contains(palabraLower)) {
-          debugPrint('✅ Categoría encontrada por palabra "${palabra}": ${entrada.value}');
+        if (palabraLower.contains(entrada.key) ||
+            entrada.key.contains(palabraLower)) {
+          debugPrint(
+              '✅ Categoría encontrada por palabra "$palabra": ${entrada.value}');
           return entrada.value;
         }
       }
     }
-    
+
     // Si aún no hay coincidencias, crear una categoría relacionada (capitalizada)
     final palabrasSignificativas = palabras.isNotEmpty ? palabras : [nombre];
     final primeraPalabra = palabrasSignificativas.first;
     if (primeraPalabra.length > 3 && primeraPalabra.toLowerCase() != 'codigo') {
-      final categoriaNueva = primeraPalabra[0].toUpperCase() + primeraPalabra.substring(1).toLowerCase();
+      final categoriaNueva = primeraPalabra[0].toUpperCase() +
+          primeraPalabra.substring(1).toLowerCase();
       debugPrint('🆕 Nueva categoría creada: $categoriaNueva');
       return categoriaNueva;
     }
-    
+
     // Fallback a categoría por defecto válida
-    debugPrint('⚠️ No se pudo determinar categoría, usando "Abundancia" por defecto');
+    debugPrint(
+        '⚠️ No se pudo determinar categoría, usando "Abundancia" por defecto');
     return 'Abundancia';
   }
 
@@ -2176,7 +2643,7 @@ OUTPUT (JSON ESTRICTO)
     if (ultimaConsulta.isNotEmpty) {
       await _abrirPilotajeManualDesdeBusqueda(ultimaConsulta);
     }
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text(
@@ -2230,13 +2697,15 @@ OUTPUT (JSON ESTRICTO)
       await WidgetsBinding.instance.endOfFrame;
       await Future.delayed(const Duration(milliseconds: 200));
 
-      final Uint8List? pngBytes = await _shareController.capture(pixelRatio: 2.0);
+      final Uint8List? pngBytes =
+          await _shareController.capture(pixelRatio: 2.0);
 
       if (pngBytes == null || pngBytes.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No se pudo generar la imagen. Intenta nuevamente.'),
+              content:
+                  Text('No se pudo generar la imagen. Intenta nuevamente.'),
               backgroundColor: Colors.red,
             ),
           );
@@ -2272,7 +2741,8 @@ OUTPUT (JSON ESTRICTO)
     }
   }
 
-  Widget _buildShareableImage(String codigoCrudo, String titulo, String descripcion) {
+  Widget _buildShareableImage(
+      String codigoCrudo, String titulo, String descripcion) {
     return Container(
       width: 800,
       height: 800,
@@ -2393,352 +2863,384 @@ OUTPUT (JSON ESTRICTO)
         children: [
           GlowBackground(
             child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Título de la sección
-                  Text(
-                    'Biblioteca Cuántica',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFD700),
-                      shadows: [
-                        Shadow(
-                          color: const Color(0xFFFFD700).withOpacity(0.5),
-                          blurRadius: 20,
-                        ),
-                      ],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Secuencias numéricas de manifestación',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 20),
-                  
-                  // Contador de códigos y botón de favoritos activo en una sola fila
-                  Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Total de secuencias: ${visible.length}',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFFFFD700),
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.left,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      // Título de la sección
+                      Text(
+                        'Biblioteca Cuántica',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFFD700),
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFFFFD700).withOpacity(0.5),
+                              blurRadius: 20,
+                            ),
+                          ],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      // Botón de Favoritos activo (solo cuando se muestran favoritos)
-                      if (mostrarFavoritos)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: FilterChip(
-                            avatar: Icon(
-                              Icons.favorite,
-                              size: 18,
-                              color: const Color(0xFF0B132B),
-                            ),
-                            label: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text('Favoritos'),
-                                const SizedBox(width: 6),
-                                Icon(
-                                  Icons.close,
-                                  size: 16,
-                                  color: const Color(0xFF0B132B).withOpacity(0.7),
-                                ),
-                              ],
-                            ),
-                            selected: true,
-                            onSelected: (_) {
-                              _toggleFavoritos();
-                            },
-                            selectedColor: const Color(0xFFFFD700),
-                            backgroundColor: Colors.white.withOpacity(0.08),
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF0B132B),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Secuencias numéricas de manifestación',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.white70,
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Barra de búsqueda (solo cuando NO están habilitados los favoritos)
-                  if (!mostrarFavoritos) ...[
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isCompact = constraints.maxWidth < 360;
-                        return TextField(
-                          controller: _searchController,
-                          onChanged: (value) {
-                            // Si empieza con número: solo dígitos, "_" y espacio (no letras ni "-")
-                            final filtrado = _filtrarEntradaBusqueda(value);
-                            if (filtrado != value) {
-                              final cursorPos = filtrado.length;
-                              _searchController.value = TextEditingValue(
-                                text: filtrado,
-                                selection: TextSelection.collapsed(offset: cursorPos),
-                              );
-                            }
-                            query = filtrado;
-                            _queryBusqueda = filtrado;
-                            _filtrarCodigos(filtrado);
-                          },
-                          onSubmitted: (value) {
-                            _confirmarBusqueda();
-                          },
-                          decoration: InputDecoration(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            hintText: 'Buscar secuencia, intención o categoría...',
-                            hintStyle: const TextStyle(color: Colors.white54),
-                            prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                            suffixIcon: query.isNotEmpty
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (visible.isEmpty)
-                                        IconButton(
-                                          icon: const Icon(Icons.search, color: Color(0xFFFFD700)),
-                                          onPressed: _confirmarBusqueda,
-                                          tooltip: 'Buscar secuencia completa',
-                                        ),
-                                      IconButton(
-                                        icon: const Icon(Icons.clear, color: Colors.white54),
-                                        onPressed: () {
-                                          setState(() {
-                                            _searchController.clear();
-                                            query = '';
-                                            _queryBusqueda = '';
-                                            _mostrarResultados = false;
-                                            _aplicarFiltros();
-                                          });
-                                        },
-                                        tooltip: 'Limpiar búsqueda',
-                                      ),
-                                    ],
-                                  )
-                                : null,
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.05),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
-                            ),
-                            focusedBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(16)),
-                              borderSide: BorderSide(color: Color(0xFFFFD700)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Contador de códigos y botón de favoritos activo en una sola fila
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Total de secuencias: ${visible.length}',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: const Color(0xFFFFD700),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.left,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          style: const TextStyle(color: Colors.white),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    // Filtros de categoría y botón de favoritos (solo cuando NO se muestran favoritos)
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          // Botón de Favoritos (siempre visible cuando hay favoritos)
-                          if (_tieneFavoritos)
+                          // Botón de Favoritos activo (solo cuando se muestran favoritos)
+                          if (mostrarFavoritos)
                             Padding(
-                              padding: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.only(left: 8),
                               child: FilterChip(
-                                avatar: Icon(
+                                avatar: const Icon(
                                   Icons.favorite,
                                   size: 18,
-                                  color: mostrarFavoritos
-                                      ? const Color(0xFF0B132B)
-                                      : Colors.white70,
+                                  color: Color(0xFF0B132B),
                                 ),
-                                label: const Text(
-                                  'Favoritos',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                label: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text('Favoritos'),
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: const Color(0xFF0B132B)
+                                          .withOpacity(0.7),
+                                    ),
+                                  ],
                                 ),
-                                selected: mostrarFavoritos,
+                                selected: true,
                                 onSelected: (_) {
                                   _toggleFavoritos();
                                 },
                                 selectedColor: const Color(0xFFFFD700),
                                 backgroundColor: Colors.white.withOpacity(0.08),
-                                labelStyle: TextStyle(
-                                  color: mostrarFavoritos ? const Color(0xFF0B132B) : Colors.white,
+                                labelStyle: const TextStyle(
+                                  color: Color(0xFF0B132B),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
-                          // Filtros de categoría
-                          ...categorias.map((cat) {
-                            final selected = categoriaSeleccionada == cat;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                label: Text(
-                                  cat,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                selected: selected,
-                                onSelected: (_) {
-                                  setState(() => categoriaSeleccionada = cat);
-                                  _aplicarFiltros();
-                                },
-                                selectedColor: const Color(0xFFFFD700),
-                                backgroundColor: Colors.white.withOpacity(0.08),
-                                labelStyle: TextStyle(
-                                  color: selected ? const Color(0xFF0B132B) : Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            );
-                          }).toList(),
                         ],
                       ),
-                    ),
-                  ],
-                  
-                  // Filtros de etiquetas (solo cuando se muestran favoritos)
-                  if (mostrarFavoritos) ...[
-                    const SizedBox(height: 12),
-                    // "Filtrar por etiqueta:" y etiquetas en una sola fila
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          Text(
-                            'Filtrar por etiqueta:',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(width: 12),
-                          // Botón "Todas"
-                          GestureDetector(
-                            onTap: () async {
-                              setState(() {
-                                etiquetaSeleccionada = null;
-                              });
+                      const SizedBox(height: 16),
 
-                              try {
-                                // Recarga los favoritos directamente desde Supabase
-                                final favoritos = await BibliotecaSupabaseService.getFavoritos();
-                                
-                                debugPrint('DEBUG → Favoritos cargados: ${favoritos.length}');
-                                debugPrint('DEBUG → Etiqueta seleccionada: $etiquetaSeleccionada');
-
-                                setState(() {
-                                  favoritosFiltrados = favoritos;
-                                  visible = favoritos;
-                                });
-                              } catch (e) {
-                                debugPrint('Error al recargar todos los favoritos: $e');
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              margin: const EdgeInsets.only(right: 8),
-                              decoration: BoxDecoration(
-                                color: etiquetaSeleccionada == null 
-                                    ? const Color(0xFFFFD700).withOpacity(0.2)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFFFFD700).withOpacity(0.5),
-                                  width: 1,
+                      // Barra de búsqueda (solo cuando NO están habilitados los favoritos)
+                      if (!mostrarFavoritos) ...[
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isCompact = constraints.maxWidth < 360;
+                            return TextField(
+                              controller: _searchController,
+                              onChanged: (value) {
+                                // Si empieza con número: solo dígitos, "_" y espacio (no letras ni "-")
+                                final filtrado = _filtrarEntradaBusqueda(value);
+                                if (filtrado != value) {
+                                  final cursorPos = filtrado.length;
+                                  _searchController.value = TextEditingValue(
+                                    text: filtrado,
+                                    selection: TextSelection.collapsed(
+                                        offset: cursorPos),
+                                  );
+                                }
+                                query = filtrado;
+                                _queryBusqueda = filtrado;
+                                _filtrarCodigos(filtrado);
+                              },
+                              onSubmitted: (value) {
+                                _confirmarBusqueda();
+                              },
+                              decoration: InputDecoration(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 14),
+                                hintText:
+                                    'Buscar secuencia, intención o categoría...',
+                                hintStyle:
+                                    const TextStyle(color: Colors.white54),
+                                prefixIcon: const Icon(Icons.search,
+                                    color: Colors.white54),
+                                suffixIcon: query.isNotEmpty
+                                    ? Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (visible.isEmpty)
+                                            IconButton(
+                                              icon: const Icon(Icons.search,
+                                                  color: Color(0xFFFFD700)),
+                                              onPressed: _confirmarBusqueda,
+                                              tooltip:
+                                                  'Buscar secuencia completa',
+                                            ),
+                                          IconButton(
+                                            icon: const Icon(Icons.clear,
+                                                color: Colors.white54),
+                                            onPressed: () {
+                                              setState(() {
+                                                _searchController.clear();
+                                                query = '';
+                                                _queryBusqueda = '';
+                                                _mostrarResultados = false;
+                                                _aplicarFiltros();
+                                              });
+                                            },
+                                            tooltip: 'Limpiar búsqueda',
+                                          ),
+                                        ],
+                                      )
+                                    : null,
+                                filled: true,
+                                fillColor: Colors.white.withOpacity(0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                      color: Colors.white.withOpacity(0.15)),
+                                ),
+                                focusedBorder: const OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(16)),
+                                  borderSide:
+                                      BorderSide(color: Color(0xFFFFD700)),
                                 ),
                               ),
-                              child: Text(
-                                'Todas',
+                              style: const TextStyle(color: Colors.white),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Filtros de categoría y botón de favoritos (solo cuando NO se muestran favoritos)
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              // Botón de Favoritos (siempre visible cuando hay favoritos)
+                              if (_tieneFavoritos)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    avatar: Icon(
+                                      Icons.favorite,
+                                      size: 18,
+                                      color: mostrarFavoritos
+                                          ? const Color(0xFF0B132B)
+                                          : Colors.white70,
+                                    ),
+                                    label: const Text(
+                                      'Favoritos',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    selected: mostrarFavoritos,
+                                    onSelected: (_) {
+                                      _toggleFavoritos();
+                                    },
+                                    selectedColor: const Color(0xFFFFD700),
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.08),
+                                    labelStyle: TextStyle(
+                                      color: mostrarFavoritos
+                                          ? const Color(0xFF0B132B)
+                                          : Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              // Filtros de categoría
+                              ...categorias.map((cat) {
+                                final selected = categoriaSeleccionada == cat;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    label: Text(
+                                      cat,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    selected: selected,
+                                    onSelected: (_) {
+                                      setState(
+                                          () => categoriaSeleccionada = cat);
+                                      _aplicarFiltros();
+                                    },
+                                    selectedColor: const Color(0xFFFFD700),
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.08),
+                                    labelStyle: TextStyle(
+                                      color: selected
+                                          ? const Color(0xFF0B132B)
+                                          : Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      // Filtros de etiquetas (solo cuando se muestran favoritos)
+                      if (mostrarFavoritos) ...[
+                        const SizedBox(height: 12),
+                        // "Filtrar por etiqueta:" y etiquetas en una sola fila
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              Text(
+                                'Filtrar por etiqueta:',
                                 style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: etiquetaSeleccionada == null 
-                                      ? const Color(0xFFFFD700)
-                                      : Colors.white70,
+                                  fontSize: 14,
+                                  color: Colors.white70,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ),
-                          // Botones de etiquetas
-                          ...etiquetasFavoritos.map((etiqueta) {
-                            final isSelected = etiquetaSeleccionada == etiqueta;
-                            return GestureDetector(
-                              onTap: () => _cargarFavoritosPorEtiqueta(etiqueta),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                margin: const EdgeInsets.only(right: 8),
-                                decoration: BoxDecoration(
-                                  color: isSelected 
-                                      ? const Color(0xFFFFD700).withOpacity(0.2)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: const Color(0xFFFFD700).withOpacity(0.5),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  etiqueta,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: isSelected 
+                              const SizedBox(width: 12),
+                              // Botón "Todas"
+                              GestureDetector(
+                                onTap: () async {
+                                  setState(() {
+                                    etiquetaSeleccionada = null;
+                                  });
+
+                                  try {
+                                    // Recarga los favoritos directamente desde Supabase
+                                    final favoritos =
+                                        await BibliotecaSupabaseService
+                                            .getFavoritos();
+
+                                    debugPrint(
+                                        'DEBUG → Favoritos cargados: ${favoritos.length}');
+                                    debugPrint(
+                                        'DEBUG → Etiqueta seleccionada: $etiquetaSeleccionada');
+
+                                    setState(() {
+                                      favoritosFiltrados = favoritos;
+                                      visible = favoritos;
+                                    });
+                                  } catch (e) {
+                                    debugPrint(
+                                        'Error al recargar todos los favoritos: $e');
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: etiquetaSeleccionada == null
                                         ? const Color(0xFFFFD700)
-                                        : Colors.white70,
-                                    fontWeight: FontWeight.w600,
+                                            .withOpacity(0.2)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: const Color(0xFFFFD700)
+                                          .withOpacity(0.5),
+                                      width: 1,
+                                    ),
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  child: Text(
+                                    'Todas',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: etiquetaSeleccionada == null
+                                          ? const Color(0xFFFFD700)
+                                          : Colors.white70,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
-                            );
-                          }).toList(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            // Lista de códigos con scroll independiente
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _buildContent(),
-                  );
-                },
-              ),
-            ),
-          ],
+                              // Botones de etiquetas
+                              ...etiquetasFavoritos.map((etiqueta) {
+                                final isSelected =
+                                    etiquetaSeleccionada == etiqueta;
+                                return GestureDetector(
+                                  onTap: () =>
+                                      _cargarFavoritosPorEtiqueta(etiqueta),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFFFFD700)
+                                              .withOpacity(0.2)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: const Color(0xFFFFD700)
+                                            .withOpacity(0.5),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      etiqueta,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: isSelected
+                                            ? const Color(0xFFFFD700)
+                                            : Colors.white70,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                // Lista de códigos con scroll independiente
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildContent(),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
           // Widget oculto para generar la imagen compartible de cada secuencia
@@ -2770,12 +3272,13 @@ OUTPUT (JSON ESTRICTO)
           // Modales de búsqueda profunda (flujo B)
           if (_showOptionsModal) _buildOptionsModal(),
           if (_mostrarFallbackFase2) _buildFallbackFase2Modal(),
-          if (_buscandoRelacionadosFase2) _buildBuscandoRelacionadosFase2Modal(),
+          if (_buscandoRelacionadosFase2)
+            _buildBuscandoRelacionadosFase2Modal(),
           if (_showManualPilotage) _buildManualPilotageModal(),
           if (_mostrarSeleccionCodigos) _buildSeleccionCodigosModal(),
           if (_buscandoConIA) _buildBuscandoConIAModal(),
           if (_mostrarConfirmacionGuardado) _buildConfirmacionGuardadoModal(),
-          
+
           // Botón flotante para volver al inicio
           if (_showFab)
             Positioned(
@@ -2785,7 +3288,8 @@ OUTPUT (JSON ESTRICTO)
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.7), // Semitransparente
+                  color: const Color(0xFFFFD700)
+                      .withOpacity(0.7), // Semitransparente
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -2883,6 +3387,13 @@ OUTPUT (JSON ESTRICTO)
                   ),
                   child: ElevatedButton.icon(
                     onPressed: () {
+                      if (_busquedaProfundaEnCurso ||
+                          _buscandoConIA ||
+                          _buscandoRelacionadosFase2) {
+                        debugPrint(
+                            'ℹ️ Tap ignorado: búsqueda profunda ya en curso.');
+                        return;
+                      }
                       setState(() {
                         _showOptionsModal = false;
                       });
@@ -2971,7 +3482,8 @@ OUTPUT (JSON ESTRICTO)
                       query = '';
                     });
                   },
-                  child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
+                  child: const Text('Cancelar',
+                      style: TextStyle(color: Colors.white70)),
                 ),
               ],
             ),
@@ -2994,7 +3506,8 @@ OUTPUT (JSON ESTRICTO)
               decoration: BoxDecoration(
                 color: const Color(0xFF1C2541),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
+                border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.3), width: 1),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -3002,18 +3515,29 @@ OUTPUT (JSON ESTRICTO)
                 children: [
                   Text(
                     'No encontramos una secuencia que resuene con tu búsqueda.',
-                    style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Estas 3 secuencias están relacionadas y pueden servir como alternativa.',
-                    style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
+                    style:
+                        GoogleFonts.inter(fontSize: 14, color: Colors.white70),
                     textAlign: TextAlign.center,
                   ),
-                  if (_safetyNoteFase2 != null && _safetyNoteFase2!.isNotEmpty) ...[
+                  if (_safetyNoteFase2 != null &&
+                      _safetyNoteFase2!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text(_safetyNoteFase2!.replaceAll('códigos', 'secuencias').replaceAll('código', 'secuencia'), style: GoogleFonts.inter(fontSize: 12, color: Colors.orange), textAlign: TextAlign.center),
+                    Text(
+                        _safetyNoteFase2!
+                            .replaceAll('códigos', 'secuencias')
+                            .replaceAll('código', 'secuencia'),
+                        style: GoogleFonts.inter(
+                            fontSize: 12, color: Colors.orange),
+                        textAlign: TextAlign.center),
                   ],
                   const SizedBox(height: 20),
                   ..._fallbackFase2Items.map((item) {
@@ -3026,18 +3550,31 @@ OUTPUT (JSON ESTRICTO)
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.2)),
+                        border: Border.all(
+                            color: const Color(0xFFFFD700).withOpacity(0.2)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(codeDisplay, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFFFFD700))),
+                          Text(codeDisplay,
+                              style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFFFD700))),
                           const SizedBox(height: 4),
-                          Text(c.nombre, style: GoogleFonts.inter(fontSize: 14, color: Colors.white)),
-                          Text(c.categoria, style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+                          Text(c.nombre,
+                              style: GoogleFonts.inter(
+                                  fontSize: 14, color: Colors.white)),
+                          Text(c.categoria,
+                              style: GoogleFonts.inter(
+                                  fontSize: 12, color: Colors.white70)),
                           if (why.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            Text(why, style: GoogleFonts.inter(fontSize: 12, color: Colors.white70), maxLines: 2, overflow: TextOverflow.ellipsis),
+                            Text(why,
+                                style: GoogleFonts.inter(
+                                    fontSize: 12, color: Colors.white70),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis),
                           ],
                           const SizedBox(height: 8),
                           SizedBox(
@@ -3048,7 +3585,8 @@ OUTPUT (JSON ESTRICTO)
                               },
                               icon: const Icon(Icons.touch_app, size: 18),
                               label: const Text('Usar esta secuencia'),
-                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4CAF50)),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4CAF50)),
                             ),
                           ),
                         ],
@@ -3073,7 +3611,8 @@ OUTPUT (JSON ESTRICTO)
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.edit, color: Color(0xFFFFD700), size: 22),
+                          const Icon(Icons.edit,
+                              color: Color(0xFFFFD700), size: 22),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -3111,7 +3650,8 @@ OUTPUT (JSON ESTRICTO)
                         _safetyNoteFase2 = null;
                       });
                     },
-                    child: const Text('Cerrar', style: TextStyle(color: Colors.white70)),
+                    child: const Text('Cerrar',
+                        style: TextStyle(color: Colors.white70)),
                   ),
                 ],
               ),
@@ -3135,14 +3675,26 @@ OUTPUT (JSON ESTRICTO)
   String _categoriaParaDropdown(String? cat) {
     if (cat == null || cat.isEmpty) return _dropdownCategorias.first;
     final c = cat.toLowerCase();
-    if (c.contains('amor') || c.contains('relacion')) return 'Amor y Relaciones';
+    if (c.contains('amor') || c.contains('relacion')) {
+      return 'Amor y Relaciones';
+    }
     if (c.contains('salud')) return 'Salud y Regeneración';
-    if (c.contains('abundancia') || c.contains('prosperidad') || c.contains('manifestacion')) return 'Abundancia y Prosperidad';
-    if (c.contains('energia') || c.contains('vitalidad') || c.contains('crecimiento')) return 'Salud y Regeneración';
+    if (c.contains('abundancia') ||
+        c.contains('prosperidad') ||
+        c.contains('manifestacion')) return 'Abundancia y Prosperidad';
+    if (c.contains('energia') ||
+        c.contains('vitalidad') ||
+        c.contains('crecimiento')) return 'Salud y Regeneración';
     if (c.contains('proteccion')) return 'Protección Energética';
-    if (c.contains('espiritual') || c.contains('conciencia')) return 'Conciencia Espiritual';
-    if (c.contains('emocional') || c.contains('liberacion')) return 'Liberación Emocional';
-    if (c.contains('limpieza') || c.contains('reconexion')) return 'Limpieza y Reconexión';
+    if (c.contains('espiritual') || c.contains('conciencia')) {
+      return 'Conciencia Espiritual';
+    }
+    if (c.contains('emocional') || c.contains('liberacion')) {
+      return 'Liberación Emocional';
+    }
+    if (c.contains('limpieza') || c.contains('reconexion')) {
+      return 'Limpieza y Reconexión';
+    }
     return 'Abundancia y Prosperidad';
   }
 
@@ -3177,7 +3729,8 @@ OUTPUT (JSON ESTRICTO)
 
   Future<void> _iniciarPilotajeManual() async {
     final textoBusqueda = _codigoNoEncontrado ?? _queryBusqueda ?? query ?? '';
-    final esCodigo = textoBusqueda.isNotEmpty && _esBusquedaPorCodigo(textoBusqueda);
+    final esCodigo =
+        textoBusqueda.isNotEmpty && _esBusquedaPorCodigo(textoBusqueda);
     if (textoBusqueda.isNotEmpty && esCodigo) {
       final normalizado = normalizarCodigo(textoBusqueda);
       final yaGuardado = await _secuenciaYaEnPilotajeManual(normalizado);
@@ -3343,7 +3896,8 @@ OUTPUT (JSON ESTRICTO)
                               _manualDescriptionController.clear();
                             });
                           },
-                          child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
+                          child: const Text('Cancelar',
+                              style: TextStyle(color: Colors.white70)),
                         ),
                       ),
                     ],
@@ -3358,7 +3912,8 @@ OUTPUT (JSON ESTRICTO)
   }
 
   Future<void> _guardarCodigoManual() async {
-    if (_manualCodeController.text.isEmpty || _manualTitleController.text.isEmpty) {
+    if (_manualCodeController.text.isEmpty ||
+        _manualTitleController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor completa todos los campos'),
@@ -3370,14 +3925,14 @@ OUTPUT (JSON ESTRICTO)
 
     try {
       final customCodesService = UserCustomCodesService();
-      
+
       // Guardar secuencia personalizada
       final success = await customCodesService.saveCustomCode(
         codigo: _manualCodeController.text,
         nombre: _manualTitleController.text,
         categoria: _manualCategory,
-        descripcion: _manualDescriptionController.text.isNotEmpty 
-            ? _manualDescriptionController.text 
+        descripcion: _manualDescriptionController.text.isNotEmpty
+            ? _manualDescriptionController.text
             : 'Secuencia personalizada del usuario',
       );
 
@@ -3386,7 +3941,7 @@ OUTPUT (JSON ESTRICTO)
         final codigoGuardado = _manualCodeController.text;
         final nombreGuardado = _manualTitleController.text;
         final categoriaGuardada = _manualCategory;
-        
+
         setState(() {
           _showManualPilotage = false;
           _manualCodeController.clear();
@@ -3458,7 +4013,8 @@ OUTPUT (JSON ESTRICTO)
                   ),
                   child: const CircularProgressIndicator(
                     strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -3530,7 +4086,8 @@ OUTPUT (JSON ESTRICTO)
                   ),
                   child: const CircularProgressIndicator(
                     strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -3551,7 +4108,7 @@ OUTPUT (JSON ESTRICTO)
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFFFD700),
+                    color: const Color(0xFFFFD700),
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
@@ -3659,7 +4216,7 @@ OUTPUT (JSON ESTRICTO)
                         _mostrarConfirmacionGuardado = false;
                         _codigoGuardadoNombre = null;
                       });
-                      
+
                       // Si hay una búsqueda activa, asegurar que el filtro esté aplicado
                       if (query.isNotEmpty || _queryBusqueda.isNotEmpty) {
                         _aplicarFiltros();
@@ -3699,16 +4256,20 @@ OUTPUT (JSON ESTRICTO)
             builder: (context, constraints) {
               final mediaQuery = MediaQuery.of(context);
               final textScale = mediaQuery.textScaleFactor.clamp(1.0, 1.3);
-              final maxWidth = (mediaQuery.size.width * 0.9).clamp(320.0, 540.0);
-              final maxHeight = (mediaQuery.size.height * 0.8).clamp(380.0, 640.0);
+              final maxWidth =
+                  (mediaQuery.size.width * 0.9).clamp(320.0, 540.0);
+              final maxHeight =
+                  (mediaQuery.size.height * 0.8).clamp(380.0, 640.0);
 
               return MediaQuery(
-                data: mediaQuery.copyWith(textScaleFactor: textScale),
+                data: mediaQuery.copyWith(textScaler: TextScaler.linear(textScale)),
                 child: Container(
                   width: maxWidth,
                   constraints: BoxConstraints(maxHeight: maxHeight),
-                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1C2541),
                     borderRadius: BorderRadius.circular(24),
@@ -3761,56 +4322,82 @@ OUTPUT (JSON ESTRICTO)
                                     child: Container(
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF2C3E50).withOpacity(0.7),
+                                        color: const Color(0xFF2C3E50)
+                                            .withOpacity(0.7),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                          color: _getCategoryColor(codigo.categoria).withOpacity(0.4),
+                                          color: _getCategoryColor(
+                                                  codigo.categoria)
+                                              .withOpacity(0.4),
                                           width: 1.2,
                                         ),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Container(
                                                 width: 24,
                                                 height: 24,
                                                 decoration: BoxDecoration(
-                                                  color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
+                                                  color: _getCategoryColor(
+                                                          codigo.categoria)
+                                                      .withOpacity(0.2),
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: Icon(
                                                   Icons.water_drop,
-                                                  color: _getCategoryColor(codigo.categoria),
+                                                  color: _getCategoryColor(
+                                                      codigo.categoria),
                                                   size: 14,
                                                 ),
                                               ),
                                               const SizedBox(width: 10),
                                               Expanded(
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 4),
                                                       decoration: BoxDecoration(
-                                                        color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
-                                                        borderRadius: BorderRadius.circular(10),
+                                                        color: _getCategoryColor(
+                                                                codigo
+                                                                    .categoria)
+                                                            .withOpacity(0.2),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
                                                         border: Border.all(
-                                                          color: _getCategoryColor(codigo.categoria).withOpacity(0.6),
+                                                          color: _getCategoryColor(
+                                                                  codigo
+                                                                      .categoria)
+                                                              .withOpacity(0.6),
                                                           width: 1,
                                                         ),
                                                       ),
                                                       child: Text(
                                                         codigo.codigo,
-                                                        style: GoogleFonts.spaceMono(
-                                                          color: _getCategoryColor(codigo.categoria),
+                                                        style: GoogleFonts
+                                                            .spaceMono(
+                                                          color:
+                                                              _getCategoryColor(
+                                                                  codigo
+                                                                      .categoria),
                                                           fontSize: 16,
-                                                          fontWeight: FontWeight.bold,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
                                                         maxLines: 2,
-                                                        overflow: TextOverflow.ellipsis,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                       ),
                                                     ),
                                                     const SizedBox(height: 10),
@@ -3819,10 +4406,12 @@ OUTPUT (JSON ESTRICTO)
                                                       style: GoogleFonts.inter(
                                                         color: Colors.white,
                                                         fontSize: 15,
-                                                        fontWeight: FontWeight.w600,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                       ),
                                                       maxLines: 2,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ],
                                                 ),
@@ -3833,7 +4422,8 @@ OUTPUT (JSON ESTRICTO)
                                           Text(
                                             codigo.descripcion,
                                             style: GoogleFonts.inter(
-                                              color: Colors.white.withOpacity(0.85),
+                                              color: Colors.white
+                                                  .withOpacity(0.85),
                                               fontSize: 14,
                                               height: 1.4,
                                             ),
@@ -3845,7 +4435,8 @@ OUTPUT (JSON ESTRICTO)
                                             children: [
                                               Icon(
                                                 Icons.category,
-                                                color: _getCategoryColor(codigo.categoria),
+                                                color: _getCategoryColor(
+                                                    codigo.categoria),
                                                 size: 16,
                                               ),
                                               const SizedBox(width: 6),
@@ -3853,11 +4444,13 @@ OUTPUT (JSON ESTRICTO)
                                                 child: Text(
                                                   codigo.categoria,
                                                   style: GoogleFonts.inter(
-                                                    color: _getCategoryColor(codigo.categoria),
+                                                    color: _getCategoryColor(
+                                                        codigo.categoria),
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w500,
                                                   ),
-                                                  overflow: TextOverflow.ellipsis,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
                                               ),
                                               const SizedBox(width: 6),
@@ -3921,12 +4514,13 @@ OUTPUT (JSON ESTRICTO)
             SizedBox(height: 16),
             Text('Cargando secuencias desde CDN...'),
             SizedBox(height: 8),
-            Text('Esto puede tomar unos segundos', style: TextStyle(color: Colors.grey)),
+            Text('Esto puede tomar unos segundos',
+                style: TextStyle(color: Colors.grey)),
           ],
         ),
       );
     }
-    
+
     if (error != null) {
       return Center(
         child: Column(
@@ -3934,14 +4528,14 @@ OUTPUT (JSON ESTRICTO)
           children: [
             const Icon(Icons.error, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Error al cargar las secuencias:', 
-                 style: Theme.of(context).textTheme.headlineSmall),
+            Text('Error al cargar las secuencias:',
+                style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text(error!, 
-                         textAlign: TextAlign.center,
-                         style: const TextStyle(fontFamily: 'monospace')),
+              child: Text(error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontFamily: 'monospace')),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -3953,11 +4547,12 @@ OUTPUT (JSON ESTRICTO)
         ),
       );
     }
-    
+
     if (visible.isEmpty) {
       // Si hay una búsqueda activa y tiene la secuencia en Favoritos (pilotaje manual), mostrar el card
       if (_queryBusqueda.isNotEmpty) {
-        if (_tieneSecuenciaEnFavoritosPilotajeManual && _codigoFavoritoPilotajeManualCoincidente != null) {
+        if (_tieneSecuenciaEnFavoritosPilotajeManual &&
+            _codigoFavoritoPilotajeManualCoincidente != null) {
           final codigoFav = _codigoFavoritoPilotajeManualCoincidente!;
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -3965,16 +4560,19 @@ OUTPUT (JSON ESTRICTO)
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1),
+                    border: Border.all(
+                        color: Colors.orange.withOpacity(0.3), width: 1),
                   ),
                   child: Text(
                     'Resultado de tus Favoritos — no forma parte de las secuencias generales.',
-                    style: GoogleFonts.inter(color: Colors.orange, fontSize: 13),
+                    style:
+                        GoogleFonts.inter(color: Colors.orange, fontSize: 13),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -4022,7 +4620,7 @@ OUTPUT (JSON ESTRICTO)
           ),
         );
       }
-      
+
       // Si no hay búsqueda activa, mostrar mensaje genérico
       return const Center(
         child: Column(
@@ -4082,7 +4680,7 @@ OUTPUT (JSON ESTRICTO)
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
-                Icon(Icons.search, color: const Color(0xFFFFD700), size: 28),
+                const Icon(Icons.search, color: Color(0xFFFFD700), size: 28),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -4110,7 +4708,8 @@ OUTPUT (JSON ESTRICTO)
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, color: Color(0xFFFFD700), size: 18),
+                const Icon(Icons.arrow_forward_ios,
+                    color: Color(0xFFFFD700), size: 18),
               ],
             ),
           ),
@@ -4123,8 +4722,9 @@ OUTPUT (JSON ESTRICTO)
     final offset = _swipeOffsets[codigo.codigo] ?? 0.0;
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = screenWidth - 40; // Ancho del card (padding incluido)
-    final reportWidth = cardWidth * 0.42; // 42% del ancho para el área de reporte (más visible)
-    
+    final reportWidth =
+        cardWidth * 0.42; // 42% del ancho para el área de reporte (más visible)
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Stack(
@@ -4157,13 +4757,15 @@ OUTPUT (JSON ESTRICTO)
               // Solo permitir deslizamiento hacia la izquierda
               if (details.delta.dx < 0) {
                 setState(() {
-                  final newOffset = (offset + details.delta.dx).clamp(-reportWidth, 0.0);
+                  final newOffset =
+                      (offset + details.delta.dx).clamp(-reportWidth, 0.0);
                   _swipeOffsets[codigo.codigo] = newOffset;
                 });
               } else if (details.delta.dx > 0 && offset < 0) {
                 // Permitir volver a la posición original deslizando hacia la derecha
                 setState(() {
-                  final newOffset = (offset + details.delta.dx).clamp(-reportWidth, 0.0);
+                  final newOffset =
+                      (offset + details.delta.dx).clamp(-reportWidth, 0.0);
                   _swipeOffsets[codigo.codigo] = newOffset;
                 });
               }
@@ -4189,10 +4791,16 @@ OUTPUT (JSON ESTRICTO)
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460)],
+                    colors: [
+                      Color(0xFF1a1a2e),
+                      Color(0xFF16213e),
+                      Color(0xFF0f3460)
+                    ],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.2), width: 1),
+                  border: Border.all(
+                      color: const Color(0xFFFFD700).withOpacity(0.2),
+                      width: 1),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.3),
@@ -4209,12 +4817,15 @@ OUTPUT (JSON ESTRICTO)
                         // Categoría
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: _getCategoryColor(codigo.categoria).withOpacity(0.2),
+                              color: _getCategoryColor(codigo.categoria)
+                                  .withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: _getCategoryColor(codigo.categoria).withOpacity(0.5),
+                                color: _getCategoryColor(codigo.categoria)
+                                    .withOpacity(0.5),
                                 width: 1,
                               ),
                             ),
@@ -4235,8 +4846,9 @@ OUTPUT (JSON ESTRICTO)
                           builder: (context) {
                             final isFavorite = _esFavoritoCached(codigo.codigo);
                             final etiqueta = _getEtiquetaCached(codigo.codigo);
-                            final isCustom = _esCodigoPersonalizado(codigo.codigo);
-                            
+                            final isCustom =
+                                _esCodigoPersonalizado(codigo.codigo);
+
                             return Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -4245,10 +4857,12 @@ OUTPUT (JSON ESTRICTO)
                                     if (isFavorite) {
                                       // Si es secuencia personalizada, mostrar advertencia
                                       if (isCustom) {
-                                        final confirmar = await showDialog<bool>(
+                                        final confirmar =
+                                            await showDialog<bool>(
                                           context: context,
                                           builder: (context) => AlertDialog(
-                                            backgroundColor: const Color(0xFF1C2541),
+                                            backgroundColor:
+                                                const Color(0xFF1C2541),
                                             title: Text(
                                               '⚠️ Advertencia',
                                               style: GoogleFonts.inter(
@@ -4258,101 +4872,124 @@ OUTPUT (JSON ESTRICTO)
                                             ),
                                             content: Text(
                                               'Esta secuencia fue insertada manualmente. Si la eliminas de favoritos, no podrás volver a verla hasta que la insertes nuevamente de forma manual.\n\n¿Deseas continuar?',
-                                              style: GoogleFonts.inter(color: Colors.white),
+                                              style: GoogleFonts.inter(
+                                                  color: Colors.white),
                                             ),
                                             actions: [
                                               TextButton(
-                                                onPressed: () => Navigator.pop(context, false),
+                                                onPressed: () => Navigator.pop(
+                                                    context, false),
                                                 child: Text(
                                                   'Cancelar',
-                                                  style: GoogleFonts.inter(color: Colors.white70),
+                                                  style: GoogleFonts.inter(
+                                                      color: Colors.white70),
                                                 ),
                                               ),
                                               ElevatedButton(
-                                                onPressed: () => Navigator.pop(context, true),
+                                                onPressed: () => Navigator.pop(
+                                                    context, true),
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors.red,
                                                 ),
                                                 child: Text(
                                                   'Eliminar',
-                                                  style: GoogleFonts.inter(color: Colors.white),
+                                                  style: GoogleFonts.inter(
+                                                      color: Colors.white),
                                                 ),
                                               ),
                                             ],
                                           ),
                                         );
-                                        
+
                                         if (confirmar != true) {
                                           return; // Usuario canceló
                                         }
-                                        
+
                                         // Eliminar secuencia personalizada
                                         try {
-                                          final customCodesService = UserCustomCodesService();
-                                          await customCodesService.deleteCustomCode(codigo.codigo);
-                                          
+                                          final customCodesService =
+                                              UserCustomCodesService();
+                                          await customCodesService
+                                              .deleteCustomCode(codigo.codigo);
+
                                           // Actualizar caché
                                           _favoritosCache.remove(codigo.codigo);
                                           _etiquetasCache.remove(codigo.codigo);
-                                          _customCodesCache.remove(codigo.codigo);
-                                          
+                                          _customCodesCache
+                                              .remove(codigo.codigo);
+
                                           // Actualizar estado
                                           await _actualizarEstadoFavoritos();
-                                          
+
                                           if (mounted) {
                                             setState(() {});
-                                            ScaffoldMessenger.of(context).showSnackBar(
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
                                               SnackBar(
-                                                content: Text('❌ ${codigo.nombre} eliminado de favoritos'),
+                                                content: Text(
+                                                    '❌ ${codigo.nombre} eliminado de favoritos'),
                                                 backgroundColor: Colors.red,
-                                                duration: const Duration(seconds: 2),
+                                                duration:
+                                                    const Duration(seconds: 2),
                                               ),
                                             );
                                           }
                                         } catch (e) {
-                                          debugPrint('Error eliminando secuencia personalizada: $e');
+                                          debugPrint(
+                                              'Error eliminando secuencia personalizada: $e');
                                           if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
                                               SnackBar(
-                                                content: Text('Error: ${e.toString()}'),
+                                                content: Text(
+                                                    'Error: ${e.toString()}'),
                                                 backgroundColor: Colors.red,
-                                                duration: const Duration(seconds: 3),
+                                                duration:
+                                                    const Duration(seconds: 3),
                                               ),
                                             );
                                           }
                                         }
                                       } else {
                                         // Si ya es favorito (no personalizado), removerlo directamente
-                                      try {
-                                        await BibliotecaSupabaseService.toggleFavorito(codigo.codigo);
-                                          
+                                        try {
+                                          await BibliotecaSupabaseService
+                                              .toggleFavorito(codigo.codigo);
+
                                           // Actualizar caché
                                           _favoritosCache.remove(codigo.codigo);
                                           _etiquetasCache.remove(codigo.codigo);
-                                          
-                                        // Actualizar estado de favoritos después de remover
-                                        await _actualizarEstadoFavoritos();
-                                          
+
+                                          // Actualizar estado de favoritos después de remover
+                                          await _actualizarEstadoFavoritos();
+
                                           if (mounted) {
                                             setState(() {});
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('❌ ${codigo.nombre} removido de favoritos'),
-                                            backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 2),
-                                          ),
-                                        );
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    '❌ ${codigo.nombre} removido de favoritos'),
+                                                backgroundColor: Colors.red,
+                                                duration:
+                                                    const Duration(seconds: 2),
+                                              ),
+                                            );
                                           }
-                                      } catch (e) {
-                                        debugPrint('Error removiendo favorito: $e');
+                                        } catch (e) {
+                                          debugPrint(
+                                              'Error removiendo favorito: $e');
                                           if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Error: ${e.toString()}'),
-                                            backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 3),
-                                          ),
-                                        );
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    'Error: ${e.toString()}'),
+                                                backgroundColor: Colors.red,
+                                                duration:
+                                                    const Duration(seconds: 3),
+                                              ),
+                                            );
                                           }
                                         }
                                       }
@@ -4362,33 +4999,42 @@ OUTPUT (JSON ESTRICTO)
                                     }
                                   },
                                   icon: Icon(
-                                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                                    color: isFavorite ? Colors.red : Colors.white70,
+                                    isFavorite
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: isFavorite
+                                        ? Colors.red
+                                        : Colors.white70,
                                     size: 20,
                                   ),
                                 ),
                                 // Mostrar etiqueta si es favorito
-                                if (isFavorite && etiqueta != null && etiqueta.isNotEmpty)
+                                if (isFavorite &&
+                                    etiqueta != null &&
+                                    etiqueta.isNotEmpty)
                                   Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFFFD700).withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: const Color(0xFFFFD700).withOpacity(0.5),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            etiqueta,
-                                            style: GoogleFonts.inter(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFFFFD700),
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFD700)
+                                          .withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFFFFD700)
+                                            .withOpacity(0.5),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      etiqueta,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFFFFD700),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                               ],
                             );
@@ -4397,7 +5043,7 @@ OUTPUT (JSON ESTRICTO)
                       ],
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // Título
                     Text(
                       codigo.nombre,
@@ -4410,7 +5056,7 @@ OUTPUT (JSON ESTRICTO)
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Código con icono de copiar
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -4432,8 +5078,8 @@ OUTPUT (JSON ESTRICTO)
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Tooltip(
-                              message: _isCodePiloted(codigo.codigo) 
-                                  ? 'Compartir imagen' 
+                              message: _isCodePiloted(codigo.codigo)
+                                  ? 'Compartir imagen'
                                   : 'Completa una repetición para compartir',
                               child: IconButton(
                                 icon: Icon(
@@ -4451,13 +5097,15 @@ OUTPUT (JSON ESTRICTO)
                                       SnackBar(
                                         content: Text(
                                           'Para compartir esta secuencia completa una sesión de repetición.',
-                                          style: GoogleFonts.inter(color: Colors.white),
+                                          style: GoogleFonts.inter(
+                                              color: Colors.white),
                                         ),
                                         backgroundColor: Colors.grey[800],
                                         duration: const Duration(seconds: 3),
                                         behavior: SnackBarBehavior.floating,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                         action: SnackBarAction(
                                           label: 'ENTENDIDO',
@@ -4478,12 +5126,15 @@ OUTPUT (JSON ESTRICTO)
                               ),
                               tooltip: 'Copiar secuencia',
                               onPressed: () {
-                                Clipboard.setData(ClipboardData(text: codigo.codigo));
+                                Clipboard.setData(
+                                    ClipboardData(text: codigo.codigo));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Secuencia ${codigo.codigo} copiada al portapapeles'),
+                                    content: Text(
+                                        'Secuencia ${codigo.codigo} copiada al portapapeles'),
                                     duration: const Duration(seconds: 2),
-                                    backgroundColor: const Color(0xFFFFD700).withOpacity(0.9),
+                                    backgroundColor: const Color(0xFFFFD700)
+                                        .withOpacity(0.9),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
@@ -4494,7 +5145,7 @@ OUTPUT (JSON ESTRICTO)
                       ],
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Descripción
                     Text(
                       codigo.descripcion,
@@ -4506,17 +5157,18 @@ OUTPUT (JSON ESTRICTO)
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     // Títulos relacionados (usando cache para evitar consultas repetitivas)
                     Builder(
                       builder: (context) {
                         // Usar cache en lugar de FutureBuilder para evitar consultas repetitivas durante scroll
-                        final titulosRelacionados = _getTitulosRelacionados(codigo.codigo);
-                        
+                        final titulosRelacionados =
+                            _getTitulosRelacionados(codigo.codigo);
+
                         if (titulosRelacionados.isEmpty) {
                           return const SizedBox.shrink();
                         }
-                        
+
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -4527,7 +5179,8 @@ OUTPUT (JSON ESTRICTO)
                                 color: const Color(0xFFFFD700).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: const Color(0xFFFFD700).withOpacity(0.3),
+                                  color:
+                                      const Color(0xFFFFD700).withOpacity(0.3),
                                   width: 1,
                                 ),
                               ),
@@ -4557,7 +5210,8 @@ OUTPUT (JSON ESTRICTO)
                                     return Padding(
                                       padding: const EdgeInsets.only(bottom: 4),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             '• ${tituloRel['titulo']?.toString() ?? ''}',
@@ -4569,16 +5223,23 @@ OUTPUT (JSON ESTRICTO)
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          if (tituloRel['descripcion'] != null && 
-                                              (tituloRel['descripcion'] as String).isNotEmpty) ...[
+                                          if (tituloRel['descripcion'] !=
+                                                  null &&
+                                              (tituloRel['descripcion']
+                                                      as String)
+                                                  .isNotEmpty) ...[
                                             const SizedBox(height: 2),
                                             Padding(
-                                              padding: const EdgeInsets.only(left: 12),
+                                              padding: const EdgeInsets.only(
+                                                  left: 12),
                                               child: Text(
-                                                tituloRel['descripcion']?.toString() ?? '',
+                                                tituloRel['descripcion']
+                                                        ?.toString() ??
+                                                    '',
                                                 style: GoogleFonts.inter(
                                                   fontSize: 10,
-                                                  color: Colors.white.withOpacity(0.7),
+                                                  color: Colors.white
+                                                      .withOpacity(0.7),
                                                   height: 1.2,
                                                 ),
                                                 maxLines: 2,
@@ -4589,7 +5250,7 @@ OUTPUT (JSON ESTRICTO)
                                         ],
                                       ),
                                     );
-                                  }).toList(),
+                                  }),
                                 ],
                               ),
                             ),
@@ -4597,9 +5258,9 @@ OUTPUT (JSON ESTRICTO)
                         );
                       },
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Botón de acción
                     SizedBox(
                       width: double.infinity,
@@ -4614,18 +5275,23 @@ OUTPUT (JSON ESTRICTO)
                             const Text('Iniciar sesión de repetición'),
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 3),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFD700).withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5), width: 1),
+                                border: Border.all(
+                                    color: const Color(0xFFFFD700)
+                                        .withOpacity(0.5),
+                                    width: 1),
                               ),
-                              child: Row(
+                              child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.diamond, color: Color(0xFF0B132B), size: 14),
-                                  const SizedBox(width: 3),
-                                  const Text(
+                                  Icon(Icons.diamond,
+                                      color: Color(0xFF0B132B), size: 14),
+                                  SizedBox(width: 3),
+                                  Text(
                                     '+3',
                                     style: TextStyle(
                                       color: Color(0xFF0B132B),
@@ -4679,7 +5345,7 @@ OUTPUT (JSON ESTRICTO)
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
-            
+
             // Número del código
             Text(
               'Secuencia:',
@@ -4702,7 +5368,7 @@ OUTPUT (JSON ESTRICTO)
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 14),
-            
+
             // Opciones de botones para el motivo del reporte (se envían directamente al presionar)
             _buildReportReasonButton(
               codigo,
@@ -4729,7 +5395,8 @@ OUTPUT (JSON ESTRICTO)
 
   /// Widget para cada opción de botón del reporte
   /// Al presionar, envía el reporte directamente
-  Widget _buildReportReasonButton(CodigoGrabovoi codigo, String label, String value) {
+  Widget _buildReportReasonButton(
+      CodigoGrabovoi codigo, String label, String value) {
     return GestureDetector(
       onTap: () {
         // Enviar el reporte directamente al presionar el botón
@@ -4774,7 +5441,8 @@ OUTPUT (JSON ESTRICTO)
       // Obtener información del usuario actual
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser == null) {
-        _mostrarNotificacionError('Debes iniciar sesión para reportar una secuencia');
+        _mostrarNotificacionError(
+            'Debes iniciar sesión para reportar una secuencia');
         return;
       }
 
@@ -4799,7 +5467,8 @@ OUTPUT (JSON ESTRICTO)
       _mostrarNotificacionExito();
     } catch (e) {
       debugPrint('❌ Error enviando reporte: $e');
-      _mostrarNotificacionError('Error al enviar el reporte. Por favor intenta nuevamente.');
+      _mostrarNotificacionError(
+          'Error al enviar el reporte. Por favor intenta nuevamente.');
     }
   }
 
@@ -4921,7 +5590,7 @@ OUTPUT (JSON ESTRICTO)
           ),
         ),
       );
-      
+
       // Al regresar, refrescar los estados de pilotaje para habilitar botones de compartir
       if (mounted) {
         await refreshPilotedCodes();
@@ -4930,7 +5599,8 @@ OUTPUT (JSON ESTRICTO)
   }
 
   void _mostrarModalEtiquetado(CodigoGrabovoi codigo) async {
-    final etiquetasExistentes = await BibliotecaSupabaseService.getEtiquetasFavoritos();
+    final etiquetasExistentes =
+        await BibliotecaSupabaseService.getEtiquetasFavoritos();
     if (!mounted) return;
     // Capturar ScaffoldMessenger antes de abrir el diálogo para usarlo en el callback async.
     // Tras Navigator.pop() el context del builder puede estar desactivado y .of(context) falla.
@@ -4944,7 +5614,8 @@ OUTPUT (JSON ESTRICTO)
         etiquetasExistentes: etiquetasExistentes,
         onSave: (etiqueta) async {
           try {
-            await BibliotecaSupabaseService.agregarFavoritoConEtiqueta(codigo.codigo, etiqueta);
+            await BibliotecaSupabaseService.agregarFavoritoConEtiqueta(
+                codigo.codigo, etiqueta);
             if (!mounted) return;
             _favoritosCache[codigo.codigo] = true;
             _etiquetasCache[codigo.codigo] = etiqueta;
@@ -4953,7 +5624,8 @@ OUTPUT (JSON ESTRICTO)
             setState(() {});
             scaffoldMessenger.showSnackBar(
               SnackBar(
-                content: Text('❤️ ${codigo.nombre} agregado a favoritos con etiqueta: $etiqueta'),
+                content: Text(
+                    '❤ ${codigo.nombre} agregado a favoritos con etiqueta: $etiqueta'),
                 backgroundColor: Colors.green,
                 duration: const Duration(seconds: 2),
               ),
@@ -4978,14 +5650,16 @@ OUTPUT (JSON ESTRICTO)
 
 class _RepetitionInstructionsModal extends StatefulWidget {
   final CodigoGrabovoi codigo;
-  
+
   const _RepetitionInstructionsModal({required this.codigo});
 
   @override
-  State<_RepetitionInstructionsModal> createState() => _RepetitionInstructionsModalState();
+  State<_RepetitionInstructionsModal> createState() =>
+      _RepetitionInstructionsModalState();
 }
 
-class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsModal> {
+class _RepetitionInstructionsModalState
+    extends State<_RepetitionInstructionsModal> {
   final ScrollController _scrollController = ScrollController();
   bool _showScrollIndicator = false;
 
@@ -5057,7 +5731,7 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Mensaje principal - Mismo tamaño que la descripción de las tarjetas (icono modo concentración inline)
                   Text.rich(
                     TextSpan(
@@ -5066,21 +5740,24 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                         color: Colors.white70,
                         height: 1.4,
                       ),
-                      children: [
-                        const TextSpan(
-                          text: 'La activación de las secuencias ocurre por resonancia, no por acumulación de repeticiones.\n\n'
+                      children: const [
+                        TextSpan(
+                          text:
+                              'La activación de las secuencias ocurre por resonancia, no por acumulación de repeticiones.\n\n'
                               'Una sola repetición con total enfoque puede ser más efectiva que cientos realizadas de forma automática.\n\n'
                               'Visualiza la secuencia dentro de una esfera de luz y repítela mentalmente hasta sentir que la energía se acomoda en armonía. Con esta app puedes materializar esos números y esa esfera de manera más fácil, usando la visualización interactiva que te ofrece la pantalla. El modo "Concentración" ',
                         ),
                         WidgetSpan(
                           alignment: PlaceholderAlignment.middle,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Icon(Icons.fullscreen, size: 16, color: Colors.white70),
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Icon(Icons.fullscreen,
+                                size: 16, color: Colors.white70),
                           ),
                         ),
-                        const TextSpan(
-                          text: ' permite ver solo la esfera y las secuencias sin distracciones.\n\n'
+                        TextSpan(
+                          text:
+                              ' permite ver solo la esfera y las secuencias sin distracciones.\n\n'
                               'Lo esencial no es cuántas veces repitas, sino la calidad de tu atención e intención.\n\n'
                               'Para recibir los cristales de energía, debes "pilotar" 2 minutos seguidos con la secuencia seleccionada. Si lo cancelas, los cristales no serán entregados.',
                         ),
@@ -5089,19 +5766,22 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Botón de continuar
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).pop(true); // Cerrar modal y confirmar inicio
+                        Navigator.of(context)
+                            .pop(true); // Cerrar modal y confirmar inicio
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFD700),
                         foregroundColor: const Color(0xFF0B132B),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25)),
                       ),
                       child: Text(
                         'Comenzar Repetición',
@@ -5113,12 +5793,13 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Badge con icono de cristal y +3
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.diamond, color: Color(0xFFFFD700), size: 18),
+                      const Icon(Icons.diamond,
+                          color: Color(0xFFFFD700), size: 18),
                       const SizedBox(width: 6),
                       Text(
                         '+3',
@@ -5131,7 +5812,7 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                     ],
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Botón de cancelar
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
@@ -5155,7 +5836,8 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                 child: IgnorePointer(
                   ignoring: true,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -5170,9 +5852,9 @@ class _RepetitionInstructionsModalState extends State<_RepetitionInstructionsMod
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.keyboard_arrow_up,
-                          color: const Color(0xFFFFD700),
+                          color: Color(0xFFFFD700),
                           size: 28,
                         ),
                         const SizedBox(height: 4),

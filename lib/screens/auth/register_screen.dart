@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/subscription_welcome_modal.dart';
 import '../../services/auth_service_simple.dart';
 import '../../services/subscription_service.dart';
 import '../../services/challenge_service.dart';
-import '../../main.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
