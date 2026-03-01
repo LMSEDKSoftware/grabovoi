@@ -70,8 +70,8 @@ class CustomButton extends StatelessWidget {
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
-                            overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
+                            maxLines: 2,
                           ),
                         ),
                       ],
@@ -89,12 +89,12 @@ class CustomButton extends StatelessWidget {
                 ),
               ),
               child: isLoading
-                  ? SizedBox(
+                  ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF0B132B)),
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0B132B)),
                       ),
                     )
                   : Row(
@@ -112,8 +112,8 @@ class CustomButton extends StatelessWidget {
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
-                            overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
+                            maxLines: 2,
                           ),
                         ),
                       ],

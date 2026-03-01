@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'custom_button.dart';
 import '../screens/subscription/subscription_screen.dart';
 import '../services/auth_service_simple.dart';
 import '../services/subscription_service.dart';
-import 'auth_wrapper.dart';
 
 class SubscriptionWelcomeModal extends StatefulWidget {
   const SubscriptionWelcomeModal({super.key});
@@ -98,12 +97,12 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
       insetPadding: const EdgeInsets.all(20),
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF1C2541),
-              const Color(0xFF0B132B),
+              Color(0xFF1C2541),
+              Color(0xFF0B132B),
             ],
           ),
           borderRadius: BorderRadius.circular(24),
@@ -386,44 +385,15 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                 SizedBox(
                   width: double.infinity,
                   child: _remainingDays != null && _remainingDays! > 0
-                      ? ElevatedButton(
+                      ? CustomButton(
+                          text: 'Continuar y Aprovechar mi Prueba Gratis',
                           onPressed: _navigateToHome,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFD700),
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 8,
-                          ),
-                          child: Text(
-                            'Continuar y Aprovechar mi Prueba Gratis',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          color: const Color(0xFFFFD700),
                         )
-                      : ElevatedButton(
+                      : CustomButton(
+                          text: 'SIN ACCESO A PREMIUM, ACTUALIZA TU PLAN',
                           onPressed: _navigateToSubscription,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 8,
-                          ),
-                          child: Text(
-                            'SIN ACCESO A PREMIUM, ACTUALIZA TU PLAN',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          color: Colors.red,
                         ),
                 ),
               ],

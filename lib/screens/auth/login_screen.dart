@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
@@ -336,8 +334,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Por favor ingresa un email válido'),
+            const SnackBar(
+              content: Text('Por favor ingresa un email válido'),
               backgroundColor: Colors.red,
             ),
           );
@@ -944,32 +942,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          // Botón biométrico
-                          OutlinedButton.icon(
+                          CustomButton(
+                            text: 'Iniciar con $_biometricTypeName',
                             onPressed: _signInWithBiometric,
-                            icon: Icon(
-                              _biometricTypeName.toLowerCase().contains('face')
-                                  ? Icons.face
-                                  : Icons.fingerprint,
-                              color: const Color(0xFFFFD700),
-                              size: 24,
-                            ),
-                            label: Text(
-                              'Iniciar con $_biometricTypeName',
-                              style: GoogleFonts.inter(
-                                color: const Color(0xFFFFD700),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                              side: const BorderSide(color: Color(0xFFFFD700), width: 2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: const Color(0xFFFFD700).withOpacity(0.1),
-                            ),
+                            isOutlined: true,
+                            color: const Color(0xFFFFD700),
+                            icon: _biometricTypeName.toLowerCase().contains('face')
+                                ? Icons.face
+                                : Icons.fingerprint,
                           ),
                         ],
                       ),

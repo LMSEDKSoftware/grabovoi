@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'custom_button.dart';
 
 class FavoriteLabelModal extends StatefulWidget {
   final String codigo;
@@ -259,27 +260,17 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
+                    child: CustomButton(
+                      text: 'Cancelar',
                       onPressed: () => Navigator.of(context).pop(),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancelar',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white70,
-                        ),
-                      ),
+                      isOutlined: true,
+                      color: Colors.white54,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
+                    child: CustomButton(
+                      text: 'Guardar',
                       onPressed: () {
                         final etiqueta = _etiquetaController.text.trim();
                         if (etiqueta.isNotEmpty) {
@@ -287,22 +278,7 @@ class _FavoriteLabelModalState extends State<FavoriteLabelModal> {
                           Navigator.of(context).pop();
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFD700),
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 8,
-                      ),
-                      child: Text(
-                        'Guardar',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      color: const Color(0xFFFFD700),
                     ),
                   ),
                 ],

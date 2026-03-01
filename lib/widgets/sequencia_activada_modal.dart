@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'reward_notification.dart';
+import 'custom_button.dart';
 
 class SequenciaActivadaModal extends StatefulWidget {
   final VoidCallback onContinue;
@@ -178,7 +179,7 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
     final showScrollHint = effectiveScale >= 1.15;
 
     return MediaQuery(
-      data: mediaQuery.copyWith(textScaleFactor: clampedTextScale),
+      data: mediaQuery.copyWith(textScaler: TextScaler.linear(clampedTextScale)),
       child: Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: insetPadding,
@@ -221,13 +222,13 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 ShaderMask(
-                                  shaderCallback: (bounds) => LinearGradient(
+                                  shaderCallback: (bounds) => const LinearGradient(
                                     colors: [
-                                      const Color(0xFFFFD700),
+                                      Color(0xFFFFD700),
                                       Colors.white,
-                                      const Color(0xFFFFD700),
+                                      Color(0xFFFFD700),
                                     ],
-                                    stops: const [0.0, 0.5, 1.0],
+                                    stops: [0.0, 0.5, 1.0],
                                   ).createShader(bounds),
                                   child: Text(
                                     'SECUENCIA',
@@ -240,13 +241,13 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
                                   ),
                                 ),
                                 ShaderMask(
-                                  shaderCallback: (bounds) => LinearGradient(
+                                  shaderCallback: (bounds) => const LinearGradient(
                                     colors: [
-                                      const Color(0xFFFFD700),
+                                      Color(0xFFFFD700),
                                       Colors.white,
-                                      const Color(0xFFFFD700),
+                                      Color(0xFFFFD700),
                                     ],
-                                    stops: const [0.0, 0.5, 1.0],
+                                    stops: [0.0, 0.5, 1.0],
                                   ).createShader(bounds),
                                   child: Text(
                                     'ACTIVADA',
@@ -345,27 +346,10 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
                         const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
-                          child: ElevatedButton(
+                          child: CustomButton(
+                            text: 'Continuar',
                             onPressed: widget.onContinue,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFD700),
-                              foregroundColor: Colors.black,
-                              padding: buttonPadding,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 8,
-                              shadowColor:
-                                  const Color(0xFFFFD700).withOpacity(0.5),
-                            ),
-                            child: Text(
-                              'Continuar',
-                              style: GoogleFonts.inter(
-                                fontSize: highlightTitleSize,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
+                            color: const Color(0xFFFFD700),
                           ),
                         ),
                       ],
@@ -447,9 +431,9 @@ class _SequenciaActivadaModalState extends State<SequenciaActivadaModal>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.keyboard_arrow_up,
-                            color: const Color(0xFFFFD700),
+                            color: Color(0xFFFFD700),
                             size: 28,
                           ),
                           const SizedBox(height: 4),
