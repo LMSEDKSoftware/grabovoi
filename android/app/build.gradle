@@ -37,7 +37,7 @@ android {
 
     defaultConfig {
         applicationId = "com.manifestacion.grabovoi"
-        minSdk = 21
+        minSdk = 23
         targetSdk = 36
         // IMPORTANTE: Incrementar versionCode en cada subida a Play Store. Debe ser MAYOR que el último en Play (ej. 39 → 40).
         versionCode = 67
@@ -85,3 +85,5 @@ dependencies {
     // implementation 'androidx.core:core:1.15.0'
     // implementation 'androidx.core:core-ktx:1.15.0'
 }
+
+apply plugin: 'com.google.gms.google-services'

@@ -6,6 +6,7 @@ import 'config/env.dart';
 import 'config/supabase_config.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'services/app_time_tracker.dart';
 import 'services/pilotage_state_service.dart';
 import 'services/audio_service.dart';
@@ -48,6 +49,16 @@ const List<String> kNotoFontFallback = <String>[
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Firebase (Android/iOS usan archivos nativos)
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      debugPrint('🔥 Firebase inicializado correctamente');
+    } catch (e) {
+      debugPrint('⚠️ Error inicializando Firebase: $e');
+    }
+  }
 
   // Cargar variables de entorno locales solo en no-web
   if (!kIsWeb) {

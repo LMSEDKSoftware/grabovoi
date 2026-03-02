@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../models/notification_preferences.dart';
 import '../models/challenge_model.dart';
 import 'notification_service.dart';
@@ -63,39 +64,41 @@ class NotificationScheduler {
     }
   }
   
-  /// Verificar estado de racha y enviar notificaciones si corresponde
+  /// Verificar estado de racha y enviar notificaciones si corresponde (MODO BACKUP)
   Future<void> _checkStreakStatus(NotificationPreferences preferences) async {
     if (!preferences.streakReminders) return;
+    
+    // Si tenemos FCM activo y el usuario tiene sesión, dejamos que el servidor sea el primario.
+    // Esta función local actuará como "Plan B" si pasan más horas de lo esperado.
+    final hasFCM = _notificationService.hasValidFCMToken;
     
     final userProgress = await _progressService.getUserProgress();
     if (userProgress == null) return;
     
-    final consecutiveDays = userProgress['consecutive_days'] ?? 0;
-    final lastSessionDateStr = userProgress['last_session_date'];
+    final consecutiveDays = userProgress['dias_consecutivos'] ?? 0;
+    final lastSessionDateStr = userProgress['ultimo_pilotaje'];
     final now = DateTime.now();
     
-    // Si tiene racha, verificar si está en riesgo
-    if (consecutiveDays >= 1) { // Cambiado de 3 a 1 para alertar a principiantes también
-      if (lastSessionDateStr != null) {
-        final lastSession = DateTime.parse(lastSessionDateStr);
-        final hoursSinceLastSession = now.difference(lastSession).inHours;
-        
-        // Racha en riesgo: Han pasado más de 20 horas (aviso antes de las 24h)
-        // O si es tarde en el día (después de las 6 PM) y no ha practicado hoy
-        final isLateAndNoPractice = now.hour >= 18 && 
-                                    (lastSession.day != now.day || lastSession.month != now.month || lastSession.year != now.year);
-                                    
-        if ((hoursSinceLastSession >= 20 && hoursSinceLastSession < 24) || isLateAndNoPractice) {
-          final userName = _authService.currentUser?.name ?? 'Piloto Consciente';
-          await _notificationService.notifyStreakAtRisk(userName, consecutiveDays);
-        }
-        
-        // Racha perdida: Han pasado más de 24 horas (y un poco más de margen, ej. 26h para no ser tan estricto inmediatamente)
-        // O si ya es el día siguiente y no practicó ayer
-        if (hoursSinceLastSession >= 26) {
-          final userName = _authService.currentUser?.name ?? 'Piloto Consciente';
-          await _notificationService.notifyStreakLost(userName, consecutiveDays);
-        }
+    if (consecutiveDays >= 1 && lastSessionDateStr != null) {
+      final lastSession = DateTime.parse(lastSessionDateStr);
+      final hoursSinceLastSession = now.difference(lastSession).inHours;
+      
+      // MODO BACKUP: El servidor alerta a las 20h. 
+      // Nosotros alertamos a las 22h si el usuario aún no ha entrado.
+      final backupThreshold = hasFCM ? 22 : 20;
+
+      if (hoursSinceLastSession >= backupThreshold && hoursSinceLastSession < 24) {
+        final userName = _authService.currentUser?.name ?? 'Piloto Consciente';
+        debugPrint('⏰ [PLAN B] Enviando recordatorio de racha local (Horas: $hoursSinceLastSession)...');
+        await _notificationService.notifyStreakAtRisk(userName, consecutiveDays);
+      }
+      
+      // Racha perdida: El servidor alerta a las 26h. Nosotros a las 28h.
+      final lostThreshold = hasFCM ? 28 : 26;
+      if (hoursSinceLastSession >= lostThreshold && hoursSinceLastSession < 48) {
+        final userName = _authService.currentUser?.name ?? 'Piloto Consciente';
+        debugPrint('⏰ [PLAN B] Enviando notificación de racha perdida local...');
+        await _notificationService.notifyStreakLost(userName, consecutiveDays);
       }
     }
   }
@@ -134,9 +137,9 @@ class NotificationScheduler {
     final userProgress = await _progressService.getUserProgress();
     if (userProgress == null) return;
     
-    final totalPilotages = userProgress['total_pilotages'] ?? 0;
-    final consecutiveDays = userProgress['consecutive_days'] ?? 0;
-    final energyLevel = userProgress['energy_level'] ?? 1;
+    final totalPilotages = userProgress['total_pilotajes'] ?? 0;
+    final consecutiveDays = userProgress['dias_consecutivos'] ?? 0;
+    final energyLevel = userProgress['nivel_energetico'] ?? 1;
     final userName = _authService.currentUser?.name ?? 'Piloto Consciente';
     
     // Priorizar notificaciones (solo enviar la más importante)
@@ -144,40 +147,50 @@ class NotificationScheduler {
     
     // 1. Verificar si es primer pilotaje (máxima prioridad para nuevos usuarios)
     if (totalPilotages == 1) {
-      await _notificationService.notifyFirstPilotage(userName);
+      if (!_notificationService.hasValidFCMToken) {
+        await _notificationService.notifyFirstPilotage(userName);
+      }
       _updateLastKnownValues(energyLevel, totalPilotages, consecutiveDays);
-      return; // Primer pilotaje es único, no verificar más
+      return;
     }
     
-    // 2. Verificar milestones de pilotajes (alta prioridad)
+    // 2. Verificar milestones de pilotajes (solo local si no hay FCM)
     final isPilotageMilestone = _lastKnownTotalPilotages == null || totalPilotages > _lastKnownTotalPilotages!;
     if (isPilotageMilestone && [10, 50, 100, 500, 1000].contains(totalPilotages)) {
-      await _notificationService.notifyPilotageMilestone(totalPilotages, userName);
+      if (!_notificationService.hasValidFCMToken) {
+        await _notificationService.notifyPilotageMilestone(totalPilotages, userName);
+      }
       _updateLastKnownValues(energyLevel, totalPilotages, consecutiveDays);
-      return; // Milestone de pilotajes tiene prioridad
+      return; 
     }
     
-    // 3. Verificar milestones de racha (alta prioridad)
+    // 3. Verificar milestones de racha (solo local si no hay FCM)
     final isStreakMilestone = _lastKnownStreakDays == null || consecutiveDays > _lastKnownStreakDays!;
     if (isStreakMilestone && [3, 7, 14, 21, 30].contains(consecutiveDays)) {
-      await _notificationService.notifyStreakMilestone(userName, consecutiveDays);
+      if (!_notificationService.hasValidFCMToken) {
+        await _notificationService.notifyStreakMilestone(userName, consecutiveDays);
+      }
       _updateLastKnownValues(energyLevel, totalPilotages, consecutiveDays);
-      return; // Milestone de racha tiene prioridad
+      return;
     }
     
     // 4. Verificar nivel energético máximo
     if (energyLevel >= 10) {
-      await _notificationService.notifyEnergyMaxReached(userName);
+      if (!_notificationService.hasValidFCMToken) {
+        await _notificationService.notifyEnergyMaxReached(userName);
+      }
       _updateLastKnownValues(energyLevel, totalPilotages, consecutiveDays);
-      return; // Nivel máximo tiene prioridad
+      return;
     }
     
-    // 5. Verificar cambio en nivel energético (solo si aumentó)
+    // 5. Verificar cambio en nivel energético
     final energyLevelIncreased = _lastKnownEnergyLevel != null && energyLevel > _lastKnownEnergyLevel!;
     if (energyLevelIncreased && preferences.energyLevelAlerts) {
-      await _notificationService.notifyEnergyLevelUp(energyLevel);
+      if (!_notificationService.hasValidFCMToken) {
+        await _notificationService.notifyEnergyLevelUp(energyLevel);
+      }
       _updateLastKnownValues(energyLevel, totalPilotages, consecutiveDays);
-      return; // Subida de nivel tiene prioridad sobre feedback general
+      return;
     }
     
     // 6. Feedback inmediato por mantener racha (solo una vez por día, baja prioridad)

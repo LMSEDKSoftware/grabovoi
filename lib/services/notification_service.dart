@@ -5,11 +5,21 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/notification_type.dart';
 import '../models/notification_preferences.dart';
 import '../models/notification_history_item.dart';
 import 'auth_service_simple.dart';
 import 'notification_count_service.dart';
+
+/// Manejador de mensajes en segundo plano (debe ser una función de nivel superior/estática)
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Asegurarse de que Firebase esté inicializado para procesos en segundo plano
+  // Firebase.initializeApp() ya debería llamarse en main(), pero para procesos aislados 
+  // a veces es necesario inicializarlo aquí también si es necesario acceder a recursos.
+  debugPrint('📩 Mensaje recibido en segundo plano: ${message.notification?.title}');
+}
 
 /// Notificación pendiente en la cola
 class _PendingNotification {
@@ -33,13 +43,28 @@ class _PendingNotification {
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
-  NotificationService._internal();
+  NotificationService._internal() {
+    // Escuchar cambios en la autenticación para guardar el token si es necesario
+    _supabase.auth.onAuthStateChange.listen((data) {
+      final AuthChangeEvent event = data.event;
+      if (event == AuthChangeEvent.signedIn || event == AuthChangeEvent.tokenRefreshed) {
+        if (_fcmToken != null) {
+          debugPrint('🔐 Usuario autenticado detectado en NotificationService, guardando token FCM...');
+          _saveTokenToSupabase(_fcmToken!);
+        }
+      }
+    });
+  }
 
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final AuthServiceSimple _authService = AuthServiceSimple();
   final SupabaseClient _supabase = Supabase.instance.client;
   bool _isInitialized = false;
+  String? _fcmToken;
   DateTime? _lastLowPriorityNotification;
+
+  bool get hasValidFCMToken => _fcmToken != null;
   
   // Intervalo mínimo entre notificaciones de baja prioridad (6 horas)
   static const _minLowPriorityInterval = Duration(hours: 6);
@@ -56,10 +81,10 @@ class NotificationService {
   Future<void> initialize() async {
     if (_isInitialized) return;
     
-    // En web, no inicializar notificaciones locales
+    // En web, no inicializar notificaciones locales ni FCM (por ahora)
     if (kIsWeb) {
       _isInitialized = true;
-      debugPrint('⚠️ NotificationService: Web no soporta notificaciones locales');
+      debugPrint('⚠️ NotificationService: Web no soporta notificaciones locales/push en este flujo');
       return;
     }
     
@@ -86,18 +111,96 @@ class NotificationService {
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
       
-      // NOTA: Los permisos NO se solicitan automáticamente aquí
-      // Se solicitarán mediante PermissionsRequestModal después del login
-      // DarwinInitializationSettings(requestAlertPermission: true) solo prepara
-      // el plugin para solicitar permisos cuando sea necesario
+      // Configurar Firebase Cloud Messaging
+      await _setupFCM();
       
       _isInitialized = true;
-      
-      debugPrint('✅ NotificationService inicializado');
+      debugPrint('✅ NotificationService inicializado con FCM');
     } catch (e) {
       debugPrint('⚠️ Error inicializando NotificationService: $e');
-      _isInitialized = true; // Marcar como inicializado para no volver a intentar
+      _isInitialized = true; 
     }
+  }
+
+  Future<void> _setupFCM() async {
+    try {
+      // Solicitar permisos
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('🔔 Permisos de FCM otorgados');
+        
+        // Configurar el manejador de segundo plano
+        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+        // Escuchar mensajes en primer plano
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          debugPrint('📩 Mensaje recibido en primer plano: ${message.notification?.title}');
+          if (message.notification != null) {
+            _showLocalNotificationFromFCM(message);
+          }
+        });
+
+        // Obtener el token inicial
+        String? token = await _messaging.getToken();
+        if (token != null) {
+          _fcmToken = token;
+          await _saveTokenToSupabase(token);
+        }
+
+        // Escuchar cambios en el token
+        _messaging.onTokenRefresh.listen((newToken) {
+          _fcmToken = newToken;
+          _saveTokenToSupabase(newToken);
+        });
+      } else {
+        debugPrint('🔕 Permisos de FCM denegados: ${settings.authorizationStatus}');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error configurando FCM: $e');
+    }
+  }
+
+  Future<void> _saveTokenToSupabase(String token) async {
+    final session = _supabase.auth.currentSession;
+    if (session == null) {
+      debugPrint('⏭️ No se guarda token FCM: No hay sesión activa en Supabase');
+      return;
+    }
+    
+    try {
+      final userId = session.user.id;
+      final deviceType = Platform.isAndroid ? 'android' : 'ios';
+
+      await _supabase.from('user_fcm_tokens').upsert({
+        'user_id': userId,
+        'token': token,
+        'device_type': deviceType,
+        'last_active': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id, token');
+      
+      debugPrint('💾 Token FCM guardado en Supabase para el usuario $userId');
+    } catch (e) {
+      debugPrint('⚠️ Error guardando token FCM en Supabase: $e');
+    }
+  }
+
+  void _showLocalNotificationFromFCM(RemoteMessage message) {
+    // Convertir el mensaje de FCM a una notificación local para que se vea en primer plano
+    if (message.notification == null) return;
+    
+    showNotification(
+      title: message.notification!.title ?? 'ManiGraB',
+      body: message.notification!.body ?? '',
+      type: NotificationType.dailyCodeReminder, // O deducirlo del payload si existe
+      payload: message.data.isNotEmpty ? message.data.toString() : null,
+      bypassQueue: true,
+    );
   }
 
   /// Solicitar permisos explícitamente en iOS

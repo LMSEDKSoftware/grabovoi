@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "466305968370",
+    "project_id": "mab-d02ff",
+    "storage_bucket": "mab-d02ff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:466305968370:android:8b5b8a379883f29a1c486b",
+        "android_client_info": {
+          "package_name": "com.manifestacion.grabovoi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtts_LrH9kgJ6h35DCK8JVgUpofSUJCY4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
