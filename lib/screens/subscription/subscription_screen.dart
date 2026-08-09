@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../services/subscription_service.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -115,6 +116,23 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           _selectedProductId = null;
         });
       }
+    }
+  }
+
+  Future<void> _launchFoundersHotmart() async {
+    final Uri url = Uri.parse('https://pay.hotmart.com/V95995229J?checkoutMode=10&bid=1730303848149');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo abrir el enlace de Hotmart')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error lanzando Hotmart: $e');
     }
   }
 
@@ -659,6 +677,73 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               ],
                             ),
                           ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Promoción Founders Edition (Origen 369)
+                      GestureDetector(
+                        onTap: _launchFoundersHotmart,
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFFFFD700),
+                                Color(0xFFFFA500),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFFD700).withOpacity(0.3),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.auto_awesome,
+                                color: Color(0xFF0B132B),
+                                size: 32,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'FOUNDERS EDITION',
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF0B132B),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Origen 369: Solo 369 lugares.\nAcceso vitalicio para siempre.',
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF0B132B).withOpacity(0.8),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_forward_ios,
+                                color: Color(0xFF0B132B),
+                                size: 16,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

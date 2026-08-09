@@ -11,14 +11,43 @@ import '../models/notification_preferences.dart';
 import '../models/notification_history_item.dart';
 import 'auth_service_simple.dart';
 import 'notification_count_service.dart';
+import '../config/supabase_config.dart';
+import 'package:http/http.dart' as http;
 
 /// Manejador de mensajes en segundo plano (debe ser una función de nivel superior/estática)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Asegurarse de que Firebase esté inicializado para procesos en segundo plano
-  // Firebase.initializeApp() ya debería llamarse en main(), pero para procesos aislados 
-  // a veces es necesario inicializarlo aquí también si es necesario acceder a recursos.
   debugPrint('📩 Mensaje recibido en segundo plano: ${message.notification?.title}');
+  
+  // Guardar en el historial local (SharedPreferences es seguro en isolates de background)
+  if (message.notification != null) {
+    try {
+      await NotificationHistory.addNotification(
+        title: message.notification!.title ?? 'ManiGraB',
+        body: message.notification!.body ?? '',
+        type: message.data['type'] ?? 'push_background',
+      );
+      debugPrint('📝 Notificación de segundo plano guardada en historial local');
+    } catch (e) {
+      debugPrint('⚠️ Error guardando en historial de segundo plano: $e');
+    }
+  }
+
+  // Registrar recepción en Supabase si viene el logId
+  final logId = message.data['logId'];
+  if (logId != null) {
+    try {
+      // Usar SupabaseConfig para obtener la URL
+      final urlStr = '${SupabaseConfig.url}/functions/v1/send-push?log_id=$logId&action=received';
+      if (urlStr.isNotEmpty && !urlStr.contains('localhost')) {
+        final url = Uri.parse(urlStr);
+        await http.get(url, headers: {'Content-Type': 'application/json'});
+        debugPrint('✅ Recepción registrada para logId: $logId');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error registrando recepción: $e');
+    }
+  }
 }
 
 /// Notificación pendiente en la cola
@@ -57,7 +86,13 @@ class NotificationService {
   }
 
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  // FirebaseMessaging solo se inicializa en no-web (en web Firebase no está disponible)
+  FirebaseMessaging? _messagingInstance;
+  FirebaseMessaging get _messaging {
+    if (kIsWeb) throw UnsupportedError('Firebase Messaging no soportado en web');
+    _messagingInstance ??= FirebaseMessaging.instance;
+    return _messagingInstance!;
+  }
   final AuthServiceSimple _authService = AuthServiceSimple();
   final SupabaseClient _supabase = Supabase.instance.client;
   bool _isInitialized = false;
@@ -135,15 +170,40 @@ class NotificationService {
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         debugPrint('🔔 Permisos de FCM otorgados');
         
-        // Configurar el manejador de segundo plano
+        // Suscribirse al tema de broadcast por defecto
+        await _messaging.subscribeToTopic('all');
+        debugPrint('📡 Suscrito al tema: all');
         FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
         // Escuchar mensajes en primer plano
-        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
           debugPrint('📩 Mensaje recibido en primer plano: ${message.notification?.title}');
+          
+          final logId = message.data['logId'];
+          if (logId != null) {
+            _trackNotificationAction(logId, 'received');
+          }
+
           if (message.notification != null) {
+            // Guardar en historial local
+            await NotificationHistory.addNotification(
+              title: message.notification!.title ?? 'ManiGraB',
+              body: message.notification!.body ?? '',
+              type: message.data['type'] ?? 'push_foreground',
+            );
+            
             _showLocalNotificationFromFCM(message);
           }
+        });
+
+        // Escuchar cuando el usuario toca la notificación
+        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+          debugPrint('🖱️ Notificación abierta desde background/terminada: ${message.notification?.title}');
+          final logId = message.data['logId'];
+          if (logId != null) {
+            _trackNotificationAction(logId, 'opened');
+          }
+          _onNotificationTappedFromFCM(message);
         });
 
         // Obtener el token inicial
@@ -266,10 +326,49 @@ class NotificationService {
     return await _verifyIOSPermissions();
   }
 
-  /// Callback cuando el usuario toca una notificación
+  /// Callback cuando el usuario toca una notificación local
   void _onNotificationTapped(NotificationResponse response) {
     debugPrint('📱 Notificación tocada: ${response.payload}');
-    // Aquí se puede manejar la navegación específica según el payload
+    
+    // Si el payload contiene un JSON con logId, registrar como abierta
+    if (response.payload != null && response.payload!.startsWith('{')) {
+      try {
+        final data = Uri.splitQueryString(response.payload!.replaceAll('{', '').replaceAll('}', ''));
+        final logId = data['logId'];
+        if (logId != null) {
+          _trackNotificationAction(logId, 'opened');
+        }
+      } catch (_) {}
+    }
+  }
+
+  void _onNotificationTappedFromFCM(RemoteMessage message) async {
+    // Si la notificación tiene contenido, guardarla en el historial
+    // (Por si no se guardó en el background isolate o por el OS)
+    if (message.notification != null) {
+      await NotificationHistory.addNotification(
+        title: message.notification!.title ?? 'ManiGraB',
+        body: message.notification!.body ?? '',
+        type: message.data['type'] ?? 'push_taped',
+      );
+    }
+    
+    // Manejar navegación si es necesario
+    debugPrint('🖱️ Notificación FCM pulsada, tipo: ${message.data['type']}');
+  }
+
+  Future<void> _trackNotificationAction(String logId, String action) async {
+    try {
+      // Usamos el cliente directamente si es posible
+      await _supabase.from('notification_logs').update({
+        'status': action,
+        '${action}_at': DateTime.now().toIso8601String(),
+      }).eq('id', logId);
+      
+      debugPrint('📊 Trazabilidad: $action registrada para $logId');
+    } catch (e) {
+      debugPrint('⚠️ Error en trazabilidad ($action): $e');
+    }
   }
 
   /// Verificar si se debe mostrar una notificación de baja prioridad
@@ -482,11 +581,11 @@ class NotificationService {
       debugPrint('✅ [iOS] Notificación mostrada exitosamente: $title');
       
       // Guardar en historial
-      await NotificationHistory.addNotification(
-        title: title,
-        body: body,
-        type: type.toString(),
-      );
+      // await NotificationHistory.addNotification(
+      //   title: title,
+      //   body: body,
+      //   type: type.toString(),
+      // );
       
       // Actualizar conteo inmediatamente
       await NotificationCountService().updateCount();

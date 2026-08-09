@@ -40,8 +40,8 @@ android {
         minSdk = 23
         targetSdk = 36
         // IMPORTANTE: Incrementar versionCode en cada subida a Play Store. Debe ser MAYOR que el último en Play (ej. 39 → 40).
-        versionCode = 67
-        versionName = "2.3.52"
+        versionCode = 68
+        versionName = "2.3.53"
     }
 
     signingConfigs {

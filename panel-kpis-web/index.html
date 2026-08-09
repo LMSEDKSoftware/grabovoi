@@ -117,6 +117,8 @@
         <a href="#resumen" class="text-slate-400 hover:text-primary transition-colors">Resumen</a>
         <a href="#engagement" class="text-slate-400 hover:text-primary transition-colors">Engagement</a>
         <a href="#suscripciones" class="text-slate-400 hover:text-primary transition-colors">Suscripciones</a>
+        <a href="#notificaciones"
+          class="text-slate-400 hover:text-primary transition-colors font-bold text-primary/80">Push Manual</a>
         <a href="#calidad" class="text-slate-400 hover:text-primary transition-colors">IA</a>
         <button id="logout-button"
           class="ml-4 px-3 py-1 bg-slate-800 hover:bg-red-500/10 hover:text-red-500 text-slate-400 rounded-lg transition-all text-xs border border-slate-700">Cerrar
@@ -360,7 +362,69 @@
             </div>
           </div>
         </div>
-      </section>
+        <!-- ========== SECCIÓN 6: NOTIFICACIONES PUSH ========== -->
+        <section id="notificaciones" class="scroll-mt-20">
+          <h2 class="text-2xl font-extrabold text-primary border-b border-primary/30 pb-2 mb-6">Notificaciones Manuales
+          </h2>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Formulario de Envío -->
+            <div class="lg:col-span-1 bg-card-dark rounded-xl border border-slate-700 p-6">
+              <h3 class="font-bold flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined text-primary">send</span>
+                Enviar Broadcast (A todos)
+              </h3>
+              <form id="push-form" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Título de la Notificación</label>
+                  <input type="text" id="push-title" required
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm focus:border-primary outline-none"
+                    placeholder="Ej: ¡Nuevo contenido disponible!">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Mensaje (Cuerpo)</label>
+                  <textarea id="push-body" required rows="3"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm focus:border-primary outline-none"
+                    placeholder="Escribe aquí el mensaje que verán los usuarios..."></textarea>
+                </div>
+                <div class="flex items-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <span class="material-symbols-outlined text-blue-400 text-sm">info</span>
+                  <p class="text-[10px] text-blue-300">Este mensaje se enviará a todos los dispositivos suscritos al
+                    tema "all".</p>
+                </div>
+                <button type="submit" id="push-send-button"
+                  class="w-full bg-primary hover:bg-yellow-600 text-slate-900 font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-2 text-sm">
+                  <span>Enviar a Todos</span>
+                  <span class="material-symbols-outlined">broadcast_on_home</span>
+                </button>
+              </form>
+            </div>
+
+            <!-- Historial de Notificaciones (Simulado/Visual) -->
+            <div class="lg:col-span-2 bg-card-dark rounded-xl border border-slate-700 overflow-hidden">
+              <div class="p-4 border-b border-slate-700 bg-slate-800/30">
+                <h3 class="font-bold">Log de Envíos del Panel</h3>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="text-slate-400 text-xs uppercase bg-slate-800/50">
+                    <tr>
+                      <th class="px-4 py-2 text-left">Fecha</th>
+                      <th class="px-4 py-2 text-left">Título</th>
+                      <th class="px-4 py-2 text-left">Destino</th>
+                      <th class="px-4 py-2 text-right">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-push-log" class="divide-y divide-slate-700">
+                    <tr>
+                      <td colspan="4" class="px-4 py-6 text-slate-500 text-center text-xs">Aún no has enviado
+                        notificaciones en esta sesión.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
     </main>
 
     <footer class="border-t border-slate-700 py-6 px-6 mt-8">
@@ -564,6 +628,12 @@
         const logoutButton = document.getElementById('logout-button');
 
         function showLogin(error = '') {
+          const loading = document.getElementById('loading-overlay');
+          if (loading) {
+            loading.style.opacity = '0';
+            setTimeout(() => loading.classList.add('hidden'), 500);
+          }
+
           loginScreen.classList.remove('hidden');
           dashboardContent.classList.add('hidden');
           if (error) {
@@ -620,6 +690,75 @@
           await api.auth.signOut();
           window.location.reload();
         };
+
+        // --- Manejo de Notificaciones Push ---
+        const pushForm = document.getElementById('push-form');
+        const pushLogBody = document.getElementById('tbody-push-log');
+
+        if (pushForm) {
+          pushForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('push-title').value;
+            const body = document.getElementById('push-body').value;
+            const btn = document.getElementById('push-send-button');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span>Enviando...</span>';
+
+            const { data: { session } } = await api.auth.getSession();
+            const url = window.SUPABASE_URL.replace(/\/$/, '') + '/functions/v1/send-push';
+
+            try {
+              const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Bearer ' + session.access_token,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  topic: 'all',
+                  title: title,
+                  body: body
+                })
+              });
+
+              const result = await res.json();
+
+              // Agregar al log visual
+              const now = new Date();
+              const newRow = document.createElement('tr');
+              newRow.className = 'hover:bg-slate-800/40 bg-slate-800/10 transition-colors';
+              newRow.innerHTML = `
+                <td class="px-3 py-2 text-[10px] text-slate-500 font-mono">${now.toLocaleTimeString()}</td>
+                <td class="px-3 py-2 text-xs font-bold">${title}</td>
+                <td class="px-3 py-2 text-[10px] text-primary">Tema: all</td>
+                <td class="px-3 py-2 text-right">
+                  <span class="px-2 py-0.5 rounded text-[9px] font-bold ${res.ok ? 'bg-success/20 text-success border border-success/30' : 'bg-alert/20 text-alert border border-alert/30'}">
+                    ${res.ok ? 'EXITOSO' : 'ERROR'}
+                  </span>
+                </td>
+              `;
+
+              if (pushLogBody.querySelector('td[colspan]')) {
+                pushLogBody.innerHTML = ''; // Limpiar mensaje de vacío
+              }
+              pushLogBody.prepend(newRow);
+
+              if (res.ok) {
+                alert('🚀 Notificación enviada correctamente a todos los usuarios.');
+                pushForm.reset();
+              } else {
+                throw new Error(result.error || 'Error desconocido');
+              }
+            } catch (err) {
+              console.error('Push error:', err);
+              alert('❌ Error al enviar notificación: ' + err.message);
+            } finally {
+              btn.disabled = false;
+              btn.innerHTML = '<span>Enviar a Todos</span><span class="material-symbols-outlined">broadcast_on_home</span>';
+            }
+          };
+        }
 
         function formatNum(n) {
           if (n == null || n === '') return '—'

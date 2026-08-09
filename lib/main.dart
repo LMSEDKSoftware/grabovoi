@@ -87,7 +87,15 @@ void main() async {
   AppTimeTracker().startSession();
 
   // Inicializar códigos con caché local y actualización automática
-  await CodigosRepository().initCodigos();
+  // En web usamos timeout para no bloquear el arranque
+  try {
+    await CodigosRepository().initCodigos().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => debugPrint('⚠️ initCodigos timeout - continuando'),
+    );
+  } catch (e) {
+    debugPrint('⚠️ Error en initCodigos: $e');
+  }
 
   // Inicializar notificaciones (solo en no-web)
   if (!kIsWeb) {
@@ -110,10 +118,16 @@ void main() async {
     // Se solicitarán después del login mediante un modal amigable
   }
 
-  // Inicializar servicio de suscripciones (todas las plataformas, incluida web)
-  // En web no hay IAP pero sí se debe cargar estado desde Supabase para restringir pestañas igual que en app
+  // Inicializar servicio de suscripciones
+  // En web solo necesitamos checkSubscriptionStatus (no IAP)
   try {
-    await SubscriptionService().initialize();
+    if (kIsWeb) {
+      // En web, saltarse el initialize() que llama al plugin IAP (puede colgar)
+      // El estado de suscripción se verifica en AuthWrapper tras autenticarse
+      debugPrint('ℹ️ Web: SubscriptionService.initialize() omitido (no hay IAP en web)');
+    } else {
+      await SubscriptionService().initialize();
+    }
   } catch (e) {
     debugPrint('⚠️ Error inicializando SubscriptionService: $e');
   }
@@ -140,167 +154,144 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2)),
-      ),
-      child: MaterialApp(
-        title: 'ManiGraB - Manifestaciones Numéricas',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.dark,
-          fontFamilyFallback: kNotoFontFallback,
-          colorScheme: const ColorScheme.dark(
-            primary: Color(0xFFFFD700), // Dorado
-            secondary: Color(0xFF1C2541), // Azul medio
-            surface: Color(0xFF0B132B), // Azul profundo
-            onPrimary: Color(0xFF0B132B),
-            onSecondary: Color(0xFFFFD700),
-            onSurface: Colors.white,
+    return MaterialApp(
+      title: 'ManiGraB - Manifestaciones Numéricas',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        fontFamilyFallback: kNotoFontFallback,
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFFFD700),
+          secondary: Color(0xFF1C2541),
+          surface: Color(0xFF0B132B),
+          onPrimary: Color(0xFF0B132B),
+          onSecondary: Color(0xFFFFD700),
+          onSurface: Colors.white,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF0B132B),
+        textTheme: TextTheme(
+          displayLarge: GoogleFonts.playfairDisplay(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFFFFD700),
           ),
-          scaffoldBackgroundColor: const Color(0xFF0B132B),
-          textTheme: TextTheme(
-            displayLarge: GoogleFonts.playfairDisplay(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFFD700),
-            ),
-            displayMedium: GoogleFonts.playfairDisplay(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            bodyLarge: GoogleFonts.inter(
-              fontSize: 16,
-              color: Colors.white,
-            ),
-            bodyMedium: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.white70,
-            ),
+          displayMedium: GoogleFonts.playfairDisplay(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          bodyLarge: GoogleFonts.inter(
+            fontSize: 16,
+            color: Colors.white,
+          ),
+          bodyMedium: GoogleFonts.inter(
+            fontSize: 14,
+            color: Colors.white70,
           ),
         ),
-        builder: (context, child) {
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(MediaQuery.of(context).textScaleFactor.clamp(0.8, 1.2)),
-            ),
-            child: DefaultTextStyle.merge(
-              style: const TextStyle(fontFamilyFallback: kNotoFontFallback),
-              child: child!,
-            ),
+      ),
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(
+            textScaler: TextScaler.linear(mq.textScaleFactor.clamp(0.8, 1.2)),
+          ),
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(fontFamilyFallback: kNotoFontFallback),
+            child: child!,
+          ),
+        );
+      },
+      // Manejar rutas web para callbacks de autenticación y recovery
+      onGenerateRoute: (settings) {
+        // En web, capturar la ruta /auth/callback
+        if (kIsWeb && settings.name == '/auth/callback') {
+          return MaterialPageRoute(
+            builder: (context) => const AuthCallbackScreen(),
+            settings: settings,
           );
-        },
-        // Manejar rutas web para callbacks de autenticación y recovery
-        onGenerateRoute: (settings) {
-          // En web, capturar la ruta /auth/callback
-          if (kIsWeb && settings.name == '/auth/callback') {
+        }
+        // En web, si llegamos a / con ?code=... es callback OAuth (PKCE)
+        if (kIsWeb && Uri.base.queryParameters.containsKey('code')) {
+          final routeName = settings.name ?? Uri.base.path;
+          if (routeName == '/' || routeName.isEmpty || routeName == '/auth/callback') {
             return MaterialPageRoute(
               builder: (context) => const AuthCallbackScreen(),
               settings: settings,
             );
           }
-          // En web, si llegamos a / (o ruta por defecto) con ?code=... es callback OAuth (PKCE)
-          if (kIsWeb && Uri.base.queryParameters.containsKey('code')) {
-            final routeName = settings.name ?? Uri.base.path;
-            if (routeName == '/' ||
-                routeName.isEmpty ||
-                routeName == '/auth/callback') {
-              return MaterialPageRoute(
-                builder: (context) => const AuthCallbackScreen(),
-                settings: settings,
-              );
-            }
+        }
+        // En web, capturar la ruta /recovery para cambio de contraseña
+        final isRecoveryRoute = kIsWeb &&
+            (settings.name == '/recovery' ||
+                settings.name?.startsWith('/recovery') == true ||
+                (settings.name == null && Uri.base.path == '/recovery'));
+
+        if (isRecoveryRoute) {
+          final uri = Uri.base;
+          String? accessToken;
+          String? refreshToken;
+          String? type;
+
+          if (uri.hasFragment) {
+            final fragment = uri.fragment;
+            final hashParams = Uri.splitQueryString(fragment);
+            accessToken = hashParams['access_token'];
+            refreshToken = hashParams['refresh_token'];
+            type = hashParams['type'];
+            debugPrint('🔍 Recovery route - Tokens encontrados en HASH:');
           }
-          // En web, capturar la ruta /recovery para cambio de contraseña
-          // IMPORTANTE: Verificar tanto el path como si la URL contiene /recovery
-          final isRecoveryRoute = kIsWeb &&
-              (settings.name == '/recovery' ||
-                  settings.name?.startsWith('/recovery') == true ||
-                  (settings.name == null && Uri.base.path == '/recovery'));
 
-          if (isRecoveryRoute) {
-            final uri = Uri.base;
-
-            String? accessToken;
-            String? refreshToken;
-            String? type;
-
-            // PRIORIDAD 1: Los tokens vienen en el HASH (después de #)
-            // Supabase redirige a: https://manigrab.app/recovery#access_token=...
-            if (uri.hasFragment) {
-              final fragment = uri.fragment;
-              final hashParams = Uri.splitQueryString(fragment);
-              accessToken = hashParams['access_token'];
-              refreshToken = hashParams['refresh_token'];
-              type = hashParams['type'];
-              debugPrint('🔍 Recovery route - Tokens encontrados en HASH:');
-            }
-
-            // PRIORIDAD 2: Si no están en hash, intentar query params (por si acaso)
-            if (accessToken == null) {
-              accessToken = uri.queryParameters['access_token'];
-              refreshToken = uri.queryParameters['refresh_token'];
-              type = uri.queryParameters['type'];
-              debugPrint(
-                  '🔍 Recovery route - Tokens encontrados en QUERY PARAMS:');
-            }
-
-            debugPrint('   URL completa: ${uri.toString()}');
-            debugPrint('   Path: ${uri.path}');
-            debugPrint('   Fragment presente: ${uri.hasFragment}');
-            if (uri.hasFragment) {
-              debugPrint(
-                  '   Fragment (primeros 100 chars): ${uri.fragment.substring(0, uri.fragment.length > 100 ? 100 : uri.fragment.length)}...');
-            }
-            debugPrint(
-                '   Access Token: ${accessToken != null ? "✅ presente (${accessToken.substring(0, 20)}...)" : "❌ ausente"}');
-            debugPrint(
-                '   Refresh Token: ${refreshToken != null ? "✅ presente" : "❌ ausente"}');
-            debugPrint('   Type: $type');
-
-            return MaterialPageRoute(
-              builder: (context) => RecoverySetPasswordScreen(
-                accessToken: accessToken,
-                refreshToken: refreshToken,
-              ),
-              settings: settings,
-            );
+          if (accessToken == null) {
+            accessToken = uri.queryParameters['access_token'];
+            refreshToken = uri.queryParameters['refresh_token'];
+            type = uri.queryParameters['type'];
+            debugPrint('🔍 Recovery route - Tokens encontrados en QUERY PARAMS:');
           }
-          // Para otras rutas, usar el comportamiento por defecto (home)
-          return null;
-        },
-        // En web, si la URL tiene ?code=... es callback OAuth (PKCE): mostrar pantalla que intercambia code por sesión
-        home: kIsWeb && Uri.base.queryParameters.containsKey('code')
-            ? const AuthCallbackScreen()
-            : kIsWeb && Uri.base.path == '/recovery' && Uri.base.hasFragment
-                ? Builder(
-                    builder: (context) {
-                      final uri = Uri.base;
-                      String? accessToken;
-                      String? refreshToken;
 
-                      if (uri.hasFragment) {
-                        final fragment = uri.fragment;
-                        final hashParams = Uri.splitQueryString(fragment);
-                        accessToken = hashParams['access_token'];
-                        refreshToken = hashParams['refresh_token'];
-                        debugPrint(
-                            '🔍 Recovery detectado en home - Tokens en HASH');
-                      }
+          debugPrint('   URL completa: ${uri.toString()}');
+          debugPrint('   Access Token: ${accessToken != null ? "✅ presente" : "❌ ausente"}');
+          debugPrint('   Type: $type');
 
-                      if (accessToken != null) {
-                        return RecoverySetPasswordScreen(
-                          accessToken: accessToken,
-                          refreshToken: refreshToken,
-                        );
-                      }
-                      return const AuthWrapper();
-                    },
-                  )
-                : const AuthWrapper(),
-      ),
+          return MaterialPageRoute(
+            builder: (context) => RecoverySetPasswordScreen(
+              accessToken: accessToken,
+              refreshToken: refreshToken,
+            ),
+            settings: settings,
+          );
+        }
+        return null;
+      },
+      // En web, si la URL tiene ?code=... es callback OAuth (PKCE)
+      home: kIsWeb && Uri.base.queryParameters.containsKey('code')
+          ? const AuthCallbackScreen()
+          : kIsWeb && Uri.base.path == '/recovery' && Uri.base.hasFragment
+              ? Builder(
+                  builder: (context) {
+                    final uri = Uri.base;
+                    String? accessToken;
+                    String? refreshToken;
+
+                    if (uri.hasFragment) {
+                      final fragment = uri.fragment;
+                      final hashParams = Uri.splitQueryString(fragment);
+                      accessToken = hashParams['access_token'];
+                      refreshToken = hashParams['refresh_token'];
+                      debugPrint('🔍 Recovery detectado en home - Tokens en HASH');
+                    }
+
+                    if (accessToken != null) {
+                      return RecoverySetPasswordScreen(
+                        accessToken: accessToken,
+                        refreshToken: refreshToken,
+                      );
+                    }
+                    return const AuthWrapper();
+                  },
+                )
+              : const AuthWrapper(),
     );
   }
 }

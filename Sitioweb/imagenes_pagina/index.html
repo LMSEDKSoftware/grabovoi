@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manifestación Cuántica Grabovoi – App Oficial</title>
+    <meta name="description" content="App basada en los códigos numéricos de Grigori Grabovoi. Biblioteca de secuencias, pilotaje cuántico guiado, desafíos vibracionales, IA integrada y sistema de recompensas para tu evolución energética.">
+    <meta name="keywords" content="Grabovoi, códigos numéricos, manifestación, sanación, abundancia, vibración, retos 7 14 21 30 días, pilotaje cuántico, reprogramación, transformación personal">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="ManiGrab – Site Oficial">
+    <meta property="og:description" content="Tu tecnología para práctica diaria con los códigos numéricos de Grabovoi: biblioteca de secuencias, desafíos vibracionales, IA y pilotaje cuántico.">
+    <meta property="og:image" content="./imagenes_pagina/app_icon.png">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ManiGrab – Site Oficial">
+    <meta name="twitter:description" content="Manifiesta, sana y transforma tu realidad con una app diseñada para pilotar las secuencias numéricos de Grabovoi de forma simple, guiada y profunda.">
+    <meta name="twitter:image" content="./imagenes_pagina/app_icon.png">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --amber-400: #fbbf24;
+            --amber-500: #f59e0b;
+            --amber-600: #d97706;
+            --yellow-300: #fde047;
+            --yellow-400: #facc15;
+            --yellow-500: #eab308;
+            --purple-400: #a855f7;
+            --purple-500: #9333ea;
+            --cyan-400: #22d3ee;
+            --cyan-500: #06b6d4;
+            --emerald-400: #34d399;
+            --emerald-500: #10b981;
+            --pink-400: #f472b6;
+            --orange-400: #fb923c;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --black: #000000;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--black);
+            color: var(--white);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .main-container {
+            min-height: 100vh;
+            background: linear-gradient(to bottom right, var(--black), var(--slate-900), var(--black));
+            position: relative;
+        }
+
+        .bg-gradient-1,
+        .bg-gradient-2,
+        .bg-pattern {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .bg-gradient-1 {
+            background: radial-gradient(circle at 20% 50%, rgba(251, 191, 36, 0.08), transparent 55%);
+        }
+
+        .bg-gradient-2 {
+            background: radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.12), transparent 55%);
+        }
+
+        .bg-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fbbf24' fill-opacity='0.03'%3E%3Ccircle cx='50' cy='50' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            transition: transform 0.3s ease;
+        }
+
+        h1, h2, h3 {
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .text-gradient-amber {
+            background: linear-gradient(to right, var(--amber-400), var(--yellow-300), var(--amber-400));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .text-gradient-purple {
+            background: linear-gradient(to right, var(--purple-400), var(--cyan-400));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .text-gradient-cyan {
+            background: linear-gradient(to right, var(--cyan-400), var(--emerald-400));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--amber-500), var(--yellow-500));
+            color: var(--black);
+            box-shadow: 0 10px 25px -5px rgba(251, 191, 36, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(to right, var(--amber-600), #facc15);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(251, 191, 36, 0.35);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--amber-400);
+            border: 2px solid rgba(251, 191, 36, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(251, 191, 36, 0.08);
+            border-color: var(--amber-400);
+        }
+
+        .btn-large {
+            padding: 1.25rem 2.5rem;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(251, 191, 36, 0.4);
+            box-shadow: 0 20px 25px -5px rgba(251, 191, 36, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-content {
+            color: rgba(254, 243, 199, 0.8);
+            font-size: 0.98rem;
+        }
+
+        .section {
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .section-dark {
+            background: radial-gradient(circle at top, rgba(251, 191, 36, 0.06), transparent 55%);
+        }
+
+        /* HERO A: texto + mockups lado a lado */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .hero-inner {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .hero-inner {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+        }
+
+        .hero-logo {
+            width: 14rem;
+            height: 14rem;
+            margin-bottom: 0.05rem;
+            position: relative;
+        }
+
+        .hero-logo-glow {
+            position: absolute;
+            inset: 0;
+            background: rgba(251, 191, 36, 0.25);
+            border-radius: 50%;
+            filter: blur(2.5rem);
+            animation: pulse 2s infinite;
+        }
+
+        .hero-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 4.0rem);
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: rgba(254, 243, 199, 0.85);
+            margin-bottom: 2rem;
+            max-width: 540px;
+        }
+
+        .value-bullets {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .value-bullet {
+            background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.9));
+            border-radius: 0.75rem;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            padding: 0.9rem 1rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .value-bullet-icon {
+            width: 1.2rem;
+            height: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            color: rgba(254,243,199,0.85);
+            gap: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .pill-dot {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 999px;
+            background: var(--amber-400);
+        }
+
+        .cta-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .cta-container {
+                justify-content: center;
+            }
+            .hero-subtitle {
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+
+        /* MOCKUPS hero */
+        .hero-mockups {
+            position: relative;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+.hero-bg {
+    background-image: url('./imagenes_pagina/esfera_back.jpg'); /* aquí pondrás tu imagen 16:9 */
+    background-size: cover;
+    background-position: center right;
+    background-repeat: no-repeat;
+
+    /* Glow suave integrado */
+    position: relative;
+}
+
+.hero-bg::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+
+        .hero-phone-main {
+    
+            top: 8%;
+            right: 10%;
+            width: 680px;
+            height: auto;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+            border-radius: 0 !important;
+            z-index: 0; /* atrás */
+            pointer-events: none;
+}
+
+        .hero-phone-main img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            filter: drop-shadow(0 0 40px rgba(251,191,36,0.4)); /* glow opcional */
+}
+
+        .hero-phone-floating {
+            position: absolute;
+            width: 48%;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .hero-phone-floating img {
+            width: 100%;
+            display: block;
+        }
+
+        .hero-phone-floating.left {
+            left: -12%;
+            bottom: -8%;
+        }
+
+        .hero-phone-floating.right {
+            right: -10%;
+            top: 6%;
+        }
+
+        @media (max-width: 900px) {
+            .hero-mockups {
+                max-width: 320px;
+            }
+            .hero-phone-floating.left {
+                left: -8%;
+                bottom: -10%;
+            }
+            .hero-phone-floating.right {
+                right: -6%;
+                top: 4%;
+            }
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 760px;
+            margin: 0 auto 3rem;
+        }
+
+        .section-header p {
+            color: rgba(254,243,199,0.85);
+            font-size: 0.98rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .three-cols {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 4rem;
+        }
+
+        .features-grid,
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(251, 191, 36, 0.18);
+            color: var(--amber-400);
+            border-radius: 999px;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.8rem;
+            margin-bottom: 0.6rem;
+        }
+
+        /* SECCIÓN GALERÍA PRINCIPAL */
+        .screens-section {
+            padding: 5rem 0 4rem;
+        }
+
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .screen-card {
+            background: radial-gradient(circle at top, rgba(251,191,36,0.14), rgba(15,23,42,0.95));
+            border-radius: 1.5rem;
+            padding: 0.75rem;
+            border: 1px solid rgba(251,191,36,0.35);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.8);
+        }
+
+        .screen-img {
+            border-radius: 1.1rem;
+            overflow: hidden;
+        }
+
+        .screen-img img {
+            width: 100%;
+            display: block;
+        }
+
+        .screen-caption {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: rgba(254,243,199,0.85);
+            text-align: center;
+        }
+
+        /* PLANES */
+        .pricing-highlight {
+            border-color: rgba(251,191,36,0.7);
+            box-shadow: 0 0 0 1px rgba(251,191,36,0.5);
+        }
+
+        /* FAQ */
+        .faq-item {
+            background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 0.75rem;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 1rem 1.2rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--amber-100);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .faq-answer {
+            padding: 0 1.2rem 1rem;
+            color: rgba(254, 243, 199, 0.85);
+            display: none;
+            font-size: 0.95rem;
+        }
+
+        .faq-item.active .faq-answer {
+            display: block;
+        }
+
+        .faq-icon {
+            transition: transform 0.25s ease;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        /* CTA FINAL + FOOTER */
+        .final-cta {
+            background: radial-gradient(circle at center, rgba(251,191,36,0.32), rgba(15,23,42,1));
+            padding: 5rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .final-cta::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top, rgba(0,0,0,0.65), transparent 60%);
+        }
+
+        .final-cta-inner {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .final-cta-inner p {
+            color: rgba(15,23,42,0.9);
+        }
+
+        .footer {
+            border-top: 1px solid rgba(148,163,184,0.4);
+            padding: 2rem 1rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(148,163,184,0.9);
+            background: #020617;
+        }
+
+        .footer-logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            gap: 0.6rem;
+        }
+
+        .footer-logo img {
+            width: 5.3rem;
+            height: 5.3rem;
+        }
+
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .mt-8 { margin-top: 2rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mb-10 { margin-bottom: 2.5rem; }
+        .mb-12 { margin-bottom: 3rem; }
+
+        @keyframes pulse {
+            0%, 100 { opacity: 1; }
+            50% { opacity: 0.65; }
+        }
+
+        .value-bullets {
+            position: absolute;
+            top: 48%;
+            right: 10%;
+            transform: translateY(-50%);
+            z-index: 5;
+
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 68px;
+
+            width: 520px; /* Más anchos */
+        }
+
+/* --- MOBILE + TABLET FIX — se activa antes de que el mockup tape todo ---*/
+@media (max-width: 950px) {
+
+    /* Quitar imagen de fondo del HERO */
+    .hero-bg {
+        background-image: none !important;
+        background: linear-gradient(to bottom right, var(--black), var(--slate-900), var(--black)) !important;
+    }
+
+    /* Ajustar forma del HERO */
+    .hero {
+        padding-top: 3rem !important;
+        min-height: auto !important;
+    }
+
+    /* Texto centrado y 1 sola columna */
+    .hero-inner {
+        grid-template-columns: 1fr !important;
+        text-align: center !important;
+        gap: 2rem !important;
+        margin-top: 1rem !important;
+    }
+
+    /* LOGO centrado arriba */
+    .hero-logo {
+        margin-left: auto !important;
+        margin-right: auto !important;
+        margin-bottom: 1.5rem !important;
+        position: relative;
+        top: 0 !important;
+    }
+
+    /* Títulos y textos más compactos */
+    .hero-title {
+        font-size: 2.3rem !important;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem !important;
+        max-width: 90% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    /* Ocultar mockup FULL en tablet/celular */
+    .hero-mockups {
+        display: none !important;
+    }
+
+    /* Asegurar que bullets NO aparezcan */
+    .value-bullets {
+        display: none !important;
+    }
+}
+
+        @media (max-width: 1100px) {
+    .cta-container {
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100% !important;
+    }
+}
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <div class="bg-gradient-1"></div>
+    <div class="bg-gradient-2"></div>
+    <div class="bg-pattern" id="bgPattern"></div>
+
+    <!-- HERO A: texto + mockups -->
+    <section class="hero hero-bg">
+        <div class="container">
+            <div class="hero-inner">
+                <!-- Columna texto -->
+                <div>
+                    <div class="hero-logo">
+                        <div class="hero-logo-glow"></div>
+                        <img src="./imagenes_pagina/ManiGrab_transparente.png" alt="Manifestación Cuántica Grabovoi">
+                    </div>
+
+                    <h1 class="hero-title">
+                        <span class="text-gradient-amber">Manifestaciones de secuencias Grabovoi</span>
+                    </h1>
+
+                    <p class="hero-subtitle">
+                        Tu tecnología cuántica para práctica diaria con las secuencias de Grabovoi:
+                        biblioteca de secuencias, pilotaje cuántico guiado, desafíos vibracionales e Inteligencia Vibratoria,
+                        todo en una sola app.
+                    </p>
+
+                    <div class="value-bullets">
+                        
+                        
+                       
+                       
+                    </div>
+
+                    <div class="cta-container">
+                        <a href="#" class="btn btn-primary btn-large">Descargar App</a>
+                        <a href="#funcionalidades" class="btn btn-secondary btn-large">Ver cómo funciona</a>
+                    </div>
+
+                    <div class="pill">
+                        <span class="pill-dot"></span>
+                        <span>Disponible en Android & iOS • 7 días de prueba gratuita</span>
+                    </div>
+                </div>
+
+                <!-- Columna mockups -->
+                <div class="hero-mockups">
+                    
+                   
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+
+    <!-- SECCIÓN: QUÉ ES Y POR QUÉ ES DIFERENTE -->
+    <section class="section section-dark" id="que-es">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="text-gradient-amber">Mucho más que una lista de códigos</h2>
+                <h3>
+                    Convierte la teoría en práctica diaria estructurada.<br>
+                    No solo lees códigos: los practicas, los repites y ves tu avance energético con claridad.
+                </h3>
+            </div>
+
+            <div class="three-cols">
+                <div class="card">
+                    <span class="badge">Lo esencial</span>
+                    <h3 class="card-title">App diseñada para activar la resonancia y vibración de las secuencias</h3>
+                    <p class="card-content">
+                        Tus códigos dejan de estar perdidos en capturas, PDFs o notas. Aquí tienes
+                        pilotajes, repeticiones guiadas, ritmo y recordatorios para integrarlos en tu vida diaria.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <span class="badge">Códigos auténticos</span>
+                    <h3 class="card-title">Base de datos cuidada</h3>
+                    <p class="card-content">
+                        Más de 400 códigos verificados, organizados por intención: salud, abundancia, amor, protección, limpieza y reconexión. Cada código con propósito claro y su descripción. Adicional, todos los días se suman códigos, tú eres parte de la comunidad que enriquece la app.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <span class="badge">Transformación medible</span>
+                    <h3 class="card-title">Tu energía, visible</h3>
+                    <p class="card-content">
+                        Historial, métricas y datos de tu práctica: cuántos pilotajes llevas,
+                        tu nivel energético actual y los códigos que más resuenan contigo.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN: FUNCIONALIDADES CLAVE -->
+    <section class="section" id="funcionalidades">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="text-gradient-amber">Todo lo que necesitas para practicar las secuencias de Grigori Grabovoi</h2>
+                
+            </div>
+
+            <div class="features-grid">
+                <div class="card">
+                    <h3 class="card-title">Biblioteca de secuencias</h3>
+                    <p class="card-content">
+                        Más de 400 códigos auténticos de Grabovoi, organizados por categorías:
+                        salud, sanación, abundancia, protección, amor, reconexión y más.
+                        Búsqueda avanzada por intención, número o nombre, y sistema de favoritos.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Pilotaje Cuántico Guiado</h3>
+                    <p class="card-content">
+                        Sesiones guiadas en 6 etapas: preparación, visualización, emisión, repetición,
+                        cierre e integración. Esfera cuántica animada, colores vibracionales y música 432Hz,
+                        528Hz, binaural, cuencos y sonidos de la naturaleza.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Búsqueda Profunda con IA</h3>
+                    <p class="card-content">
+                        Escribe en lenguaje natural lo que quieres trabajar
+                        (ej. “sanar ansiedad” o “abrirme a la abundancia”) y la app sugiere códigos adecuados.
+                        Integración con OpenAI y validación para evitar códigos inventados.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Desafíos Vibracionales</h3>
+                    <p class="card-content">
+                        Rutas estructuradas de 7, 14 y 21 días, con un código asignado cada día,
+                        seguimiento de rachas, restauradores y mantras especiales. Ideal para sostener
+                        un proceso profundo, no solo momentos sueltos.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Cristales & Luz Cuántica</h3>
+                    <p class="card-content">
+                        Gana cristales por cada práctica, repetición y reto completado.
+                        Sube tu nivel de Luz Cuántica con tus rachas diarias y desbloquea códigos
+                        premium y anclas de continuidad al mantener tu compromiso.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Evolución Energética</h3>
+                    <p class="card-content">
+                        Gráficas, métricas y estadísticas: total de pilotajes, días consecutivos,
+                        códigos y categorías más usadas, nivel energético actual (1 a 7)
+                        y proyección de crecimiento vibracional.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN: BENEFICIOS -->
+    <section class="section section-dark" id="beneficios">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="text-gradient-amber">Beneficios reales en tu vida diaria</h2>
+                <h3>
+                    La app está diseñada para acompañarte en procesos de sanación, manifestación
+                    y transformación personal con estructura, constancia y suavidad.
+                </h3>
+            </div>
+
+            <div class="benefits-grid">
+                <div class="card">
+                    <h3 class="card-title">✨ Transformación Vibracional</h3>
+                    <p class="card-content">
+                        Pasas de “conocer los códigos” a vivirlos. Practicas con intención,
+                        repites con guía y sostienes tu campo cuántico en una dirección clara.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">🏥 Bienestar y armonización</h3>
+                    <p class="card-content">
+                        Códigos específicos para acompañar procesos de salud física, emocional
+                        y mental. Complemento espiritual a tu autocuidado y a tus tratamientos formales.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">💰 Prosperidad y abundancia</h3>
+                    <p class="card-content">
+                        Trabaja creencias limitantes respecto al dinero, atrae nuevas oportunidades
+                        y alinea tu energía con una mentalidad de abundancia consciente.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">❤️ Relaciones y vínculos</h3>
+                    <p class="card-content">
+                        Códigos para armonizar relaciones, cerrar ciclos, sanar heridas y crear
+                        vínculos más sanos contigo y con quienes te rodean.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">🎯 Constancia y enfoque</h3>
+                    <p class="card-content">
+                        Retos, rachas, cristales y luz cuántica convierten tu camino espiritual
+                        en algo medible y motivador. Tu compromiso se ve y se celebra.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">🎨 Personalización total</h3>
+                    <p class="card-content">
+                        Usa la app en modo guiado o libre, elige tus códigos, tu música,
+                        tu tiempo y tu ritmo. La app se adapta a tu nivel, no al revés.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN: PLANES -->
+    <section class="section" id="planes">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="text-gradient-amber">Acceso Premium a todo el poder de la app</h2>
+                <h2>
+                    Comienza con 7 días de prueba gratuita.</h2> <br><h3>Si resuena contigo, continúa con un plan accesible
+                    sin anuncios, sin límites y con todo el contenido desbloqueado.
+                </h3>
+            </div>
+
+            <div class="three-cols">
+                <div class="card">
+                    <span class="badge">Plan Mensual</span>
+                    <h3 class="card-title">$88 MXN / mes</h3>
+                    <p class="card-content">
+                        Acceso completo a la biblioteca de códigos, pilotajes, repeticiones, desafíos,
+                        IA y estadísticas. Ideal para probar tu proceso mes a mes.
+                    </p>
+                </div>
+
+                <div class="card pricing-highlight">
+                    <span class="badge">Recomendado</span>
+                    <h3 class="card-title">$888 MXN / año</h3>
+                    <p class="card-content">
+                        Todo lo del plan mensual con el beneficio de 12 meses por el precio aproximado de 10.
+                        Perfecto para quienes quieren integrar los códigos como estilo de vida.
+                    </p>
+                </div>
+
+                
+            </div>
+
+            <div style="text-align:center" class="mt-6">
+                <a href="#" class="btn btn-primary btn-large">Probar 7 días Gratis</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN: FAQ -->
+    <section class="section section-dark" id="faq">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="text-gradient-amber">Preguntas frecuentes</h2>
+                <p>
+                    Algunas de las dudas más comunes de quienes comienzan a practicar con la app.
+                </p>
+            </div>
+
+            <div style="max-width: 740px; margin: 0 auto;">
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFAQ(this)">
+                        <span>¿Necesito saber mucho de Grabovoi para usar la app?</span>
+                        <span class="faq-icon">⌄</span>
+                    </button>
+                    <div class="faq-answer">
+                        No. La app está pensada tanto para principiantes como para personas avanzadas.
+                        Tienes sesiones guiadas, textos claros y rutas sugeridas para comenzar sin sentirte perdid@.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFAQ(this)">
+                        <span>¿Los códigos están verificados?</span>
+                        <span class="faq-icon">⌄</span>
+                    </button>
+                    <div class="faq-answer">
+                        Sí. Solo se incluyen códigos auténticos de Grabovoi. La búsqueda con IA jamás inventa códigos,
+                        únicamente ayuda a encontrar los más adecuados a tu intención dentro de la biblioteca real.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFAQ(this)">
+                        <span>¿Puedo cancelar mi suscripción cuando quiera?</span>
+                        <span class="faq-icon">⌄</span>
+                    </button>
+                    <div class="faq-answer">
+                        Puedes cancelar en cualquier momento desde la tienda donde activaste tu plan
+                        (Google Play). Mantendrás el acceso hasta el fin del período ya pagado.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFAQ(this)">
+                        <span>¿Esto sustituye un tratamiento médico o psicológico?</span>
+                        <span class="faq-icon">⌄</span>
+                    </button>
+                    <div class="faq-answer">
+                        No. La app es una herramienta espiritual y energética que complementa tu camino personal.
+                        No reemplaza terapias, tratamientos médicos ni diagnósticos profesionales.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA FINAL -->
+    <section class="final-cta">
+        <div class="final-cta-inner">
+            <h2 class="text-gradient-amber mb-3" style="font-size:2.3rem;">
+                Convierte los códigos numéricos en un ritual vivo de manifestación
+            </h2>
+            <h3 class="mb-6">
+                Deja de tener los códigos solo en imágenes guardadas. <br>Practícalos, repítelos, mídete
+                y siente el cambio en tu energía. </h3><br><h2 class="text-gradient-amber mb-3" style="font-size:2.3rem;">Todo desde una sola app.
+            </h2><br>
+            <a href="#" class="btn btn-primary btn-large">
+                Comenzar ahora con 7 días Gratis
+            </a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-logo">
+            <img src="./imagenes_pagina/ManiGrab_transparente.png" alt="Manifestación Cuántica Grabovoi">
+            <span>Manifestaciones de secuencias Grabovoi</span>
+        </div>
+        <div>© <span id="year"></span> Todos los derechos reservados.</div>
+        <div class="mt-2">Los códigos numéricos de Grabovoi <b>NO SUSTITUYEN</b> la atención médica profesional. <br>Siempre consulta con profesionales de la salud para cualquier condición médica. <br>Estas secuencias son herramientas complementarias de manifestación y bienestar</div>
+    </footer>
+</div>
+
+<script>
+    // Año dinámico
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // FAQ toggle
+    function toggleFAQ(button) {
+        const item = button.closest('.faq-item');
+        const isActive = item.classList.contains('active');
+        document.querySelectorAll('.faq-item').forEach(f => f.classList.remove('active'));
+        if (!isActive) item.classList.add('active');
+    }
+
+    // Parallax suave del patrón de fondo
+    const bgPattern = document.getElementById('bgPattern');
+    document.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 10;
+        const y = (e.clientY / window.innerHeight - 0.5) * 10;
+        bgPattern.style.transform = `translate(${x}px, ${y}px)`;
+    });
+
+    // Scroll suave para links internos
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href').substring(1);
+            const target = document.getElementById(targetId);
+            if (target) {
+                e.preventDefault();
+                window.scrollTo({
+                    top: target.offsetTop - 20,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>

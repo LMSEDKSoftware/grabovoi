@@ -80,6 +80,8 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
     });
   }
 
+
+
   void _navigateToHome() {
     // Cerrar el modal primero, verificando que el widget esté montado
     if (mounted) {

@@ -47,6 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Map<String, dynamic>? _userProgress;
   bool _isLoading = true;
   bool _isAdmin = false;
+  bool _isFounder = false;
   int _unreadNotificationsCount = 0;
   
   // Animaciones
@@ -97,9 +98,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       final esAdmin = await AdminService.esAdmin();
       final unreadCount = await NotificationHistory.getUnreadCount();
       
+      final esFounder = _authService.currentUser?.achievements.contains('founder_369') ?? false;
+      
       setState(() {
         _userProgress = progress;
         _isAdmin = esAdmin;
+        _isFounder = esFounder;
         _unreadNotificationsCount = unreadCount;
         _isLoading = false;
       });
@@ -192,6 +196,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         ),
                         textAlign: TextAlign.center,
                       ),
+                      if (_isFounder) ...[
+                        const SizedBox(height: 12),
+                        _buildFounderBadge(),
+                      ],
                     ],
                     const SizedBox(height: 30),
                     // Botones de acción organizados en grid de 2 columnas
@@ -530,6 +538,42 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
   
+  // Badge de Founder
+  Widget _buildFounderBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withOpacity(0.4),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.auto_awesome, color: Color(0xFF0B132B), size: 16),
+          const SizedBox(width: 8),
+          Text(
+            'FOUNDER 369',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF0B132B),
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
   // Seleccionar y subir avatar
   Future<void> _pickAndUploadAvatar() async {
     if (_authService.currentUser == null) return;
@@ -779,48 +823,143 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               },
             ),
             const SizedBox(height: 16),
-            // Opción de prueba de notificaciones (solo visible para administradores)
-            if (_isAdmin)
+            _buildConfigMenuItem(
+              context: context,
+              icon: Icons.analytics,
+              title: 'Trazabilidad de Notificaciones',
+              subtitle: 'Ver/Sincronizar estados de entrega',
+              onTap: () {
+                Navigator.pop(context);
+                _showTraceabilityInfo(context);
+              },
+            ),
+            const SizedBox(height: 16),
+             if (_isAdmin)
               _buildConfigMenuItem(
                 context: context,
                 icon: Icons.science,
                 title: 'Probar Notificaciones',
                 subtitle: 'Enviar todas las notificaciones de prueba',
                 onTap: () async {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('🧪 Iniciando prueba de notificaciones...'),
-                    backgroundColor: Color(0xFFFFD700),
-                  ),
-                );
-                // Importar dinámicamente para evitar problemas de dependencias circulares si las hubiera
-                // pero como es un script, mejor usarlo directamente si ya está importado o importarlo arriba.
-                // Como no puedo añadir imports arriba fácilmente sin ver todo el archivo, usaré reflexión o asumo que puedo añadir el import.
-                // Mejor añado el import arriba en otro paso si es necesario, pero aquí usaré el nombre de la clase asumiendo que se importará.
-                // Para evitar errores de compilación si no está importado, usaré un enfoque más seguro:
-                // Crear una función local o usar el import que añadiré.
-                
-                // NOTA: Se requiere importar TestAllNotifications. 
-                // Como no puedo añadir el import en este bloque, lo haré en un paso separado o confiaré en que el usuario lo añada.
-                // Pero para ser más autónomo, voy a usar un truco: definir la llamada aquí y luego añadir el import.
-                
-                try {
-                   // Usar el script existente
-                   await TestAllNotifications.sendAllTestNotifications(
-                     userName: _authService.currentUser?.name ?? 'Usuario Test',
-                     delaySeconds: 5, // Más rápido para pruebas
-                   );
-                } catch (e) {
-                  debugPrint('Error probando notificaciones: $e');
-                }
-              },
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🧪 Iniciando prueba de notificaciones...'),
+                      backgroundColor: Color(0xFFFFD700),
+                    ),
+                  );
+                  try {
+                    await TestAllNotifications.sendAllTestNotifications();
+                  } catch (e) {
+                    debugPrint('Error probando notificaciones: $e');
+                  }
+                },
               ),
             const SizedBox(height: 24),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // Diálogo de trazabilidad de notificaciones
+  void _showTraceabilityInfo(BuildContext context) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFFFD700), width: 1),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.analytics, color: Color(0xFFFFD700)),
+            const SizedBox(width: 12),
+            Text(
+              'Trazabilidad FCM',
+              style: GoogleFonts.playfairDisplay(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Esta herramienta permite verificar si las notificaciones enviadas desde el panel han llegado a tu dispositivo.',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            _buildTraceabilityStatus(),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final history = await NotificationHistory.getHistory();
+              if (history.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Sincronizando estados...')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD700)),
+            child: const Text('Sincronizar', style: TextStyle(color: Color(0xFF0B132B))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTraceabilityStatus() {
+    return FutureBuilder<List<NotificationHistoryItem>>(
+      future: NotificationHistory.getHistory(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Text('No hay historial reciente.', style: TextStyle(color: Colors.white38));
+        }
+        
+        final lastNotification = snapshot.data!.first;
+        return Column(
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.notifications_active, color: lastNotification.isRead ? Colors.green : Colors.orange),
+              title: Text(lastNotification.title, style: const TextStyle(color: Colors.white, fontSize: 14)),
+              subtitle: Text('ID: ${lastNotification.id}', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+            ),
+            const Divider(color: Colors.white12),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildStatusStep('Enviada', true),
+                  _buildStatusStep('Recibida', true),
+                  _buildStatusStep('Abierta', lastNotification.isRead),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusStep(String label, bool active) {
+    return Column(
+      children: [
+        Icon(active ? Icons.check_circle : Icons.radio_button_unchecked, 
+             color: active ? Colors.green : Colors.white24, size: 20),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(color: active ? Colors.white70 : Colors.white24, fontSize: 10)),
+      ],
     );
   }
   
@@ -1515,6 +1654,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
   
+  // Se elimina _buildFoundersButton ya que no se usará más como botón separado
+
   // Botón con tamaño optimizado
   Widget _buildCompactButton({
     required String text,

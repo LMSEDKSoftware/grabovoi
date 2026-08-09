@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manifestación Cuántica Grabovoi – App Oficial</title>
+    <meta name="description"
+        content="App basada en las secuencias numéricos de Grigori Grabovoi. Biblioteca de secuencias, pilotaje cuántico guiado, desafíos vibracionales, IA integrada y sistema de recompensas para tu evolución energética.">
+    <meta name="keywords"
+        content="Grabovoi, secuencias numéricas, manifestación, sanación, abundancia, vibración, retos 7 14 21 30 días, pilotaje cuántico, reprogramación, transformación personal">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="ManiGrab – Site Oficial">
+    <meta property="og:description"
+        content="Tu tecnología para práctica diaria con las secuencias numéricos de Grabovoi: biblioteca de secuencias, desafíos vibracionales, IA y pilotaje cuántico.">
+    <meta property="og:image" content="./imagenes_pagina/app_icon.png">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ManiGrab – Site Oficial">
+    <meta name="twitter:description"
+        content="Manifiesta, sana y transforma tu realidad con una app diseñada para pilotar las secuencias numéricos de Grabovoi de forma simple, guiada y profunda.">
+    <meta name="twitter:image" content="./imagenes_pagina/app_icon.png">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --amber-400: #fbbf24;
+            --amber-500: #f59e0b;
+            --amber-600: #d97706;
+            --yellow-300: #fde047;
+            --yellow-400: #facc15;
+            --yellow-500: #eab308;
+            --purple-400: #a855f7;
+            --purple-500: #9333ea;
+            --cyan-400: #22d3ee;
+            --cyan-500: #06b6d4;
+            --emerald-400: #34d399;
+            --emerald-500: #10b981;
+            --pink-400: #f472b6;
+            --orange-400: #fb923c;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --black: #000000;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--black);
+            color: var(--white);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .main-container {
+            min-height: 100vh;
+            background: linear-gradient(to bottom right, var(--black), var(--slate-900), var(--black));
+            position: relative;
+        }
+
+        .bg-gradient-1,
+        .bg-gradient-2,
+        .bg-pattern {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .bg-gradient-1 {
+            background: radial-gradient(circle at 20% 50%, rgba(251, 191, 36, 0.08), transparent 55%);
+        }
+
+        .bg-gradient-2 {
+            background: radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.12), transparent 55%);
+        }
+
+        .bg-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fbbf24' fill-opacity='0.03'%3E%3Ccircle cx='50' cy='50' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            transition: transform 0.3s ease;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .text-gradient-amber {
+            background: linear-gradient(to right, var(--amber-400), var(--yellow-300), var(--amber-400));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .text-gradient-purple {
+            background: linear-gradient(to right, var(--purple-400), var(--cyan-400));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .text-gradient-cyan {
+            background: linear-gradient(to right, var(--cyan-400), var(--emerald-400));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--amber-500), var(--yellow-500));
+            color: var(--black);
+            box-shadow: 0 10px 25px -5px rgba(251, 191, 36, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(to right, var(--amber-600), #facc15);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(251, 191, 36, 0.35);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--amber-400);
+            border: 2px solid rgba(251, 191, 36, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(251, 191, 36, 0.08);
+            border-color: var(--amber-400);
+        }
+
+        .btn-large {
+            padding: 1.25rem 2.5rem;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(251, 191, 36, 0.4);
+            box-shadow: 0 20px 25px -5px rgba(251, 191, 36, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-content {
+            color: rgba(254, 243, 199, 0.8);
+            font-size: 0.98rem;
+        }
+
+        .section {
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .section-dark {
+            background: radial-gradient(circle at top, rgba(251, 191, 36, 0.06), transparent 55%);
+        }
+
+        /* HERO A: texto + mockups lado a lado */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .hero-inner {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .hero-inner {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+        }
+
+        .hero-logo {
+            width: 14rem;
+            height: 14rem;
+            margin-bottom: 0.05rem;
+            position: relative;
+        }
+
+        .hero-logo-glow {
+            position: absolute;
+            inset: 0;
+            background: rgba(251, 191, 36, 0.25);
+            border-radius: 50%;
+            filter: blur(2.5rem);
+            animation: pulse 2s infinite;
+        }
+
+        .hero-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 4.0rem);
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: rgba(254, 243, 199, 0.85);
+            margin-bottom: 2rem;
+            max-width: 540px;
+        }
+
+        .value-bullets {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .value-bullet {
+            background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.9));
+            border-radius: 0.75rem;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            padding: 0.9rem 1rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .value-bullet-icon {
+            width: 1.2rem;
+            height: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            color: rgba(254, 243, 199, 0.85);
+            gap: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .pill-dot {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 999px;
+            background: var(--amber-400);
+        }
+
+        .cta-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .cta-container {
+                justify-content: center;
+            }
+
+            .hero-subtitle {
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+
+        /* MOCKUPS hero */
+        .hero-mockups {
+            position: relative;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .hero-bg {
+            background-image: url('./imagenes_pagina/esfera_back.jpg');
+            /* aquí pondrás tu imagen 16:9 */
+            background-size: cover;
+            background-position: center right;
+            background-repeat: no-repeat;
+
+            /* Glow suave integrado */
+            position: relative;
+        }
+
+        .hero-bg::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+
+        .hero-phone-main {
+
+            top: 8%;
+            right: 10%;
+            width: 680px;
+            height: auto;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+            border-radius: 0 !important;
+            z-index: 0;
+            /* atrás */
+            pointer-events: none;
+        }
+
+        .hero-phone-main img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            filter: drop-shadow(0 0 40px rgba(251, 191, 36, 0.4));
+            /* glow opcional */
+        }
+
+        .hero-phone-floating {
+            position: absolute;
+            width: 48%;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .hero-phone-floating img {
+            width: 100%;
+            display: block;
+        }
+
+        .hero-phone-floating.left {
+            left: -12%;
+            bottom: -8%;
+        }
+
+        .hero-phone-floating.right {
+            right: -10%;
+            top: 6%;
+        }
+
+        @media (max-width: 900px) {
+            .hero-mockups {
+                max-width: 320px;
+            }
+
+            .hero-phone-floating.left {
+                left: -8%;
+                bottom: -10%;
+            }
+
+            .hero-phone-floating.right {
+                right: -6%;
+                top: 4%;
+            }
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 760px;
+            margin: 0 auto 3rem;
+        }
+
+        .section-header p {
+            color: rgba(254, 243, 199, 0.85);
+            font-size: 0.98rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .three-cols {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 4rem;
+        }
+
+        .features-grid,
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(251, 191, 36, 0.18);
+            color: var(--amber-400);
+            border-radius: 999px;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.8rem;
+            margin-bottom: 0.6rem;
+        }
+
+        /* SECCIÓN GALERÍA PRINCIPAL */
+        .screens-section {
+            padding: 5rem 0 4rem;
+        }
+
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .screen-card {
+            background: radial-gradient(circle at top, rgba(251, 191, 36, 0.14), rgba(15, 23, 42, 0.95));
+            border-radius: 1.5rem;
+            padding: 0.75rem;
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        .screen-img {
+            border-radius: 1.1rem;
+            overflow: hidden;
+        }
+
+        .screen-img img {
+            width: 100%;
+            display: block;
+        }
+
+        .screen-caption {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: rgba(254, 243, 199, 0.85);
+            text-align: center;
+        }
+
+        /* PLANES */
+        .pricing-highlight {
+            border-color: rgba(251, 191, 36, 0.7);
+            box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.5);
+        }
+
+        /* FAQ */
+        .faq-item {
+            background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 0.75rem;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 1rem 1.2rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--amber-100);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .faq-answer {
+            padding: 0 1.2rem 1rem;
+            color: rgba(254, 243, 199, 0.85);
+            display: none;
+            font-size: 0.95rem;
+        }
+
+        .faq-item.active .faq-answer {
+            display: block;
+        }
+
+        .faq-icon {
+            transition: transform 0.25s ease;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        /* CTA FINAL + FOOTER */
+        .final-cta {
+            background: radial-gradient(circle at center, rgba(251, 191, 36, 0.32), rgba(15, 23, 42, 1));
+            padding: 5rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .final-cta::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top, rgba(0, 0, 0, 0.65), transparent 60%);
+        }
+
+        .final-cta-inner {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .final-cta-inner p {
+            color: rgba(15, 23, 42, 0.9);
+        }
+
+        .footer {
+            border-top: 1px solid rgba(148, 163, 184, 0.4);
+            padding: 2rem 1rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(148, 163, 184, 0.9);
+            background: #020617;
+        }
+
+        .footer-logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            gap: 0.6rem;
+        }
+
+        .footer-logo img {
+            width: 5.3rem;
+            height: 5.3rem;
+        }
+
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
+        .mt-6 {
+            margin-top: 1.5rem;
+        }
+
+        .mt-8 {
+            margin-top: 2rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .mb-3 {
+            margin-bottom: 0.75rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-6 {
+            margin-bottom: 1.5rem;
+        }
+
+        .mb-8 {
+            margin-bottom: 2rem;
+        }
+
+        .mb-10 {
+            margin-bottom: 2.5rem;
+        }
+
+        .mb-12 {
+            margin-bottom: 3rem;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.65;
+            }
+        }
+
+        .value-bullets {
+            position: absolute;
+            top: 48%;
+            right: 10%;
+            transform: translateY(-50%);
+            z-index: 5;
+
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 68px;
+
+            width: 520px;
+            /* Más anchos */
+        }
+
+        /* --- MOBILE + TABLET FIX — se activa antes de que el mockup tape todo ---*/
+        @media (max-width: 950px) {
+
+            /* Quitar imagen de fondo del HERO */
+            .hero-bg {
+                background-image: none !important;
+                background: linear-gradient(to bottom right, var(--black), var(--slate-900), var(--black)) !important;
+            }
+
+            /* Ajustar forma del HERO */
+            .hero {
+                padding-top: 3rem !important;
+                min-height: auto !important;
+            }
+
+            /* Texto centrado y 1 sola columna */
+            .hero-inner {
+                grid-template-columns: 1fr !important;
+                text-align: center !important;
+                gap: 2rem !important;
+                margin-top: 1rem !important;
+            }
+
+            /* LOGO centrado arriba */
+            .hero-logo {
+                margin-left: auto !important;
+                margin-right: auto !important;
+                margin-bottom: 1.5rem !important;
+                position: relative;
+                top: 0 !important;
+            }
+
+            /* Títulos y textos más compactos */
+            .hero-title {
+                font-size: 2.3rem !important;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem !important;
+                max-width: 90% !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+            }
+
+            /* Ocultar mockup FULL en tablet/celular */
+            .hero-mockups {
+                display: none !important;
+            }
+
+            /* Asegurar que bullets NO aparezcan */
+            .value-bullets {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .cta-container {
+                justify-content: center !important;
+                text-align: center !important;
+                width: 100% !important;
+            }
+        }
+
+        /* Partículas doradas */
+        #goldParticles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.55;
+            /* ajusta si quieres más o menos brillo */
+        }
+
+        /* --- SECCIÓN GALERÍA APP --- */
+        .app-gallery-section {
+            padding: 4rem 0;
+            position: relative;
+        }
+
+        .gallery-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+
+        /* GRID 4 columnas */
+        .app-gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.2rem;
+        }
+
+        @media (max-width: 1000px) {
+            .app-gallery-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 800px) {
+            .app-gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 500px) {
+            .app-gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Cada ITEM es un cuadro 1:1 */
+        .gallery-item {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%;
+            border-radius: 1rem;
+            overflow: hidden;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            background: rgba(255, 255, 255, 0.03);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .gallery-item img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 18px rgba(251, 191, 36, 0.35);
+        }
+
+        /* Animación entrada */
+        .gallery-item {
+            opacity: 0;
+            transform: scale(0.92);
+            animation: galleryFadeIn 0.8s ease forwards;
+        }
+
+        .gallery-item:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .gallery-item:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .gallery-item:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .gallery-item:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .gallery-item:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+
+        .gallery-item:nth-child(6) {
+            animation-delay: 0.6s;
+        }
+
+        .gallery-item:nth-child(7) {
+            animation-delay: 0.7s;
+        }
+
+        .gallery-item:nth-child(8) {
+            animation-delay: 0.8s;
+        }
+
+        @keyframes galleryFadeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.92);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* MODAL */
+        .gallery-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+        }
+
+
+
+
+        .gallery-modal-content {
+            max-height: 90vh;
+            height: auto;
+            width: auto;
+            max-width: 95vw;
+            border-radius: 1.2rem;
+            animation: modalZoom 0.35s ease;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.4);
+            object-fit: contain;
+        }
+
+        .gallery-close {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            font-size: 2.5rem;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        @keyframes modalZoom {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .gallery-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            cursor: pointer;
+            color: rgba(251, 191, 36, 0.55);
+            /* dorado semitransparente */
+            z-index: 10000;
+            user-select: none;
+            transition: 0.2s ease;
+        }
+
+        .gallery-arrow:hover {
+            color: rgba(251, 191, 36, 0.9);
+            /* más brillante al pasar cursor */
+        }
+
+        /* Flecha IZQUIERDA */
+        #galleryPrev {
+            left: 50%;
+            transform: translate(-300px, -50%);
+            /* Ajuste horizontal respecto a la imagen */
+        }
+
+        /* Flecha DERECHA */
+        #galleryNext {
+            right: 50%;
+            transform: translate(300px, -50%);
+            /* Ajuste horizontal respecto a la imagen */
+        }
+
+        @media (max-width: 600px) {
+            #galleryPrev {
+                transform: translate(-180px, -50%);
+            }
+
+            #galleryNext {
+                transform: translate(180px, -50%);
+            }
+        }
+
+
+        /* Modal fondo */
+        .download-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.80);
+            backdrop-filter: blur(4px);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Contenedor */
+        .download-modal-content {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            padding: 2rem 2.5rem;
+            border-radius: 1rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+            animation: modalZoom 0.35s ease;
+        }
+
+        /* Cerrar */
+        .download-close {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        /* Título */
+        .modal-title {
+            margin-bottom: 1.5rem;
+            font-size: 1.6rem;
+            color: var(--amber-400);
+        }
+
+        /* Botones */
+        .download-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .store-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--amber-300);
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .store-btn img {
+            height: 24px;
+            opacity: 0.9;
+        }
+
+        .store-btn:hover {
+            background: rgba(251, 191, 36, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .underline-amber {
+            text-decoration: underline;
+            text-decoration-color: #fbbf24;
+            /* mismo amber que usas */
+            text-decoration-thickness: 3px;
+            text-underline-offset: 6px;
+        }
+
+        /* CONTENEDOR DEL CINTILLO */
+        .quantum-banner {
+            padding: 4rem 0;
+        }
+
+        .quantum-banner-inner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2.2rem;
+            padding: 2.6rem 3rem;
+
+            background: rgba(15, 23, 42, 0.55);
+            border: 2px solid rgba(251, 191, 36, 0.45);
+            border-radius: 80px;
+
+            box-shadow:
+                0 0 45px rgba(251, 191, 36, 0.18),
+                inset 0 0 25px rgba(251, 191, 36, 0.08);
+
+            max-width: 1250px;
+            margin: auto;
+
+            backdrop-filter: blur(8px);
+        }
+
+        /* TEXTO */
+        .quantum-text {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #FDE68A;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* ÍCONOS */
+        .quantum-icon {
+            width: 52px;
+            height: 52px;
+            animation: quantumGlow 2.8s infinite ease-in-out;
+        }
+
+        /* ANIMACIÓN DEL GLOW */
+        @keyframes quantumGlow {
+            0% {
+                filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.9));
+            }
+
+            100% {
+                filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
+            }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 800px) {
+            .quantum-banner-inner {
+                flex-wrap: wrap;
+                border-radius: 40px;
+                padding: 2rem 1.4rem;
+                gap: 1.4rem;
+            }
+
+            .quantum-text {
+                font-size: 1.7rem;
+                max-width: 90%;
+            }
+
+            .quantum-icon {
+                width: 38px;
+                height: 38px;
+            }
+        }
+
+        /* FOUNDERS SECTION */
+        .founders-section {
+            background: radial-gradient(circle at center, rgba(251, 191, 36, 0.1), rgba(0, 0, 0, 1));
+            border-top: 1px solid rgba(251, 191, 36, 0.3);
+            border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+            padding: 8rem 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .founders-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .founders-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 4rem;
+            align-items: start;
+        }
+
+        @media (max-width: 950px) {
+            .founders-grid {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .founders-header h2 {
+                font-size: 2.2rem !important;
+            }
+        }
+
+        .founders-header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .founders-header h2 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .limit-badge {
+            display: inline-block;
+            background: var(--amber-500);
+            color: var(--black);
+            padding: 0.5rem 1.5rem;
+            border-radius: 999px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.4);
+            font-size: 0.9rem;
+        }
+
+        .founders-card-premium {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 2px solid rgba(251, 191, 36, 0.6);
+            padding: 3rem;
+            border-radius: 2rem;
+            box-shadow: 0 0 60px rgba(251, 191, 36, 0.2);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(15px);
+        }
+
+        .investment-tag {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--amber-400);
+            margin: 1.5rem 0;
+            display: block;
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
+        }
+
+        .founders-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .founders-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.2rem;
+            margin-bottom: 1.8rem;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.4;
+        }
+
+        .founders-list li svg {
+            width: 1.4rem;
+            height: 1.4rem;
+            color: var(--amber-400);
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .event-recognition {
+            background: rgba(251, 191, 36, 0.05);
+            border-radius: 2rem;
+            padding: 2.5rem;
+            margin-top: 3rem;
+            border: 1px dashed rgba(251, 191, 36, 0.3);
+        }
+
+        .event-recognition h4 {
+            color: var(--amber-400);
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .origin-concept {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .origin-highlight {
+            color: #fff;
+            font-weight: 700;
+            border-left: 3px solid var(--amber-400);
+            padding-left: 1.5rem;
+            margin: 2rem 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <canvas id="goldParticles"></canvas>
+        <div class="bg-gradient-1"></div>
+        <div class="bg-gradient-2"></div>
+        <div class="bg-pattern" id="bgPattern"></div>
+
+        <!-- HERO A: texto + mockups -->
+        <section class="hero hero-bg">
+            <div class="container">
+                <div class="hero-inner">
+                    <!-- Columna texto -->
+                    <div>
+                        <div class="hero-logo">
+                            <div class="hero-logo-glow"></div>
+                            <img src="./imagenes_pagina/ManiGrab_transparente.png"
+                                alt="Manifestación Cuántica Grabovoi">
+                        </div>
+
+                        <h1 class="hero-title">
+                            <span class="text-gradient-amber">Manifiesta tus secuencias Grabovoi</span>
+                        </h1>
+
+                        <p class="hero-subtitle">
+                            Tecnología cuántica para práctica diaria con las secuencias de Grabovoi:
+                            biblioteca de secuencias, pilotaje cuántico guiado, desafíos vibracionales e Inteligencia
+                            Vibratoria,
+                            todo en una sola app.
+                        </p>
+
+                        <div class="value-bullets">
+
+
+
+
+                        </div>
+
+                        <div class="cta-container">
+                            <a href="#" class="btn btn-primary btn-large" onclick="openDownloadModal()">Descargar
+                                App</a>
+                            <a href="#funcionalidades" class="btn btn-secondary btn-large">¿ Cómo funciona?</a>
+                        </div>
+
+                        <div class="pill">
+                            <span class="pill-dot"></span>
+                            <span>Disponible en Android & iOS • 7 días de prueba gratuita</span>
+                        </div>
+                    </div>
+
+                    <!-- Columna mockups -->
+                    <div class="hero-mockups">
+
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- SECCIÓN: QUÉ ES Y POR QUÉ ES DIFERENTE -->
+        <section class="section section-dark" id="que-es">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="text-gradient-amber">Mucho más que una lista de secuencias</h2>
+                    <h3>
+                        Convierte la teoría en práctica diaria estructurada.<br>
+                        No solo lees secuencias: los practicas, los repites y ves tu avance energético con claridad.
+                    </h3>
+                </div>
+
+                <div class="three-cols">
+                    <div class="card">
+                        <span class="badge">Lo esencial</span>
+                        <h3 class="card-title">App diseñada para activar la resonancia y vibración de las secuencias
+                        </h3>
+                        <p class="card-content">
+                            Tus secuencias dejan de estar perdidas en capturas, PDFs o notas. Aquí tienes
+                            pilotajes, repeticiones guiadas, ritmo y recordatorios para integrarlos en tu vida diaria.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <span class="badge">Secuencias auténticas</span>
+                        <h3 class="card-title">Base de datos cuidada</h3>
+                        <p class="card-content">
+                            Más de 400 secuencias verificadas, organizados por intención: salud, abundancia, amor,
+                            protección, limpieza y reconexión. Cada secuencia con propósito claro y su descripción.
+                            Adicional, todos los días se suman secuencias, tú eres parte de la comunidad que enriquece
+                            la app.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <span class="badge">Transformación medible</span>
+                        <h3 class="card-title">Tu energía, visible</h3>
+                        <p class="card-content">
+                            Historial, métricas y datos de tu práctica: cuántos pilotajes llevas,
+                            tu nivel energético actual y las secuencias que más resuenan contigo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================
+ SECCIÓN: GALERÍA DE LA APP
+====================== -->
+        <section class="app-gallery-section">
+            <div class="container">
+                <h2 class="gallery-title text-gradient-amber">Explora la experiencia de la app</h2>
+
+                <div class="app-gallery-grid">
+                    <div class="gallery-item"><img src="./imagenes_app/app1.png" alt="App Screen 1"></div>
+                    <div class="gallery-item"><img src="./imagenes_app/app2.png" alt="App Screen 2"></div>
+                    <div class="gallery-item"><img src="./imagenes_app/app3.png" alt="App Screen 3"></div>
+                    <div class="gallery-item"><img src="./imagenes_app/app4.png" alt="App Screen 4"></div>
+                    <div class="gallery-item"><img src="./imagenes_app/app5.png" alt="App Screen 5"></div>
+                    <div class="gallery-item"><img src="./imagenes_app/app6.png" alt="App Screen 6"></div>
+                    <div class="gallery-item"><img src="./imagenes_app/app7.png" alt="App Screen 7"></div>
+                    <div class="gallery-item"><img src="./imagenes_app/app8.png" alt="App Screen 8"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODAL -->
+        <div id="galleryModal" class="gallery-modal">
+            <span class="gallery-close" onclick="closeModal()">&times;</span>
+            <img class="gallery-modal-content" id="galleryModalImg">
+            <span id="galleryPrev" class="gallery-arrow">&#10094;</span>
+            <span id="galleryNext" class="gallery-arrow">&#10095;</span>
+        </div>
+
+        <!-- SECCIÓN: FUNCIONALIDADES CLAVE -->
+        <section class="section" id="funcionalidades">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="text-gradient-amber">Todo lo que necesitas para practicar las secuencias de Grigori
+                        Grabovoi</h2>
+
+                </div>
+
+                <div class="features-grid">
+                    <div class="card">
+                        <h3 class="card-title">Exploración profunda e inteligente</h3>
+                        <p class="card-content">
+                            Navega las secuencias desde otra perspectiva: filtros rápidos, categorías visuales, búsqueda
+                            avanzada y sugerencias inteligentes según tu intención. No solo encuentras secuencias:
+                            descubres conexiones entre ellos, patrones energéticos y relaciones que enriquecen tu
+                            práctica.
+
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">Pilotaje Cuántico Guiado</h3>
+                        <p class="card-content">
+                            Sesiones guiadas en 6 etapas: preparación, visualización, emisión, repetición,
+                            cierre e integración. Esfera cuántica animada, colores vibracionales y música 432Hz,
+                            528Hz, binaural, cuencos y sonidos de la naturaleza.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">Búsqueda Profunda con IA</h3>
+                        <p class="card-content">
+                            Escribe en lenguaje natural lo que quieres trabajar
+                            (ej. “sanar ansiedad” o “abrirme a la abundancia”) y la app sugiere secuencias adecuadas.
+                            Integración con OpenAI y validación para evitar secuencias inventadas.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">Desafíos Vibracionales</h3>
+                        <p class="card-content">
+                            Rutas estructuradas de 7, 14 y 21 días, con una secuencia asignada cada día,
+                            seguimiento de rachas, restauradores y mantras especiales. Ideal para sostener
+                            un proceso profundo, no solo momentos sueltos.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">Cristales & Luz Cuántica</h3>
+                        <p class="card-content">
+                            Gana cristales por cada práctica, repetición y reto completado.
+                            Sube tu nivel de Luz Cuántica con tus rachas diarias y desbloquea secuencias
+                            premium y anclas de continuidad al mantener tu compromiso.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">Evolución Energética</h3>
+                        <p class="card-content">
+                            Gráficas, métricas y estadísticas: total de pilotajes, días consecutivos,
+                            secuencias y categorías más usadas, nivel energético actual (1 a 7)
+                            y proyección de crecimiento vibracional.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <section class="quantum-banner">
+            <div class="quantum-banner-inner">
+
+                <!-- CRISTAL ENERGÉTICO -->
+                <svg class="quantum-icon" viewBox="0 0 64 64">
+                    <path fill="#FBBF24" d="M32 4 L12 28 L32 60 L52 28 Z"></path>
+                    <path fill="#FACC15" d="M32 4 L32 60 L52 28 Z"></path>
+                </svg>
+
+                <span class="quantum-text">
+                    Tu conciencia es la tecnología más avanzada del Universo...
+                </span>
+
+                <!-- LUZ CUÁNTICA -->
+                <svg class="quantum-icon" viewBox="0 0 64 64">
+                    <path fill="#FBBF24" d="M32 4 L38 24 L60 24 L42 36 L48 56 L32 44 L16 56 L22 36 L4 24 L26 24 Z">
+                    </path>
+                    <circle cx="50" cy="50" r="6" fill="#FACC15"></circle>
+                    <circle cx="14" cy="50" r="4" fill="#FCD34D"></circle>
+                </svg>
+
+            </div>
+        </section>
+
+
+
+        <!-- SECCIÓN: BENEFICIOS -->
+        <section class="section section-dark" id="beneficios">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="text-gradient-amber">Beneficios reales en tu vida diaria</h2>
+                    <h3>
+                        La app está diseñada para acompañarte en procesos de sanación, manifestación
+                        y transformación personal con estructura, constancia y suavidad.
+                    </h3>
+                </div>
+
+                <div class="benefits-grid">
+                    <div class="card">
+                        <h3 class="card-title">✨ Transformación Vibracional</h3>
+                        <p class="card-content">
+                            Pasas de “conocer las secuencias” a vivirlas. Practicas con intención,
+                            repites con guía y sostienes tu campo cuántico en una dirección clara.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">🏥 Bienestar y armonización</h3>
+                        <p class="card-content">
+                            Secuencias específicas para acompañar procesos de salud física, emocional
+                            y mental. Complemento espiritual a tu autocuidado y a tus tratamientos formales.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">💰 Prosperidad y abundancia</h3>
+                        <p class="card-content">
+                            Trabaja creencias limitantes respecto al dinero, atrae nuevas oportunidades
+                            y alinea tu energía con una mentalidad de abundancia consciente.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">❤️ Relaciones y vínculos</h3>
+                        <p class="card-content">
+                            Secuencias para armonizar relaciones, cerrar ciclos, sanar heridas y crear
+                            vínculos más sanos contigo y con quienes te rodean.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">🎯 Constancia y enfoque</h3>
+                        <p class="card-content">
+                            Retos, rachas, cristales y luz cuántica convierten tu camino espiritual
+                            en algo medible y motivador. Tu compromiso se ve y se celebra.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">🎨 Personalización total</h3>
+                        <p class="card-content">
+                            Usa la app en modo guiado o libre, elige tus secuencias, tu música,
+                            tu tiempo y tu ritmo. La app se adapta a tu nivel, no al revés.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ManiGrab Founders Edition – Origen 369 -->
+        <section class="founders-section" id="founders">
+            <div class="founders-container">
+                <div class="founders-header">
+                    <div class="limit-badge">Solo 369 lugares / Irrepetible</div>
+                    <h2 class="text-gradient-amber">ManiGrab Founders Edition</h2>
+                    <h3 style="font-size: 2.5rem; color: #fff; font-weight: 400; letter-spacing: 4px;">Origen 369</h3>
+                </div>
+
+                <div class="founders-grid">
+                    <div>
+                        <h3 class="text-gradient-amber mb-4" style="font-size: 1.8rem;">El nacimiento de un movimiento
+                        </h3>
+                        <div class="origin-concept">
+                            <p class="mb-4">
+                                ManiGrab no nació como una app. <br>
+                                <strong>Nació como un sistema en evolución.</strong>
+                            </p>
+                            <p>
+                                El Origen 369 representa a las primeras 369 personas que decidieron formar parte desde
+                                el inicio, no solo como usuarios, sino como co-creadores.
+                            </p>
+
+                            <div class="origin-highlight">
+                                "No es solo acceso vitalicio. Es identidad dentro del origen."
+                            </div>
+
+                            <p>
+                                Significa pertenecer al núcleo fundador que acompañará la evolución de ManiGrab en sus
+                                primeras etapas. Esta edición no se repetirá jamás.
+                            </p>
+                        </div>
+
+                        <div class="event-recognition">
+                            <h4>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                                    <line x1="4" y1="22" x2="4" y2="15" />
+                                </svg>
+                                Eventos y Reconocimientos Fundadores
+                            </h4>
+                            <p style="font-size: 1rem; margin-bottom: 1.5rem; opacity: 0.9;">
+                                ManiGrab organizará 2 Eventos Digitales y 1 Presencial Anual. Los miembros Origen 369
+                                recibirán:
+                            </p>
+                            <ul class="founders-list" style="font-size: 0.95rem;">
+                                <li style="margin-bottom: 1rem;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        style="width:1.1rem;">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    Reconocimiento nominal en escenario durante el evento anual.
+                                </li>
+                                <li style="margin-bottom: 1rem;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        style="width:1.1rem;">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    Distintivo físico conmemorativo y Certificación Oficial Founder 369.
+                                </li>
+                                <li style="margin-bottom: 1rem;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        style="width:1.1rem;">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    Beneficios permanentes: Precio preferencial, preventas exclusivas y área especial en
+                                    eventos.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="founders-card-premium">
+                        <h3 style="color: #fff; margin-bottom: 2rem; font-size: 1.6rem; text-align: center;">Beneficios
+                            Oficiales</h3>
+                        <ul class="founders-list">
+                            <li>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span><strong>Acceso Vitalicio:</strong> Incluye todas las funciones actuales y
+                                    evoluciones futuras.</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span><strong>Identificación Founder 369:</strong> Badge exclusivo en la app + número
+                                    único asignado (#001 – #369).</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span><strong>Muro Oficial:</strong> Reconocimiento permanente en la página oficial
+                                    ManiGrab.</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span><strong>Consejo Fundador:</strong> Participación en votaciones estratégicas y
+                                    prioridades.</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span><strong>Acceso Anticipado:</strong> Prueba las nuevas herramientas antes de su
+                                    lanzamiento público.</span>
+                            </li>
+                        </ul>
+
+                        <div
+                            style="margin-top: 3.5rem; border-top: 1px solid rgba(251,191,36,0.3); padding-top: 2.5rem; text-align: center;">
+                            <span
+                                style="text-transform: uppercase; letter-spacing: 3px; font-size: 0.85rem; color: var(--amber-400); font-weight: 700;">Inversión
+                                Única de Fundador</span>
+                            <span class="investment-tag">$8,888 MXN</span>
+                            <a href="#" class="btn btn-primary btn-large"
+                                style="width: 100%; border-radius: 1rem; font-size: 1.2rem;">ASEGURAR MI LUGAR EN EL
+                                ORIGEN</a>
+                            <p class="mt-4" style="font-size: 0.9rem; opacity: 0.7; color: #fff;">Solo 369 lugares
+                                disponibles. Pago único.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: PLANES -->
+        <section class="section" id="planes">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="text-gradient-amber">Acceso Premium a todo el poder de la app</h2>
+
+                    <h2>
+                        Comienza con
+                        <span class="underline-amber">7 días de prueba gratuita</span>.
+                    </h2>
+
+                    <br>
+
+                    <h3>
+                        Si resuena contigo, continúa con un plan accesible
+                        sin anuncios, sin límites y con todo el contenido desbloqueado.
+                    </h3>
+                </div>
+
+                <div class="three-cols">
+                    <div class="card">
+                        <span class="badge">Plan Mensual</span>
+                        <h3 class="card-title">$88 MXN / mes</h3>
+                        <p class="card-content">
+                            Acceso completo a la biblioteca de secuencias, pilotajes, repeticiones, desafíos,
+                            IA y estadísticas. Ideal para probar tu proceso mes a mes.
+                        </p>
+                    </div>
+
+                    <div class="card pricing-highlight">
+                        <span class="badge">Recomendado</span>
+                        <h3 class="card-title">$888 MXN / año</h3>
+                        <p class="card-content">
+                            Todo lo del plan mensual con el beneficio de 12 meses por el precio aproximado de 10.
+                            Perfecto para quienes quieren integrar las secuencias como estilo de vida.
+                        </p>
+                    </div>
+
+
+                </div>
+
+                <div style="text-align:center" class="mt-6">
+                    <a href="#" class="btn btn-primary btn-large">Probar 7 días Gratis</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: FAQ -->
+        <section class="section section-dark" id="faq">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="text-gradient-amber">Preguntas frecuentes</h2>
+                    <p>
+                        Algunas de las dudas más comunes de quienes comienzan a practicar con la app.
+                    </p>
+                </div>
+
+                <div style="max-width: 740px; margin: 0 auto;">
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFAQ(this)">
+                            <span>¿Necesito saber mucho de Grabovoi para usar la app?</span>
+                            <span class="faq-icon">⌄</span>
+                        </button>
+                        <div class="faq-answer">
+                            No. La app está pensada tanto para principiantes como para personas avanzadas.
+                            Tienes sesiones guiadas, textos claros y rutas sugeridas para comenzar sin sentirte perdid@.
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFAQ(this)">
+                            <span>¿Las secuencias están verificadas?</span>
+                            <span class="faq-icon">⌄</span>
+                        </button>
+                        <div class="faq-answer">
+                            Sí. Solo se incluyen secuencias auténticas de Grabovoi. La búsqueda con IA jamás las
+                            inventa,
+                            únicamente ayuda a encontrar las más adecuadas a tu intención dentro de la biblioteca real.
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFAQ(this)">
+                            <span>¿Puedo cancelar mi suscripción cuando quiera?</span>
+                            <span class="faq-icon">⌄</span>
+                        </button>
+                        <div class="faq-answer">
+                            Puedes cancelar en cualquier momento desde la tienda donde activaste tu plan
+                            (Google Play). Mantendrás el acceso hasta el fin del período ya pagado.
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFAQ(this)">
+                            <span>¿Esto sustituye un tratamiento médico o psicológico?</span>
+                            <span class="faq-icon">⌄</span>
+                        </button>
+                        <div class="faq-answer">
+                            No. La app es una herramienta de secuencuas vibratorias y energética que complementa tu
+                            camino personal.
+                            No reemplaza terapias, tratamientos médicos ni diagnósticos profesionales.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA FINAL -->
+        <section class="final-cta">
+            <div class="final-cta-inner">
+                <h2 class="text-gradient-amber mb-3" style="font-size:2.3rem;">
+                    Convierte las secuencias en un ritual vivo de manifestación
+                </h2>
+                <h3 class="mb-6">
+                    Deja de tener las secuencias solo en imágenes guardadas. <br>Practícalas, repítelas, mídete
+                    y siente el cambio en tu energía. </h3><br>
+                <h2 class="text-gradient-amber mb-3" style="font-size:2.3rem;">Todo desde una sola app.
+                </h2><br>
+                <a href="#" class="btn btn-primary btn-large">
+                    Comenzar ahora con 7 días Gratis
+                </a>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <div class="footer-logo">
+                <img src="./imagenes_pagina/ManiGrab_transparente.png" alt="Manifestación Cuántica Grabovoi">
+            </div>
+            <div>© <span id="year"></span> Todos los derechos reservados.</div>
+            <div class="mt-2">Las secuencias numéricas de Grabovoi <b>NO SUSTITUYEN</b> la atención médica profesional.
+                <br>Siempre consulta con profesionales de la salud para cualquier condición médica. <br>Estas secuencias
+                son herramientas complementarias de manifestación y bienestar
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Año dinámico
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // FAQ toggle
+        function toggleFAQ(button) {
+            const item = button.closest('.faq-item');
+            const isActive = item.classList.contains('active');
+            document.querySelectorAll('.faq-item').forEach(f => f.classList.remove('active'));
+            if (!isActive) item.classList.add('active');
+        }
+
+        // Parallax suave del patrón de fondo
+        const bgPattern = document.getElementById('bgPattern');
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 10;
+            const y = (e.clientY / window.innerHeight - 0.5) * 10;
+            bgPattern.style.transform = `translate(${x}px, ${y}px)`;
+        });
+
+        // Scroll suave para links internos
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const targetId = this.getAttribute('href').substring(1);
+                const target = document.getElementById(targetId);
+                if (target) {
+                    e.preventDefault();
+                    window.scrollTo({
+                        top: target.offsetTop - 20,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+    <script>
+        const canvas = document.getElementById("goldParticles");
+        const ctx = canvas.getContext("2d");
+
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener("resize", resizeCanvas);
+
+        // Crear partículas doradas
+        function createParticles() {
+            const count = 80; // número de partículas (seguro, ligero)
+
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    opacity: Math.random() * 0.8 + 0.2,
+                    speedX: (Math.random() - 0.5) * 0.5,
+                    speedY: (Math.random() - 0.5) * 0.5
+                });
+            }
+        }
+
+        function drawParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(251,191,36,${p.opacity})`;
+                ctx.shadowColor = "rgba(251,191,36,0.9)";
+                ctx.shadowBlur = 8;
+                ctx.fill();
+
+                // Movimiento lento
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                // Reingresar suavemente
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height;
+                if (p.y > canvas.height) p.y = 0;
+            });
+        }
+
+        function animate() {
+            drawParticles();
+            requestAnimationFrame(animate);
+        }
+
+        createParticles();
+        animate();
+    </script>
+
+
+    <script>
+        const modal = document.getElementById("galleryModal");
+        const modalImg = document.getElementById("galleryModalImg");
+
+        let galleryImages = Array.from(document.querySelectorAll(".gallery-item img"));
+        let currentIndex = 0;
+
+        // Abrir modal
+        galleryImages.forEach((img, index) => {
+            img.addEventListener("click", () => {
+                currentIndex = index;
+                openModal();
+            });
+        });
+
+        function openModal() {
+            modal.style.display = "flex";
+            modalImg.src = galleryImages[currentIndex].src;
+            modalImg.style.animation = "modalZoom 0.35s ease";
+        }
+
+        // Cerrar modal
+        function closeModal() {
+            modalImg.style.animation = "modalZoom 0.35s ease reverse";
+            setTimeout(() => modal.style.display = "none", 300);
+        }
+
+        // Cambiar imagen con flechas
+        function changeImage(direction) {
+            currentIndex += direction;
+
+            if (currentIndex < 0) currentIndex = galleryImages.length - 1;
+            if (currentIndex >= galleryImages.length) currentIndex = 0;
+
+            modalImg.style.animation = "modalZoom 0.35s ease";
+            modalImg.src = galleryImages[currentIndex].src;
+        }
+    </script>
+    <script>
+
+        document.getElementById("galleryPrev").addEventListener("click", () => {
+            changeImage(-1);
+        });
+
+        document.getElementById("galleryNext").addEventListener("click", () => {
+            changeImage(1);
+        });
+    </script>
+
+    <script>
+        function openDownloadModal() {
+            document.getElementById("downloadModal").style.display = "flex";
+        }
+
+        function closeDownloadModal() {
+            document.getElementById("downloadModal").style.display = "none";
+        }
+    </script>
+
+
+    <!-- MODAL DESCARGA APP -->
+    <div id="downloadModal" class="download-modal">
+        <div class="download-modal-content">
+            <span class="download-close" onclick="closeDownloadModal()">&times;</span>
+
+            <h2 class="modal-title">Elige tu plataforma</h2>
+
+            <div class="download-buttons">
+                <!-- href="https://play.google.com/store/apps/details?id=TU.ID.ANDROID"-->
+                <a class="store-btn android" href="#" target="_self">
+                    <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/googleplay.svg"
+                        style="filter: invert(80%);">
+                    Android
+                </a>
+                <!-- href="https://apps.apple.com/app/idTU_ID_IOS" -->
+                <a class="store-btn ios" href="#" target="_self">
+                    <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/apple.svg"
+                        style="filter: invert(80%);">
+                    iOS
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
