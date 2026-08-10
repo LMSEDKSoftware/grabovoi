@@ -22,26 +22,14 @@ class SupabaseConfig {
     if (kIsWeb) return '';
     return localAnonKey;
   }
-  static String get serviceRoleKey => Env.supabaseServiceRoleKey;
+  // NOTA: nunca exponer el service_role key en el cliente (bypassa RLS por
+  // completo). Toda operación que antes usaba un "serviceClient" aquí ahora
+  // pasa por Edge Functions (p.ej. supabase/functions/admin-users) o por
+  // políticas RLS correctamente acotadas. Ver database/migration_client_write_policies.sql
+  // y database/migration_admin_rls_sugerencias_codigos.sql.
 
-  // Clientes de Supabase
+  // Cliente de Supabase
   static SupabaseClient get client => Supabase.instance.client;
-  static SupabaseClient get serviceClient {
-    // Verificar que serviceRoleKey esté configurada
-    if (serviceRoleKey.isEmpty) {
-      debugPrint('⚠️ ADVERTENCIA: SB_SERVICE_ROLE_KEY no está configurada. Usando cliente normal.');
-      // Retornar cliente normal si no hay serviceRoleKey
-      return Supabase.instance.client;
-    }
-    
-    return SupabaseClient(
-      url,
-      serviceRoleKey,
-      authOptions: const FlutterAuthClientOptions(
-        authFlowType: AuthFlowType.implicit,
-      ),
-    );
-  }
 
   static Future<void> initialize() async {
     if (kIsWeb && (url.isEmpty || anonKey.isEmpty)) {

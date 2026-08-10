@@ -43,7 +43,7 @@ else
 fi
 
 # Verificar variables críticas
-if [ -z "${OPENAI_API_KEY}" ] || [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ] || [ -z "${SB_SERVICE_ROLE_KEY}" ]; then
+if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
     echo -e "${RED}❌ ERROR: Variables de entorno incompletas${NC}"
     exit 1
 fi
@@ -57,7 +57,5 @@ echo ""
 
 # Ejecutar Flutter - Chrome se abrirá automáticamente
 flutter run -d chrome \
-    --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY}" \
     --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
-    --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
-    --dart-define=SB_SERVICE_ROLE_KEY="${SB_SERVICE_ROLE_KEY}"
+    --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}"

@@ -25,10 +25,8 @@ fi
 echo "🌐 Iniciando servidor Flutter..."
 cd "$(dirname "$0")"
 flutter run -d chrome-server \
-    --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY}" \
     --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
     --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
-    --dart-define=SB_SERVICE_ROLE_KEY="${SB_SERVICE_ROLE_KEY}" \
     --web-port=8080 \
     > /tmp/flutter_web.log 2>&1 &
 

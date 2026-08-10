@@ -40,6 +40,14 @@ async function saveLog(
   }
 }
 
+const MAX_ATTEMPTS = 5
+
+function generarResetToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -118,17 +126,38 @@ Deno.serve(async (req) => {
     created_at: otpRow.created_at,
     has_recovery_link: !!otpRow.recovery_link
   }, otpRow.id)
-  
+
+  // Límite de intentos: si este código ya alcanzó el máximo, se invalida y
+  // hay que pedir uno nuevo. Evita fuerza bruta sobre los 6 dígitos.
+  const attempts = (otpRow.attempts as number | null) ?? 0
+  if (attempts >= MAX_ATTEMPTS) {
+    await supabase.from('password_reset_otps').update({ used: true }).eq('id', otpRow.id)
+    await saveLog(supabase, requestEmail, 'otp_max_attempts', `Máximo de intentos alcanzado, OTP invalidado`, 'warning', {
+      otp_id: otpRow.id,
+      attempts
+    }, otpRow.id)
+    return new Response(JSON.stringify({ error: 'Demasiados intentos. Solicita un nuevo código.' }), { status: 429, headers: corsHeaders })
+  }
+
   // Verificar que el código corto coincida
   if (String(otpRow.otp_code) !== String(otp_code)) {
+    const nuevosIntentos = attempts + 1
+    await supabase
+      .from('password_reset_otps')
+      .update(nuevosIntentos >= MAX_ATTEMPTS ? { attempts: nuevosIntentos, used: true } : { attempts: nuevosIntentos })
+      .eq('id', otpRow.id)
     await saveLog(supabase, requestEmail, 'otp_mismatch', `Código OTP no coincide`, 'warning', {
       otp_id: otpRow.id,
+      attempts: nuevosIntentos,
       provided_code: String(otp_code).substring(0, 2) + '***',
       expected_code: String(otpRow.otp_code).substring(0, 2) + '***'
     }, otpRow.id)
-    return new Response(JSON.stringify({ error: 'OTP incorrecto' }), { status: 400, headers: corsHeaders })
+    const intentosRestantes = Math.max(0, MAX_ATTEMPTS - nuevosIntentos)
+    return new Response(JSON.stringify({
+      error: intentosRestantes > 0 ? `OTP incorrecto. Te quedan ${intentosRestantes} intento(s).` : 'OTP incorrecto. Solicita un nuevo código.'
+    }), { status: 400, headers: corsHeaders })
   }
-  
+
   // Verificar que tenemos el recovery_link de Supabase
   if (!otpRow.recovery_link) {
     await saveLog(supabase, requestEmail, 'recovery_link_missing', `Recovery link de Supabase no encontrado en el registro`, 'error', {
@@ -166,10 +195,15 @@ Deno.serve(async (req) => {
     }, otpRow.id)
   }
 
-  // Marcar OTP como usado
+  // Marcar OTP como usado y emitir un token de un solo uso para reset-password.php.
+  // (Antes reset-password.php solo confiaba en "existe un OTP used=true reciente
+  // para este email" sin ningún secreto ligado a ESTA verificación puntual.)
+  const resetToken = generarResetToken()
+  const resetTokenExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
+
   const { error: updOtpErr } = await supabase
     .from('password_reset_otps')
-    .update({ used: true })
+    .update({ used: true, reset_token: resetToken, reset_token_expires_at: resetTokenExpiresAt })
     .eq('id', otpRow.id)
 
   if (updOtpErr) {
@@ -194,20 +228,24 @@ Deno.serve(async (req) => {
     user_id: userId
   }, otpRow.id, userId)
   
+  const continueUrl = `${APP_URL}/reset-password.php?email=${encodeURIComponent(requestEmail)}&token=${resetToken}`
+
+  // No logueamos el token completo (es el secreto que autoriza el cambio de
+  // contraseña): solo un prefijo, suficiente para correlacionar en soporte.
   await saveLog(supabase, requestEmail, 'continue_url_returned', `Continue URL devuelto al cliente`, 'info', {
     otp_id: otpRow.id,
-    continue_url: `${APP_URL}/reset-password.php?email=${encodeURIComponent(requestEmail)}`
+    continue_url: `${APP_URL}/reset-password.php?email=${encodeURIComponent(requestEmail)}&token=${resetToken.substring(0, 6)}***`
   }, otpRow.id)
-  
+
   await saveLog(supabase, requestEmail, 'otp_process_completed', `Proceso de verificación OTP completado exitosamente`, 'info', {
     final_status: 'success',
     otp_id: otpRow.id
   }, otpRow.id)
-  
+
   // Regresar URL a la página PHP donde cambiará la contraseña
   console.log('✅ OTP verificado y marcado como usado, devolviendo continue_url')
-  return new Response(JSON.stringify({ 
+  return new Response(JSON.stringify({
     ok: true,
-    continue_url: `${APP_URL}/reset-password.php?email=${encodeURIComponent(requestEmail)}`,
+    continue_url: continueUrl,
   }), { status: 200, headers: corsHeaders })
 })

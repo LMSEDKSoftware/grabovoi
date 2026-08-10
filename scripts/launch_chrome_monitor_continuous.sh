@@ -71,10 +71,8 @@ is_chrome_running() {
 # Iniciar Flutter
 echo "📦 Compilando e iniciando servidor Flutter..."
 flutter run -d chrome \
-    --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY}" \
     --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
     --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
-    --dart-define=SB_SERVICE_ROLE_KEY="${SB_SERVICE_ROLE_KEY}" \
     > "${LOG_FILE}" 2>&1 &
 
 FLUTTER_PID=$!

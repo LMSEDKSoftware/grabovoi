@@ -18,7 +18,7 @@ echo "📋 Cargando variables de entorno desde .env..."
 source .env
 
 # Verificar que las variables existen
-if [ -z "$OPENAI_API_KEY" ] || [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$SB_SERVICE_ROLE_KEY" ]; then
+if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
     echo "❌ Error: Faltan variables de entorno en .env"
     exit 1
 fi
@@ -28,8 +28,6 @@ echo ""
 
 echo "📱 Ejecutando aplicación en Android..."
 flutter run -d android \
-    --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY}" \
     --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
-    --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
-    --dart-define=SB_SERVICE_ROLE_KEY="${SB_SERVICE_ROLE_KEY}"
+    --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}"
 

@@ -17,54 +17,11 @@ String? _getCurrentUserId() {
 
 class SupabaseService {
   static final SupabaseClient _client = SupabaseConfig.client;
-  static final SupabaseClient _serviceClient = SupabaseConfig.serviceClient;
-  
+
   // Getter público para acceder al cliente
   static SupabaseClient get client => _client;
 
   // ===== CÓDIGOS GRABOVOI =====
-  
-  static Future<void> guardarCodigo(CodigoGrabovoi codigo) async {
-    try {
-      print('💾 Intentando guardar código: ${codigo.codigo}');
-      print('📋 Datos: ${codigo.nombre} - ${codigo.categoria}');
-      
-      // Primero intentar con service client (bypass RLS)
-      try {
-        await _serviceClient
-            .from('codigos_grabovoi')
-            .insert({
-              'codigo': codigo.codigo,
-              'nombre': codigo.nombre,
-              'descripcion': codigo.descripcion,
-              'categoria': codigo.categoria,
-              'color': codigo.color,
-            });
-        
-        print('✅ Código guardado con service client: ${codigo.codigo}');
-        return;
-      } catch (serviceError) {
-        print('⚠️ Service client falló: $serviceError');
-        
-        // Si falla service client, intentar con client normal
-        await _client
-            .from('codigos_grabovoi')
-            .insert({
-              'codigo': codigo.codigo,
-              'nombre': codigo.nombre,
-              'descripcion': codigo.descripcion,
-              'categoria': codigo.categoria,
-              'color': codigo.color,
-            });
-        
-        print('✅ Código guardado con client normal: ${codigo.codigo}');
-      }
-    } catch (e) {
-      print('❌ Error al guardar código en la base de datos: $e');
-      print('🔍 Tipo de error: ${e.runtimeType}');
-      rethrow;
-    }
-  }
 
   // Verificar si un código ya existe en la base de datos
   static Future<bool> codigoExiste(String codigo) async {
@@ -79,26 +36,6 @@ class SupabaseService {
     } catch (e) {
       print('❌ Error verificando existencia del código: $e');
       return false;
-    }
-  }
-
-  // Método para agregar códigos específicos conocidos
-  static Future<void> agregarCodigoEspecifico(String codigo, String nombre, String descripcion, String categoria) async {
-    try {
-      final codigoGrabovoi = CodigoGrabovoi(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        codigo: codigo,
-        nombre: nombre,
-        descripcion: descripcion,
-        categoria: categoria,
-        color: _getCategoryColor(categoria),
-      );
-      
-      await guardarCodigo(codigoGrabovoi);
-      print('✅ Código específico agregado: $codigo - $nombre');
-    } catch (e) {
-      print('❌ Error al agregar código específico: $e');
-      rethrow;
     }
   }
 
@@ -319,22 +256,25 @@ class SupabaseService {
   }) async {
     try {
       print('💾 Agregando título relacionado: $titulo para código $codigoExistente');
-      
-      final response = await _serviceClient
-          .from('codigos_titulos_relacionados')
-          .insert({
-            'codigo_existente': codigoExistente,
-            'titulo': titulo,
-            'descripcion': descripcion,
-            'categoria': categoria,
-            'fuente': fuente,
-            'sugerencia_id': sugerenciaId,
-            'usuario_id': usuarioId,
-          })
-          .select('id')
-          .single();
-      
-      final id = response['id'] as String;
+
+      // Operación admin: se ejecuta server-side en la edge function admin-users
+      // (valida es_admin() antes de insertar con el service role).
+      final response = await _client.functions.invoke('admin-users', body: {
+        'action': 'add_titulo_relacionado',
+        'codigoExistente': codigoExistente,
+        'titulo': titulo,
+        'descripcion': descripcion,
+        'categoria': categoria,
+        'fuente': fuente,
+        'sugerenciaId': sugerenciaId,
+        'usuarioId': usuarioId,
+      });
+      if (response.status != 200) {
+        final error = (response.data is Map) ? response.data['error'] : response.data;
+        throw Exception(error?.toString() ?? 'Error agregando título relacionado');
+      }
+
+      final id = response.data['id'] as String;
       print('✅ Título relacionado agregado con ID: $id');
       return id;
     } catch (e) {
@@ -681,8 +621,8 @@ class SupabaseService {
             })
             .eq('codigo_id', codigoId);
       } else {
-        // Crear nuevo registro usando service client para evitar RLS
-        await _serviceClient.from('codigo_popularidad').insert({
+        // RLS: "Authenticated users can insert popularidad" (database/migration_client_write_policies.sql)
+        await _client.from('codigo_popularidad').insert({
           'codigo_id': codigoId,
           'contador': 1,
           'ultimo_uso': DateTime.now().toIso8601String(),
@@ -898,51 +838,11 @@ class SupabaseService {
     return nivel.clamp(1, 10);
   }
 
-  // ===== MIGRACIÓN DE DATOS =====
-  
-  static Future<void> migrarCodigosDesdeJson(List<Map<String, dynamic>> codigos) async {
-    try {
-      for (final codigoData in codigos) {
-        await _serviceClient.from('codigos_grabovoi').upsert({
-          'codigo': codigoData['codigo'],
-          'nombre': codigoData['nombre'],
-          'descripcion': codigoData['descripcion'],
-          'categoria': codigoData['categoria'] ?? 'General',
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        });
-      }
-    } catch (e) {
-      throw Exception('Error al migrar códigos: $e');
-    }
-  }
-
+  // RLS: "Authenticated users can insert codigos" (database/migration_client_write_policies.sql)
   static Future<CodigoGrabovoi> crearCodigo(CodigoGrabovoi codigo) async {
     try {
-      // Verificar que serviceRoleKey esté configurada
-      if (SupabaseConfig.serviceRoleKey.isEmpty) {
-        print('⚠️ ServiceRoleKey no configurada, intentando con cliente normal');
-        // Intentar con cliente normal (puede fallar si RLS no permite)
-        final response = await _client
-            .from('codigos_grabovoi')
-            .insert({
-              'codigo': codigo.codigo,
-              'nombre': codigo.nombre,
-              'descripcion': codigo.descripcion,
-              'categoria': codigo.categoria,
-              'color': codigo.color,
-              'created_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .select()
-            .single();
-        
-        return CodigoGrabovoi.fromJson(response);
-      }
-      
-      // Usar serviceClient (bypass RLS)
-      print('💾 Creando código con serviceClient (bypass RLS): ${codigo.codigo}');
-      final response = await _serviceClient
+      print('💾 Creando código: ${codigo.codigo}');
+      final response = await _client
           .from('codigos_grabovoi')
           .insert({
             'codigo': codigo.codigo,
@@ -960,64 +860,7 @@ class SupabaseService {
       return CodigoGrabovoi.fromJson(response);
     } catch (e) {
       print('❌ Error al crear código: $e');
-      
-      // Si el error es 401 (No API key), intentar con cliente normal como fallback
-      if (e.toString().contains('401') || e.toString().contains('No API key')) {
-        print('🔄 Error 401 detectado, intentando con cliente normal...');
-        try {
-          final response = await _client
-              .from('codigos_grabovoi')
-              .insert({
-                'codigo': codigo.codigo,
-                'nombre': codigo.nombre,
-                'descripcion': codigo.descripcion,
-                'categoria': codigo.categoria,
-                'color': codigo.color,
-                'created_at': DateTime.now().toIso8601String(),
-                'updated_at': DateTime.now().toIso8601String(),
-              })
-              .select()
-              .single();
-          
-          print('✅ Código creado con cliente normal (fallback): ${codigo.codigo}');
-          return CodigoGrabovoi.fromJson(response);
-        } catch (fallbackError) {
-          print('❌ Fallback también falló: $fallbackError');
-          throw Exception('Error al crear código: No se pudo insertar. Verifica los permisos y la configuración de la API key. Error original: $e');
-        }
-      }
-      
       throw Exception('Error al crear código: $e');
-    }
-  }
-
-  /// Actualizar un código existente (solo para administradores)
-  static Future<void> actualizarCodigo(
-    String codigoId, {
-    String? nombre,
-    String? descripcion,
-    String? categoria,
-  }) async {
-    try {
-      print('🔄 Actualizando código: $codigoId');
-      
-      final updateData = <String, dynamic>{
-        'updated_at': DateTime.now().toIso8601String(),
-      };
-      
-      if (nombre != null) updateData['nombre'] = nombre;
-      if (descripcion != null) updateData['descripcion'] = descripcion;
-      if (categoria != null) updateData['categoria'] = categoria;
-      
-      await _serviceClient
-          .from('codigos_grabovoi')
-          .update(updateData)
-          .eq('codigo', codigoId);
-      
-      print('✅ Código actualizado: $codigoId');
-    } catch (e) {
-      print('❌ Error actualizando código: $e');
-      throw Exception('Error al actualizar código: $e');
     }
   }
 
@@ -1076,15 +919,14 @@ class SupabaseService {
 
   /// Obtiene todos los reportes de códigos (solo para administradores)
   /// Opcionalmente filtra por tipo de reporte
-  /// Usa serviceClient para bypass RLS y evitar recursión infinita
   static Future<List<Map<String, dynamic>>> getReportesCodigos({String? tipoReporte}) async {
     try {
       print('📊 Obteniendo reportes de códigos...');
       print('🔍 Filtro: ${tipoReporte ?? "todos"}');
       
-      // Usar serviceClient para bypass RLS (evita recursión infinita en políticas)
+      // RLS: "Los administradores pueden ver todos los reportes" (es_admin(), sin recursión)
       if (tipoReporte != null && tipoReporte != 'todos') {
-        final response = await _serviceClient
+        final response = await _client
             .from('reportes_codigos')
             .select()
             .eq('tipo_reporte', tipoReporte)
@@ -1093,7 +935,7 @@ class SupabaseService {
         print('✅ Reportes obtenidos: ${reportes.length}');
         return reportes;
       } else {
-        final response = await _serviceClient
+        final response = await _client
             .from('reportes_codigos')
             .select()
             .order('created_at', ascending: false);
@@ -1125,8 +967,8 @@ class SupabaseService {
         throw Exception('Estatus inválido: $nuevoEstatus');
       }
 
-      // Usar serviceClient para bypass RLS
-      await _serviceClient
+      // RLS: "Los administradores pueden actualizar todos los reportes" (es_admin())
+      await _client
           .from('reportes_codigos')
           .update({'estatus': nuevoEstatus})
           .eq('id', reporteId);
@@ -1138,20 +980,4 @@ class SupabaseService {
     }
   }
 
-  /// Obtiene un reporte específico por su ID
-  static Future<Map<String, dynamic>?> getReportePorId(String reporteId) async {
-    try {
-      final response = await _serviceClient
-          .from('reportes_codigos')
-          .select()
-          .eq('id', reporteId)
-          .maybeSingle();
-      
-      if (response == null) return null;
-      return Map<String, dynamic>.from(response);
-    } catch (e) {
-      print('❌ Error obteniendo reporte por ID: $e');
-      throw Exception('Error al obtener el reporte: $e');
-    }
-  }
 }

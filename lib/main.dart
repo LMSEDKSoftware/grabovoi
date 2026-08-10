@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'services/app_time_tracker.dart';
+import 'services/biblioteca_navigation_bridge.dart';
 import 'services/pilotage_state_service.dart';
 import 'services/audio_service.dart';
 import 'services/audio_manager_service.dart';
@@ -331,6 +332,7 @@ class _MainNavigationState extends State<MainNavigation> {
       const ProfileScreen(),
     ];
     _notificationCountService.initialize();
+    BibliotecaNavigationBridge.pendingSearchQuery.addListener(_onBibliotecaNavigationRequested);
 
     // Verificar si necesita mostrar el tour
     // Si showTour es false, verificar si el usuario nunca ha visto el tour
@@ -366,8 +368,27 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   void dispose() {
+    BibliotecaNavigationBridge.pendingSearchQuery.removeListener(_onBibliotecaNavigationRequested);
     // No cerramos el servicio aquí porque es un singleton compartido
     super.dispose();
+  }
+
+  /// Atiende pedidos de "ve a Biblioteca y busca este código" desde otras
+  /// pantallas (ver code_detail_screen.dart, tarjetas "combínalo con").
+  void _onBibliotecaNavigationRequested() {
+    final codigo = BibliotecaNavigationBridge.pendingSearchQuery.value;
+    if (codigo == null || !mounted) return;
+    BibliotecaNavigationBridge.consume();
+    _changeTab(1);
+    // Esperar a que el frame del cambio de tab se construya antes de setear
+    // la búsqueda, para que el GlobalKey ya tenga su State montado/activo.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        (_bibliotecaScreenKey.currentState as dynamic)?.setExternalSearchQuery(codigo);
+      } catch (e) {
+        debugPrint('⚠️ Error seteando búsqueda externa en Biblioteca: $e');
+      }
+    });
   }
 
   void _changeTab(int index) {

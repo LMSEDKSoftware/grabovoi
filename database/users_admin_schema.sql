@@ -23,14 +23,12 @@ create policy "Admins can view all admin users" on public.users_admin
 -- Esta operación normalmente se hace con service client para bypass RLS
 
 -- Política: Solo los admins pueden eliminar
+-- Usa es_admin() (SECURITY DEFINER) en vez de un subquery directo contra esta
+-- misma tabla, para evitar el mismo problema de recursión infinita que la
+-- política de SELECT (ver scripts/fix_recursion_users_admin.sql).
 create policy "Admins can delete admin users" on public.users_admin
   for delete
-  using (
-    exists (
-      select 1 from public.users_admin
-      where user_id = auth.uid()
-    )
-  );
+  using (public.es_admin(auth.uid()));
 
 -- Función helper para verificar si un usuario es admin
 create or replace function public.es_admin(user_uuid uuid)

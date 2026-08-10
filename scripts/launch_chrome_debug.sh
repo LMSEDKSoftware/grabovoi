@@ -71,10 +71,8 @@ echo -e "${GREEN}📦 Iniciando Flutter (verbose) en puerto ${FIXED_PORT}...${NC
 nohup flutter run -d chrome \
     --web-port=${FIXED_PORT} \
     --verbose \
-    --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY}" \
     --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
     --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
-    --dart-define=SB_SERVICE_ROLE_KEY="${SB_SERVICE_ROLE_KEY}" \
     > "${LOG_FILE}" 2>&1 &
 
 FLUTTER_PID=$!

@@ -79,6 +79,15 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      // log_id es un UUID aleatorio (no secuencial/adivinable) y este endpoint
+      // se llama sin sesión desde el dispositivo al recibir un push, así que no
+      // exigimos JWT aquí; sí acotamos 'action' a los dos valores válidos.
+      if (action !== 'received' && action !== 'opened') {
+        return new Response(JSON.stringify({ error: "Invalid action" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
       const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -106,6 +115,25 @@ serve(async (req) => {
       });
     }
   }
+
+  // --- SEGURIDAD: solo la función notify_push_from_db() (trigger de Postgres,
+  // ver scripts/realtime_notifications_setup.sql) puede disparar envíos reales.
+  // Antes cualquiera en internet podía mandar push a un userId o hacer broadcast
+  // a un topic (a toda la base de usuarios) sin ninguna autenticación.
+  const PUSH_SECRET = Deno.env.get("PUSH_SECRET");
+  if (!PUSH_SECRET) {
+    return new Response(JSON.stringify({ error: "PUSH_SECRET no configurado" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  if (req.headers.get("x-push-secret") !== PUSH_SECRET) {
+    return new Response(JSON.stringify({ error: "No autorizado" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  // ---------------------------------------------------------------------
 
   try {
     const { userId, topic, title, body, data: customData } = await req.json();

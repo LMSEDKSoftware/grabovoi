@@ -387,10 +387,9 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                 SizedBox(
                   width: double.infinity,
                   child: _remainingDays != null && _remainingDays! > 0
-                      ? CustomButton(
-                          text: 'Continuar y Aprovechar mi Prueba Gratis',
+                      ? _PremiumCtaButton(
+                          text: 'Continuar y aprovechar mi prueba gratis',
                           onPressed: _navigateToHome,
-                          color: const Color(0xFFFFD700),
                         )
                       : CustomButton(
                           text: 'SIN ACCESO A PREMIUM, ACTUALIZA TU PLAN',
@@ -399,6 +398,90 @@ class _SubscriptionWelcomeModalState extends State<SubscriptionWelcomeModal> {
                         ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// CTA premium del modal de bienvenida: gradiente dorado, brillo superior
+/// tipo "glass" y sombra doble para que se sienta más "pro" que el botón
+/// plano genérico. Solo se usa aquí (no reemplaza a CustomButton en el
+/// resto de la app).
+class _PremiumCtaButton extends StatelessWidget {
+  final String text;
+  final VoidCallback onPressed;
+
+  const _PremiumCtaButton({
+    required this.text,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withOpacity(0.45),
+            blurRadius: 24,
+            spreadRadius: 0,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: const Color(0xFFFFA500).withOpacity(0.25),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(30),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFE55C), Color(0xFFFFD700), Color(0xFFDBA800)],
+              stops: [0.0, 0.5, 1.0],
+            ),
+            border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+          ),
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(30),
+            splashColor: Colors.white.withOpacity(0.25),
+            highlightColor: Colors.white.withOpacity(0.1),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.workspace_premium_rounded, color: Color(0xFF1C2541), size: 20),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      text,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        color: const Color(0xFF1C2541),
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

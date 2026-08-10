@@ -7,10 +7,14 @@ class Env {
     return (fromFile ?? fromDefine).trim();
   }
 
-  static String get openAiKey => _read('OPENAI_API_KEY', const String.fromEnvironment('OPENAI_API_KEY', defaultValue: ''));
+  // OPENAI_API_KEY NUNCA debe leerse aquí: no la necesita el cliente (la
+  // búsqueda con IA va por la edge function deep-search-codes, que usa su
+  // propia copia server-side de la clave vía Deno.env).
   static String get supabaseUrl => _read('SUPABASE_URL', const String.fromEnvironment('SUPABASE_URL', defaultValue: ''));
   static String get supabaseAnonKey => _read('SUPABASE_ANON_KEY', const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: ''));
-  static String get supabaseServiceRoleKey => _read('SB_SERVICE_ROLE_KEY', const String.fromEnvironment('SB_SERVICE_ROLE_KEY', defaultValue: ''));
+  // SB_SERVICE_ROLE_KEY NUNCA debe leerse aquí: este código corre en el
+  // dispositivo/navegador del usuario. Esa key vive solo en Edge Functions
+  // (Deno.env) y en scripts server-side (server/, scripts/).
 }
 
 

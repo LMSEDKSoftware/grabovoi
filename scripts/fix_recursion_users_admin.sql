@@ -1,5 +1,12 @@
 -- Script para corregir la recursión infinita en users_admin
 -- Ejecuta este script en el Editor SQL de Supabase
+--
+-- ⚠️ OBSOLETO: la política "Allow read access for authenticated users" de
+-- este script (paso 5) dejaba leer la tabla completa de admins a CUALQUIER
+-- usuario logueado. Fue reemplazada por database/migration_fix_users_admin_policies.sql,
+-- que usa la función es_admin() (ya evita la recursión sin exponer la lista
+-- de admins a todo el mundo). NO vuelvas a ejecutar este script tal cual;
+-- si necesitas repetir el fix de recursión, usa el nuevo archivo.
 
 -- 1. Función segura para verificar si un usuario es admin (bypasses RLS)
 -- Esta función 'SECURITY DEFINER' se ejecuta con privilegios de creador, evitando el bucle de políticas

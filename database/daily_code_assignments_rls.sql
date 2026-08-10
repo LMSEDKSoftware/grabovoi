@@ -30,21 +30,27 @@ DROP POLICY IF EXISTS "Allow authenticated insert" ON daily_code_assignments;
 DROP POLICY IF EXISTS "Allow authenticated update" ON daily_code_assignments;
 DROP POLICY IF EXISTS "Allow public insert" ON daily_code_assignments;
 DROP POLICY IF EXISTS "Allow public update" ON daily_code_assignments;
+DROP POLICY IF EXISTS "Authenticated users can insert" ON daily_code_assignments;
+DROP POLICY IF EXISTS "Authenticated users can update" ON daily_code_assignments;
 
 -- Política 1: Permitir lectura pública (todos pueden ver qué código está asignado para cada día)
 CREATE POLICY "Allow public read access" ON daily_code_assignments
   FOR SELECT
   USING (true);
 
--- Política 2: Permitir inserción pública (necesario para asignación automática del código diario)
--- Esto permite que el sistema asigne códigos automáticamente sin requerir autenticación
-CREATE POLICY "Allow public insert" ON daily_code_assignments
+-- Política 2: Permitir inserción a usuarios logueados (necesario para asignación
+-- automática del código diario: el primer cliente autenticado que abre la app
+-- ese día crea el registro). Restringido a 'authenticated' para que la anon
+-- key pública, sin sesión, no pueda escribir.
+CREATE POLICY "Authenticated users can insert" ON daily_code_assignments
   FOR INSERT
+  TO authenticated
   WITH CHECK (true);
 
--- Política 3: Permitir actualización pública (necesario para desactivar códigos anteriores)
-CREATE POLICY "Allow public update" ON daily_code_assignments
+-- Política 3: Permitir actualización a usuarios logueados (necesario para desactivar códigos anteriores)
+CREATE POLICY "Authenticated users can update" ON daily_code_assignments
   FOR UPDATE
+  TO authenticated
   USING (true)
   WITH CHECK (true);
 

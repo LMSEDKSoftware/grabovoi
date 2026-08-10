@@ -89,9 +89,8 @@ fi
 log ""
 log "4. flutter build web..."
 BUILD_CMD="flutter build web"
-if [ -n "${OPENAI_API_KEY}" ] && [ -n "${SUPABASE_URL}" ] && [ -n "${SUPABASE_ANON_KEY}" ]; then
-    BUILD_CMD="${BUILD_CMD} --dart-define=OPENAI_API_KEY=${OPENAI_API_KEY} --dart-define=SUPABASE_URL=${SUPABASE_URL} --dart-define=SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
-    [ -n "${SB_SERVICE_ROLE_KEY}" ] && BUILD_CMD="${BUILD_CMD} --dart-define=SB_SERVICE_ROLE_KEY=${SB_SERVICE_ROLE_KEY}"
+if [ -n "${SUPABASE_URL}" ] && [ -n "${SUPABASE_ANON_KEY}" ]; then
+    BUILD_CMD="${BUILD_CMD} --dart-define=SUPABASE_URL=${SUPABASE_URL} --dart-define=SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
 fi
 if eval "${BUILD_CMD}" >> "${AUDIT_LOG}" 2>&1; then
     ok "build web OK"
@@ -117,10 +116,8 @@ lsof -ti:${FIXED_PORT} | xargs kill -9 2>/dev/null || true
 sleep 2
 
 RUN_CMD="flutter run -d chrome --web-port=${FIXED_PORT}"
-[ -n "${OPENAI_API_KEY}" ] && RUN_CMD="${RUN_CMD} --dart-define=OPENAI_API_KEY=${OPENAI_API_KEY}"
 [ -n "${SUPABASE_URL}" ] && RUN_CMD="${RUN_CMD} --dart-define=SUPABASE_URL=${SUPABASE_URL}"
 [ -n "${SUPABASE_ANON_KEY}" ] && RUN_CMD="${RUN_CMD} --dart-define=SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
-[ -n "${SB_SERVICE_ROLE_KEY}" ] && RUN_CMD="${RUN_CMD} --dart-define=SB_SERVICE_ROLE_KEY=${SB_SERVICE_ROLE_KEY}"
 
 if [ "${NO_LAUNCH}" = false ]; then
     log "   Iniciando servidor en puerto ${FIXED_PORT}..."

@@ -584,7 +584,7 @@ class UserProgressService {
     return nivel.clamp(1, 10);
   }
 
-  /// Guardar evaluación inicial del usuario
+  /// Guardar evaluación inicial del usuario en user_assessments (1 fila por usuario y respuesta).
   Future<void> saveUserAssessment(Map<String, dynamic> assessmentData) async {
     if (!_authService.isLoggedIn) return;
 
@@ -592,41 +592,12 @@ class UserProgressService {
     await _saveAssessmentLocally(assessmentData);
 
     try {
-      // Intentar guardar en la tabla de evaluaciones (puede no existir aún)
-      try {
-        await _supabase.from('user_assessments').insert({
-          'user_id': _authService.currentUser!.id,
-          'assessment_data': assessmentData,
-          'created_at': DateTime.now().toIso8601String(),
-        });
-        debugPrint('✅ Evaluación guardada en user_assessments');
-      } catch (e) {
-        debugPrint('⚠️ No se pudo guardar en user_assessments (tabla puede no existir o error de RLS): $e');
-        // Continuar con el guardado en user_progress que es más importante
-      }
-
-      // Actualizar preferencias del usuario basadas en la evaluación
-      final preferences = <String, dynamic>{
-        'knowledge_level': assessmentData['knowledge_level'],
-        'goals': assessmentData['goals'],
-        'experience_level': assessmentData['experience_level'],
-        'time_available': assessmentData['time_available'],
-        'preferences': assessmentData['preferences'],
-        'motivation': assessmentData['motivation'],
-        'assessment_completed': true,
-        'assessment_date': assessmentData['completed_at'],
-      };
-
-      // Actualizar o crear progreso del usuario
-      await _supabase.from('user_progress').upsert({
+      await _supabase.from('user_assessments').insert({
         'user_id': _authService.currentUser!.id,
-        'preferences': preferences,
-        'energy_level': _calculateInitialEnergyLevel(assessmentData),
+        'assessment_data': assessmentData,
         'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
       });
-
-      debugPrint('✅ Evaluación del usuario guardada en Supabase');
+      debugPrint('✅ Evaluación guardada en user_assessments');
     } catch (e) {
       debugPrint('⚠️ Error guardando evaluación en Supabase (pero guardada localmente): $e');
     }
@@ -688,32 +659,6 @@ class UserProgressService {
 
     debugPrint('🔍 Buscando evaluación para usuario: ${_authService.currentUser!.id}');
 
-    // Primero intentar obtener desde user_progress (más confiable)
-    try {
-      final progress = await getUserProgress();
-      if (progress != null && progress['preferences'] != null) {
-        final preferences = progress['preferences'] as Map<String, dynamic>;
-        if (preferences['assessment_completed'] == true) {
-          // Reconstruir assessmentData desde preferences
-          final assessmentData = <String, dynamic>{
-            'knowledge_level': preferences['knowledge_level'],
-            'goals': preferences['goals'],
-            'experience_level': preferences['experience_level'],
-            'time_available': preferences['time_available'],
-            'preferences': preferences['preferences'],
-            'motivation': preferences['motivation'],
-            'completed_at': preferences['assessment_date'],
-            'is_complete': true,
-          };
-          debugPrint('✅ Evaluación encontrada en user_progress');
-          return assessmentData;
-        }
-      }
-    } catch (e) {
-      debugPrint('⚠️ Error obteniendo evaluación de user_progress: $e');
-    }
-
-    // Intentar obtener desde user_assessments (puede no existir)
     try {
       final response = await _supabase
           .from('user_assessments')
@@ -731,7 +676,7 @@ class UserProgressService {
         return assessmentData;
       }
     } catch (e) {
-      debugPrint('⚠️ Error obteniendo evaluación de user_assessments (tabla puede no existir): $e');
+      debugPrint('⚠️ Error obteniendo evaluación de user_assessments: $e');
       // Continuar con fallback a SharedPreferences
     }
 

@@ -29,6 +29,47 @@ serve(async (req) => {
       });
     }
 
+    // --- SEGURIDAD: requerir JWT y que 'to' sea el propio email del caller ---
+    // Antes cualquiera (sin auth) podía: (a) hacer que generateLink emitiera un
+    // signup/recovery link real para CUALQUIER email con un redirectTo/actionUrl
+    // arbitrario (phishing + posible robo de token vía open-redirect), y
+    // (b) mandar un email "tu código es {otpCode}" con un código elegido por el
+    // atacante a la bandeja de cualquier víctima, usando el remitente real de
+    // ManiGrab. Autoescopar a "to == email del caller" cierra ambos vectores:
+    // solo te puedes mandar correos a ti mismo.
+    const SUPABASE_URL_AUTH = Deno.env.get("SUPABASE_URL");
+    const SERVICE_ROLE_KEY_AUTH = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !SUPABASE_URL_AUTH || !SERVICE_ROLE_KEY_AUTH) {
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const authClient = createClient(SUPABASE_URL_AUTH, SERVICE_ROLE_KEY_AUTH);
+    const { data: { user: callerUser }, error: callerErr } = await authClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (callerErr || !callerUser) {
+      return new Response(JSON.stringify({ error: "Sesión inválida" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if ((callerUser.email ?? "").toLowerCase().trim() !== to.toLowerCase().trim()) {
+      console.error(`send-email: intento de enviar a ${to} autenticado como ${callerUser.email}`);
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // actionUrl solo se acepta si apunta a un origen conocido de la app;
+    // cualquier otro valor se descarta (se usa el redirect por defecto) en
+    // vez de pasarlo tal cual a generateLink().
+    const ACTION_URL_ALLOWLIST = ["https://manigrab.app", "com.manifestacion.grabovoi://", "http://localhost", "http://127.0.0.1"];
+    const safeActionUrl = typeof actionUrl === "string" && ACTION_URL_ALLOWLIST.some((p) => actionUrl.startsWith(p))
+      ? actionUrl
+      : undefined;
+    // ---------------------------------------------------------------------
+
     // Configuración de envío de email
     // Opción 1: Usar servidor propio con IP estática (recomendado para whitelist)
     const EMAIL_SERVER_URL = Deno.env.get("EMAIL_SERVER_URL");
@@ -57,8 +98,8 @@ serve(async (req) => {
 
     if (template === "welcome_or_confirm") {
       // Para correo de bienvenida, generar action_url con token de confirmación
-      // Si actionUrl ya viene proporcionado, usarlo como redirectTo para generar el link
-      const redirectToUrl = actionUrl || (SUPABASE_URL ? `${SUPABASE_URL.replace('/rest/v1', '')}/auth/callback` : 'https://manigrab.app/auth/callback');
+      // Si actionUrl ya viene proporcionado (y pasó la lista blanca), usarlo como redirectTo
+      const redirectToUrl = safeActionUrl || (SUPABASE_URL ? `${SUPABASE_URL.replace('/rest/v1', '')}/auth/callback` : 'https://manigrab.app/auth/callback');
       
       console.log("🔗 Generando link de confirmación...");
       console.log("   Email:", to);

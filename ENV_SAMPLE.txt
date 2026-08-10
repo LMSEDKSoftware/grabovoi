@@ -7,8 +7,7 @@ ENV=dev
 
 ; Deep search (Edge Functions)
 ; - deep-search-codes: NO usa web search (solo encola requests por usuario)
-; - deep-search-tavily: web search (Tavily)
-; - process-deep-search-queue: crawler por fuentes + resuelve requests pendientes (sin Tavily por query).
+; - process-deep-search-queue: crawler por fuentes + resuelve requests pendientes (usa Tavily internamente).
 ; Recomendado: configurar estas llaves como secrets del proyecto Supabase (nunca en el cliente).
 TAVILY_API_KEY=
 OPENAI_MODEL_DEEP_SEARCH=gpt-4o-mini

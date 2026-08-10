@@ -37,19 +37,19 @@ class _UserAssessmentScreenState extends State<UserAssessmentScreen> {
       'options': [
         {
           'value': 'beginner',
-          'label': 'Principiante',
+          'text': 'Principiante',
           'description': 'Nunca he usado secuencias gravitacionales o las conozco muy poco',
           'icon': Icons.school_outlined,
         },
         {
           'value': 'intermediate',
-          'label': 'Intermedio',
+          'text': 'Intermedio',
           'description': 'He practicado algunas veces y conozco los conceptos básicos',
           'icon': Icons.trending_up,
         },
         {
           'value': 'advanced',
-          'label': 'Avanzado',
+          'text': 'Avanzado',
           'description': 'Tengo experiencia significativa con las secuencias gravitacionales',
           'icon': Icons.psychology,
         },

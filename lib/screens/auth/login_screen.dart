@@ -67,20 +67,31 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final isSupported = await _biometricService.isDeviceSupported();
       final canCheck = await _biometricService.canCheckBiometrics();
-      final hasCredentials = await _authService.hasBiometricCredentials();
-      
+      var hasCredentials = await _authService.hasBiometricCredentials();
+
+      // Biométrica ahora solo desbloquea una sesión de Supabase ya persistida
+      // (ver saveBiometricCredentials/signInWithBiometric); ya no re-autentica
+      // con una contraseña guardada. Si el usuario cerró sesión explícitamente,
+      // la sesión ya no existe y el intento fallaría siempre. En ese caso las
+      // credenciales quedaron obsoletas: las limpiamos para no mostrar el botón
+      // ni disparar un intento condenado a fallar con un error confuso.
+      if (hasCredentials && !_authService.hasActiveSession) {
+        await _authService.removeBiometricCredentials();
+        hasCredentials = false;
+      }
+
       String biometricTypeName = 'Biometría';
       if (isSupported && canCheck) {
         biometricTypeName = await _biometricService.getBiometricTypeName();
       }
-      
+
       if (mounted) {
         setState(() {
           _biometricAvailable = isSupported && canCheck;
           _hasBiometricCredentials = hasCredentials;
           _biometricTypeName = biometricTypeName;
         });
-        
+
         // Si hay credenciales guardadas, intentar autenticación biométrica automática
         if (_hasBiometricCredentials && _biometricAvailable) {
           // Esperar un momento antes de mostrar el diálogo
@@ -241,6 +252,10 @@ class _LoginScreenState extends State<LoginScreen> {
       return 'Demasiados intentos. Espera un momento antes de intentar nuevamente.';
     } else if (error.contains('not enabled') || error.contains('Unsupported provider')) {
       return 'Google OAuth no está habilitado. Por favor, contacta al administrador.';
+    } else if (error.contains('sesión expiró')) {
+      return 'Tu sesión expiró. Inicia sesión con tu correo y contraseña.';
+    } else if (error.contains('cancelada o fallida')) {
+      return 'Autenticación biométrica cancelada o fallida.';
     } else {
       return 'Error al iniciar sesión. Inténtalo nuevamente.';
     }

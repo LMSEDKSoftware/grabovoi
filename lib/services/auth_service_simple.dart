@@ -25,6 +25,10 @@ class AuthServiceSimple {
   app_models.User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get isInitialized => _isInitialized;
+  // Sesión de Supabase realmente activa (distinto de isLoggedIn, que depende
+  // del estado local en memoria). La usa el login biométrico para saber si
+  // hay algo que desbloquear antes de intentar el prompt de huella/rostro.
+  bool get hasActiveSession => _supabase.auth.currentSession != null;
 
   static String get _webAuthRedirectUrl {
     // Si ya estamos en una URL con ?code=, no intentemos redirigir de nuevo a la misma
@@ -357,7 +361,7 @@ class AuthServiceSimple {
         
         // Guardar credenciales de forma segura si se solicita
         if (saveForBiometric) {
-          await saveBiometricCredentials(email: email, password: password);
+          await saveBiometricCredentials(email: email);
         }
         // Clear force_login flag after successful login
         final prefs = await SharedPreferences.getInstance();
@@ -382,35 +386,27 @@ class AuthServiceSimple {
     }
   }
 
-  // Guardar credenciales de forma segura para autenticación biométrica
+  // Habilitar autenticación biométrica para la sesión actual.
+  //
+  // NOTA DE SEGURIDAD: antes se guardaba la contraseña real del usuario en
+  // texto plano dentro de FlutterSecureStorage para poder re-hacer login con
+  // ella cada vez que se usaba biométrica. Aunque secure storage está
+  // cifrado por el OS, guardar la contraseña real en el dispositivo aumenta
+  // innecesariamente el impacto si el storage llegara a comprometerse
+  // (dispositivo con jailbreak/root, backup mal configurado, etc.).
+  // Ahora "biométrica" es solo una puerta local sobre la sesión que
+  // supabase_flutter ya persiste por su cuenta: no se guarda ninguna
+  // contraseña, solo el email (para mostrarlo en el botón de login) y el
+  // flag de que está habilitada.
   Future<void> saveBiometricCredentials({
     required String email,
-    required String password,
   }) async {
     try {
       await _secureStorage.write(key: 'biometric_email', value: email);
-      await _secureStorage.write(key: 'biometric_password', value: password);
       await _secureStorage.write(key: 'biometric_enabled', value: 'true');
-      print('✅ Credenciales guardadas de forma segura para biométrica');
+      print('✅ Biométrica habilitada (sin guardar contraseña)');
     } catch (e) {
-      print('❌ Error guardando credenciales biométricas: $e');
-    }
-  }
-
-  // Obtener credenciales guardadas de forma segura
-  Future<Map<String, String>?> getBiometricCredentials() async {
-    try {
-      final email = await _secureStorage.read(key: 'biometric_email');
-      final password = await _secureStorage.read(key: 'biometric_password');
-      final enabled = await _secureStorage.read(key: 'biometric_enabled');
-      
-      if (email != null && password != null && enabled == 'true') {
-        return {'email': email, 'password': password};
-      }
-      return null;
-    } catch (e) {
-      print('❌ Error obteniendo credenciales biométricas: $e');
-      return null;
+      print('❌ Error guardando preferencia biométrica: $e');
     }
   }
 
@@ -429,7 +425,7 @@ class AuthServiceSimple {
   Future<void> removeBiometricCredentials() async {
     try {
       await _secureStorage.delete(key: 'biometric_email');
-      await _secureStorage.delete(key: 'biometric_password');
+      await _secureStorage.delete(key: 'biometric_password'); // limpieza de instalaciones previas
       await _secureStorage.delete(key: 'biometric_enabled');
       print('✅ Credenciales biométricas eliminadas');
     } catch (e) {
@@ -437,37 +433,34 @@ class AuthServiceSimple {
     }
   }
 
-  // Login con autenticación biométrica
-  Future<AuthResponse> signInWithBiometric() async {
-    try {
-      // Primero autenticar con biométrica
-      final biometricService = BiometricAuthService();
-      final biometricType = await biometricService.getBiometricTypeName();
-      
-      final authenticated = await biometricService.authenticate(
-        reason: 'Autentícate con $biometricType para acceder a tu cuenta',
-      );
+  // Login con autenticación biométrica: desbloquea la sesión ya persistida
+  // por Supabase (no vuelve a autenticar con email/password contra el
+  // servidor). Si la sesión expiró o fue revocada, no hay forma de "revivirla"
+  // con biométrica: el usuario debe iniciar sesión normalmente una vez.
+  Future<void> signInWithBiometric() async {
+    final biometricService = BiometricAuthService();
+    final biometricType = await biometricService.getBiometricTypeName();
 
-      if (!authenticated) {
-        throw Exception('Autenticación biométrica cancelada o fallida');
-      }
+    final authenticated = await biometricService.authenticate(
+      reason: 'Autentícate con $biometricType para acceder a tu cuenta',
+    );
 
-      // Obtener credenciales guardadas
-      final credentials = await getBiometricCredentials();
-      if (credentials == null) {
-        throw Exception('No hay credenciales guardadas para autenticación biométrica');
-      }
-
-      // Hacer login con las credenciales
-      return await signIn(
-        email: credentials['email']!,
-        password: credentials['password']!,
-        saveForBiometric: false, // Ya están guardadas
-      );
-    } catch (e) {
-      print('Error en login biométrico: $e');
-      rethrow;
+    if (!authenticated) {
+      throw Exception('Autenticación biométrica cancelada o fallida');
     }
+
+    final session = _supabase.auth.currentSession;
+    if (session == null) {
+      throw Exception('Tu sesión expiró. Inicia sesión con tu correo y contraseña.');
+    }
+
+    await _loadUserFromSession(session);
+
+    // Quitar el bloqueo (force_login) que puso lockSession(): la biométrica
+    // ya demostró que es el mismo usuario, así que AuthWrapper puede volver
+    // a tratar la sesión persistida como válida.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('force_login');
   }
 
   // Login con Google
@@ -519,6 +512,20 @@ class AuthServiceSimple {
     } catch (e) {
       print('Error cerrando sesión: $e');
     }
+  }
+
+  /// "Cerrar sesión" desde el botón de Perfil: NO destruye la sesión real de
+  /// Supabase (a diferencia de signOut()). Solo bloquea la app y fuerza que
+  /// AuthWrapper muestre LoginScreen de nuevo (vía el flag force_login que ya
+  /// usa el flujo de registro). Si el usuario tiene biométrica habilitada,
+  /// LoginScreen la usará para "desbloquear" la sesión que sigue viva sin
+  /// pedir contraseña; si no, tendrá que loguearse de nuevo con contraseña,
+  /// lo cual simplemente reemplaza la sesión anterior.
+  Future<void> lockSession() async {
+    _currentUser = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('current_user');
+    await prefs.setBool('force_login', true);
   }
 
   // Verificar si el usuario está autenticado

@@ -53,10 +53,8 @@ flutter pub get
 # 4. Compilación de APK
 echo -e "\n${YELLOW}📱 [4/4] Compilando APK Release...${NC}"
 flutter build apk --release \
-    --dart-define=OPENAI_API_KEY=$OPENAI_API_KEY \
     --dart-define=SUPABASE_URL=$SUPABASE_URL \
-    --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
-    --dart-define=SB_SERVICE_ROLE_KEY=$SB_SERVICE_ROLE_KEY
+    --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
 
 echo -e "\n${GREEN}✅ APK GENERADA EXITOSAMENTE${NC}"
 echo -e "📍 Ubicación: ${YELLOW}build/app/outputs/flutter-apk/app-release.apk${NC}"

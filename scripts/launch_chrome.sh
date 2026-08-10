@@ -125,7 +125,10 @@ main() {
     fi
      
     # Verificar que las variables críticas estén cargadas
-    if [ -z "${OPENAI_API_KEY}" ] || [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ] || [ -z "${SB_SERVICE_ROLE_KEY}" ]; then
+    # NOTA: SB_SERVICE_ROLE_KEY y OPENAI_API_KEY NO se validan ni se pasan aquí
+    # a propósito: nunca deben llegar al build web (quedarían embebidas en el
+    # bundle JS público). Viven solo en Edge Functions / server-side.
+    if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
         echo -e "${RED}❌ ERROR: Variables de entorno no cargadas correctamente${NC}"
         exit 1
     fi
@@ -153,10 +156,8 @@ main() {
         --web-renderer="${WEB_RENDERER}" \
         --web-hostname=127.0.0.1 \
         --web-port=${FIXED_PORT} \
-        --dart-define=OPENAI_API_KEY="${OPENAI_API_KEY}" \
         --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
         --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
-        --dart-define=SB_SERVICE_ROLE_KEY="${SB_SERVICE_ROLE_KEY}" \
         > "${LOG_FILE}" 2>&1 < /dev/null &
     
     FLUTTER_PID=$!

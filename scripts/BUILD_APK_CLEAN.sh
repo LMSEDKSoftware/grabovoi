@@ -29,10 +29,8 @@ load_env
 
 # 3. Verificar variables críticas
 MISSING_VARS=0
-if [ -z "$OPENAI_API_KEY" ]; then echo "❌ Falta OPENAI_API_KEY"; MISSING_VARS=1; fi
 if [ -z "$SUPABASE_URL" ]; then echo "❌ Falta SUPABASE_URL"; MISSING_VARS=1; fi
 if [ -z "$SUPABASE_ANON_KEY" ]; then echo "❌ Falta SUPABASE_ANON_KEY"; MISSING_VARS=1; fi
-if [ -z "$SB_SERVICE_ROLE_KEY" ]; then echo "❌ Falta SB_SERVICE_ROLE_KEY"; MISSING_VARS=1; fi
 
 if [ $MISSING_VARS -eq 1 ]; then
     echo "❌ Error: Faltan variables de entorno críticas. Asegúrate de tener el archivo .env configurado."
@@ -71,10 +69,8 @@ echo "🚀 Iniciando Flutter Build APK..."
 echo "   Versión release..."
 
 flutter build apk --release \
-    --dart-define=OPENAI_API_KEY="$OPENAI_API_KEY" \
     --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-    --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-    --dart-define=SB_SERVICE_ROLE_KEY="$SB_SERVICE_ROLE_KEY"
+    --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 
 EXIT_CODE=$?
 

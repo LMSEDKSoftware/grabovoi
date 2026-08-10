@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../services/biblioteca_navigation_bridge.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:screenshot/screenshot.dart';
 import '../../utils/share_helper.dart';
@@ -137,7 +138,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     final rewardsService = RewardsService();
     final yaOtorgadas = await rewardsService.yaSeOtorgaronRecompensas(
       codigoId: widget.codigo,
-      tipoAccion: 'repeticion', // En code_detail_screen se usa como repetición
+      tipoAccion: 'pilotaje',
     );
 
     // Si ya se otorgaron recompensas, mostrar diálogo de confirmación
@@ -320,11 +321,14 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
     }
   }
 
-  /// Entrega cristales y muestra modal de recompensas (usado por pilotaje y repetición)
+  /// Entrega cristales y muestra modal de recompensas por completar el pilotaje
+  /// (esta pantalla siempre se abre con isDailySequence: true, ver home_screen.dart).
+  /// La repetición rápida (3 cristales) vive en repetition_session_screen.dart, que
+  /// llama recompensarPorRepeticion() por separado.
   Future<void> _entregarRecompensasYMostrarModal() async {
     try {
       final rewardsService = RewardsService();
-      final recompensasInfo = await rewardsService.recompensarPorRepeticion(
+      final recompensasInfo = await rewardsService.recompensarPorPilotajeCuantico(
         codigoId: widget.codigo,
       );
       if (recompensasInfo['yaOtorgadas'] == true && mounted) {
@@ -1959,7 +1963,20 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
           ...codigosSincronicos.take(2).map((codigo) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () async {
+                  final codigoTexto = codigo['codigo'] ?? '';
+                  if (codigoTexto.isEmpty) return;
+                  await Clipboard.setData(ClipboardData(text: codigoTexto));
+                  if (!context.mounted) return;
+                  // Cerrar el modal de "secuencia activada" y esta pantalla de
+                  // detalle, y pedirle a MainNavigation que abra Biblioteca
+                  // con este código ya escrito en el buscador.
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  BibliotecaNavigationBridge.request(codigoTexto);
+                },
+                child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -1991,35 +2008,14 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () async {
-                              // Copiar código al portapapeles
-                              final codigoTexto = codigo['codigo'] ?? '';
-                              await Clipboard.setData(ClipboardData(text: codigoTexto));
-                              
-                              // Usar el callback del modal si está disponible, de lo contrario usar SnackBar
-                              if (widget.onCodeCopied != null) {
-                                widget.onCodeCopied!(codigoTexto);
-                              } else if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '✅ Secuencia copiada: $codigoTexto',
-                                      style: GoogleFonts.inter(color: Colors.white),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    backgroundColor: const Color(0xFFFFD700),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            },
-                            child: Icon(
-                              Icons.content_copy,
-                              size: 16,
-                              color: const Color(0xFFFFD700).withOpacity(0.7),
-                            ),
+                          // Puramente decorativo: el toque lo maneja el GestureDetector
+                          // de toda la tarjeta (ver arriba), no este ícono por separado.
+                          // Antes tenía su propio GestureDetector y se quedaba con el
+                          // toque, evitando que la tarjeta navegara a Biblioteca.
+                          Icon(
+                            Icons.content_copy,
+                            size: 16,
+                            color: const Color(0xFFFFD700).withOpacity(0.7),
                           ),
                         ],
                       ),
@@ -2053,6 +2049,7 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
                     ],
                   ),
                 ),
+              ),
             );
           }),
         ],

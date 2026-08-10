@@ -142,7 +142,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       final audioManagerService = AudioManagerService();
       await audioManagerService.stop();
       
-      await _authService.signOut();
+      await _authService.lockSession();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -1357,11 +1357,13 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
                                           if (shouldSave == true &&
                                               passwordController.text.isNotEmpty) {
-                                            // Guardar credenciales
+                                            // La contraseña solo se pide aquí como confirmación
+                                            // de identidad antes de habilitar biométrica; ya no
+                                            // se guarda (biométrica desbloquea la sesión actual,
+                                            // no vuelve a autenticar con email/password).
                                             await _authService
                                                 .saveBiometricCredentials(
                                               email: user.email,
-                                              password: passwordController.text,
                                             );
 
                                             setDialogState(() {

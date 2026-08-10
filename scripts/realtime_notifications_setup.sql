@@ -1,5 +1,21 @@
 
 -- 1. Función para invocar la Edge Function 'send-push' desde Postgres
+--
+-- IMPORTANTE: la edge function send-push ahora exige el header x-push-secret
+-- (antes cualquiera en internet podía llamarla sin autenticación y mandar
+-- push arbitrarios / broadcast a toda la base). Ya está desplegado y
+-- configurado en producción (PUSH_SECRET en Supabase Secrets + hardcodeado
+-- en esta función vía el SQL Editor). Este archivo queda como plantilla para
+-- volver a crear la función si hace falta (p.ej. otro entorno/proyecto).
+--
+-- NOTA: intentamos primero pasar el secreto vía
+-- `ALTER DATABASE postgres SET app.settings.push_secret = '...'` +
+-- `current_setting('app.settings.push_secret', true)`, pero Supabase hosted
+-- NO permite ALTER DATABASE con el rol de la Management API (permission
+-- denied). Por eso el valor se hardcodea directo en la función de abajo
+-- (reemplaza <PUSH_SECRET_AQUI>) — sigue siendo seguro porque la función es
+-- SECURITY DEFINER y solo el equipo con acceso admin a la base ve su código.
+-- NUNCA commitees este archivo con el valor real puesto.
 CREATE OR REPLACE FUNCTION public.notify_push_from_db(
     p_user_id UUID,
     p_title TEXT,
@@ -7,6 +23,8 @@ CREATE OR REPLACE FUNCTION public.notify_push_from_db(
     p_data JSONB DEFAULT '{}'::jsonb
 )
 RETURNS VOID AS $$
+DECLARE
+    v_push_secret TEXT := '<PUSH_SECRET_AQUI>'; -- mismo valor que el secret PUSH_SECRET de la edge function
 BEGIN
     -- Realizar la llamada HTTP a la Edge Function
     -- Usamos net.http_post (extensión pg_net disponible en Supabase)
@@ -15,7 +33,7 @@ BEGIN
         url := 'https://whtiazgcxdnemrrgjjqf.supabase.co/functions/v1/send-push',
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
-          'Authorization', 'Bearer ' || current_setting('request.headers')::jsonb->>'apikey' -- O usar una llave de servicio fija si fallase
+          'x-push-secret', v_push_secret
         ),
         body := jsonb_build_object(
           'userId', p_user_id,

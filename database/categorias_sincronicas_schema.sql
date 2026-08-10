@@ -69,6 +69,16 @@ INSERT INTO categorias_sincronicas (categoria_principal, categoria_recomendada, 
 ('Desarrollo Personal', 'Conciencia', 'La expansión de conciencia complementa el desarrollo', 2),
 ('Desarrollo Personal', 'Iluminación', 'La iluminación es el resultado del desarrollo personal', 1);
 
+-- RLS: contenido de solo lectura (matriz de recomendaciones fija, no sensible).
+-- Sin políticas de INSERT/UPDATE/DELETE: las escrituras solo deben hacerse con
+-- service_role (mantenimiento del catálogo), nunca desde el cliente.
+ALTER TABLE categorias_sincronicas ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read access" ON categorias_sincronicas;
+CREATE POLICY "Allow public read access" ON categorias_sincronicas
+  FOR SELECT
+  USING (true);
+
 -- Comentarios sobre la tabla
 COMMENT ON TABLE categorias_sincronicas IS 'Tabla que define las relaciones sincrónicas entre categorías de códigos Grabovoi';
 COMMENT ON COLUMN categorias_sincronicas.categoria_principal IS 'Categoría principal del código';

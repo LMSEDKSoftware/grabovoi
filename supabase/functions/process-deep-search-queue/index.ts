@@ -1348,15 +1348,23 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // Falla cerrado: si CRON_SECRET no está configurado, antes se saltaba el
+  // chequeo por completo y cualquiera podía disparar crawling + búsquedas
+  // pagadas (Tavily) sin autenticación. Ahora sin CRON_SECRET configurado el
+  // endpoint queda inaccesible en vez de abierto.
   const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
-  if (cronSecret) {
-    const provided = req.headers.get("x-cron-secret") ?? "";
-    if (provided !== cronSecret) {
-      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  if (!cronSecret) {
+    return new Response(JSON.stringify({ success: false, error: "CRON_SECRET no configurado" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const provided = req.headers.get("x-cron-secret") ?? "";
+  if (provided !== cronSecret) {
+    return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";

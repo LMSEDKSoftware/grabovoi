@@ -74,11 +74,9 @@ if [ -f "$ENV_FILE" ]; then
     
     # Validar críticas
     MISSING_VARS=0
-    [ -z "$OPENAI_API_KEY" ] && echo -e "${RED}❌ Falta OPENAI_API_KEY${NC}" && MISSING_VARS=1
     [ -z "$SUPABASE_URL" ] && echo -e "${RED}❌ Falta SUPABASE_URL${NC}" && MISSING_VARS=1
     [ -z "$SUPABASE_ANON_KEY" ] && echo -e "${RED}❌ Falta SUPABASE_ANON_KEY${NC}" && MISSING_VARS=1
-    [ -z "$SB_SERVICE_ROLE_KEY" ] && echo -e "${RED}❌ Falta SB_SERVICE_ROLE_KEY${NC}" && MISSING_VARS=1
-    
+
     if [ $MISSING_VARS -eq 1 ]; then
         echo -e "${RED}❌ Error: Faltan variables en .env. Abortando.${NC}"
         exit 1
@@ -89,7 +87,7 @@ else
     exit 1
 fi
 
-DART_DEFINES="--dart-define=OPENAI_API_KEY=$OPENAI_API_KEY --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY --dart-define=SB_SERVICE_ROLE_KEY=$SB_SERVICE_ROLE_KEY"
+DART_DEFINES="--dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"
 
 # =========================================================================================
 # 3. VERSIONADO AUTOMÁTICO

@@ -11,7 +11,6 @@ import '../../models/supabase_models.dart';
 import '../../widgets/glow_background.dart';
 import '../../widgets/favorite_label_modal.dart';
 import '../../repositories/codigos_repository.dart';
-import '../../config/env.dart';
 import '../../config/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/busqueda_profunda_model.dart';
@@ -1531,21 +1530,11 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
     // Verificar conexión a internet antes de iniciar
     final tieneInternet = await _verificarConexionInternet();
 
-    if (Env.openAiKey.isEmpty) {
-      debugPrint(
-          '⚠️ OPENAI_API_KEY no configurada. Búsqueda con IA deshabilitada.');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-                'La búsqueda con IA no está configurada. Configura OPENAI_API_KEY.'),
-            backgroundColor: Colors.orange.shade700,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      return;
-    }
+    // NOTA: antes se verificaba Env.openAiKey.isEmpty aquí, pero eso obligaba
+    // a embeber la clave de OpenAI en el bundle cliente (web/APK) solo para
+    // este chequeo — la llamada real ya va por la edge function deep-search-codes,
+    // que valida su propia configuración server-side y cuyo error ya se
+    // maneja donde se procesa esa respuesta.
 
     if (!tieneInternet) {
       debugPrint('⚠️ No hay conexión a internet, no se puede usar IA');
@@ -3701,7 +3690,14 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
   /// Cierra el modal Fase 2 y muestra la biblioteca con el código seleccionado prefiltrado
   /// (el código ya existe en la DB; no se abre pilotaje manual).
   void _prefiltrarBibliotecaConCodigo(CodigoGrabovoi c) {
-    final codigoNorm = normalizarCodigo(c.codigo);
+    setExternalSearchQuery(c.codigo);
+  }
+
+  /// Método público: precarga el buscador desde otra pantalla (ver
+  /// BibliotecaNavigationBridge, usado por las tarjetas "combínalo con" del
+  /// modal de secuencia activada en code_detail_screen.dart).
+  void setExternalSearchQuery(String codigo) {
+    final codigoNorm = normalizarCodigo(codigo);
     setState(() {
       _mostrarFallbackFase2 = false;
       _fallbackFase2Items = [];
