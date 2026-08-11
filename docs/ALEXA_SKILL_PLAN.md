@@ -1,5 +1,31 @@
 # ManiGraB en Alexa — Plan de implementación (fin de semana)
 
+## Estado: enviada a certificación (2026-08-11)
+
+Enviada con **"Certify now and publish later"** — no App-to-App Account
+Linking (el login es web, vía `alexa-oauth-authorize.js`), así que no
+aplica el requisito de tener la app ya publicada en Play Store/App
+Store para certificar. Publicación pública queda pendiente hasta
+decidirlo manualmente, idealmente cuando la app esté en Play Store (la
+invitación de voz dice "descarga ManiGraB en manigrab.app").
+
+Cuenta de prueba para el equipo de certificación (creada vía Supabase
+Admin API, con datos de ejemplo en `usuario_progreso`/`user_rewards`
+para que no se vea vacía): `alexa-cert-test@manigrab.app`. Contraseña
+solo entregada una vez al usuario en chat, no quedó guardada en ningún
+archivo — si hay que cambiarla, usar el Admin API de Supabase Auth.
+
+Nota sobre la consola: la pantalla **Certification → Validation** no se
+recalcula sola ni al recargar el navegador — solo al darle clic al
+botón **"Run"**. Costó una vuelta de confusión en vivo porque parecía
+que los campos no se guardaban cuando en realidad sí, solo que la
+validación mostraba un resultado viejo.
+
+Pendiente para cuando llegue la respuesta de Amazon: si rechaza con
+observaciones, es común en un primer envío — resolver punto por punto.
+Si aprueba, decidir cuándo publicar (idealmente ligado al lanzamiento
+de la app en Play Store).
+
 ## Set completo de interacciones (implementado)
 
 El skill dejó de ser "una sola cosa" (la repetición diaria) y ahora es
