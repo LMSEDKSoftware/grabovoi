@@ -62,34 +62,54 @@ Fix: TTL a **90 días** en `supabase/functions/alexa-oauth-token/index.ts`.
 Es un token opaco nuestro, no un JWT de Supabase, así que su duración la
 decidimos nosotros. El `refresh_token` sigue funcionando como respaldo.
 
-## Voz propia + música de fondo (implementado)
+## Voz propia + música de fondo (intentado, abandonado — decisión de producto)
 
-Alexa no puede reproducir 90 clips sueltos en una respuesta (límite: 5 en
-SSML, ~15 en APLA), y tampoco sirve renderizar en vivo porque corta la
-respuesta a los ~8 segundos. La solución es pre-renderizar **un solo
-MP3** por (secuencia × voz) con la voz grabada de la app ya mezclada con
-la música, y que Alexa solo reproduzca ese archivo.
+Se construyó e implementó completamente, pero **no se pudo verificar que
+funcionara en un Echo Dot real** y el usuario decidió no seguir
+persiguiéndolo: "es una necedad querer que se escuche el audio mío... con
+la voz de Alexa está bien, debemos avanzar." El código de producción fue
+revertido a SSML puro (voz nativa de Alexa, sin APLA).
 
-- `scripts/render_alexa_audio.py` — mezcla con ffmpeg replicando
-  exactamente `NumbersVoiceService`: 280 ms entre dígitos, 100 ms
-  alrededor de `espacio.mp3`, 1800 ms → `nuevamente.mp3` → 1800 ms entre
-  repeticiones. Ajusta las repeticiones a la baja cuando el código es
-  largo (el peor de la biblioteca, 19 tokens, no cabe en 10).
-- `scripts/publicar_alexa_audio.py` — renderiza las 3 voces, sube al
-  bucket público `alexa` y registra en `alexa_audio_cache`.
-- El skill busca `alexa_audio_cache` por (código, `user_rewards.voice_gender`).
-  Si hay, responde con APLA reproduciendo el MP3. Si no (búsquedas por
-  propósito, favoritas), usa un **Mixer** de APLA con la voz de Alexa
-  sobre la misma música. Nunca se queda sin respuesta.
+**Lo que se construyó** (queda como infraestructura reutilizable si se
+retoma más adelante, ya no está conectada al skill):
+- `scripts/render_alexa_audio.py` — mezcla con ffmpeg la voz grabada de
+  la app + música de fondo en un solo MP3, replicando exactamente los
+  tiempos de `NumbersVoiceService` (280 ms entre dígitos, pausas de
+  `nuevamente`). Funciona standalone y sigue siendo válido.
+- `scripts/publicar_alexa_audio.py` — sube los MP3 renderizados al
+  bucket público `alexa` de Supabase Storage y los registra en
+  `alexa_audio_cache` (tabla, migración
+  `20260811120000_alexa_audio_cache.sql`).
+- Los audios de la secuencia del día (719_819_714) siguen en el bucket;
+  no se borraron, pero el skill ya no los consulta.
 
-**Calibración del volumen de música.** El primer intento copió el 0.4 de
-la app y la música quedó a −42 dB: presente pero inaudible. Dos causas
-sumadas: en la app la música va en un reproductor aparte a su volumen
-natural (aquí es una mezcla, no es lo mismo), y `amix` normaliza
-dividiendo entre el número de entradas, lo que costaba otros 6 dB sin
-que se note en el comando. Se corrigió con `normalize=0` y
-`--volumen-musica` como parámetro. Referencia: música 15–20 dB por
-debajo de la voz.
+**Por qué no se pudo confirmar:** la reproducción requiere la interfaz
+`Alexa.Presentation.APLA`. En pruebas reales contra un Echo Dot, el
+código detectaba `apla = false` (comprobando
+`supportedInterfaces['Alexa.Presentation.APLA']`), y la respuesta caía
+siempre al SSML de Alexa sin música. Se consultó a ChatGPT como segunda
+opinión (patrón ya usado antes en este proyecto), que señaló con
+buenas fuentes que esa comprobación probablemente es la equivocada —
+Amazon no documenta una entrada explícita para APLA en
+`supportedInterfaces` como sí lo hace para APL/APLT/AudioPlayer, y
+afirma que "todos los dispositivos Alexa" pueden reproducir audio APLA.
+
+Se desplegó una prueba híbrida seria (mandar el SSML normal Y ADEMÁS
+intentar la directiva APLA en la misma respuesta, sin arriesgar
+silencio) para confirmarlo en el dispositivo real, pero justo en ese
+momento el Echo Dot dejó de reconocer la invocación por voz
+("secuencias grabovoi") — un problema de ASR/dispositivo ya visto antes
+en esta sesión, no relacionado con el código — y no se pudo completar la
+verificación. En ese punto se decidió no seguir invirtiendo tiempo en
+esto.
+
+**Si se retoma en el futuro:** antes de reintentar, probar con un
+dispositivo con pantalla (Echo Show), que sí soporta APLA de forma
+confirmada por Amazon, para descartar de una vez si el problema era el
+Echo Dot específico o la detección en código. La alternativa que
+sugirió ChatGPT — usar `AudioPlayer.Play` en vez de APLA para el MP3 ya
+pre-mezclado, ya que no necesita mezcla en tiempo real y es una interfaz
+más antigua y ampliamente soportada — no se llegó a probar.
 
 ## Pendiente en la consola de Alexa (no es código)
 
