@@ -1,0 +1,201 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "secuencias grabovoi",
+      "modelConfiguration": {
+        "fallbackIntentSensitivity": {
+          "level": "LOW"
+        }
+      },
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.YesIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NoIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.RepeatIntent",
+          "samples": []
+        },
+        {
+          "name": "IniciarRepeticionDiariaIntent",
+          "slots": [
+            {
+              "name": "veces",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "repite mi secuencia del día",
+            "repite mi secuencia",
+            "repite la secuencia del día",
+            "dame mi secuencia del día",
+            "dame la secuencia del día",
+            "cuál es la secuencia del día",
+            "cuál es mi secuencia de hoy",
+            "secuencia del día",
+            "mi secuencia de hoy",
+            "empieza mi práctica",
+            "empieza mi repetición",
+            "quiero hacer mi repetición",
+            "quiero hacer mi práctica del día",
+            "repite mi secuencia del día {veces} veces",
+            "repite la secuencia del día {veces} veces",
+            "repite mi secuencia {veces} veces",
+            "haz mi práctica {veces} veces"
+          ]
+        },
+        {
+          "name": "SecuenciaPorPropositoIntent",
+          "slots": [
+            {
+              "name": "proposito",
+              "type": "TipoProposito"
+            },
+            {
+              "name": "veces",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "dame una secuencia para {proposito}",
+            "dame una secuencia para el {proposito}",
+            "dame una secuencia para la {proposito}",
+            "quiero una secuencia para {proposito}",
+            "quiero una secuencia para el {proposito}",
+            "quiero una secuencia para la {proposito}",
+            "necesito una secuencia para {proposito}",
+            "una secuencia para {proposito}",
+            "busca una secuencia para {proposito}",
+            "dame una secuencia de {proposito}",
+            "secuencia para {proposito}",
+            "qué secuencia hay para {proposito}",
+            "cuál secuencia sirve para {proposito}",
+            "repite una secuencia para {proposito}",
+            "dame una secuencia para {proposito} {veces} veces"
+          ]
+        },
+        {
+          "name": "MiFavoritaIntent",
+          "slots": [
+            {
+              "name": "veces",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "repite mi favorita",
+            "dame mi favorita",
+            "mi secuencia favorita",
+            "repite mi secuencia favorita",
+            "pon mi favorita",
+            "quiero mi favorita",
+            "repite mi favorita {veces} veces"
+          ]
+        },
+        {
+          "name": "MiProgresoIntent",
+          "samples": [
+            "cómo voy",
+            "cuál es mi progreso",
+            "mi progreso",
+            "cómo va mi racha",
+            "cuál es mi racha",
+            "cuántos cristales tengo",
+            "cuántos cristales de energía tengo",
+            "cuál es mi nivel energético",
+            "cuánta luz cuántica tengo",
+            "dime mi progreso",
+            "dame mi progreso",
+            "cómo voy con mi práctica"
+          ]
+        },
+        {
+          "name": "ExplicarSecuenciaIntent",
+          "samples": [
+            "qué significa",
+            "qué significa esta secuencia",
+            "para qué sirve",
+            "para qué sirve esta secuencia",
+            "explícame esta secuencia",
+            "explícamela",
+            "de qué es esta secuencia",
+            "qué hace esta secuencia",
+            "cuál es su significado",
+            "dime qué significa"
+          ]
+        },
+        {
+          "name": "RepetirDeNuevoIntent",
+          "slots": [
+            {
+              "name": "veces",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "otra vez",
+            "de nuevo",
+            "repítela",
+            "repítelo",
+            "repítela otra vez",
+            "una vez más",
+            "hazlo de nuevo",
+            "vamos otra vez",
+            "repítela {veces} veces"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "name": "TipoProposito",
+          "values": [
+            { "name": { "value": "salud", "synonyms": ["mi salud", "sanar", "sanación", "curarme", "el cuerpo", "mi cuerpo", "una enfermedad", "el dolor", "sanación física"] } },
+            { "name": { "value": "dinero", "synonyms": ["el dinero", "abundancia", "la abundancia", "prosperidad", "la prosperidad", "riqueza", "la riqueza", "finanzas", "mis finanzas", "dinero rápido"] } },
+            { "name": { "value": "amor", "synonyms": ["el amor", "mi pareja", "pareja", "encontrar el amor", "amor propio", "una relación"] } },
+            { "name": { "value": "proteccion", "synonyms": ["protección", "la protección", "protegerme", "protección espiritual", "escudo"] } },
+            { "name": { "value": "trabajo", "synonyms": ["el trabajo", "empleo", "el empleo", "conseguir trabajo", "mi trabajo", "un empleo", "negocio", "mi negocio"] } },
+            { "name": { "value": "ansiedad", "synonyms": ["la ansiedad", "el estrés", "estrés", "los nervios", "nervios", "calmarme", "el miedo", "miedo", "angustia"] } },
+            { "name": { "value": "emociones", "synonyms": ["las emociones", "mis emociones", "equilibrio emocional", "sanación emocional", "tristeza", "la tristeza", "depresión"] } },
+            { "name": { "value": "relaciones", "synonyms": ["las relaciones", "mi familia", "familia", "relaciones familiares", "los demás", "armonía familiar"] } },
+            { "name": { "value": "paz", "synonyms": ["la paz", "armonía", "la armonía", "tranquilidad", "paz interior", "calma"] } },
+            { "name": { "value": "exito", "synonyms": ["éxito", "el éxito", "la suerte", "suerte", "buena suerte", "triunfar", "lograr mis metas"] } },
+            { "name": { "value": "mente", "synonyms": ["la mente", "claridad", "claridad mental", "concentración", "la concentración", "enfocarme", "memoria", "la memoria", "estudiar"] } },
+            { "name": { "value": "espiritualidad", "synonyms": ["la espiritualidad", "lo espiritual", "crecimiento espiritual", "conexión espiritual"] } },
+            { "name": { "value": "conciencia", "synonyms": ["la conciencia", "despertar", "el despertar", "consciencia"] } },
+            { "name": { "value": "limpieza", "synonyms": ["la limpieza", "limpieza energética", "limpiar mi energía", "purificación"] } },
+            { "name": { "value": "liberacion", "synonyms": ["liberación", "la liberación", "soltar", "liberarme", "romper ataduras"] } },
+            { "name": { "value": "crecimiento", "synonyms": ["el crecimiento", "crecimiento personal", "superarme", "mejorar"] } },
+            { "name": { "value": "peso", "synonyms": ["el peso", "bajar de peso", "adelgazar", "mi peso"] } },
+            { "name": { "value": "belleza", "synonyms": ["la belleza", "verme bien", "la piel", "juventud"] } },
+            { "name": { "value": "energia", "synonyms": ["energía", "la energía", "vitalidad", "más energía", "fuerza"] } },
+            { "name": { "value": "manifestacion", "synonyms": ["manifestación", "la manifestación", "manifestar", "manifestar un deseo", "cumplir un deseo"] } }
+          ]
+        }
+      ]
+    }
+  }
+}
