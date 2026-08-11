@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/glow_background.dart';
 import '../../services/diario_service.dart';
+import '../../services/diario_refresh_bridge.dart';
 import '../../repositories/codigos_repository.dart';
 
 class DiarioScreen extends StatefulWidget {
@@ -27,38 +28,60 @@ class _DiarioScreenState extends State<DiarioScreen> {
     super.initState();
     _loadDiario();
     _searchController.addListener(_filtrarSecuencias);
+    DiarioRefreshBridge.refreshRequested.addListener(_onRefreshRequested);
   }
 
   @override
   void dispose() {
+    DiarioRefreshBridge.refreshRequested.removeListener(_onRefreshRequested);
     _searchController.dispose();
     super.dispose();
   }
 
-  void _filtrarSecuencias() {
-    final query = _searchController.text.toLowerCase().trim();
-    if (query.isEmpty) {
-      setState(() {
-        _secuenciasFiltradas = _secuenciasEnSeguimiento;
-      });
-      return;
-    }
+  void _onRefreshRequested() {
+    if (mounted) _loadDiario();
+  }
+
+  /// Filtra un mapa código->entradas por texto libre (código o título).
+  /// Se reutiliza tanto para la búsqueda en vivo del encabezado como para el
+  /// filtro por código del diálogo "Filtrar Diario".
+  Map<String, List<Map<String, dynamic>>> _filtrarPorTexto(
+    Map<String, List<Map<String, dynamic>>> secuencias,
+    String texto,
+  ) {
+    final query = texto.toLowerCase().trim();
+    if (query.isEmpty) return secuencias;
 
     final filtradas = <String, List<Map<String, dynamic>>>{};
-    for (final entry in _secuenciasEnSeguimiento.entries) {
+    for (final entry in secuencias.entries) {
       final codigo = entry.key.toLowerCase();
       final nombreCodigo = CodigosRepository().getTituloByCode(entry.key).toLowerCase();
-      
-      // Buscar en código, título o palabras clave
-      if (codigo.contains(query) || 
-          nombreCodigo.contains(query) ||
-          entry.key.contains(query)) {
+      if (codigo.contains(query) || nombreCodigo.contains(query)) {
         filtradas[entry.key] = entry.value;
       }
     }
+    return filtradas;
+  }
 
+  /// Agrupa entradas del diario por código, igual que hacía
+  /// DiarioService.getSecuenciasEnSeguimiento(), pero en memoria a partir de
+  /// las entradas ya traídas con los filtros de fecha aplicados.
+  Map<String, List<Map<String, dynamic>>> _agruparPorCodigo(
+    List<Map<String, dynamic>> entradas,
+  ) {
+    final agrupadas = <String, List<Map<String, dynamic>>>{};
+    for (final entrada in entradas) {
+      final codigo = entrada['codigo'] as String?;
+      if (codigo != null && codigo.isNotEmpty) {
+        agrupadas.putIfAbsent(codigo, () => []).add(entrada);
+      }
+    }
+    return agrupadas;
+  }
+
+  void _filtrarSecuencias() {
     setState(() {
-      _secuenciasFiltradas = filtradas;
+      _secuenciasFiltradas = _filtrarPorTexto(_secuenciasEnSeguimiento, _searchController.text);
     });
   }
 
@@ -69,13 +92,18 @@ class _DiarioScreenState extends State<DiarioScreen> {
 
     try {
       final diarioService = DiarioService();
+      // El filtro por código se aplica en memoria (ver _agruparPorCodigo +
+      // _filtrarPorTexto) porque acepta coincidencias parciales por nombre,
+      // no solo el código exacto que soporta la consulta a Supabase.
       _entradas = await diarioService.getEntradas(
-        codigo: _filtroCodigo,
         fechaDesde: _fechaDesde,
         fechaHasta: _fechaHasta,
       );
-      _secuenciasEnSeguimiento = await diarioService.getSecuenciasEnSeguimiento();
-      _secuenciasFiltradas = _secuenciasEnSeguimiento;
+      var agrupadas = _agruparPorCodigo(_entradas);
+      if (_filtroCodigo != null && _filtroCodigo!.trim().isNotEmpty) {
+        agrupadas = _filtrarPorTexto(agrupadas, _filtroCodigo!);
+      }
+      _secuenciasEnSeguimiento = agrupadas;
     } catch (e) {
       debugPrint('Error cargando diario: $e');
       if (mounted) {
@@ -93,13 +121,9 @@ class _DiarioScreenState extends State<DiarioScreen> {
         });
       }
     }
-  }
-
-  // Método público para recargar el diario desde fuera (ej. desde MainNavigation)
-  void reloadDiario() {
-    if (mounted) {
-      _loadDiario();
-    }
+    // Reaplica la búsqueda en vivo activa (si la hay) sobre los datos recién
+    // cargados/filtrados.
+    _filtrarSecuencias();
   }
 
   @override
@@ -151,43 +175,56 @@ class _DiarioScreenState extends State<DiarioScreen> {
                         ),
                         const SizedBox(height: 16),
                         
-                        // Búsqueda
-                        TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Buscar por secuencia, título o palabra clave...',
-                            hintStyle: GoogleFonts.inter(color: Colors.white54),
-                            prefixIcon: const Icon(Icons.search, color: Color(0xFFFFD700)),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear, color: Colors.white70),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                    },
-                                  )
-                                : null,
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.1),
-                            border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
-                                    ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        // Búsqueda + filtro por código/fecha
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  hintText: 'Buscar por secuencia, título o palabra clave...',
+                                  hintStyle: GoogleFonts.inter(color: Colors.white54),
+                                  prefixIcon: const Icon(Icons.search, color: Color(0xFFFFD700)),
+                                  suffixIcon: _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear, color: Colors.white70),
+                                          onPressed: () {
+                                            _searchController.clear();
+                                          },
+                                        )
+                                      : null,
+                                  filled: true,
+                                  fillColor: Colors.white.withOpacity(0.1),
+                                  border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                                   ),
-                          style: GoogleFonts.inter(color: Colors.white),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                                          ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                        ),
+                                style: GoogleFonts.inter(color: Colors.white),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            _buildFiltroButton(),
+                          ],
                         ),
+                        if (_hayFiltrosActivos) ...[
+                          const SizedBox(height: 10),
+                          _buildFiltrosActivosChip(),
+                        ],
                       ],
                     ),
                   ),
-                  
+
                   // Grid de secuencias agrupadas por secuencia
                               Expanded(
                     child: _secuenciasFiltradas.isEmpty
@@ -1154,6 +1191,79 @@ class _DiarioScreenState extends State<DiarioScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool get _hayFiltrosActivos =>
+      _filtroCodigo != null || _fechaDesde != null || _fechaHasta != null;
+
+  Widget _buildFiltroButton() {
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        color: _hayFiltrosActivos
+            ? const Color(0xFFFFD700).withOpacity(0.25)
+            : Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _hayFiltrosActivos
+              ? const Color(0xFFFFD700)
+              : Colors.white.withOpacity(0.3),
+          width: _hayFiltrosActivos ? 1.5 : 1,
+        ),
+      ),
+      child: IconButton(
+        onPressed: _mostrarFiltros,
+        icon: Icon(
+          Icons.filter_list,
+          color: _hayFiltrosActivos ? const Color(0xFFFFD700) : Colors.white70,
+        ),
+        tooltip: 'Filtrar por código o fecha',
+      ),
+    );
+  }
+
+  Widget _buildFiltrosActivosChip() {
+    final partes = <String>[];
+    if (_filtroCodigo != null) partes.add('"$_filtroCodigo"');
+    if (_fechaDesde != null) {
+      partes.add('desde ${DateFormat('dd/MM/yyyy').format(_fechaDesde!)}');
+    }
+    if (_fechaHasta != null) {
+      partes.add('hasta ${DateFormat('dd/MM/yyyy').format(_fechaHasta!)}');
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFD700).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.filter_alt, size: 14, color: Color(0xFFFFD700)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Filtrando ${partes.join(' · ')}',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.white70),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          GestureDetector(
+            onTap: _limpiarFiltros,
+            child: Text(
+              'Limpiar',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFFFFD700),
+              ),
             ),
           ),
         ],

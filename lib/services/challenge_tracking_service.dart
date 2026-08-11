@@ -1057,7 +1057,30 @@ class ChallengeTrackingService extends ChangeNotifier {
 
       _challengesProgress[challengeId] = updatedProgress;
       _progressControllers[challengeId]?.add(updatedProgress);
-      
+
+      // Sincronizar el día calculado de vuelta a Challenge.currentDay (lo que
+      // lee la UI) y a Supabase. Sin esto, current_day se quedaba congelado
+      // en 1 para siempre (solo se escribía al iniciar o reiniciar el
+      // desafío), así que "Día X de Y" nunca avanzaba y el botón de
+      // finalizar (que exige currentDay >= durationDays) nunca aparecía.
+      if (updatedProgress.currentDay != challenge.currentDay) {
+        challengeService.actualizarDesafio(
+          challengeId,
+          challenge.copyWith(currentDay: updatedProgress.currentDay),
+        );
+        if (_authService.isLoggedIn) {
+          try {
+            await _supabase
+                .from('user_challenges')
+                .update({'current_day': updatedProgress.currentDay})
+                .eq('user_id', _authService.currentUser!.id)
+                .eq('challenge_id', challengeId);
+          } catch (e) {
+            print('⚠️ Error persistiendo current_day: $e');
+          }
+        }
+      }
+
       print('✅ Progreso HISTÓRICO sincronizado para desafío $challengeId');
       print('   - Días con actividad: ${dailyCounts.keys.toList()}');
 

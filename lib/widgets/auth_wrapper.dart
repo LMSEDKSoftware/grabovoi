@@ -11,6 +11,7 @@ import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/onboarding/user_assessment_screen.dart';
 import '../main.dart';
 import 'permissions_request_modal.dart';
+import 'timezone_confirm_modal.dart';
 import '../services/app_update_dialog.dart';
 
 class AuthWrapper extends StatefulWidget {
@@ -308,6 +309,26 @@ class _AuthWrapperState extends State<AuthWrapper> {
       }
     } catch (e) {
       debugPrint('⚠️ Error mostrando modal de permisos: $e');
+    }
+
+    await _showTimezoneConfirmIfNeeded();
+  }
+
+  /// Mostrar el modal de zona horaria (una sola vez, mientras
+  /// user_metadata.timezone no exista) después de permisos, para no
+  /// apilar diálogos al mismo tiempo.
+  Future<void> _showTimezoneConfirmIfNeeded() async {
+    try {
+      final shouldShow = await TimezoneConfirmModal.shouldShow();
+      if (shouldShow && mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const TimezoneConfirmModal(),
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error mostrando modal de zona horaria: $e');
     }
   }
 }

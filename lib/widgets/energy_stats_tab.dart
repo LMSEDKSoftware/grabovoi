@@ -119,7 +119,6 @@ class _EnergyStatsTabState extends State<EnergyStatsTab> with SingleTickerProvid
     final rewards = _rewards ?? UserRewards(
       userId: 'default',
       cristalesEnergia: 0,
-      restauradoresArmonia: 0,
       luzCuantica: 0.0,
       mantrasDesbloqueados: [],
       codigosPremiumDesbloqueados: [],

@@ -7,10 +7,53 @@ import 'auth_service_simple.dart';
 import 'user_progress_service.dart';
 
 /// Servicio para gestionar el sistema de recompensas
+///
+/// ## Economía de cristales — modelo de precios por esfuerzo
+///
+/// Unidad base: 1 pilotaje cuántico (Campo Energético) = 5 cristales, la
+/// acción de ganancia más común. Un usuario constante que hace su código del
+/// día gana en promedio ~5-8 cristales/día (sin contar bonos de desafío).
+/// Los precios de la tienda son múltiplos limpios de esa unidad, en una
+/// curva ascendente de esfuerzo (~días de práctica constante entre
+/// paréntesis):
+///
+/// | Objeto                                  | Cristales | ×base | Esfuerzo aprox. |
+/// |------------------------------------------|-----------|-------|------------------|
+/// | Voz numérica (mejora permanente)          | 50        | 10×   | ~1 semana        |
+/// | Código premium 888_888_888 (tier 1)       | 100       | 20×   | ~2 semanas       |
+/// | Código premium 999_999_999 (tier 2)       | 150       | 30×   | ~3 semanas       |
+/// | Código premium 777_777_777 (tier 3, raro) | 200       | 40×   | ~4 semanas       |
+/// | Ancla de Continuidad (consumible, máx. 2) | 200       | 40×   | ~4 semanas       |
+///
+/// La Ancla se fija al mismo nivel que el código premium más caro a pesar de
+/// ser funcional (no cosmética): debe costar claramente más que "hacer el
+/// día real" (3-8 cristales) para no incentivar comprar en vez de practicar,
+/// y al ser consumible (se gasta y hay que volver a comprarla) un usuario
+/// que dependa de ella paga ese costo repetidamente — no necesita ser más
+/// cara todavía que el tope cosmético.
+///
+/// Los precios reales que ve la tienda vienen de Supabase
+/// (`elementos_tienda`, `codigos_premium`, `paquetes_cristales`, vía
+/// [StoreConfigService]); las constantes de esta clase son únicamente el
+/// valor de arranque en pantalla y el fallback si esa consulta falla, y
+/// deben mantenerse iguales a lo configurado en la base de datos.
+///
+/// ## Paquetes de cristales (dinero real, MXN)
+///
+/// | Paquete | Precio   | $/cristal | Descuento vs. base |
+/// |---------|----------|-----------|---------------------|
+/// | 250     | $89 MXN  | $0.356    | — (precio base)     |
+/// | 700     | $199 MXN | $0.284    | -20%                |
+/// | 1600    | $349 MXN | $0.218    | -39%                |
+///
+/// El paquete base (250) cubre de sobra el objeto más caro (200 cristales,
+/// ~$71 MXN) en una sola compra; los paquetes grandes bajan el costo por
+/// cristal para incentivar compras mayores, sin resultar excesivos para un
+/// desbloqueo cosmético o un ancla de continuidad puntual.
 class RewardsService {
   static const String _prefsKey = 'user_rewards';
   static const String _rewardsHistoryKey = 'rewards_history';
-  
+
   // Constantes del sistema de recompensas
   static const int cristalesPorRepeticion = 3; // Cristales por completar repetición
   static const int cristalesPorPilotajeRetoDiario = 3; // Cristales por completar pilotaje del reto diario
@@ -20,13 +63,13 @@ class RewardsService {
   static const int cristalesPorDesafio21Dias = 70; // Cristales por completar desafío de 21 días
   static const double luzCuanticaPorDiaRacha = 5.0; // Luz cuántica por día de racha (5%)
   static const double luzCuanticaMaxima = 100.0; // Máximo de luz cuántica (100%)
-  
-  // Constantes de compra
-  static const int cristalesParaCodigoPremium = 100; // Cristales necesarios para código premium
-  static const int cristalesParaAnclaContinuidad = 200; // Cristales necesarios para comprar una ancla de continuidad
-  static const int cristalesParaVozNumerica = 50; // Cristales para desbloquear voz numérica en pilotajes
+
+  // Constantes de compra (deben coincidir con Supabase: elementos_tienda y
+  // codigos_premium; ver el modelo de precios por esfuerzo en el doc de la clase).
+  static const int cristalesParaCodigoPremium = 100; // Piso de la franja de códigos premium (tier 1, 888_888_888)
+  static const int cristalesParaAnclaContinuidad = 200; // Ancla de Continuidad — mismo nivel que el código premium más caro
+  static const int cristalesParaVozNumerica = 50; // Voz numérica — desbloqueo temprano (~1 semana)
   static const int maxAnclasContinuidad = 2; // Máximo de anclas que se pueden tener (solo 2 días seguidos)
-  static const int diasParaRestaurador = 7; // Días para obtener un restaurador
   static const int diasParaMantra = 21; // Días consecutivos para desbloquear mantra
 
   final AuthServiceSimple _authService = AuthServiceSimple();
@@ -69,7 +112,6 @@ class RewardsService {
         final rewards = UserRewards(
           userId: userId,
           cristalesEnergia: response['cristales_energia'] ?? 0,
-          restauradoresArmonia: response['restauradores_armonia'] ?? 0,
           anclasContinuidad: response['anclas_continuidad'] ?? 0,
           luzCuantica: (response['luz_cuantica'] ?? 0.0).toDouble(),
           mantrasDesbloqueados: List<String>.from(response['mantras_desbloqueados'] ?? []),
@@ -93,7 +135,6 @@ class RewardsService {
       final newRewards = UserRewards(
         userId: userId,
         cristalesEnergia: 0,
-        restauradoresArmonia: 0,
         anclasContinuidad: 0,
         luzCuantica: 0.0,
         mantrasDesbloqueados: [],
@@ -136,7 +177,6 @@ class RewardsService {
       return UserRewards(
         userId: userId,
         cristalesEnergia: map['cristalesEnergia'] ?? 0,
-        restauradoresArmonia: map['restauradoresArmonia'] ?? 0,
         anclasContinuidad: map['anclasContinuidad'] ?? 0,
         luzCuantica: (map['luzCuantica'] ?? 0.0).toDouble(),
         mantrasDesbloqueados: List<String>.from(map['mantrasDesbloqueados'] ?? []),
@@ -151,7 +191,6 @@ class RewardsService {
     return UserRewards(
       userId: userId,
       cristalesEnergia: 0,
-      restauradoresArmonia: 0,
       anclasContinuidad: 0,
       luzCuantica: 0.0,
       mantrasDesbloqueados: [],
@@ -196,7 +235,6 @@ class RewardsService {
       final dataToSave = {
         'user_id': rewards.userId,
         'cristales_energia': rewards.cristalesEnergia,
-        'restauradores_armonia': rewards.restauradoresArmonia,
         'anclas_continuidad': rewards.anclasContinuidad,
         'luz_cuantica': rewards.luzCuantica,
         'mantras_desbloqueados': rewards.mantrasDesbloqueados,
@@ -231,7 +269,6 @@ class RewardsService {
       jsonEncode({
         'userId': rewards.userId,
         'cristalesEnergia': rewards.cristalesEnergia,
-        'restauradoresArmonia': rewards.restauradoresArmonia,
         'anclasContinuidad': rewards.anclasContinuidad,
         'luzCuantica': rewards.luzCuantica,
         'mantrasDesbloqueados': rewards.mantrasDesbloqueados,
@@ -536,19 +573,6 @@ class RewardsService {
     return updatedRewards;
   }
 
-  /// Recompensar por completar una semana (7 días consecutivos)
-  Future<UserRewards> recompensarPorSemana() async {
-    final rewards = await getUserRewards();
-    
-    final updatedRewards = rewards.copyWith(
-      restauradoresArmonia: rewards.restauradoresArmonia + 1,
-      ultimaActualizacion: DateTime.now(),
-    );
-
-    await saveUserRewards(updatedRewards);
-    return updatedRewards;
-  }
-
   /// Desbloquear mantra por racha de 21 días
   Future<UserRewards> desbloquearMantra(String mantraId) async {
     final rewards = await getUserRewards();
@@ -561,23 +585,6 @@ class RewardsService {
     
     final updatedRewards = rewards.copyWith(
       mantrasDesbloqueados: updatedMantras,
-      ultimaActualizacion: DateTime.now(),
-    );
-
-    await saveUserRewards(updatedRewards);
-    return updatedRewards;
-  }
-
-  /// Usar restaurador de armonía para mantener racha
-  Future<UserRewards> usarRestauradorArmonia() async {
-    final rewards = await getUserRewards();
-    
-    if (rewards.restauradoresArmonia <= 0) {
-      throw Exception('No tienes restauradores de armonía disponibles');
-    }
-
-    final updatedRewards = rewards.copyWith(
-      restauradoresArmonia: rewards.restauradoresArmonia - 1,
       ultimaActualizacion: DateTime.now(),
     );
 
@@ -732,19 +739,6 @@ class RewardsService {
   /// Verificar y otorgar recompensas basadas en racha
   Future<UserRewards> verificarRecompensasPorRacha(int diasConsecutivos) async {
     final rewards = await getUserRewards();
-    
-    // Recompensa por semana (7 días)
-    if (diasConsecutivos >= diasParaRestaurador && 
-        diasConsecutivos % diasParaRestaurador == 0) {
-      // Verificar si ya se otorgó este restaurador
-      final ultimaSemanaRecompensada = rewards.logros['ultima_semana_recompensada'] as int? ?? 0;
-      if (ultimaSemanaRecompensada < diasConsecutivos) {
-        final updatedRewards = await recompensarPorSemana();
-        final nuevosLogros = Map<String, dynamic>.from(updatedRewards.logros);
-        nuevosLogros['ultima_semana_recompensada'] = diasConsecutivos;
-        return updatedRewards.copyWith(logros: nuevosLogros);
-      }
-    }
 
     // Desbloquear mantra por 21 días (solo una vez)
     if (diasConsecutivos >= diasParaMantra) {

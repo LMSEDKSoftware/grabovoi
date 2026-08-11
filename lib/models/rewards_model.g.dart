@@ -9,8 +9,6 @@ part of 'rewards_model.dart';
 UserRewards _$UserRewardsFromJson(Map<String, dynamic> json) => UserRewards(
       userId: json['userId'] as String,
       cristalesEnergia: (json['cristalesEnergia'] as num?)?.toInt() ?? 0,
-      restauradoresArmonia:
-          (json['restauradoresArmonia'] as num?)?.toInt() ?? 0,
       anclasContinuidad: (json['anclasContinuidad'] as num?)?.toInt() ?? 0,
       luzCuantica: (json['luzCuantica'] as num?)?.toDouble() ?? 0.0,
       mantrasDesbloqueados: (json['mantrasDesbloqueados'] as List<dynamic>?)
@@ -36,7 +34,6 @@ Map<String, dynamic> _$UserRewardsToJson(UserRewards instance) =>
     <String, dynamic>{
       'userId': instance.userId,
       'cristalesEnergia': instance.cristalesEnergia,
-      'restauradoresArmonia': instance.restauradoresArmonia,
       'anclasContinuidad': instance.anclasContinuidad,
       'luzCuantica': instance.luzCuantica,
       'mantrasDesbloqueados': instance.mantrasDesbloqueados,

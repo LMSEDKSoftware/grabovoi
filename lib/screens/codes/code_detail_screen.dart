@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/biblioteca_navigation_bridge.dart';
+import '../../widgets/sequential_steps_overlay.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:screenshot/screenshot.dart';
 import '../../utils/share_helper.dart';
@@ -48,6 +49,10 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
   int _secondsRemaining = 0;
   bool _isPreloading = false;
   final AudioPreloadService _preloadService = AudioPreloadService();
+
+  // Pasos guiados previos al pilotaje (igual que en Sesión de Repetición)
+  bool _showSequentialSteps = false;
+  String _intencionPersonal = '';
   
   // Variables para el selector de colores
   String _colorSeleccionado = 'dorado';
@@ -217,13 +222,26 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       }
     }
 
+    // Iniciar el flujo de pasos guiados antes del pilotaje (igual que en
+    // Sesión de Repetición); el inicio real ocurre en _beginPilotingAfterSteps
+    // cuando el usuario completa el último paso.
+    if (mounted) {
+      setState(() {
+        _showSequentialSteps = true;
+      });
+    }
+  }
+
+  Future<void> _beginPilotingAfterSteps(String intencionPersonal) async {
     setState(() {
+      _showSequentialSteps = false;
+      _intencionPersonal = intencionPersonal;
       _isPreloading = true;
     });
-    
+
     // Iniciar precarga de audio
     await _preloadService.startPreload();
-    
+
     setState(() {
       _isPreloading = false;
       _isPiloting = true;
@@ -289,11 +307,12 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
         debugPrint('✅ [CAMPO ENERGÉTICO] Temporizador completado! Mostrando diálogo...');
         setState(() {
           _isPiloting = false;
+          _intencionPersonal = '';
         });
-        
+
         // Notificar al servicio global
         PilotageStateService().setPilotageActive(false);
-        
+
         // Detener voz numérica y música
         try {
           NumbersVoiceService().stopSession();
@@ -1071,6 +1090,7 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
   void _stopActivePilotage() {
     setState(() {
       _isPiloting = false;
+      _intencionPersonal = '';
     });
     
     // Notificar al servicio global
@@ -1172,6 +1192,9 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
   }
 
   void _mostrarMensajeCancelacion() {
+    // Contexto de la pantalla, capturado antes de que el builder del diálogo
+    // sombree el identificador 'context' con el suyo propio.
+    final screenContext = context;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1250,62 +1273,12 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
           CustomButton(
             text: 'Entendido',
             onPressed: () {
-              Navigator.of(context).pop();
-              // Mostrar segundo diálogo con indicación de salida
-              _mostrarDialogoListoParaSalir();
+              Navigator.of(context).pop(); // Cierra el diálogo
+              if (screenContext.mounted) {
+                Navigator.of(screenContext).pop(); // Sale de la pantalla directamente
+              }
             },
             color: const Color(0xFFFF6B6B),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarDialogoListoParaSalir() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFFFD700), width: 2),
-        ),
-        title: Row(
-          children: [
-            const Icon(
-              Icons.info_outline,
-              color: Color(0xFFFFD700),
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Listo para Salir',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Ahora puedes salir de la sesión dando clic en el botón "Volver".',
-          style: GoogleFonts.inter(
-            color: Colors.white70,
-            fontSize: 16,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          CustomButton(
-            text: 'Entendido',
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            color: const Color(0xFFFFD700),
           ),
         ],
       ),
@@ -1425,6 +1398,45 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
                                         height: 1.45,
                                       ),
                                     ),
+                                    if (_intencionPersonal.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 16),
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.25),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: const Color(0xFFFFD700).withOpacity(0.3),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              'Intención Personal',
+                                              textAlign: TextAlign.center,
+                                              style: GoogleFonts.inter(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: const Color(0xFFFFD700),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              _intencionPersonal.trim(),
+                                              textAlign: TextAlign.center,
+                                              style: GoogleFonts.inter(
+                                                fontSize: 14,
+                                                fontStyle: FontStyle.italic,
+                                                color: Colors.white.withOpacity(0.9),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                     if (titulosRelacionados.isNotEmpty) ...[
                                       const SizedBox(height: 16),
                                       Container(
@@ -1537,6 +1549,10 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
             Positioned.fill(
               child: _buildConcentrationMode(),
             ),
+
+          // 3. Pasos guiados previos al pilotaje (igual que en Sesión de Repetición)
+          if (_showSequentialSteps)
+            SequentialStepsOverlay(onCompleted: _beginPilotingAfterSteps),
         ],
       ),
     );

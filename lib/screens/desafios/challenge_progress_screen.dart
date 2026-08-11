@@ -408,18 +408,29 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> {
               child: CustomButton(
                 text: 'Finalizar Reto y Obtener Certificado',
                 onPressed: () async {
-                  // Verificar y otorgar recompensas si el desafío está completado
                   final challengeService = ChallengeService();
+
+                  // Marcar el desafío como completado de verdad (status
+                  // persistido en Supabase) antes de otorgar recompensas.
+                  // Sin esto el status se quedaba en "enProgreso" para
+                  // siempre y bloqueaba el inicio de cualquier otro desafío.
+                  if (challengeService.isChallengeCompleted(_challenge.id)) {
+                    await challengeService.finalizarDesafio(_challenge.id);
+                  }
                   await challengeService.verificarYOtorgarRecompensasDesafio(_challenge.id);
-                  
+
+                  // Certificado dinámico según el desafío realmente
+                  // completado (antes siempre mostraba el de Iniciación
+                  // Energética sin importar cuál se hubiera terminado).
                   final supabaseBase = (Env.supabaseUrl.isNotEmpty ? Env.supabaseUrl : SupabaseConfig.url).replaceFirst(RegExp(r'/$'), '');
-                  final publicUrl = '$supabaseBase/storage/v1/object/public/rewards/challenges/iniciacion_energetica/certificado.png';
+                  final publicUrl = '$supabaseBase/storage/v1/object/public/rewards/challenges/${_challenge.id}/certificado.png';
+                  if (!mounted) return;
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => ChallengeCongratsScreen(
-                        title: 'Desafío de Iniciación Energética',
+                        title: _challenge.title,
                         imageUrl: publicUrl,
-                        description: 'Comienza tu viaje de manifestación con las secuencias básicas. Has completado con éxito este desafío de iniciación usando las secuencias cuánticas de Grigori Grabovoi.',
+                        description: _challenge.description,
                       ),
                     ),
                   );

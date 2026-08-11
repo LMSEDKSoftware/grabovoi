@@ -31,6 +31,15 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   int _maxAnclas = RewardsService.maxAnclasContinuidad;
   bool _isLoading = true;
   bool _showStickyHeader = false;
+
+  // Flags de "procesando" para evitar compras/canjes duplicados por
+  // doble-toque o por la ventana de carrera entre leer y guardar el saldo
+  // (getUserRewards -> verificar -> saveUserRewards no es atómico).
+  String? _procesandoCodigoId;
+  bool _procesandoAncla = false;
+  bool _procesandoVoz = false;
+  int? _procesandoPackCristales;
+  String? _procesandoMeditacionId;
   static const double _rewardsSectionHeight = 280; // Altura aprox. título + Recompensas Cuánticas
 
   @override
@@ -86,7 +95,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   }
 
   Future<void> _comprarCodigoPremium(CodigoPremium codigo) async {
-    if (_rewards == null) return;
+    if (_rewards == null || _procesandoCodigoId != null) return;
 
     if (_rewards!.codigosPremiumDesbloqueados.contains(codigo.id)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -132,6 +141,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
 
     if (confirmar != true) return;
 
+    setState(() => _procesandoCodigoId = codigo.id);
     try {
       final updatedRewards = await _rewardsService.comprarCodigoPremium(
         codigo.id,
@@ -165,11 +175,13 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _procesandoCodigoId = null);
     }
   }
 
   Future<void> _comprarAnclaContinuidad() async {
-    if (_rewards == null) return;
+    if (_rewards == null || _procesandoAncla) return;
 
     if (_rewards!.cristalesEnergia < _costoAnclaContinuidad) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -264,6 +276,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
 
     if (confirmar != true) return;
 
+    setState(() => _procesandoAncla = true);
     try {
       final updatedRewards = await _rewardsService.comprarAnclaContinuidad(
         costo: _costoAnclaContinuidad,
@@ -297,11 +310,13 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _procesandoAncla = false);
     }
   }
 
   Future<void> _comprarVozNumerica() async {
-    if (_rewards == null) return;
+    if (_rewards == null || _procesandoVoz) return;
 
     final yaDesbloqueado = _rewards!.logros['voice_numbers_unlocked'] == true ||
         _rewards!.voiceNumbersEnabled == true;
@@ -358,6 +373,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
 
     if (confirmar != true) return;
 
+    setState(() => _procesandoVoz = true);
     try {
       final updatedRewards = await _rewardsService.comprarVozNumerica(costo: _costoVozNumerica);
       if (mounted) {
@@ -380,6 +396,8 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _procesandoVoz = false);
     }
   }
 
@@ -466,6 +484,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                     : puedeComprar
                         ? 'Comprar'
                         : 'Insuficientes',
+                isLoading: _procesandoVoz,
                 onPressed: desbloqueado
                     ? () {
                         Navigator.of(context).push(
@@ -610,6 +629,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                     : puedeComprar
                         ? 'Comprar'
                         : 'Insuficientes',
+                isLoading: _procesandoAncla,
                 onPressed: (puedeComprarMas && puedeComprar) ? () => _comprarAnclaContinuidad() : null,
                 color: (puedeComprarMas && puedeComprar) ? const Color(0xFFFFD700) : Colors.grey,
               ),
@@ -621,13 +641,17 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   }
 
   Future<void> _usarMeditacionEspecial(MeditacionEspecial meditacion) async {
-    if (_rewards == null) return;
+    if (_rewards == null || _procesandoMeditacionId != null) return;
 
-    if (_rewards!.luzCuantica < meditacion.luzCuanticaRequerida) {
+    // Toda meditación especial se canjea al 100% de luz cuántica (mismo
+    // umbral fijo que usa RewardsService.usarMeditacionEspecial), no el
+    // valor configurable por meditación: evita que la tarjeta se muestre
+    // "lista" con un requisito distinto al que el servidor realmente exige.
+    if (_rewards!.luzCuantica < RewardsService.luzCuanticaMaxima) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '❌ Necesitas ${meditacion.luzCuanticaRequerida.toInt()}% de luz cuántica. Tienes ${_rewards!.luzCuantica.toInt()}%',
+            '❌ Necesitas ${RewardsService.luzCuanticaMaxima.toInt()}% de luz cuántica. Tienes ${_rewards!.luzCuantica.toInt()}%',
           ),
           backgroundColor: Colors.orange,
         ),
@@ -635,6 +659,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
       return;
     }
 
+    setState(() => _procesandoMeditacionId = meditacion.id);
     try {
       final updatedRewards = await _rewardsService.usarMeditacionEspecial();
 
@@ -667,6 +692,8 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _procesandoMeditacionId = null);
     }
   }
 
@@ -979,7 +1006,10 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
               const SizedBox(height: 8),
               CustomButton(
                 text: 'Comprar',
-                onPressed: () => _comprarCristalesPack(cristales, precioMxn),
+                isLoading: _procesandoPackCristales == cristales,
+                onPressed: _procesandoPackCristales == null
+                    ? () => _comprarCristalesPack(cristales, precioMxn)
+                    : null,
                 color: const Color(0xFFFFD700),
               ),
             ],
@@ -1046,7 +1076,8 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   }
 
   Future<void> _comprarCristalesPack(int cristales, int precioMxn) async {
-    if (!mounted) return;
+    if (!mounted || _procesandoPackCristales != null) return;
+    setState(() => _procesandoPackCristales = cristales);
     // Simular proceso de pago en tienda (luego aquí irá la integración real con StoreKit / in_app_purchase)
     showDialog(
       context: context,
@@ -1074,8 +1105,8 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
       ),
     );
     await Future.delayed(const Duration(milliseconds: 1500));
-    if (!mounted) return;
     try {
+      if (!mounted) return;
       final updatedRewards = await _rewardsService.agregarCristalesComprados(cristales);
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -1093,6 +1124,8 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) setState(() => _procesandoPackCristales = null);
     }
   }
 
@@ -1369,7 +1402,10 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
               else
                 CustomButton(
                   text: puedeComprar ? 'Comprar' : 'Insuficientes',
-                  onPressed: puedeComprar ? () => _comprarCodigoPremium(codigo) : null,
+                  isLoading: _procesandoCodigoId == codigo.id,
+                  onPressed: (puedeComprar && _procesandoCodigoId == null)
+                      ? () => _comprarCodigoPremium(codigo)
+                      : null,
                   color: puedeComprar ? const Color(0xFFFFD700) : Colors.grey,
                 ),
             ],
@@ -1382,7 +1418,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
   }
 
   Widget _buildMeditacionCard(MeditacionEspecial meditacion) {
-    final puedeUsar = (_rewards?.luzCuantica ?? 0) >= meditacion.luzCuanticaRequerida;
+    final puedeUsar = (_rewards?.luzCuantica ?? 0) >= RewardsService.luzCuanticaMaxima;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1441,7 +1477,7 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                   const Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 20),
                   const SizedBox(width: 4),
                   Text(
-                    '${meditacion.luzCuanticaRequerida.toInt()}% luz cuántica',
+                    '${RewardsService.luzCuanticaMaxima.toInt()}% luz cuántica',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: const Color(0xFFFFD700),
@@ -1460,26 +1496,37 @@ class _PremiumStoreScreenState extends State<PremiumStoreScreen> {
                 ],
               ),
               GestureDetector(
-                onTap: puedeUsar ? () => _usarMeditacionEspecial(meditacion) : null,
+                onTap: (puedeUsar && _procesandoMeditacionId == null)
+                    ? () => _usarMeditacionEspecial(meditacion)
+                    : null,
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: puedeUsar 
+                    color: puedeUsar
                         ? const Color(0xFFFFD700).withOpacity(0.2)
                         : Colors.grey.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: puedeUsar 
+                      color: puedeUsar
                           ? const Color(0xFFFFD700).withOpacity(0.5)
                           : Colors.grey.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
-                  child: Icon(
-                    puedeUsar ? Icons.lock_open : Icons.lock,
-                    color: puedeUsar ? const Color(0xFFFFD700) : Colors.grey,
-                    size: 24,
-                  ),
+                  child: _procesandoMeditacionId == meditacion.id
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                          ),
+                        )
+                      : Icon(
+                          puedeUsar ? Icons.lock_open : Icons.lock,
+                          color: puedeUsar ? const Color(0xFFFFD700) : Colors.grey,
+                          size: 24,
+                        ),
                 ),
               ),
             ],

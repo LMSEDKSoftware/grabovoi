@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
@@ -7,13 +8,11 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/custom_button.dart';
 import '../../services/auth_service_simple.dart';
-import '../../services/user_progress_service.dart';
 import '../../services/audio_service.dart';
 import '../../services/audio_manager_service.dart';
 import '../../services/supabase_service.dart';
 import '../auth/login_screen.dart';
 import '../sugerencias/sugerencias_screen.dart';
-import 'edit_profile_screen.dart';
 import 'notifications_settings_screen.dart';
 import 'notification_history_screen.dart';
 import 'voice_numbers_settings_screen.dart';
@@ -31,7 +30,9 @@ import '../../services/subscription_service.dart';
 import '../../services/biometric_auth_service.dart';
 import '../../scripts/test_all_notifications.dart';
 import '../../services/legal_links_service.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import '../../widgets/timezone_confirm_modal.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -42,13 +43,11 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
   final AuthServiceSimple _authService = AuthServiceSimple();
-  final UserProgressService _progressService = UserProgressService();
-  
-  Map<String, dynamic>? _userProgress;
-  bool _isLoading = true;
+
   bool _isAdmin = false;
   bool _isFounder = false;
   int _unreadNotificationsCount = 0;
+  String? _currentTimezone;
   
   // Animaciones
   late AnimationController _quantumController;
@@ -92,26 +91,22 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   Future<void> _loadUserData() async {
     if (!_authService.isLoggedIn) return;
-    
+
     try {
-      final progress = await _progressService.getUserProgress();
       final esAdmin = await AdminService.esAdmin();
       final unreadCount = await NotificationHistory.getUnreadCount();
-      
+
       final esFounder = _authService.currentUser?.achievements.contains('founder_369') ?? false;
-      
+      final timezone = Supabase.instance.client.auth.currentUser?.userMetadata?['timezone'] as String?;
+
       setState(() {
-        _userProgress = progress;
         _isAdmin = esAdmin;
         _isFounder = esFounder;
         _unreadNotificationsCount = unreadCount;
-        _isLoading = false;
+        _currentTimezone = timezone;
       });
     } catch (e) {
       debugPrint('Error cargando datos del usuario: $e');
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
   
@@ -177,14 +172,32 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     const SizedBox(height: 24),
                     // Información del usuario
                     if (_authService.isLoggedIn && _authService.currentUser != null) ...[
-                      Text(
-                        _authService.currentUser!.name,
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFD700),
+                      InkWell(
+                        onTap: () => _showEditNameDialog(context),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _authService.currentUser!.name,
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFFFD700),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.edit,
+                                size: 18,
+                                color: const Color(0xFFFFD700).withOpacity(0.6),
+                              ),
+                            ],
+                          ),
                         ),
-                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -210,12 +223,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         final isFreeUser = subscriptionService.isFreeUser;
                         
                         if (isFreeUser) {
-                          // Usuario gratuito - solo mostrar botón de Suscripciones
-                          return Column(
-                            children: [
-                            _buildSubscriptionButton(context),
-                            ],
-                          );
+                          // Usuario gratuito: con la cuenta free solo se puede hacer el
+                          // Pilotaje Diario. Esta vista existe para convertir, no para
+                          // administrar cuenta, así que se enfoca 100% en mostrar lo que
+                          // se desbloquea con Premium y en el botón de Suscripciones.
+                          return _buildFreeUserUpgradePanel(context);
                         }
                         
                         // Usuario premium - mostrar todos los botones
@@ -228,21 +240,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           childAspectRatio: 3.0,
                           padding: EdgeInsets.zero,
                           children: [
-                            _buildCompactButton(
-                              text: 'Editar Perfil',
-                              icon: Icons.edit,
-                              onPressed: () async {
-                                await Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const EditProfileScreen(),
-                                  ),
-                                );
-                                if (mounted) {
-                                  setState(() {});
-                                  await _loadUserData();
-                                }
-                              },
-                            ),
                             _buildCompactButton(
                               text: 'Configuración',
                               icon: Icons.settings,
@@ -746,6 +743,192 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     }
   }
   
+  // Editar nombre: al quedar solo ese campo (la zona horaria ahora se
+  // detecta sola y el resto vive en Configuración), no hace falta una
+  // pantalla completa aparte para cambiarlo.
+  // Broadcast "Código Especial del Mes" (solo admin): envía un push a todos
+  // los usuarios (topic 'all') anunciando un código elegido a mano.
+  void _showBroadcastSpecialCodeDialog(BuildContext context) {
+    final codigoCtrl = TextEditingController();
+    final nombreCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool sending = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1C2541),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+          ),
+          title: Text(
+            'Código Especial del Mes',
+            style: GoogleFonts.inter(color: const Color(0xFFFFD700), fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Se enviará como notificación a TODOS los usuarios de la app.',
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: codigoCtrl,
+                  style: GoogleFonts.inter(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Código',
+                    labelStyle: GoogleFonts.inter(color: Colors.white70),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nombreCtrl,
+                  style: GoogleFonts.inter(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Nombre (opcional)',
+                    labelStyle: GoogleFonts.inter(color: Colors.white70),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: sending ? null : () => Navigator.of(context).pop(),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: sending
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDialogState(() => sending = true);
+                      try {
+                        await AdminService.broadcastSpecialCode(
+                          codigo: codigoCtrl.text.trim(),
+                          nombre: nombreCtrl.text.trim(),
+                        );
+                        if (context.mounted) Navigator.of(context).pop();
+                        if (mounted) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(content: Text('✅ Código especial anunciado a todos los usuarios')),
+                          );
+                        }
+                      } catch (e) {
+                        setDialogState(() => sending = false);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('❌ Error: $e'), backgroundColor: Colors.red),
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD700)),
+              child: sending
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0B132B)))
+                  : const Text('Enviar', style: TextStyle(color: Color(0xFF0B132B), fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditNameDialog(BuildContext context) {
+    final nameCtrl = TextEditingController(text: _authService.currentUser?.name ?? '');
+    final formKey = GlobalKey<FormState>();
+    bool saving = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1C2541),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+          ),
+          title: Text(
+            'Editar Perfil',
+            style: GoogleFonts.inter(color: const Color(0xFFFFD700), fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: nameCtrl,
+              autofocus: true,
+              style: GoogleFonts.inter(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Nombre',
+                labelStyle: GoogleFonts.inter(color: Colors.white70),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.1),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                ),
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.of(context).pop(),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDialogState(() => saving = true);
+                      try {
+                        await _authService.updateProfile(name: nameCtrl.text.trim());
+                        if (context.mounted) Navigator.of(context).pop();
+                        if (mounted) {
+                          setState(() {});
+                          await _loadUserData();
+                        }
+                      } catch (e) {
+                        setDialogState(() => saving = false);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('❌ Error: $e'), backgroundColor: Colors.red),
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD700)),
+              child: saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0B132B)),
+                    )
+                  : const Text('Guardar', style: TextStyle(color: Color(0xFF0B132B), fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Mostrar menú de configuración
   void _showConfigurationMenu(BuildContext context) {
     showModalBottomSheet(
@@ -825,12 +1008,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             const SizedBox(height: 16),
             _buildConfigMenuItem(
               context: context,
-              icon: Icons.analytics,
-              title: 'Trazabilidad de Notificaciones',
-              subtitle: 'Ver/Sincronizar estados de entrega',
+              icon: Icons.public,
+              title: 'Zona Horaria',
+              subtitle: _currentTimezone ?? 'UTC',
               onTap: () {
                 Navigator.pop(context);
-                _showTraceabilityInfo(context);
+                _showTimezoneInfo(context);
               },
             ),
             const SizedBox(height: 16),
@@ -855,6 +1038,18 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   }
                 },
               ),
+            if (_isAdmin) const SizedBox(height: 16),
+            if (_isAdmin)
+              _buildConfigMenuItem(
+                context: context,
+                icon: Icons.auto_awesome,
+                title: 'Código Especial del Mes',
+                subtitle: 'Anunciar un código a todos los usuarios',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showBroadcastSpecialCodeDialog(context);
+                },
+              ),
             const SizedBox(height: 24),
             ],
           ),
@@ -863,106 +1058,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  // Diálogo de trazabilidad de notificaciones
-  void _showTraceabilityInfo(BuildContext context) async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFFFD700), width: 1),
-        ),
-        title: Row(
-          children: [
-            const Icon(Icons.analytics, color: Color(0xFFFFD700)),
-            const SizedBox(width: 12),
-            Text(
-              'Trazabilidad FCM',
-              style: GoogleFonts.playfairDisplay(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Esta herramienta permite verificar si las notificaciones enviadas desde el panel han llegado a tu dispositivo.',
-              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 20),
-            _buildTraceabilityStatus(),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final history = await NotificationHistory.getHistory();
-              if (history.isNotEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Sincronizando estados...')),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD700)),
-            child: const Text('Sincronizar', style: TextStyle(color: Color(0xFF0B132B))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTraceabilityStatus() {
-    return FutureBuilder<List<NotificationHistoryItem>>(
-      future: NotificationHistory.getHistory(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Text('No hay historial reciente.', style: TextStyle(color: Colors.white38));
-        }
-        
-        final lastNotification = snapshot.data!.first;
-        return Column(
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.notifications_active, color: lastNotification.isRead ? Colors.green : Colors.orange),
-              title: Text(lastNotification.title, style: const TextStyle(color: Colors.white, fontSize: 14)),
-              subtitle: Text('ID: ${lastNotification.id}', style: const TextStyle(color: Colors.white38, fontSize: 11)),
-            ),
-            const Divider(color: Colors.white12),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatusStep('Enviada', true),
-                  _buildStatusStep('Recibida', true),
-                  _buildStatusStep('Abierta', lastNotification.isRead),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildStatusStep(String label, bool active) {
-    return Column(
-      children: [
-        Icon(active ? Icons.check_circle : Icons.radio_button_unchecked, 
-             color: active ? Colors.green : Colors.white24, size: 20),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(color: active ? Colors.white70 : Colors.white24, fontSize: 10)),
-      ],
-    );
-  }
-  
   // Item del menú de configuración
   Widget _buildConfigMenuItem({
     required BuildContext context,
@@ -1196,7 +1291,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                             onChanged: biometricAvailable
                                 ? (value) async {
                                     if (value) {
-                                      // Activar: pedir autenticación biométrica
+                                      // Activar: la autenticación biométrica real ya es la
+                                      // verificación de identidad. No hace falta (ni tiene
+                                      // sentido) pedir la contraseña después: nunca se guarda
+                                      // ni se valida contra nada, así que era un paso extra
+                                      // sin ningún efecto de seguridad real.
                                       final authenticated =
                                           await biometricService.authenticate(
                                         reason:
@@ -1204,183 +1303,27 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                       );
 
                                       if (authenticated) {
-                                        // Obtener credenciales del usuario actual
                                         final user = _authService.currentUser;
                                         if (user != null) {
-                                          // Necesitamos el email, pero no tenemos la contraseña
-                                          // Mostrar diálogo para ingresar contraseña
-                                          final passwordController =
-                                              TextEditingController();
-                                          final formKey = GlobalKey<FormState>();
-
-                                          final shouldSave = await showDialog<bool>(
-                                            context: context,
-                                            builder: (context) => AlertDialog(
-                                              backgroundColor:
-                                                  const Color(0xFF1C2541),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                                side: const BorderSide(
-                                                  color: Color(0xFFFFD700),
-                                                  width: 2,
-                                                ),
-                                              ),
-                                              title: Text(
-                                                'Confirmar Contraseña',
-                                                style: GoogleFonts.inter(
-                                                  color: const Color(0xFFFFD700),
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              content: Form(
-                                                key: formKey,
-                                                child: Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      'Ingresa tu contraseña para guardar tus credenciales de forma segura.',
-                                                      style: GoogleFonts.inter(
-                                                        color: Colors.white70,
-                                                        fontSize: 14,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 16),
-                                                    TextFormField(
-                                                      controller:
-                                                          passwordController,
-                                                      obscureText: true,
-                                                      style: GoogleFonts.inter(
-                                                          color: Colors.white),
-                                                      decoration:
-                                                          InputDecoration(
-                                                        labelText: 'Contraseña',
-                                                        labelStyle:
-                                                            GoogleFonts.inter(
-                                                          color: Colors.white70,
-                                                        ),
-                                                        prefixIcon:
-                                                            const Icon(
-                                                          Icons.lock_outline,
-                                                          color:
-                                                              Color(0xFFFFD700),
-                                                        ),
-                                                        filled: true,
-                                                        fillColor: Colors.white
-                                                            .withOpacity(0.1),
-                                                        border:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(12),
-                                                          borderSide:
-                                                              BorderSide.none,
-                                                        ),
-                                                        enabledBorder:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(12),
-                                                          borderSide:
-                                                              BorderSide(
-                                                            color: Colors.white
-                                                                .withOpacity(0.2),
-                                                          ),
-                                                        ),
-                                                        focusedBorder:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(12),
-                                                          borderSide:
-                                                              const BorderSide(
-                                                            color: Color(
-                                                                0xFFFFD700),
-                                                            width: 2,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      validator: (value) {
-                                                        if (value == null ||
-                                                            value.isEmpty) {
-                                                          return 'Por favor ingresa tu contraseña';
-                                                        }
-                                                        return null;
-                                                      },
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () => Navigator.of(
-                                                      context)
-                                                      .pop(false),
-                                                  child: Text(
-                                                    'Cancelar',
-                                                    style: GoogleFonts.inter(
-                                                      color: Colors.white54,
-                                                    ),
-                                                  ),
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () {
-                                                    if (formKey.currentState!
-                                                        .validate()) {
-                                                      Navigator.of(context).pop(
-                                                          true);
-                                                    }
-                                                  },
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        const Color(0xFFFFD700),
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    'Guardar',
-                                                    style: GoogleFonts.inter(
-                                                      color:
-                                                          const Color(0xFF1a1a2e),
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                          await _authService
+                                              .saveBiometricCredentials(
+                                            email: user.email,
                                           );
 
-                                          if (shouldSave == true &&
-                                              passwordController.text.isNotEmpty) {
-                                            // La contraseña solo se pide aquí como confirmación
-                                            // de identidad antes de habilitar biométrica; ya no
-                                            // se guarda (biométrica desbloquea la sesión actual,
-                                            // no vuelve a autenticar con email/password).
-                                            await _authService
-                                                .saveBiometricCredentials(
-                                              email: user.email,
+                                          setDialogState(() {
+                                            biometricEnabled = true;
+                                          });
+
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    '$biometricTypeName habilitado exitosamente'),
+                                                backgroundColor:
+                                                    const Color(0xFF4CAF50),
+                                              ),
                                             );
-
-                                            setDialogState(() {
-                                              biometricEnabled = true;
-                                            });
-
-                                            if (context.mounted) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                      '$biometricTypeName habilitado exitosamente'),
-                                                  backgroundColor:
-                                                      const Color(0xFF4CAF50),
-                                                ),
-                                              );
-                                            }
                                           }
                                         }
                                       } else {
@@ -1437,6 +1380,83 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ],
           );
         },
+      ),
+    );
+  }
+
+  // Mostrar la zona horaria actual (detectada automáticamente al primer
+  // inicio de sesión) con opción de corregirla si el detector se equivocó
+  // (por ejemplo, tras viajar o usar VPN).
+  void _showTimezoneInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2541),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFFFD700), width: 2),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.public, color: Color(0xFFFFD700)),
+            const SizedBox(width: 12),
+            Text(
+              'Zona Horaria',
+              style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Se detectó automáticamente cuando iniciaste sesión por primera vez. La usamos para que tus recordatorios y notificaciones lleguen a la hora correcta.',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+              ),
+              child: Text(
+                _currentTimezone ?? 'UTC',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(color: const Color(0xFFFFD700), fontWeight: FontWeight.w600, fontSize: 15),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final selected = await TimezoneConfirmModal.showPicker(
+                context,
+                current: _currentTimezone ?? 'UTC',
+              );
+              if (selected != null) {
+                await _authService.updateProfile(timezone: selected);
+                if (mounted) {
+                  setState(() => _currentTimezone = selected);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('✅ Zona horaria actualizada a $selected')),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD700)),
+            child: const Text('Corregir', style: TextStyle(color: Color(0xFF0B132B))),
+          ),
+        ],
       ),
     );
   }
@@ -1764,6 +1784,110 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
+  // Panel de conversión para usuarios gratuitos: con la cuenta free solo se
+  // puede hacer el Pilotaje Diario, así que aquí se muestra qué se desbloquea
+  // con Premium en vez de administración de cuenta.
+  Widget _buildFreeUserUpgradePanel(BuildContext context) {
+    const benefits = [
+      ('Desafíos de 72 días', Icons.emoji_events),
+      ('Biblioteca completa de secuencias', Icons.menu_book),
+      ('Tienda Cuántica', Icons.store),
+      ('Recursos exclusivos', Icons.library_books),
+      ('Estadísticas de Evolución', Icons.trending_up),
+      ('Historial del Mural', Icons.campaign),
+    ];
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFFFFD700).withOpacity(0.12),
+                const Color(0xFFFFD700).withOpacity(0.04),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4), width: 1.5),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.lock_outline, color: Color(0xFFFFD700), size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Cuenta Gratuita',
+                    style: GoogleFonts.playfairDisplay(
+                      color: const Color(0xFFFFD700),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Con tu cuenta gratuita puedes seguir haciendo tu Pilotaje Diario cuando quieras. Desbloquea todo lo demás con Premium:',
+                style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              ...benefits.map((b) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      children: [
+                        Icon(b.$2, color: const Color(0xFFFFD700), size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            b.$1,
+                            style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD700),
+              foregroundColor: const Color(0xFF0B132B),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.auto_awesome, size: 20),
+                const SizedBox(width: 10),
+                Text(
+                  'Desbloquear Premium',
+                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // Botón de Suscripciones con información de fechas cuando NO es FREE
   Widget _buildSubscriptionButton(BuildContext context) {
     final subscriptionService = SubscriptionService();
@@ -1932,41 +2056,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFD700).withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: const Color(0xFFFFD700),
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: GoogleFonts.inter(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: Colors.white70,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildLegalSection() {
     return FutureBuilder<Map<String, String>>(
       future: LegalLinksService.getLegalLinks(),
@@ -2020,78 +2109,41 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   Widget _buildLegalLink(String title, String url, IconData icon) {
     return InkWell(
-      onTap: () async {
-        try {
-          // Asegurar que la URL tenga el protocolo https://
-          String finalUrl = url.trim();
-          if (finalUrl.isEmpty) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Enlace no disponible.'),
-                  backgroundColor: Colors.red,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-            return;
-          }
-          if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
-            finalUrl = 'https://$finalUrl';
-          }
-          
-          final uri = Uri.tryParse(finalUrl);
-          if (uri == null || uri.host.isEmpty) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('La dirección del enlace no es válida.'),
-                  backgroundColor: Colors.red,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-            return;
-          }
-          
-          // En iOS, Safari muestra "la dirección no es válida" con el navegador in-app
-          // (platformDefault). Usar externalApplication evita el error en iOS y funciona en Android.
-          try {
-            final launched = await launchUrl(
-              uri,
-              mode: LaunchMode.externalApplication,
-            );
-            if (!launched && mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('No se pudo abrir el enlace. Verifica tu conexión a internet.'),
-                  backgroundColor: Colors.red,
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            }
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('No se pudo abrir el enlace. Verifica tu conexión a internet.'),
-                  backgroundColor: Colors.red,
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            }
-          }
-        } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Error al abrir el enlace. Verifica tu conexión a internet.'),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
+      onTap: () {
+        // Asegurar que la URL tenga el protocolo https://
+        String finalUrl = url.trim();
+        if (finalUrl.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Enlace no disponible.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
         }
+        if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+          finalUrl = 'https://$finalUrl';
+        }
+
+        final uri = Uri.tryParse(finalUrl);
+        if (uri == null || uri.host.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('La dirección del enlace no es válida.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+
+        // Se abre dentro de la app (modal con WebView) en vez de mandar al
+        // usuario a un navegador externo.
+        showDialog(
+          context: context,
+          builder: (context) => _LegalWebViewDialog(title: title, url: finalUrl),
+        );
       },
       borderRadius: BorderRadius.circular(8),
       child: Padding(
@@ -2110,9 +2162,126 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               ),
             ),
             const Icon(
-              Icons.open_in_new,
+              Icons.chevron_right,
               color: Colors.white54,
-              size: 16,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Modal con WebView para ver los documentos legales sin salir de la app
+// (mismo patrón que _PasswordResetWebViewDialog en login_screen.dart).
+class _LegalWebViewDialog extends StatefulWidget {
+  final String title;
+  final String url;
+
+  const _LegalWebViewDialog({required this.title, required this.url});
+
+  @override
+  State<_LegalWebViewDialog> createState() => _LegalWebViewDialogState();
+}
+
+class _LegalWebViewDialogState extends State<_LegalWebViewDialog> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      // La implementación web de webview_flutter solo soporta loadRequest:
+      // setJavaScriptMode/setNavigationDelegate lanzan UnimplementedError ahí,
+      // así que no hay señal de "terminó de cargar" en esta plataforma.
+      _controller = WebViewController()..loadRequest(Uri.parse(widget.url));
+      _isLoading = false;
+      return;
+    }
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) setState(() => _isLoading = false);
+          },
+          onWebResourceError: (error) {
+            debugPrint('❌ Error cargando documento legal: ${error.description}');
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _error = 'No se pudo cargar el documento. Verifica tu conexión.';
+              });
+            }
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1a1a2e),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFFFFD700), width: 2)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Stack(
+                children: [
+                  WebViewWidget(controller: _controller),
+                  if (_isLoading)
+                    const Center(
+                      child: CircularProgressIndicator(color: Color(0xFFFFD700)),
+                    ),
+                  if (_error != null)
+                    Container(
+                      color: const Color(0xFF1a1a2e),
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(color: Colors.white70),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ],
         ),

@@ -4,6 +4,7 @@ import '../../widgets/glow_background.dart';
 import '../../widgets/custom_button.dart';
 import '../../repositories/codigos_repository.dart';
 import '../../services/diario_service.dart';
+import '../../services/diario_refresh_bridge.dart';
 
 class NuevaEntradaDiarioScreen extends StatefulWidget {
   final String codigo;
@@ -144,6 +145,11 @@ class _NuevaEntradaDiarioScreenState extends State<NuevaEntradaDiarioScreen> {
             : _gratitudController.text.trim(),
         fecha: DateTime.now(),
       );
+
+      // DiarioScreen vive dentro de un IndexedStack y no se reconstruye al
+      // volver a esa pestaña, así que sin este aviso la entrada nueva no
+      // aparecería hasta reiniciar la app.
+      DiarioRefreshBridge.requestRefresh();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

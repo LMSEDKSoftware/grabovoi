@@ -26,11 +26,35 @@ class UserProgressService {
           .eq('user_id', _authService.currentUser!.id)
           .maybeSingle();
 
-      return response;
+      if (response == null) return null;
+      return _conRachaCorregida(response);
     } catch (e) {
       debugPrint('Error obteniendo progreso del usuario: $e');
       return null;
     }
+  }
+
+  /// Corrige dias_consecutivos si ya pasó más de un día completo desde
+  /// ultimo_pilotaje. dias_consecutivos solo se recalcula dentro de
+  /// recordSession() (cuando el usuario hace algo), así que sin esto
+  /// pantallas como Evolución seguían mostrando una racha vieja/rota hasta
+  /// la próxima acción real, en vez de reflejar que ya se perdió.
+  Map<String, dynamic> _conRachaCorregida(Map<String, dynamic> progress) {
+    final ultimoPilotajeStr = progress['ultimo_pilotaje'] as String?;
+    if (ultimoPilotajeStr == null) return progress;
+    try {
+      final ultimo = DateTime.parse(ultimoPilotajeStr).toLocal();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final lastDay = DateTime(ultimo.year, ultimo.month, ultimo.day);
+      final diffDays = today.difference(lastDay).inDays;
+      // 0 = hoy, 1 = ayer (todavía se puede continuar hoy sin romperla).
+      // 2+ = ya se saltó un día completo: la racha ya no es válida.
+      if (diffDays >= 2) {
+        return {...progress, 'dias_consecutivos': 0};
+      }
+    } catch (_) {}
+    return progress;
   }
 
   /// Actualizar progreso del usuario (tabla: usuario_progreso)
@@ -355,9 +379,15 @@ class UserProgressService {
     }
   }
 
-  /// Obtener historial de sesiones
+  /// Obtener historial de sesiones.
+  /// [limit] es null por defecto (sin tope): Evolución lo usa para sumar
+  /// totales, y un límite fijo hacía que "Tiempo Total" y "Sesiones" se
+  /// congelaran en cuanto un usuario pasaba de 500 acciones, mientras que
+  /// "Total Pilotajes" (que sí consulta sin límite) seguía subiendo.
+  /// Pasa un [limit] explícito solo cuando de verdad quieras una vista previa
+  /// acotada (ej. una lista reciente en UI).
   Future<List<Map<String, dynamic>>> getSessionHistory({
-    int limit = 50,
+    int? limit,
     String? sessionType,
   }) async {
     if (!_authService.isLoggedIn) return [];
@@ -365,13 +395,13 @@ class UserProgressService {
     try {
       // Filtrar sólo acciones de sesión con duración
       final actionTypes = ['sesionPilotaje', 'codigoRepetido', 'pilotajeCompartido'];
-      var query = _supabase
+      final baseQuery = _supabase
           .from('user_actions')
           .select()
           .eq('user_id', _authService.currentUser!.id)
           .inFilter('action_type', actionTypes)
-          .order('recorded_at', ascending: false)
-          .limit(limit);
+          .order('recorded_at', ascending: false);
+      final query = limit != null ? baseQuery.limit(limit) : baseQuery;
 
       final response = await query;
       final List data = List<Map<String, dynamic>>.from(response);

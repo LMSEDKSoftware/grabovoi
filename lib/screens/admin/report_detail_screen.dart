@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/glow_background.dart';
 import '../../services/supabase_service.dart';
-import '../../models/notification_history_item.dart';
-import '../../services/notification_count_service.dart';
+import '../../services/admin_service.dart';
 
 class ReportDetailScreen extends StatefulWidget {
   final Map<String, dynamic> reporte;
@@ -187,21 +186,15 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
           return;
       }
 
-      // Guardar notificación en el historial del usuario
-      // Nota: Esto solo funcionará si el usuario está usando la app
-      // Para una solución más robusta, se podría usar una tabla de notificaciones en Supabase
-      await NotificationHistory.addNotification(
+      // Push real al usuario (server-side, vía notify_push_from_db). Antes
+      // esto guardaba la notificación en el NotificationHistory local del
+      // dispositivo del ADMIN (SharedPreferences), no en el del usuario que
+      // reportó — nunca le llegaba nada.
+      await AdminService.notifyReportStatus(
+        userId: usuarioId,
         title: titulo,
         body: cuerpo,
-        type: 'reporte_estatus',
       );
-      
-      // Actualizar conteo inmediatamente
-      await NotificationCountService().updateCount();
-
-      // También intentar notificar usando el sistema de notificaciones locales
-      // (solo si el usuario está activo en ese momento)
-      // NotificationService se encargará de mostrar la notificación si está disponible
 
       print('📧 Notificación enviada al usuario $usuarioId sobre cambio de estatus');
     } catch (e) {

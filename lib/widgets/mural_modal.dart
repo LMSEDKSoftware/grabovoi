@@ -31,26 +31,37 @@ class _MuralModalState extends State<MuralModal> {
     try {
       final messages = await _muralService.getActiveMessages();
       final readIds = await _muralService.getReadMessageIds();
-      
+
       if (mounted) {
         setState(() {
           _messages = messages;
           _readMessageIds = readIds.toSet();
           _isLoading = false;
         });
-        
-        // Marcar todos como leídos al abrir el modal (o podríamos hacerlo uno por uno al verlos)
-        // Por ahora, marcaremos como leídos los que se muestran
-        for (var msg in messages) {
-          if (!_readMessageIds.contains(msg.id)) {
-            _muralService.markAsRead(msg.id);
-          }
-        }
+        // Ya NO se marca todo como leído automáticamente al abrir: el
+        // usuario decide con el check "No mostrar de nuevo" en cada
+        // mensaje. Sin marcarlo, el mensaje sigue apareciendo la próxima
+        // vez que entre a la app.
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _toggleDontShowAgain(int messageId, bool value) async {
+    setState(() {
+      if (value) {
+        _readMessageIds.add(messageId);
+      } else {
+        _readMessageIds.remove(messageId);
+      }
+    });
+    if (value) {
+      await _muralService.markAsRead(messageId);
+    } else {
+      await _muralService.markAsUnread(messageId);
     }
   }
 
@@ -289,6 +300,34 @@ class _MuralModalState extends State<MuralModal> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () => _toggleDontShowAgain(message.id, !_readMessageIds.contains(message.id)),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: Checkbox(
+                            value: _readMessageIds.contains(message.id),
+                            onChanged: (value) => _toggleDontShowAgain(message.id, value ?? false),
+                            activeColor: const Color(0xFFFFD700),
+                            checkColor: const Color(0xFF0B132B),
+                            side: const BorderSide(color: Colors.white54),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'No mostrar de nuevo',
+                          style: GoogleFonts.inter(fontSize: 13, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

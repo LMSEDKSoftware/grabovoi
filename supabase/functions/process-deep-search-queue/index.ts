@@ -35,6 +35,56 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+// Envía un push reutilizando la función send-push ya desplegada (mismo secreto
+// compartido que usa notify_push_from_db() desde Postgres). Nunca debe tumbar
+// el cron: cualquier fallo solo se loguea.
+async function sendPushNotification(params: {
+  supabaseUrl: string;
+  pushSecret: string;
+  anonKey: string;
+  userId: string;
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+}): Promise<void> {
+  const { supabaseUrl, pushSecret, anonKey, userId, title, body, data } = params;
+  if (!pushSecret) {
+    console.warn("sendPushNotification: PUSH_SECRET no configurado, se omite el push");
+    return;
+  }
+  if (!userId) return;
+  try {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // El gateway de Supabase exige un Authorization válido antes de que
+        // corra el código de la función, aunque send-push valide su propio
+        // x-push-secret por dentro (mismo problema ya resuelto en
+        // notify_push_from_db). Sin esto, la llamada nunca llega a enviarse.
+        "Authorization": `Bearer ${anonKey}`,
+        "x-push-secret": pushSecret,
+      },
+      body: JSON.stringify({ userId, title, body, data: data ?? {} }),
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      console.error(`sendPushNotification: fallo para user ${userId}: ${resp.status} ${text.slice(0, 200)}`);
+    }
+  } catch (e) {
+    console.error(`sendPushNotification: error para user ${userId}:`, e);
+  }
+}
+
+async function getAdminUserIds(supabase: ReturnType<typeof createClient>): Promise<string[]> {
+  const { data, error } = await supabase.from("users_admin").select("user_id");
+  if (error) {
+    console.error("getAdminUserIds: fallo consultando users_admin:", error.message);
+    return [];
+  }
+  return (data ?? []).map((r: any) => String(r.user_id)).filter(Boolean);
+}
+
 function normalizeQuery(input: string): string {
   return input.toLowerCase().trim().replace(/\s+/g, " ");
 }
@@ -202,9 +252,22 @@ function shortify(input: string, maxLen: number): string {
   return s.slice(0, maxLen).trim();
 }
 
+// Fragmentos de ruta de imagen/CDN o markdown de imagen que un scraper roto
+// puede confundir con un título (ej. rutas de Etsy "il/xxxxx/...jpg)" o un
+// alt-text de perfil de Slideshare "![Nombre](https://cdn...)"). "il", "jpg"
+// o el nombre de archivo tienen letras, así que hasLetters() por sí solo no
+// los detecta — de ahí que 9 filas reales de codigos_grabovoi quedaran con
+// este tipo de basura como nombre.
+function looksLikeUrlOrImagePath(input: string): boolean {
+  return /!\[|\]\(|\.jpe?g\)|\.png\)|\.gif\)|\.webp\)|cdn\.|slidesharecdn|etsystatic|^\s*\/[a-z0-9_]+\//i.test(
+    input,
+  );
+}
+
 function sanitizeNombreEs(input: string): string {
   let s = stripHtmlToText(String(input || "")).replace(/\s+/g, " ").trim();
   if (!s) return "";
+  if (looksLikeUrlOrImagePath(s)) return "";
 
   // Quitar secuencias/códigos incrustados en el título
   s = s
@@ -1216,8 +1279,11 @@ async function pruneKeywordNoise(params: {
 async function resolveRequests(params: {
   supabase: ReturnType<typeof createClient>;
   requestsLimit: number;
+  supabaseUrl: string;
+  pushSecret: string;
+  anonKey: string;
 }): Promise<{ checked: number; resolved: number; noResults: number; items: any[] }> {
-  const { supabase, requestsLimit } = params;
+  const { supabase, requestsLimit, supabaseUrl, pushSecret, anonKey } = params;
 
   const { data: reqs, error } = await supabase
     .from("deep_search_requests")
@@ -1321,6 +1387,28 @@ async function resolveRequests(params: {
         })
         .eq("id", r.id);
       items.push({ id: r.id, query: r.query_text, resolved: true, codigos });
+
+      if (r.user_id) {
+        const nombres = resolvedItems
+          .map((it: any) => String(it?.nombre ?? "").trim())
+          .filter((n: string) => n.length > 0);
+        const listado = (nombres.length ? nombres : codigos).slice(0, 3).join(", ");
+        const restantes = matches.length - Math.min(3, matches.length);
+        const extra = restantes > 0 ? ` y ${restantes} más` : "";
+        await sendPushNotification({
+          supabaseUrl,
+          pushSecret,
+          anonKey,
+          userId: r.user_id,
+          title: "🔎 Encontramos tu secuencia",
+          body: `Ya está disponible tu búsqueda "${r.query_text}": ${listado}${extra}.`,
+          data: {
+            type: "deep_search_resolved",
+            request_id: String(r.id),
+            codigos: codigos.join(","),
+          },
+        });
+      }
       continue;
     }
 
@@ -1376,6 +1464,11 @@ serve(async (req) => {
     );
   }
   const supabase = createClient(supabaseUrl, serviceKey);
+  // Mismo secreto compartido que ya usa notify_push_from_db() / send-push.
+  const pushSecret = Deno.env.get("PUSH_SECRET") ?? "";
+  // Requerido por el gateway de Supabase como Authorization al llamar a otra
+  // función (send-push); no es la sesión de ningún usuario.
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
   const sourcesLimit = Number(Deno.env.get("DEEP_SEARCH_SOURCES_PER_RUN") ?? "20");
   const maxCodesPerSource = Number(Deno.env.get("DEEP_SEARCH_MAX_CODES_PER_SOURCE") ?? "250");
@@ -1412,7 +1505,38 @@ serve(async (req) => {
 	    const crawl = await crawlSources({ supabase, sourcesLimit, maxCodesPerSource, force: forceCrawl });
 	    const cleanup = await cleanupBadImportedCodes({ supabase, maxToDelete: cleanupMax });
 	    const cleanupNombre = await cleanupImportedNombreFormato({ supabase, maxToFix: cleanupNombreMax });
-	    const resolve = await resolveRequests({ supabase, requestsLimit });
+	    const resolve = await resolveRequests({ supabase, requestsLimit, supabaseUrl, pushSecret, anonKey });
+
+	    // Aviso a admins: que la base se está "alimentando" (código nuevo por
+	    // crawl) y/o que se resolvieron búsquedas de usuarios en este ciclo.
+	    let adminNotified = 0;
+	    const totalInserted = crawl.inserted.length;
+	    if (totalInserted > 0 || resolve.resolved > 0) {
+	      const adminIds = await getAdminUserIds(supabase);
+	      const partes: string[] = [];
+	      if (totalInserted > 0) partes.push(`${totalInserted} secuencia(s) nueva(s) en la base`);
+	      if (resolve.resolved > 0) partes.push(`${resolve.resolved} búsqueda(s) de usuarios resuelta(s)`);
+	      const muestra = crawl.inserted.slice(0, 5).join(", ");
+	      const body = totalInserted > 0
+	        ? `${partes.join(" · ")}. Ejemplos: ${muestra}${totalInserted > 5 ? "…" : ""}`
+	        : partes.join(" · ");
+	      await Promise.all(adminIds.map((adminId) =>
+	        sendPushNotification({
+	          supabaseUrl,
+	          pushSecret,
+	          anonKey,
+	          userId: adminId,
+	          title: "📥 Base de datos alimentada",
+	          body,
+	          data: {
+	            type: "deep_search_admin_summary",
+	            inserted_count: String(totalInserted),
+	            resolved_count: String(resolve.resolved),
+	          },
+	        })
+	      ));
+	      adminNotified = adminIds.length;
+	    }
 
 	    return new Response(
 	      JSON.stringify({
@@ -1446,6 +1570,7 @@ serve(async (req) => {
 	          no_results: resolve.noResults,
 	          items: resolve.items,
         },
+        admin_notified: adminNotified,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

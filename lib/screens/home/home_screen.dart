@@ -47,9 +47,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     WidgetsBinding.instance.addObserver(this);
     _cargarDatosHome();
     _cargarNombreUsuario();
-    // NO mostrar tablero automáticamente al inicio
-    // Se mostrará después del WelcomeModal si es necesario
     _checkOnboarding();
+    // Revisar publicaciones nuevas del mural en cada apertura normal de la
+    // app, no solo la primera vez tras el tour de un usuario nuevo (antes
+    // _checkMuralMessages solo se llamaba desde triggerWelcomeAndMuralFlow,
+    // así que un usuario que ya completó el onboarding hace tiempo nunca
+    // volvía a enterarse de publicaciones nuevas al abrir la app). El delay
+    // le da prioridad al flujo de bienvenida de un usuario nuevo si corre
+    // en paralelo — _muralModalShownThisSession evita que se muestre dos
+    // veces sin importar cuál de los dos caminos gane la carrera.
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) _checkMuralMessages(onlyIfFirstTime: true);
+    });
     // La verificación de nueva versión se realiza via Supabase en AppVersionService
   }
   

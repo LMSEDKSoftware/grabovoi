@@ -122,10 +122,16 @@ serve(async (req) => {
         const expiryDate = new Date()
         expiryDate.setDate(expiryDate.getDate() + (tipo === 'monthly' ? 30 : 365))
 
+        // Solo desactivar cortesías ManiGrabLovers previas del usuario, NUNCA
+        // una suscripción real (Play Store/App Store) que comparte esta misma
+        // tabla — antes este update no filtraba por product_id y desactivaba
+        // CUALQUIER suscripción activa, incluida una ya pagada, sin forma de
+        // restaurarla automáticamente después.
         await admin.from('user_subscriptions')
           .update({ is_active: false })
           .eq('user_id', userId)
           .eq('is_active', true)
+          .filter('product_id', 'in', '("manigrab_lovers_monthly","manigrab_lovers_yearly")')
 
         const { error } = await admin.from('user_subscriptions').insert({
           user_id: userId,
@@ -187,6 +193,264 @@ serve(async (req) => {
           result.push({ ...row, user_email: userData?.email, user_name: userData?.name })
         }
         return new Response(JSON.stringify({ data: result }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // ===== FOUNDERS EDITION (Origen 369): pago único vía Hotmart, fuera =====
+      // ===== del flujo de IAP/Supabase. No hay webhook automático todavía, =====
+      // ===== así que el admin lo asigna manualmente tras confirmar el pago. ====
+      case 'grant_founder': {
+        const email = body.email as string
+        if (!email) throw new Error('email requerido')
+        const userId = await buscarUsuarioPorEmail(email)
+        if (!userId) throw new Error(`Usuario no encontrado con el email: ${email}`)
+
+        // "Acceso vitalicio": expiración muy lejana en vez de NULL, para
+        // reutilizar la misma lógica de "suscripción activa" que ya usa
+        // checkSubscriptionStatus()/isFreeUser en el cliente.
+        const lifetimeExpiry = new Date('2099-12-31T23:59:59Z')
+
+        // Igual que en grant_subscription: solo desactivar un Founders Edition
+        // previo, nunca una suscripción real activa de otro producto.
+        await admin.from('user_subscriptions')
+          .update({ is_active: false })
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .eq('product_id', 'founders_edition_369')
+
+        const { error: subError } = await admin.from('user_subscriptions').insert({
+          user_id: userId,
+          product_id: 'founders_edition_369',
+          purchase_id: `founder_admin_${Date.now()}`,
+          transaction_date: new Date().toISOString(),
+          expires_at: lifetimeExpiry.toISOString(),
+          is_active: true,
+          created_at: new Date().toISOString(),
+        })
+        if (subError) throw subError
+
+        const { data: userRow, error: userErr } = await admin.from('users').select('achievements').eq('id', userId).maybeSingle()
+        if (userErr) throw userErr
+        const current: string[] = userRow?.achievements ?? []
+        if (!current.includes('founder_369')) {
+          const { error: achError } = await admin.from('users')
+            .update({ achievements: [...current, 'founder_369'] })
+            .eq('id', userId)
+          if (achError) throw achError
+        }
+
+        return new Response(JSON.stringify({ success: true, expiresAt: lifetimeExpiry.toISOString() }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'revoke_founder': {
+        const email = body.email as string
+        if (!email) throw new Error('email requerido')
+        const userId = await buscarUsuarioPorEmail(email)
+        if (!userId) throw new Error(`Usuario no encontrado con el email: ${email}`)
+
+        const { error: subError } = await admin.from('user_subscriptions')
+          .update({ is_active: false })
+          .eq('user_id', userId)
+          .eq('product_id', 'founders_edition_369')
+          .eq('is_active', true)
+        if (subError) throw subError
+
+        const { data: userRow, error: userErr } = await admin.from('users').select('achievements').eq('id', userId).maybeSingle()
+        if (userErr) throw userErr
+        const current: string[] = userRow?.achievements ?? []
+        const { error: achError } = await admin.from('users')
+          .update({ achievements: current.filter((a: string) => a !== 'founder_369') })
+          .eq('id', userId)
+        if (achError) throw achError
+
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'list_founders': {
+        const { data: subs, error } = await admin.from('user_subscriptions')
+          .select('id, user_id, expires_at, created_at')
+          .eq('product_id', 'founders_edition_369')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+        if (error) throw error
+
+        const result = []
+        for (const row of subs ?? []) {
+          const { data: userData } = await admin.from('users').select('email, name').eq('id', row.user_id).maybeSingle()
+          result.push({ ...row, user_email: userData?.email, user_name: userData?.name })
+        }
+        return new Response(JSON.stringify({ data: result }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // Botón "Probar Notificaciones" (solo admin, en Perfil > Configuración):
+      // manda un push real al propio admin usando notify_push_from_db, el
+      // mismo camino que usan los triggers/crons reales. El push secret
+      // nunca sale de este servidor — el cliente solo pide "envíame esta
+      // prueba" con su propio JWT, ya verificado como admin arriba.
+      case 'send_test_notification': {
+        const title = body.title as string
+        const notifBody = body.body as string
+        if (!title || !notifBody) throw new Error('title y body requeridos')
+
+        const { error } = await admin.rpc('notify_push_from_db', {
+          p_user_id: user.id,
+          p_title: title,
+          p_body: notifBody,
+          p_data: { type: 'admin_test' },
+        })
+        if (error) throw error
+
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // Notifica al usuario que reportó un código cuando un admin cambia el
+      // estatus de su reporte (Ver Reportes > detalle). Antes esto se hacía
+      // con NotificationHistory.addNotification(), que escribe en
+      // SharedPreferences del dispositivo que ejecuta el código — es decir,
+      // el del propio admin, no el del usuario que reportó. El usuario nunca
+      // se enteraba. Usa el mismo camino real que send_test_notification.
+      case 'notify_report_status': {
+        const targetUserId = body.userId as string
+        const title = body.title as string
+        const notifBody = body.body as string
+        if (!targetUserId || !title || !notifBody) throw new Error('userId, title y body requeridos')
+
+        const { error } = await admin.rpc('notify_push_from_db', {
+          p_user_id: targetUserId,
+          p_title: title,
+          p_body: notifBody,
+          p_data: { type: 'reporte_estatus' },
+        })
+        if (error) throw error
+
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // Código Especial del Mes (monthlySpecialCode): el admin lo dispara a
+      // mano — se envía como broadcast (topic 'all', todo usuario se
+      // suscribe a él al iniciar la app) en vez de un push por cron, porque
+      // depende de una decisión editorial del admin, no de un evento medible.
+      case 'broadcast_special_code': {
+        const codigo = body.codigo as string
+        const nombre = (body.nombre as string) || ''
+        if (!codigo) throw new Error('codigo requerido')
+
+        const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+        const pushSecret = Deno.env.get('PUSH_SECRET') ?? ''
+        if (!pushSecret) throw new Error('PUSH_SECRET no configurado')
+
+        const title = '🔑 Código Especial del Mes'
+        const bodyText = nombre
+          ? `Este mes desbloqueamos un código exclusivo: ${codigo} - ${nombre}`
+          : `Este mes desbloqueamos un código exclusivo: ${codigo}`
+
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${anonKey}`,
+            'x-push-secret': pushSecret,
+          },
+          body: JSON.stringify({ topic: 'all', title, body: bodyText, data: { type: 'monthly_special_code', codigo } }),
+        })
+        if (!resp.ok) {
+          const text = await resp.text().catch(() => '')
+          throw new Error(`send-push falló: ${resp.status} ${text.slice(0, 200)}`)
+        }
+
+        const monthKey = new Date().toISOString().slice(0, 7)
+        await admin.from('app_config').upsert(
+          { key: 'monthly_special_code', value: JSON.stringify({ codigo, nombre, month: monthKey }) },
+          { onConflict: 'key' },
+        )
+
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // ===== MURAL: CRUD de mural_messages. La tabla solo tiene política de =====
+      // ===== SELECT para is_active=true (RLS), así que ni siquiera un admin =====
+      // ===== autenticado puede insertar/editar/ver inactivos directo desde el =====
+      // ===== cliente — todo pasa por aquí, ya verificado como admin arriba. =====
+      case 'mural_list_all': {
+        const { data, error } = await admin
+          .from('mural_messages')
+          .select()
+          .order('created_at', { ascending: false })
+        if (error) throw error
+        return new Response(JSON.stringify({ data }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // Sube la imagen server-side (service role) para no depender de
+      // políticas RLS de storage.objects, que hoy no tienen ninguna regla
+      // para INSERT desde el cliente.
+      case 'mural_upload_image': {
+        const { fileName, base64Data, contentType } = body
+        if (!fileName || !base64Data) throw new Error('fileName y base64Data requeridos')
+
+        const binary = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
+        const filePath = `mural/${Date.now()}_${fileName}`
+
+        const { error: uploadError } = await admin.storage.from('images').upload(filePath, binary, {
+          contentType: contentType || 'image/jpeg',
+          upsert: true,
+        })
+        if (uploadError) throw uploadError
+
+        const { data: urlData } = admin.storage.from('images').getPublicUrl(filePath)
+        return new Response(JSON.stringify({ url: urlData.publicUrl }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'mural_create': {
+        const { title, message, imageUrl, actionUrl, type, expiresAt } = body
+        if (!title || !message) throw new Error('title y message requeridos')
+
+        const { data, error } = await admin.from('mural_messages').insert({
+          title,
+          message,
+          image_url: imageUrl || null,
+          action_url: actionUrl || null,
+          type: type || 'info',
+          is_active: true,
+          expires_at: expiresAt || null,
+        }).select().single()
+        if (error) throw error
+
+        return new Response(JSON.stringify({ data }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'mural_update': {
+        const { id, title, message, imageUrl, actionUrl, type, isActive, expiresAt } = body
+        if (!id) throw new Error('id requerido')
+
+        const updateData: Record<string, unknown> = {}
+        if (title !== undefined) updateData.title = title
+        if (message !== undefined) updateData.message = message
+        if (imageUrl !== undefined) updateData.image_url = imageUrl || null
+        if (actionUrl !== undefined) updateData.action_url = actionUrl || null
+        if (type !== undefined) updateData.type = type
+        if (isActive !== undefined) updateData.is_active = isActive
+        if (expiresAt !== undefined) updateData.expires_at = expiresAt || null
+
+        const { data, error } = await admin
+          .from('mural_messages')
+          .update(updateData)
+          .eq('id', id)
+          .select()
+          .single()
+        if (error) throw error
+
+        return new Response(JSON.stringify({ data }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'mural_delete': {
+        const { id } = body
+        if (!id) throw new Error('id requerido')
+
+        const { error: readsError } = await admin.from('mural_message_reads').delete().eq('message_id', id)
+        if (readsError) throw readsError
+        const { error } = await admin.from('mural_messages').delete().eq('id', id)
+        if (error) throw error
+
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
       default:

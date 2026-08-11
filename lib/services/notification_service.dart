@@ -734,40 +734,27 @@ class NotificationService {
 
     if (!preferences.enabled) return;
 
-    // Recordatorio de código del día - 9:00 AM
+    // Recordatorio matutino único (fusiona el antiguo "Secuencia Diaria" de
+    // las 9am fija con "Buenos días" a la hora preferida — mandar los dos
+    // por separado hacía que llegaran casi juntos y se sintieran como
+    // notificaciones duplicadas). Se programa a la hora preferida del
+    // usuario, respetando días silenciosos.
     if (preferences.dailyCodeReminders) {
-      final now = DateTime.now();
-      var scheduledDate = DateTime(now.year, now.month, now.day, 9, 0);
-      if (scheduledDate.isBefore(now)) {
-        scheduledDate = scheduledDate.add(const Duration(days: 1));
-      }
-      
-      await scheduleNotification(
-      title: '✨ ¡Nueva Secuencia Diaria Disponible!',
-      body: 'Descúbrelo ahora y eleva tu energía con tu sesión de repetición diaria. ¡Toca para comenzar!',
-      scheduledDate: scheduledDate,
-      type: NotificationType.dailyCodeReminder,
-    );
-    }
-
-    // Recordatorio matutino - hora preferida
-    if (preferences.morningReminders) {
       final morningTime = _parseTime(preferences.preferredMorningTime);
       final now = DateTime.now();
       var scheduledDate = DateTime(now.year, now.month, now.day, morningTime.hour, morningTime.minute);
       if (scheduledDate.isBefore(now)) {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
       }
-      
-      // Programar para toda la semana para días no silenciosos
+
       for (int i = 0; i < 7; i++) {
         final targetDate = scheduledDate.add(Duration(days: i));
         if (!preferences.isDaySilent(targetDate.weekday % 7)) {
           await scheduleNotification(
-            title: '☀️ Buenos días, Piloto Consciente',
-            body: '¿Listo para comenzar el día con energía cuántica? Un pilotaje consciente de 2 minutos transformará tu mañana.',
+            title: '✨ ¡Nueva Secuencia Diaria Disponible!',
+            body: 'Descúbrelo ahora y eleva tu energía con tu sesión de repetición diaria. ¡Toca para comenzar!',
             scheduledDate: targetDate,
-            type: NotificationType.morningRoutineReminder,
+            type: NotificationType.dailyCodeReminder,
           );
         }
       }
@@ -795,6 +782,47 @@ class NotificationService {
         }
       }
     }
+
+    // Mensaje motivacional semanal - miércoles a la hora preferida (día
+    // distinto al resumen semanal del servidor, que llega el lunes, para no
+    // apilar dos avisos "de la semana" casi juntos).
+    if (preferences.motivationalMessages) {
+      final morningTime = _parseTime(preferences.preferredMorningTime);
+      final now = DateTime.now();
+      var nextWednesday = DateTime(now.year, now.month, now.day, morningTime.hour, morningTime.minute);
+      while (nextWednesday.weekday != DateTime.wednesday || nextWednesday.isBefore(now)) {
+        nextWednesday = nextWednesday.add(const Duration(days: 1));
+      }
+
+      for (int i = 0; i < 4; i++) {
+        final targetDate = nextWednesday.add(Duration(days: i * 7));
+        if (!preferences.isDaySilent(targetDate.weekday % 7)) {
+          final phrase = _weeklyMotivationalPhrases[_isoWeekOfYear(targetDate) % _weeklyMotivationalPhrases.length];
+          await scheduleNotification(
+            title: '💫 Mensaje de la Semana',
+            body: phrase,
+            scheduledDate: targetDate,
+            type: NotificationType.weeklyMotivational,
+          );
+        }
+      }
+    }
+  }
+
+  static const List<String> _weeklyMotivationalPhrases = [
+    'Recuerda: cada pilotaje consciente es un paso hacia tu transformación.',
+    'Tu constancia de hoy es la energía que cosecharás mañana.',
+    'No se trata de perfección, se trata de presencia. Un pilotaje a la vez.',
+    'El campo cuántico responde a la repetición consciente. Sigue sembrando.',
+    'Cada código que practicas reprograma una creencia. Confía en el proceso.',
+    'La disciplina silenciosa de hoy es el milagro visible de mañana.',
+    'Tu energía es contagiosa. Compártela con un pilotaje consciente hoy.',
+    'Un pequeño paso cuántico hoy vale más que una gran intención sin acción.',
+  ];
+
+  int _isoWeekOfYear(DateTime date) {
+    final dayOfYear = DateTime(date.year, date.month, date.day).difference(DateTime(date.year, 1, 1)).inDays + 1;
+    return ((dayOfYear - date.weekday + 10) / 7).floor();
   }
 
   DateTime _parseTime(String timeStr) {
@@ -825,193 +853,11 @@ class NotificationService {
   }
 
   // ===== NOTIFICACIONES ESPECÍFICAS =====
-
-  /// Verificar si se debe notificar sobre el estado de la racha (evitar duplicados diarios)
-  Future<bool> _shouldNotifyStreakStatus(String statusType) async {
-    if (!_authService.isLoggedIn) return false;
-    
-    try {
-      final userId = _authService.currentUser!.id;
-      final today = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD
-      
-      // Verificar si ya se envió una notificación de este tipo hoy
-      final existing = await _supabase
-          .from('user_notifications_sent')
-          .select()
-          .eq('user_id', userId)
-          .eq('notification_type', statusType)
-          .gte('sent_at', '$today 00:00:00')
-          .maybeSingle();
-          
-      if (existing != null) {
-        return false; // Ya se notificó hoy
-      }
-      
-      // Registrar que se va a enviar
-      await _supabase.from('user_notifications_sent').insert({
-        'user_id': userId,
-        'notification_type': statusType,
-        'action_type': 'system_alert',
-        'sent_at': DateTime.now().toIso8601String(),
-      });
-      
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error verificando estado de notificación de racha: $e');
-      // En caso de error, permitir la notificación para no perder alertas críticas,
-      // pero intentar usar caché local como fallback
-      return !_isStreakAlreadyNotified(statusType);
-    }
-  }
-
-  /// Notificación de racha en riesgo (12 horas)
-  Future<void> notifyStreakAtRisk(String userName, int streakDays) async {
-    // Verificar persistencia para evitar duplicados
-    if (!await _shouldNotifyStreakStatus('streak_at_risk')) {
-      debugPrint('⏭️ Notificación de racha en riesgo omitida: ya enviada hoy');
-      return;
-    }
-
-    await showNotification(
-      title: '⚠️ Racha en Riesgo',
-      body: 'Atención $userName: Tu racha de $streakDays días está en riesgo. ¡Hay tiempo aún! Realiza tu pilotaje de hoy para mantenerla viva.',
-      type: NotificationType.streakAtRisk12h,
-    );
-  }
-
-  /// Notificación de racha perdida
-  Future<void> notifyStreakLost(String userName, int streakDays) async {
-    // Verificar persistencia para evitar duplicados
-    if (!await _shouldNotifyStreakStatus('streak_lost')) {
-      debugPrint('⏭️ Notificación de racha perdida omitida: ya enviada hoy');
-      return;
-    }
-
-    await showNotification(
-      title: '😔 Racha Interrumpida',
-      body: 'Tu racha de $streakDays días se ha interrumpido, pero es solo un nuevo comienzo. El Piloto Consciente persevera. ¡Comienza de nuevo hoy!',
-      type: NotificationType.streakLost,
-    );
-  }
-
-  /// Verificar si un streak ya fue notificado (anti-duplicados)
-  bool _isStreakAlreadyNotified(String streakKey) {
-    final now = DateTime.now();
-    
-    // Limpiar streaks antiguos
-    _notifiedStreaksTimestamps.removeWhere((key, timestamp) {
-      final shouldRemove = now.difference(timestamp) > _notifiedStreaksExpiry;
-      if (shouldRemove) {
-        _notifiedStreaks.remove(key);
-      }
-      return shouldRemove;
-    });
-    
-    return _notifiedStreaks.contains(streakKey);
-  }
-  
-  /// Marcar streak como notificado
-  void _markStreakAsNotified(String streakKey) {
-    final now = DateTime.now();
-    _notifiedStreaks.add(streakKey);
-    _notifiedStreaksTimestamps[streakKey] = now;
-  }
-
-  /// Notificación de hito de racha
-  Future<void> notifyStreakMilestone(String userName, int days) async {
-    // Verificar si ya fue notificado
-    final streakKey = 'streak_$days';
-    if (_isStreakAlreadyNotified(streakKey)) {
-      debugPrint('⏭️ Milestone de racha omitido: $days días ya fue notificado');
-      return;
-    }
-    
-    String title;
-    String body;
-    NotificationType type;
-
-    switch (days) {
-      case 3:
-        title = '🎉 ¡Felicidades!';
-        body = '3 días consecutivos. Tu energía comienza a estabilizarse.';
-        type = NotificationType.streakMilestone3;
-        break;
-      case 7:
-        title = '🌟 ¡Increíble!';
-        body = '7 días consecutivos. Estás creando un hábito poderoso.';
-        type = NotificationType.streakMilestone7;
-        break;
-      case 14:
-        title = '💎 ¡Extraordinario!';
-        body = '14 días consecutivos. Tu disciplina está transformando tu realidad.';
-        type = NotificationType.streakMilestone14;
-        break;
-      case 21:
-        title = '👑 ¡Épico!';
-        body = '21 días consecutivos. El hábito está formado. Eres un Piloto Consciente.';
-        type = NotificationType.streakMilestone21;
-        break;
-      case 30:
-        title = '🏆 ¡Legendario!';
-        body = '30 días consecutivos. Has alcanzado Maestría en Constancia.';
-        type = NotificationType.streakMilestone30;
-        break;
-      default:
-        return;
-    }
-
-    await showNotification(title: title, body: body, type: type);
-    _markStreakAsNotified(streakKey);
-  }
-
-  /// Verificar si un nivel energético ya fue notificado (anti-duplicados)
-  bool _isEnergyLevelAlreadyNotified(int level) {
-    final now = DateTime.now();
-    
-    // Limpiar niveles antiguos
-    _notifiedEnergyLevelsTimestamps.removeWhere((lvl, timestamp) {
-      final shouldRemove = now.difference(timestamp) > _notifiedEnergyLevelsExpiry;
-      if (shouldRemove) {
-        _notifiedEnergyLevels.remove(lvl);
-      }
-      return shouldRemove;
-    });
-    
-    return _notifiedEnergyLevels.contains(level);
-  }
-  
-  /// Marcar nivel energético como notificado
-  void _markEnergyLevelAsNotified(int level) {
-    final now = DateTime.now();
-    _notifiedEnergyLevels.add(level);
-    _notifiedEnergyLevelsTimestamps[level] = now;
-  }
-
-  /// Notificación de nivel energético sube
-  Future<void> notifyEnergyLevelUp(int newLevel) async {
-    // Verificar si ya fue notificado para este nivel
-    if (_isEnergyLevelAlreadyNotified(newLevel)) {
-      debugPrint('⏭️ Notificación de nivel energético omitida: nivel $newLevel ya fue notificado');
-      return;
-    }
-    
-    await showNotification(
-      title: '⚡ ¡Tu energía ha subido!',
-      body: 'Ahora estás en nivel $newLevel/10. ¡Sigue así!',
-      type: NotificationType.energyLevelUp,
-    );
-    
-    _markEnergyLevelAsNotified(newLevel);
-  }
-
-  /// Notificación de nivel máximo
-  Future<void> notifyEnergyMaxReached(String userName) async {
-    await showNotification(
-      title: '👑 ¡MAESTRÍA!',
-      body: 'Has alcanzado el nivel máximo de energía (10/10). Eres un Piloto Consciente cuántico.',
-      type: NotificationType.energyMaxReached,
-    );
-  }
+  // Nota: los avisos de racha en riesgo/perdida, hitos de racha/pilotajes,
+  // primer pilotaje y nivel energético (subida/máximo) se retiraron de aquí
+  // — ahora los maneja EXCLUSIVAMENTE el servidor (trigger sobre
+  // usuario_progreso), como única fuente de verdad, para no duplicar el
+  // mismo aviso por dos caminos a la vez.
 
   /// Notificación de desafío completado
   Future<void> notifyChallengeCompleted(String challengeName, String awards) async {
@@ -1029,96 +875,6 @@ class NotificationService {
       body: 'Día $day/$total del desafío $challengeName. ¡Excelente trabajo!',
       type: NotificationType.challengeDayCompleted,
     );
-  }
-
-  // Cache para evitar notificación de primer pilotaje duplicada
-  bool _firstPilotageNotified = false;
-
-  /// Notificación de primer pilotaje
-  Future<void> notifyFirstPilotage(String userName) async {
-    // Solo notificar una vez
-    if (_firstPilotageNotified) {
-      debugPrint('⏭️ Notificación de primer pilotaje omitida: ya fue notificado');
-      return;
-    }
-    
-    await showNotification(
-      title: '🎉 ¡Bienvenido al viaje cuántico!',
-      body: 'Has completado tu primer pilotaje consciente. El viaje de transformación comienza.',
-      type: NotificationType.firstPilotage,
-    );
-    
-    _firstPilotageNotified = true;
-  }
-
-  /// Verificar si un milestone ya fue notificado (anti-duplicados)
-  bool _isMilestoneAlreadyNotified(String milestoneKey) {
-    final now = DateTime.now();
-    
-    // Limpiar milestones antiguos
-    _notifiedMilestonesTimestamps.removeWhere((key, timestamp) {
-      final shouldRemove = now.difference(timestamp) > _notifiedMilestonesExpiry;
-      if (shouldRemove) {
-        _notifiedMilestones.remove(key);
-      }
-      return shouldRemove;
-    });
-    
-    return _notifiedMilestones.contains(milestoneKey);
-  }
-  
-  /// Marcar milestone como notificado
-  void _markMilestoneAsNotified(String milestoneKey) {
-    final now = DateTime.now();
-    _notifiedMilestones.add(milestoneKey);
-    _notifiedMilestonesTimestamps[milestoneKey] = now;
-  }
-
-  /// Notificación de logro (hito de pilotajes)
-  Future<void> notifyPilotageMilestone(int totalPilotages, String userName) async {
-    // Verificar si ya fue notificado
-    final milestoneKey = 'pilotage_$totalPilotages';
-    if (_isMilestoneAlreadyNotified(milestoneKey)) {
-      debugPrint('⏭️ Milestone de pilotajes omitido: $totalPilotages ya fue notificado');
-      return;
-    }
-    
-    String title;
-    String body;
-    NotificationType type;
-
-    switch (totalPilotages) {
-      case 10:
-        title = '💪 ¡10 pilotajes completados!';
-        body = 'Estás construyendo un hábito poderoso.';
-        type = NotificationType.milestone10Pilotages;
-        break;
-      case 50:
-        title = '⭐ 50 pilotajes completados';
-        body = 'Eres un Piloto Intermedio.';
-        type = NotificationType.milestone50Pilotages;
-        break;
-      case 100:
-        title = '🌟 100 pilotajes completados';
-        body = '¡Maestría Intermedia alcanzada!';
-        type = NotificationType.milestone100Pilotages;
-        break;
-      case 500:
-        title = '👑 500 pilotajes completados';
-        body = 'Eres un Experto en Piloto Cuántico.';
-        type = NotificationType.milestone500Pilotages;
-        break;
-      case 1000:
-        title = '🏆 1000 pilotajes completados';
-        body = '¡LEYENDA VIVIENTE! Has dominado el arte.';
-        type = NotificationType.milestone1000Pilotages;
-        break;
-      default:
-        return;
-    }
-
-    await showNotification(title: title, body: body, type: type);
-    _markMilestoneAsNotified(milestoneKey);
   }
 
   /// Notificación de código recomendado
@@ -1175,35 +931,25 @@ class NotificationService {
     );
   }
 
-  // ===== MÉTODOS LEGACY (mantener compatibilidad) =====
-
-  Future<void> showChallengeProgressNotification({
-    required String title,
-    required String body,
-    required int progress,
-  }) async {
-    await showNotification(title: title, body: body, type: NotificationType.challengeDayCompleted);
+  /// Notificación de bienvenida a Premium (compra exitosa, no restauración)
+  Future<void> notifyPremiumWelcome() async {
+    await showNotification(
+      title: '🎉 ¡Bienvenido a Premium!',
+      body: 'Tu suscripción está activa. Ya tienes acceso completo a todos los códigos y desafíos.',
+      type: NotificationType.premiumWelcome,
+      bypassQueue: true,
+    );
   }
 
-  // Cache de códigos ya notificados para evitar duplicados
-  final Set<String> _notifiedCodes = <String>{};
-  static const _notifiedCodesExpiry = Duration(hours: 1);
-  final Map<String, DateTime> _notifiedCodesTimestamps = <String, DateTime>{};
-  
-  // Cache de milestones ya notificados para evitar duplicados
-  final Set<String> _notifiedMilestones = <String>{};
-  final Map<String, DateTime> _notifiedMilestonesTimestamps = <String, DateTime>{};
-  static const _notifiedMilestonesExpiry = Duration(hours: 24); // 24 horas para milestones
-  
-  // Cache de streaks ya notificados para evitar duplicados
-  final Set<String> _notifiedStreaks = <String>{};
-  final Map<String, DateTime> _notifiedStreaksTimestamps = <String, DateTime>{};
-  static const _notifiedStreaksExpiry = Duration(hours: 24); // 24 horas para streaks
-  
-  // Cache de nivel energético ya notificado (por nivel específico)
-  final Set<int> _notifiedEnergyLevels = <int>{};
-  final Map<int, DateTime> _notifiedEnergyLevelsTimestamps = <int, DateTime>{};
-  static const _notifiedEnergyLevelsExpiry = Duration(hours: 6); // 6 horas por nivel
+  /// Notificación de prueba gratis por terminar
+  Future<void> notifyTrialEndingSoon(int daysLeft) async {
+    final diasTexto = daysLeft == 1 ? '1 día' : '$daysLeft días';
+    await showNotification(
+      title: '⏳ Tu prueba gratis termina pronto',
+      body: 'Te quedan $diasTexto de acceso Premium gratis. Suscríbete para no perder tus beneficios.',
+      type: NotificationType.trialEndingSoon,
+    );
+  }
 
   // Verificar si ya se envió una notificación de acción completada para este código y acción
   Future<bool> _yaSeNotificoAccionCompletada({
@@ -1358,9 +1104,4 @@ class NotificationService {
     return 'unknown';
   }
 
-  Future<void> showChallengeCompletedNotification({
-    required String challengeName,
-  }) async {
-    await notifyChallengeCompleted(challengeName, '');
-  }
 }

@@ -37,7 +37,7 @@ android {
 
     defaultConfig {
         applicationId = "com.manifestacion.grabovoi"
-        minSdk = 23
+        minSdkVersion = flutter.minSdkVersion
         targetSdk = 36
         // IMPORTANTE: Incrementar versionCode en cada subida a Play Store. Debe ser MAYOR que el último en Play (ej. 39 → 40).
         versionCode = 68

@@ -63,7 +63,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     OnboardingSlide(
       title: 'Recompensas de Luz',
-      description: 'Cada sesión te devuelve energía.\n\nCristales, luz cuántica, restauradores… no son premios.\n\nSon anclas que confirman que estás en expansión.',
+      description: 'Cada sesión te devuelve energía.\n\nCristales, luz cuántica, anclas de continuidad… no son premios.\n\nSon anclas que confirman que estás en expansión.',
       mentalShift: 'No estás gamificando tu progreso. Estás recibiendo evidencia energética.',
       icon: Icons.diamond,
       color: Color(0xFFFFD54F),

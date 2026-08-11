@@ -228,6 +228,22 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Único punto por el que pasan todos los envíos por userId (triggers de
+    // Postgres vía notify_push_from_db, y los cron de challenge-streak-check /
+    // engagement-notifications-check): si el usuario apagó las notificaciones
+    // desde la app, no se manda nada, sin importar qué evento lo disparó.
+    const { data: userRow } = await supabaseAdmin
+      .from('users')
+      .select('notifications_enabled')
+      .eq('id', userId)
+      .maybeSingle();
+    if (userRow && userRow.notifications_enabled === false) {
+      return new Response(JSON.stringify({ success: true, skipped: 'notifications_disabled_by_user' }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: tokens, error: tokenError } = await supabaseAdmin
       .from('user_fcm_tokens')
       .select('token')

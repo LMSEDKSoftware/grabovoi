@@ -15,12 +15,14 @@ class ManiGrabLoversScreen extends StatefulWidget {
 
 class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
   final TextEditingController _emailController = TextEditingController();
-  String? _selectedTipo = 'monthly'; // 'monthly' o 'yearly'
+  String? _selectedTipo = 'monthly'; // 'monthly', 'yearly' o 'founder'
   bool _isLoading = false;
   bool _isAdmin = false;
   String? _error;
   List<Map<String, dynamic>> _suscripcionesActivas = [];
   bool _isLoadingSuscripciones = false;
+  List<Map<String, dynamic>> _foundersActivos = [];
+  bool _isLoadingFounders = false;
 
   @override
   void initState() {
@@ -50,7 +52,10 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
         _error = null;
       });
 
-      await _cargarSuscripcionesActivas();
+      await Future.wait([
+        _cargarSuscripcionesActivas(),
+        _cargarFounders(),
+      ]);
     } catch (e) {
       setState(() {
         _isAdmin = false;
@@ -74,6 +79,25 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
       setState(() {
         _error = 'Error cargando accesos: $e';
         _isLoadingSuscripciones = false;
+      });
+    }
+  }
+
+  Future<void> _cargarFounders() async {
+    setState(() {
+      _isLoadingFounders = true;
+    });
+
+    try {
+      final founders = await AdminService.listarFounders();
+      setState(() {
+        _foundersActivos = founders;
+        _isLoadingFounders = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Error cargando Founders: $e';
+        _isLoadingFounders = false;
       });
     }
   }
@@ -108,21 +132,31 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
     });
 
     try {
-      await AdminService.otorgarManiGrabLovers(email, _selectedTipo!);
-      
+      if (_selectedTipo == 'founder') {
+        await AdminService.otorgarFoundersEdition(email);
+      } else {
+        await AdminService.otorgarManiGrabLovers(email, _selectedTipo!);
+      }
+
       if (mounted) {
+        final mensaje = _selectedTipo == 'founder'
+            ? 'Founders Edition (vitalicio)'
+            : _selectedTipo == 'monthly'
+                ? 'Acceso de cortesía mensual'
+                : 'Acceso de cortesía anual';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '✅ Acceso de cortesía ${_selectedTipo == 'monthly' ? 'mensual' : 'anual'} asignado a $email',
-            ),
+            content: Text('✅ $mensaje asignado a $email'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 3),
           ),
         );
-        
+
         _emailController.clear();
-        await _cargarSuscripcionesActivas();
+        await Future.wait([
+          _cargarSuscripcionesActivas(),
+          _cargarFounders(),
+        ]);
       }
     } catch (e) {
       if (mounted) {
@@ -184,6 +218,63 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
         );
         
         await _cargarSuscripcionesActivas();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _revocarFounder(String email) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Revocar Founders Edition?'),
+        content: Text('¿Estás seguro de que deseas revocar el acceso vitalicio de $email?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Revocar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await AdminService.revocarFoundersEdition(email);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Founders Edition revocada para $email'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        await _cargarFounders();
       }
     } catch (e) {
       if (mounted) {
@@ -289,6 +380,9 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
                         const SizedBox(height: 24),
                         // Lista de accesos promocionales activos
                         _buildListaSuscripciones(),
+                        const SizedBox(height: 24),
+                        // Lista de Founders Edition activos
+                        _buildListaFounders(),
                         const SizedBox(height: 24),
                         _buildNotaFinal(),
                       ],
@@ -408,6 +502,8 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          _buildTipoButton('founder', 'Founders Edition (vitalicio, Origen 369)', Icons.auto_awesome),
           const SizedBox(height: 20),
           
           // Botón de otorgar
@@ -603,6 +699,137 @@ class _ManiGrabLoversScreenState extends State<ManiGrabLoversScreen> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () => _revocarSuscripcion(email),
+                      icon: const Icon(Icons.close, size: 18),
+                      label: const Text('Revocar acceso'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red[300],
+                        side: BorderSide(color: Colors.red[300]!),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _buildListaFounders() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Founders Edition activos (vitalicio)',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFFFFD700),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        if (_isLoadingFounders)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(color: Color(0xFFFFD700)),
+            ),
+          )
+        else if (_foundersActivos.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'No hay Founders Edition activos',
+              style: GoogleFonts.inter(
+                color: Colors.white54,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          )
+        else
+          ..._foundersActivos.map((founder) {
+            final email = founder['user_email'] ?? 'N/A';
+            final nombre = founder['user_name'] ?? 'Usuario';
+            final createdAt = DateTime.parse(founder['created_at']);
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              nombre,
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              email,
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD700).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Founder',
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFFFFD700),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, size: 16, color: Colors.white54),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Otorgado: ${DateFormat('dd/MM/yyyy').format(createdAt)}',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _revocarFounder(email),
                       icon: const Icon(Icons.close, size: 18),
                       label: const Text('Revocar acceso'),
                       style: OutlinedButton.styleFrom(

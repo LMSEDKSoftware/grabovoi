@@ -808,6 +808,9 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
   }
 
   void _mostrarMensajeCancelacion() {
+    // Contexto de la pantalla, capturado antes de que el builder del diálogo
+    // sombree el identificador 'context' con el suyo propio.
+    final screenContext = context;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -886,64 +889,12 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
           CustomButton(
             text: 'Entendido',
             onPressed: () {
-              Navigator.of(context).pop();
-              // Después de cerrar este mensaje, mostrar el segundo mensaje
-              if (context.mounted) {
-                _mostrarMensajePuedeSalir();
+              Navigator.of(context).pop(); // Cierra el diálogo
+              if (screenContext.mounted) {
+                Navigator.of(screenContext).pop(); // Sale de la pantalla directamente
               }
             },
             color: const Color(0xFFFF6B6B),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarMensajePuedeSalir() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C2541),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFFFD700), width: 2),
-        ),
-        title: Row(
-          children: [
-            const Icon(
-              Icons.info_outline,
-              color: Color(0xFFFFD700),
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Listo para Salir',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Ahora puedes salir de la sesión dando clic en el botón "Volver".',
-          style: GoogleFonts.inter(
-            color: Colors.white70,
-            fontSize: 16,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          CustomButton(
-            text: 'Entendido',
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            color: const Color(0xFFFFD700),
           ),
         ],
       ),

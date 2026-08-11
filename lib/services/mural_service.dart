@@ -73,6 +73,23 @@ class MuralService {
     }
   }
 
+  /// Deshacer "no mostrar de nuevo": el mensaje volverá a aparecer.
+  Future<void> markAsUnread(int messageId) async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+
+      await _supabase
+          .from(_readsTable)
+          .delete()
+          .eq('user_id', user.id)
+          .eq('message_id', messageId);
+      debugPrint('↩️ [MURAL] Mensaje $messageId desmarcado como leído (DB)');
+    } catch (e) {
+      debugPrint('❌ Error desmarcando mensaje como leído (DB): $e');
+    }
+  }
+
   /// Marcar mensaje como leído
   Future<void> markAsRead(int messageId) async {
     try {

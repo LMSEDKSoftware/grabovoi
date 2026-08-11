@@ -62,6 +62,10 @@ enum NotificationType {
   // Feedback Loop
   thanksForMaintainingStreak,
   enjoyYourPilotage,
+
+  // Suscripción/Premium
+  premiumWelcome,
+  trialEndingSoon,
 }
 
 extension NotificationTypeExtension on NotificationType {
@@ -71,6 +75,7 @@ extension NotificationTypeExtension on NotificationType {
       case NotificationType.streakAtRisk12h:
       case NotificationType.challengeAtRisk:
       case NotificationType.energyLowAlert:
+      case NotificationType.trialEndingSoon:
         return NotificationPriority.high;
       
       case NotificationType.weeklyProgressSummary:
@@ -112,6 +117,7 @@ extension NotificationTypeExtension on NotificationType {
       case NotificationType.challengeCompleted:
       case NotificationType.energyMaxReached:
       case NotificationType.milestone1000Pilotages:
+      case NotificationType.premiumWelcome:
         return true;
       default:
         return false;

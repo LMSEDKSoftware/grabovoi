@@ -207,7 +207,7 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
     try {
       // Cargar progreso del usuario y sesiones
       final progress = await _progressService.getUserProgress();
-      final sessionHistory = await _progressService.getSessionHistory(limit: 500);
+      final sessionHistory = await _progressService.getSessionHistory();
       final totalMinutes = sessionHistory.fold<int>(0, (acc, s) => acc + ((s['duration_minutes'] as int?) ?? 0));
       
       // Cargar desafíos
@@ -747,14 +747,14 @@ class _EvolucionScreenState extends State<EvolucionScreen> with WidgetsBindingOb
           '${_cachedExploredCodesCount ?? 0}',
           Icons.numbers,
           'Secuencias Usadas',
-          'Representa la cantidad única de secuencias de Grabovoi que has utilizado al menos una vez en tus sesiones de repetición, pilotaje o compartido.',
+          'Es la cantidad de secuencias DIFERENTES que has usado al menos una vez (en un pilotaje, una repetición o al compartir). Solo sube cuando usas una secuencia nueva; repetir una que ya usaste no la incrementa.',
         ),
         _buildStatCard(
           'Total Pilotajes',
           totalPilotajes,
           Icons.psychology,
           'Total Pilotajes',
-          'Es el número total de sesiones de pilotaje cuántico que has completado. Cada pilotaje contribuye a tu evolución energética.',
+          'Es el número total de veces que has completado el Campo Energético (2 min) en cualquier secuencia. A diferencia de "Secuencias Usadas", aquí sí suma aunque repitas la misma secuencia una y otra vez.',
         ),
         _buildStatCard(
           'Tiempo Sesión',

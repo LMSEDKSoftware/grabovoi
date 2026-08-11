@@ -21,6 +21,9 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
   List<Challenge> _userChallenges = [];
   bool _isLoading = true;
 
+  List<Challenge> get _activeChallenges =>
+      _userChallenges.where((c) => c.status == ChallengeStatus.enProgreso).toList();
+
   @override
   void initState() {
     super.initState();
@@ -50,18 +53,18 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
     
     // Inicializar desafíos en el servicio
     await _challengeService.initializeChallenges();
-    
-    final userChallenges = _challengeService.getUserChallenges();
-    
+
     // Sincronizar progreso de cada desafío activo
     final trackingService = ChallengeTrackingService();
-    for (final challenge in userChallenges) {
+    for (final challenge in _challengeService.getUserChallenges()) {
       await trackingService.syncProgressFromSupabase(challenge.id);
     }
-    
+
+    // Releer después de sincronizar: Challenge es inmutable y la sincronización
+    // pudo haber actualizado currentDay/status con objetos Challenge nuevos.
     setState(() {
       _availableChallenges = _challengeService.getAvailableChallenges();
-      _userChallenges = userChallenges;
+      _userChallenges = _challengeService.getUserChallenges();
       _isLoading = false;
     });
   }
@@ -98,8 +101,10 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                   Expanded(
                     child: ListView(
                       children: [
-                        // Desafíos Activos
-                        if (_userChallenges.isNotEmpty) ...[
+                        // Desafíos Activos (excluye los ya completados: antes
+                        // un desafío terminado se quedaba aquí para siempre
+                        // con "Continuar Desafío" y 0% de progreso).
+                        if (_activeChallenges.isNotEmpty) ...[
                           Text(
                             'Desafíos Activos',
                             style: GoogleFonts.inter(
@@ -109,10 +114,10 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          ..._userChallenges.map((challenge) => _buildActiveChallengeCard(challenge)),
+                          ..._activeChallenges.map((challenge) => _buildActiveChallengeCard(challenge)),
                           const SizedBox(height: 30),
                         ],
-                        
+
                         // Desafíos Disponibles
                         ..._availableChallenges.map((challenge) => _buildChallengeCard(challenge)),
                         
@@ -128,9 +133,12 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
   Widget _buildChallengeCard(Challenge challenge) {
     final color = Color(int.parse(challenge.color.replaceAll('#', '0xFF')));
     
-    // Bloquear todos los desafíos excepto el de 7 días (iniciación energética)
-    bool isLocked = challenge.id != 'iniciacion_energetica';
-    String? lockMessage = isLocked ? 'Este desafío está bloqueado' : null;
+    // Bloqueado dinámicamente: solo se desbloquea al completar el anterior
+    // en la secuencia (antes esto estaba fijo a "todo excepto el de 7 días").
+    final isLocked = !_challengeService.puedeIniciarDesafio(challenge.id);
+    final lockMessage = isLocked
+        ? (_challengeService.getLockReason(challenge.id) ?? 'Este desafío está bloqueado')
+        : null;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -162,6 +170,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                 Row(
                   children: [
                     Stack(
+                      clipBehavior: Clip.none,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -179,18 +188,26 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
                         ),
                         if (isLocked)
                           Positioned(
-                            right: -4,
-                            top: -4,
+                            right: -6,
+                            top: -6,
                             child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.grey,
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFFD700).withOpacity(0.55),
+                                    blurRadius: 10,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
                               ),
                               child: const Icon(
-                                Icons.lock,
-                                color: Colors.white,
-                                size: 16,
+                                Icons.lock_rounded,
+                                color: Color(0xFFFFD700),
+                                size: 18,
+                                shadows: [
+                                  Shadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 1)),
+                                ],
                               ),
                             ),
                           ),
@@ -540,36 +557,10 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              // Verificar si el desafío anterior está completado
-              final challengeOrder = ['iniciacion_energetica', 'armonizacion_intermedia', 'luz_dorada_avanzada', 'maestro_abundancia'];
-              final currentIndex = challengeOrder.indexOf(challenge.id);
-              bool canStart = true;
-              String? errorMessage;
-              
-              if (currentIndex > 0) {
-                final previousChallengeId = challengeOrder[currentIndex - 1];
-                final previousChallenge = _challengeService.getUserChallenges().firstWhere(
-                  (c) => c.id == previousChallengeId,
-                  orElse: () => challenge,
-                );
-                
-                if (previousChallenge.id != challenge.id && previousChallenge.status != ChallengeStatus.completado) {
-                  canStart = false;
-                  errorMessage = 'Debes completar primero el "${previousChallenge.title}" antes de iniciar este desafío.';
-                }
-              }
-              
-              if (!canStart) {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(errorMessage ?? 'No puedes iniciar este desafío'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-              
+              // ChallengeService.startChallenge() ya valida internamente que
+              // el desafío anterior esté completado (puedeIniciarDesafio) y
+              // que no haya otro desafío activo; si algo falla, lanza una
+              // excepción con el mensaje adecuado que mostramos abajo.
               try {
                 Navigator.of(context).pop();
                 await _challengeService.startChallenge(challenge.id);
@@ -580,7 +571,7 @@ class _DesafiosScreenState extends State<DesafiosScreen> {
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(e.toString()),
+                    content: Text(e.toString().replaceFirst('Exception: ', '')),
                     backgroundColor: Colors.red,
                   ),
                 );

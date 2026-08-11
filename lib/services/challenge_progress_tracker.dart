@@ -4,7 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_service_simple.dart';
 import 'challenge_tracking_service.dart';
+import 'notification_service.dart';
 import '../models/challenge_model.dart';
+import '../models/notification_type.dart';
 
 class ChallengeProgressTracker extends ChangeNotifier {
   static final ChallengeProgressTracker _instance = ChallengeProgressTracker._internal();
@@ -72,12 +74,20 @@ class ChallengeProgressTracker extends ChangeNotifier {
   void trackPilotageShared({String? codeId, String? codeName}) {
     _pilotagesSharedToday++;
     _updateDailyProgress('pilotages_shared', _pilotagesSharedToday);
-    
+
     _trackingService.recordPilotageShare(
       codeId: codeId,
       codeName: codeName,
     );
-    
+
+    // Feedback inmediato local: el propio dispositivo acaba de originar la
+    // acción de compartir, no hace falta esperar al servidor.
+    NotificationService().showNotification(
+      title: '🎉 ¡Gracias por compartir!',
+      body: 'Tu logro inspira a otros pilotos conscientes.',
+      type: NotificationType.shareAchievement,
+    );
+
     _saveProgressToStorage();
     notifyListeners();
   }

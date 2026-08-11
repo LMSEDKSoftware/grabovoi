@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/challenge_model.dart';
+import '../models/notification_type.dart';
 import 'challenge_tracking_service.dart';
 import 'auth_service_simple.dart';
 import 'rewards_service.dart';
+import 'notification_service.dart';
 
 class ChallengeService extends ChangeNotifier {
   static final ChallengeService _instance = ChallengeService._internal();
@@ -14,6 +16,7 @@ class ChallengeService extends ChangeNotifier {
   final ChallengeTrackingService _trackingService = ChallengeTrackingService();
   final AuthServiceSimple _authService = AuthServiceSimple();
   final SupabaseClient _supabase = Supabase.instance.client;
+  final NotificationService _notificationService = NotificationService();
   
   final List<Challenge> _availableChallenges = [];
   final Map<String, Challenge> _userChallenges = {};
@@ -92,6 +95,13 @@ class ChallengeService extends ChangeNotifier {
           await _inicializarProgresoDesdeChallenge(challenge);
           // Verificar y actualizar racha al cargar
           await _trackingService.verificarYActualizarRacha(challenge.id);
+        } else if (challenge.status == ChallengeStatus.completado) {
+          // También cargar el progreso histórico de desafíos ya completados
+          // (sin verificar racha, eso solo aplica a desafíos activos). Sin
+          // esto, el tracking service quedaba vacío para un desafío
+          // completado tras recargar la app, y pantallas como la tarjeta de
+          // Desafíos o Evolución lo mostraban en 0% pese a estar terminado.
+          await _inicializarProgresoDesdeChallenge(challenge);
         }
       }
     } catch (e) {
@@ -312,9 +322,105 @@ class ChallengeService extends ChangeNotifier {
       return false;
     }
     
-    // Verificar que el desafío anterior esté completado
-    return previousChallenge.status == ChallengeStatus.completado &&
-           isChallengeCompleted(previousChallengeId);
+    // Verificar que el desafío anterior esté completado. Basta con el status
+    // persistido (no con isChallengeCompleted(), que depende del progreso en
+    // memoria del tracking service y no está disponible para desafíos ya
+    // completados que se recargan desde Supabase en una sesión nueva).
+    return previousChallenge.status == ChallengeStatus.completado;
+  }
+
+  /// Indica si el usuario puede iniciar este desafío (el anterior en la
+  /// secuencia ya está completado, o es el primero). Usado por la UI para
+  /// decidir si mostrar el candado.
+  bool puedeIniciarDesafio(String challengeId) => _isPreviousChallengeCompleted(challengeId);
+
+  /// Mensaje explicando por qué un desafío está bloqueado, o null si no lo está.
+  String? getLockReason(String challengeId) {
+    if (_isPreviousChallengeCompleted(challengeId)) return null;
+    final challengeIndex = _challengeOrder.indexOf(challengeId);
+    if (challengeIndex <= 0) return null;
+    final previousChallengeId = _challengeOrder[challengeIndex - 1];
+    final defaults = _createDefaultChallenges();
+    final previousChallenge = _availableChallenges.firstWhere(
+      (c) => c.id == previousChallengeId,
+      orElse: () => defaults.firstWhere((c) => c.id == previousChallengeId),
+    );
+    return 'Completa primero "${previousChallenge.title}" para desbloquear este desafío.';
+  }
+
+  /// Marca un desafío como completado de verdad: lo persiste en Supabase y
+  /// actualiza el estado en memoria. Sin esto, el status se quedaba en
+  /// "enProgreso" para siempre y bloqueaba el inicio de cualquier otro
+  /// desafío (_getActiveChallenge() lo seguía viendo como activo).
+  Future<void> finalizarDesafio(String challengeId) async {
+    final challenge = _userChallenges[challengeId];
+    if (challenge == null) return;
+    if (challenge.status == ChallengeStatus.completado) return; // ya finalizado
+
+    final completedChallenge = challenge.copyWith(status: ChallengeStatus.completado);
+    try {
+      if (_authService.isLoggedIn) {
+        await _supabase
+            .from('user_challenges')
+            .update({'status': ChallengeStatus.completado.toString().split('.').last})
+            .eq('user_id', _authService.currentUser!.id)
+            .eq('challenge_id', challengeId);
+      }
+      _userChallenges[challengeId] = completedChallenge;
+      notifyListeners();
+      print('🏁 Desafío "${completedChallenge.title}" marcado como completado.');
+
+      // Notificar: el método ya existía en NotificationService pero nadie lo
+      // llamaba desde el flujo real, así que terminar un desafío no avisaba
+      // nada más allá de la pantalla de felicitaciones (si el usuario seguía
+      // ahí en ese momento).
+      try {
+        final awards = completedChallenge.rewards.isNotEmpty
+            ? completedChallenge.rewards.join(', ')
+            : 'tu certificado';
+        await _notificationService.notifyChallengeCompleted(completedChallenge.title, awards);
+      } catch (e) {
+        print('⚠️ Error enviando notificación de desafío completado: $e');
+      }
+
+      // Encadenar automáticamente el siguiente desafío de la secuencia
+      // (7 → 14 → 21 → 30 días = 72 días corridos en total). Sin esto, la
+      // racha dependía de que el usuario volviera y tocara "Comenzar" a
+      // tiempo, dejando un hueco entre desafíos.
+      await _iniciarSiguienteDesafioEnCadena(challengeId);
+    } catch (e) {
+      print('⚠️ Error marcando desafío como completado: $e');
+      rethrow;
+    }
+  }
+
+  /// Inicia automáticamente el siguiente desafío de _challengeOrder justo al
+  /// completar el actual, para que los 72 días totales corran seguidos sin
+  /// depender de una acción manual del usuario.
+  Future<void> _iniciarSiguienteDesafioEnCadena(String challengeId) async {
+    final currentIndex = _challengeOrder.indexOf(challengeId);
+    if (currentIndex < 0 || currentIndex >= _challengeOrder.length - 1) {
+      return; // No es parte de la cadena, o es el último (maestro_abundancia)
+    }
+    final nextChallengeId = _challengeOrder[currentIndex + 1];
+    if (_userChallenges.containsKey(nextChallengeId)) {
+      return; // Ya iniciado o completado previamente
+    }
+    try {
+      await startChallenge(nextChallengeId);
+      print('➡️ Desafío "$nextChallengeId" iniciado automáticamente para mantener la racha de 72 días.');
+
+      final nextChallenge = getChallenge(nextChallengeId);
+      if (nextChallenge != null) {
+        await _notificationService.showNotification(
+          title: '🎯 Nuevo desafío disponible',
+          body: 'Ya puedes comenzar el ${nextChallenge.title}.',
+          type: NotificationType.challengeNewAvailable,
+        );
+      }
+    } catch (e) {
+      print('⚠️ No se pudo encadenar automáticamente el siguiente desafío: $e');
+    }
   }
 
   // Iniciar un desafío

@@ -3,6 +3,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service_simple.dart';
+import 'notification_service.dart';
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -12,6 +13,7 @@ class SubscriptionService {
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   final AuthServiceSimple _authService = AuthServiceSimple();
   final SupabaseClient _supabase = Supabase.instance.client;
+  final NotificationService _notificationService = NotificationService();
 
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   final StreamController<bool> _subscriptionStatusController = StreamController<bool>.broadcast();
@@ -415,6 +417,7 @@ class SubscriptionService {
     final userId = _authService.currentUser!.id;
     final productId = purchase.productID;
     final purchaseId = purchase.purchaseID ?? '';
+    final bool wasPremiumBefore = _isPremium;
 
     // Dedupe: si ya procesamos este purchase_id hace poco, no hacer nada
     if (purchaseId.isNotEmpty) {
@@ -433,6 +436,17 @@ class SubscriptionService {
     _handlingPurchaseLock = true;
     try {
       await _handleSuccessfulPurchaseImpl(purchase, userId, productId, purchaseId);
+
+      // Notificar bienvenida solo en compra nueva real (no en restauraciones al
+      // abrir la app, que también pasan por este mismo flujo con status=restored).
+      if (!wasPremiumBefore && _isPremium && purchase.status == PurchaseStatus.purchased) {
+        try {
+          await _notificationService.notifyPremiumWelcome();
+        } catch (e) {
+          print('⚠️ Error enviando notificación de bienvenida a Premium: $e');
+        }
+      }
+
       if (purchaseId.isNotEmpty) {
         _recentlyProcessedPurchaseIds[purchaseId] = DateTime.now();
         // Limpiar entradas antiguas

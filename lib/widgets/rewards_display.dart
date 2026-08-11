@@ -180,11 +180,6 @@ class _RewardsDisplayState extends State<RewardsDisplay> {
           // Luz cuántica
           _buildLuzCuanticaCard(),
           const SizedBox(height: 12),
-          // Restauradores
-          if (_rewards!.restauradoresArmonia > 0) ...[
-            _buildRestauradoresCard(),
-            const SizedBox(height: 12),
-          ],
           // Mantras desbloqueados
           if (_rewards!.mantrasDesbloqueados.isNotEmpty) ...[
             _buildMantrasCard(),
@@ -342,45 +337,6 @@ class _RewardsDisplayState extends State<RewardsDisplay> {
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRestauradoresCard() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C3E50).withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.healing, color: Colors.blue, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Restauradores de Armonía',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-                Text(
-                  '${_rewards!.restauradoresArmonia} disponible${_rewards!.restauradoresArmonia != 1 ? 's' : ''}',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueAccent,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
