@@ -2,11 +2,6 @@
   "interactionModel": {
     "languageModel": {
       "invocationName": "secuencias grabovoi",
-      "modelConfiguration": {
-        "fallbackIntentSensitivity": {
-          "level": "LOW"
-        }
-      },
       "intents": [
         {
           "name": "AMAZON.CancelIntent",
