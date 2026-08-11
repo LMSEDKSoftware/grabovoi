@@ -204,6 +204,79 @@ function isTimestampFresh(requestTimestamp) {
   return Math.abs(Date.now() - reqTime) <= TIMESTAMP_TOLERANCE_MS;
 }
 
+// Cama de música publicada en Supabase Storage (bucket público `alexa`).
+// Ver scripts/publicar_alexa_audio.py.
+const MUSICA_CAMA_URL =
+  'https://whtiazgcxdnemrrgjjqf.supabase.co/storage/v1/object/public/alexa/musica/crystal_bowls_cama.mp3';
+
+// Respuesta APLA (APL for Audio). Se usa en vez de outputSpeech cuando
+// hay audio de por medio: o bien el MP3 pre-renderizado con la voz de la
+// app, o bien la voz de Alexa mezclada sobre la música con un Mixer.
+// Requiere que la interfaz "Alexa Presentation Language for Audio" esté
+// habilitada en Build → Interfaces de la consola.
+function aplaResponse({ items, shouldEndSession, card, reprompt, sessionAttributes }) {
+  const response = {
+    directives: [
+      {
+        type: 'Alexa.Presentation.APLA.RenderDocument',
+        token: 'manigrab-audio',
+        document: {
+          type: 'APLA',
+          version: '0.91',
+          mainTemplate: {
+            parameters: ['payload'],
+            item: { type: 'Sequencer', items },
+          },
+        },
+        datasources: {},
+      },
+    ],
+    shouldEndSession,
+  };
+  if (card) response.card = card;
+  if (reprompt) {
+    response.reprompt = { outputSpeech: { type: 'SSML', ssml: `<speak>${reprompt}</speak>` } };
+  }
+  const payload = { version: '1.0', response };
+  if (sessionAttributes) payload.sessionAttributes = sessionAttributes;
+  return payload;
+}
+
+function bloqueVoz(ssml) {
+  return { type: 'Speech', contentType: 'SSML', content: `<speak>${ssml}</speak>` };
+}
+
+// Voz de Alexa sobre la música. El Mixer dura lo que dure su hijo más
+// largo, así que la música se recorta a una estimación BAJA de lo que
+// tarda el habla: si se queda corta, se desvanece antes (imperceptible);
+// si se pasara, la respuesta excedería el límite de 240s de Alexa.
+function bloqueMezcla(ssml, msEstimados) {
+  return {
+    type: 'Mixer',
+    items: [
+      bloqueVoz(ssml),
+      {
+        type: 'Audio',
+        source: MUSICA_CAMA_URL,
+        filters: [
+          { type: 'Trim', end: Math.min(msEstimados, 195_000) },
+          { type: 'FadeOut', duration: 2000 },
+        ],
+      },
+    ],
+  };
+}
+
+// Estimación conservadora (a la baja) de cuánto tarda Alexa en leer los
+// dígitos, para recortar la música. Medido a ojo sobre el ritmo real:
+// ~450ms por dígito más las pausas que metemos nosotros.
+function estimarMsHabla(codigo, veces) {
+  const digitos = String(codigo).replace(/[^0-9]/g, '').length;
+  const porRepeticion = digitos * 450 + (digitos - 1) * 280;
+  const enlaces = (veces - 1) * (1800 + 800 + 1800);
+  return Math.round((porRepeticion * veces + enlaces) * 0.9);
+}
+
 function alexaResponse({ ssml, shouldEndSession, card, reprompt, sessionAttributes }) {
   const response = {
     outputSpeech: { type: 'SSML', ssml },
@@ -328,6 +401,29 @@ async function obtenerFavorita(admin, userId) {
   return data && data.length > 0 ? data[0] : null;
 }
 
+// Voz que el usuario eligió en la app (Tienda Cuántica → voz numérica).
+async function vozDelUsuario(admin, userId) {
+  const { data } = await admin
+    .from('user_rewards')
+    .select('voice_gender')
+    .eq('user_id', userId)
+    .maybeSingle();
+  return data?.voice_gender || 'female';
+}
+
+// ¿Hay un MP3 pre-renderizado (voz de la app + música) para esta
+// secuencia y esta voz? Solo existe para las que pasaron por
+// scripts/publicar_alexa_audio.py — hoy, la secuencia del día.
+async function audioPreRenderizado(admin, codigo, voz) {
+  const { data } = await admin
+    .from('alexa_audio_cache')
+    .select('url, duracion_s, repeticiones')
+    .eq('codigo', codigo)
+    .eq('voz', voz)
+    .maybeSingle();
+  return data || null;
+}
+
 async function otorgarRecompensa(admin, userId, secuencia) {
   const { data, error } = await admin.rpc('otorgar_recompensa_repeticion', {
     p_user_id: userId,
@@ -363,17 +459,34 @@ async function repetirSecuencia(admin, userId, secuencia, { intro, veces }) {
   }
 
   const seguimiento = ' ¿Quieres otra secuencia, o saber qué significa esta?';
-
-  const ssml =
-    `<speak>${intro}<break time="800ms"/>` +
-    `${repeticionesSsml(secuencia.codigo, veces)}<break time="800ms"/>` +
-    `${escapeXml(cierre)}${escapeXml(seguimiento)}</speak>`;
-
-  return alexaResponse({
-    ssml,
+  const cierreSsml = `${escapeXml(cierre)}${escapeXml(seguimiento)}`;
+  const comun = {
     shouldEndSession: false,
     reprompt: 'Puedes pedirme otra secuencia, preguntarme qué significa, o decir, para.',
     sessionAttributes: recordarSecuencia(secuencia),
+  };
+
+  // Lo mejor que podemos dar: el MP3 ya mezclado con la voz grabada de
+  // la app y la música, idéntico a como suena el pilotaje ahí dentro.
+  const voz = await vozDelUsuario(admin, userId);
+  const pre = await audioPreRenderizado(admin, secuencia.codigo, voz);
+  if (pre) {
+    return aplaResponse({
+      items: [bloqueVoz(intro), { type: 'Audio', source: pre.url }, bloqueVoz(cierreSsml)],
+      ...comun,
+    });
+  }
+
+  // Si no está pre-renderizada (búsquedas por propósito, favoritas), la
+  // lee Alexa pero sobre la misma música, para que no sea un salto seco
+  // respecto de la del día.
+  return aplaResponse({
+    items: [
+      bloqueVoz(intro),
+      bloqueMezcla(repeticionesSsml(secuencia.codigo, veces), estimarMsHabla(secuencia.codigo, veces)),
+      bloqueVoz(cierreSsml),
+    ],
+    ...comun,
   });
 }
 
@@ -498,14 +611,18 @@ function handleExplicarSecuencia(sessionAttributes) {
 // secuencia UNA vez (no las repeticiones completas ni cristales — eso es
 // lo que la cuenta vinculada da de más) y lo invitamos a la app.
 function respuestaCortesia(secuencia, { intro, incluirInvitacion = true }) {
-  const cuerpo =
-    `<speak>${intro}<break time="800ms"/>` +
-    `${digitosSsml(secuencia.codigo)}<break time="1000ms"/>` +
+  const cierre =
     (incluirInvitacion ? `${escapeXml(INVITACION_CORTA)}<break time="400ms"/>` : '') +
-    `¿Quieres otra secuencia, o saber qué significa esta?</speak>`;
+    '¿Quieres otra secuencia, o saber qué significa esta?';
 
-  return alexaResponse({
-    ssml: cuerpo,
+  // También con música: la primera impresión de quien no tiene cuenta es
+  // justo la que tiene que engancharlo.
+  return aplaResponse({
+    items: [
+      bloqueVoz(intro),
+      bloqueMezcla(digitosSsml(secuencia.codigo), estimarMsHabla(secuencia.codigo, 1)),
+      bloqueVoz(cierre),
+    ],
     shouldEndSession: false,
     reprompt: 'Puedes pedirme una secuencia para la salud, el dinero o el amor, o preguntarme qué significa esta.',
     card: CARD_INVITACION,
