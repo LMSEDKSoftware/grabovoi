@@ -4,7 +4,9 @@
 ' texto directo en pantalla. Ver docs/ROKU_TV_PLAN.md.
 
 sub init()
-    m.email = ""
+    ' Precargado para pruebas, así solo hay que teclear la contraseña
+    ' con el control remoto. Quitar cuando el canal deje de ser interno.
+    m.email = "2005.ivan@gmail.com"
     m.password = ""
 
     m.menu = m.top.findNode("menu")
