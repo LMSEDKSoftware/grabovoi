@@ -12,7 +12,7 @@ sub init()
     m.errorLabel = m.top.findNode("errorLabel")
 
     m.loginTask = m.top.findNode("loginTask")
-    m.loginTask.observeField("responseCode", "onLoginResponse")
+    m.loginTask.observeField("done", "onLoginResponse")
 
     RefreshMenu()
     m.menu.setFocus(true)
@@ -76,11 +76,15 @@ end sub
 sub onKeyboardButton(event as Object)
     index = event.GetData()
     if index = 0
-        text = m.pendingKeyboard.text
+        ' El teclado de Roku a veces deja un espacio de más al final
+        ' (autocompletado/sugerencias). Sin recortarlo, Supabase Auth
+        ' rechaza credenciales que en pantalla se ven idénticas a las
+        ' correctas.
+        text = m.pendingKeyboard.text.Trim()
         if m.pendingSecure
             m.password = text
         else
-            m.email = text
+            m.email = LCase(text)
         end if
         RefreshMenu()
     end if
@@ -101,8 +105,9 @@ sub DoLogin()
 end sub
 
 sub onLoginResponse(event as Object)
-    code = event.GetData()
-    parsed = ParseJsonSafe(m.loginTask.responseJson)
+    result = event.GetData()
+    code = result.code
+    parsed = ParseJsonSafe(result.json)
 
     if code = 200 and parsed <> invalid and parsed.access_token <> invalid
         m.top.result = { action: "loggedIn", token: parsed.access_token }

@@ -17,24 +17,24 @@ sub init()
     m.estadoLabel = m.top.findNode("estadoLabel")
 
     m.sequenceTask = m.top.findNode("sequenceTask")
-    m.sequenceTask.observeField("responseCode", "onSequenceResponse")
+    m.sequenceTask.observeField("done", "onSequenceResponse")
     m.sequenceTask.authToken = m.top.authToken
     m.sequenceTask.uri = ApiBase() + "/roku-sequence?id=" + m.top.secuenciaId
     m.sequenceTask.method = "GET"
     m.sequenceTask.control = "RUN"
 
     m.completeTask = m.top.findNode("completeTask")
-    m.completeTask.observeField("responseCode", "onCompleteResponse")
+    m.completeTask.observeField("done", "onCompleteResponse")
 end sub
 
 sub onSequenceResponse(event as Object)
-    code = event.GetData()
-    if code <> 200
+    result = event.GetData()
+    if result.code <> 200
         m.estadoLabel.text = "No se pudo cargar la secuencia. Presiona atras."
         return
     end if
 
-    data = ParseJsonSafe(m.sequenceTask.responseJson)
+    data = ParseJsonSafe(result.json)
     if data = invalid or data.audio = invalid
         m.estadoLabel.text = "Respuesta inesperada. Presiona atras."
         return
@@ -131,9 +131,9 @@ sub FinishPlayback()
 end sub
 
 sub onCompleteResponse(event as Object)
-    code = event.GetData()
-    if code = 200
-        data = ParseJsonSafe(m.completeTask.responseJson)
+    result = event.GetData()
+    if result.code = 200
+        data = ParseJsonSafe(result.json)
         if data <> invalid and data.cristales_ganados <> invalid
             m.estadoLabel.text = "Ganaste " + data.cristales_ganados.ToStr() + " cristales de energia. Presiona atras para volver."
         else

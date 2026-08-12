@@ -29,18 +29,15 @@ sub doRequest()
     end if
 
     if not ok
-        m.top.responseCode = -1
-        m.top.responseJson = ""
+        m.top.done = { code: -1, json: "" }
         return
     end if
 
     msg = wait(15000, port)
     if type(msg) = "roUrlEvent"
-        m.top.responseCode = msg.GetResponseCode()
-        m.top.responseJson = msg.GetString()
+        m.top.done = { code: msg.GetResponseCode(), json: msg.GetString() }
     else
         xfer.AsyncCancel()
-        m.top.responseCode = -1
-        m.top.responseJson = ""
+        m.top.done = { code: -1, json: "" }
     end if
 end sub

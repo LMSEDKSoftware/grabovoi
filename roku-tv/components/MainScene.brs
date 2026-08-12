@@ -10,7 +10,7 @@ sub init()
     m.authToken = invalid
 
     task = m.top.findNode("checkSessionTask")
-    task.observeField("responseCode", "onSessionChecked")
+    task.observeField("done", "onSessionChecked")
 
     saved = LoadToken()
     if saved <> invalid
@@ -25,8 +25,8 @@ sub init()
 end sub
 
 sub onSessionChecked(event as Object)
-    code = event.GetData()
-    if code = 200
+    result = event.GetData()
+    if result.code = 200
         ShowHome()
     else
         ClearToken()

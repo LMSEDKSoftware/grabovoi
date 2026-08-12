@@ -6,7 +6,7 @@ sub init()
     m.menu.visible = false
 
     m.homeTask = m.top.findNode("homeTask")
-    m.homeTask.observeField("responseCode", "onHomeResponse")
+    m.homeTask.observeField("done", "onHomeResponse")
     m.homeTask.authToken = m.top.authToken
     m.homeTask.uri = ApiBase() + "/roku-home"
     m.homeTask.method = "GET"
@@ -14,15 +14,15 @@ sub init()
 end sub
 
 sub onHomeResponse(event as Object)
-    code = event.GetData()
+    result = event.GetData()
     m.loadingLabel.visible = false
 
-    if code <> 200
+    if result.code <> 200
         m.progressLabel.text = "No se pudo cargar tu cuenta. Intenta de nuevo."
         return
     end if
 
-    data = ParseJsonSafe(m.homeTask.responseJson)
+    data = ParseJsonSafe(result.json)
     if data = invalid
         m.progressLabel.text = "Respuesta inesperada del servidor."
         return

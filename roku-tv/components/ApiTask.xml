@@ -5,8 +5,10 @@
         <field id="method" type="string" value="GET" />
         <field id="body" type="string" />
         <field id="authToken" type="string" />
-        <field id="responseJson" type="string" alwaysNotify="true" />
-        <field id="responseCode" type="integer" value="0" alwaysNotify="true" />
+        <!-- Un solo campo atómico con {code, json}, en vez de dos campos
+             separados: evitar cualquier duda sobre si el observador
+             llega a leer responseJson antes de que esté listo. -->
+        <field id="done" type="assocarray" alwaysNotify="true" />
     </interface>
     <script type="text/brightscript" uri="pkg:/components/ApiTask.brs" />
 </component>

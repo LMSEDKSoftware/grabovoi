@@ -5,7 +5,7 @@ sub init()
     m.menu.visible = false
 
     m.catalogTask = m.top.findNode("catalogTask")
-    m.catalogTask.observeField("responseCode", "onCatalogResponse")
+    m.catalogTask.observeField("done", "onCatalogResponse")
     m.catalogTask.authToken = m.top.authToken
     m.catalogTask.uri = ApiBase() + "/roku-catalog"
     m.catalogTask.method = "GET"
@@ -13,15 +13,15 @@ sub init()
 end sub
 
 sub onCatalogResponse(event as Object)
-    code = event.GetData()
+    result = event.GetData()
     m.loadingLabel.visible = false
-    if code <> 200
+    if result.code <> 200
         m.loadingLabel.visible = true
         m.loadingLabel.text = "No se pudo cargar el catalogo."
         return
     end if
 
-    data = ParseJsonSafe(m.catalogTask.responseJson)
+    data = ParseJsonSafe(result.json)
     if data = invalid or data.categorias = invalid
         return
     end if
