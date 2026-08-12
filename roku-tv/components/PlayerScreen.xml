@@ -4,6 +4,7 @@
         <field id="authToken" type="string" />
         <field id="secuenciaId" type="string" />
         <field id="result" type="assocarray" alwaysNotify="true" />
+        <function name="StartLoading" />
     </interface>
     <children>
         <Label id="nombreLabel" translation="[80,60]" color="#FFD700" text="" />

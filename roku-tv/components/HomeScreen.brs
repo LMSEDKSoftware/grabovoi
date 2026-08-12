@@ -7,11 +7,19 @@ sub init()
 
     m.homeTask = m.top.findNode("homeTask")
     m.homeTask.observeField("done", "onHomeResponse")
+end sub
+
+' init() corre en el momento de CreateObject(), ANTES de que quien crea
+' esta pantalla (MainScene) alcance a asignarle m.top.authToken. Leer el
+' token ahí adentro lo agarraba siempre vacío. MainScene llama a esta
+' función explícitamente después de asignar el campo, garantizando el
+' orden correcto.
+function StartLoading() as Void
     m.homeTask.authToken = m.top.authToken
     m.homeTask.uri = ApiBase() + "/roku-home"
     m.homeTask.method = "GET"
     m.homeTask.control = "RUN"
-end sub
+end function
 
 sub onHomeResponse(event as Object)
     result = event.GetData()

@@ -64,6 +64,7 @@ sub ShowHome()
     screen = CreateObject("roSGNode", "HomeScreen")
     screen.authToken = m.authToken
     screen.observeField("result", "onHomeResult")
+    screen.callFunc("StartLoading")
     SwapScreen("home", screen)
 end sub
 
@@ -84,6 +85,7 @@ sub ShowCategories()
     screen = CreateObject("roSGNode", "CategoryScreen")
     screen.authToken = m.authToken
     screen.observeField("result", "onCategoriesResult")
+    screen.callFunc("StartLoading")
     SwapScreen("categories", screen)
 end sub
 
@@ -101,6 +103,7 @@ sub ShowSequenceList(categoria as String)
     screen.authToken = m.authToken
     screen.categoria = categoria
     screen.observeField("result", "onSequenceListResult")
+    screen.callFunc("StartLoading")
     SwapScreen("sequenceList", screen)
 end sub
 
@@ -118,6 +121,7 @@ sub ShowPlayer(secuenciaId as String)
     screen.authToken = m.authToken
     screen.secuenciaId = secuenciaId
     screen.observeField("result", "onPlayerResult")
+    screen.callFunc("StartLoading")
     SwapScreen("player", screen)
 end sub
 

@@ -18,14 +18,17 @@ sub init()
 
     m.sequenceTask = m.top.findNode("sequenceTask")
     m.sequenceTask.observeField("done", "onSequenceResponse")
-    m.sequenceTask.authToken = m.top.authToken
-    m.sequenceTask.uri = ApiBase() + "/roku-sequence?id=" + m.top.secuenciaId
-    m.sequenceTask.method = "GET"
-    m.sequenceTask.control = "RUN"
 
     m.completeTask = m.top.findNode("completeTask")
     m.completeTask.observeField("done", "onCompleteResponse")
 end sub
+
+function StartLoading() as Void
+    m.sequenceTask.authToken = m.top.authToken
+    m.sequenceTask.uri = ApiBase() + "/roku-sequence?id=" + m.top.secuenciaId
+    m.sequenceTask.method = "GET"
+    m.sequenceTask.control = "RUN"
+end function
 
 sub onSequenceResponse(event as Object)
     result = event.GetData()

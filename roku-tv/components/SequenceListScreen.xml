@@ -4,6 +4,7 @@
         <field id="authToken" type="string" />
         <field id="categoria" type="string" />
         <field id="result" type="assocarray" alwaysNotify="true" />
+        <function name="StartLoading" />
     </interface>
     <children>
         <Label id="title" translation="[80,40]" color="#FFD700" text="" />

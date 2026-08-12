@@ -6,11 +6,14 @@ sub init()
 
     m.catalogTask = m.top.findNode("catalogTask")
     m.catalogTask.observeField("done", "onCatalogResponse")
+end sub
+
+function StartLoading() as Void
     m.catalogTask.authToken = m.top.authToken
     m.catalogTask.uri = ApiBase() + "/roku-catalog"
     m.catalogTask.method = "GET"
     m.catalogTask.control = "RUN"
-end sub
+end function
 
 sub onCatalogResponse(event as Object)
     result = event.GetData()

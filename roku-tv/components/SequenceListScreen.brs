@@ -3,18 +3,22 @@ sub init()
     m.menu.observeField("itemSelected", "onMenuSelected")
     m.loadingLabel = m.top.findNode("loadingLabel")
     m.menu.visible = false
+
+    m.catalogTask = m.top.findNode("catalogTask")
+    m.catalogTask.observeField("done", "onCatalogResponse")
+end sub
+
+function StartLoading() as Void
     m.top.findNode("title").text = m.top.categoria
 
     escaper = CreateObject("roUrlTransfer")
     categoriaEscapada = escaper.Escape(m.top.categoria)
 
-    m.catalogTask = m.top.findNode("catalogTask")
-    m.catalogTask.observeField("done", "onCatalogResponse")
     m.catalogTask.authToken = m.top.authToken
     m.catalogTask.uri = ApiBase() + "/roku-catalog?categoria=" + categoriaEscapada + "&limit=100"
     m.catalogTask.method = "GET"
     m.catalogTask.control = "RUN"
-end sub
+end function
 
 sub onCatalogResponse(event as Object)
     result = event.GetData()
