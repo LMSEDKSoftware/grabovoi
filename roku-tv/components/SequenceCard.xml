@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Tarjeta reutilizable para RowList/MarkupGrid: categorías, secuencias
+     y favoritos. Mientras no hay imágenes reales (fase 2, arte
+     pendiente de que lo proporcione el usuario), el fondo es un
+     rectángulo del color propio de la secuencia/categoría — nunca
+     queda una tarjeta vacía. En cuanto haya URLs de imagen reales,
+     itemContent.imageUrl las usa automáticamente sin tocar nada más. -->
+<component name="SequenceCard" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="onContentChanged" />
+        <field id="width" type="float" onChange="onSizeChanged" />
+        <field id="height" type="float" onChange="onSizeChanged" />
+        <field id="itemHasFocus" type="bool" onChange="onFocusChanged" />
+    </interface>
+    <children>
+        <!-- Orden importa: lo de abajo se dibuja primero. El borde de
+             foco va detrás y más grande, para que se vea como un marco
+             alrededor de la tarjeta cuando tiene el foco. -->
+        <Rectangle id="focusBorder" color="#FFD700" visible="false" />
+        <Rectangle id="background" color="#1C2541" />
+        <Poster id="image" loadDisplayMode="scaleToFill" visible="false" />
+        <Rectangle id="scrim" color="#0B132B" opacity="0.6" />
+        <Label id="titleLabel" color="#FFFFFF" wrap="true" />
+        <Label id="subtitleLabel" color="#CCCCCC" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/SequenceCard.brs" />
+</component>

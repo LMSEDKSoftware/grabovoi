@@ -27,19 +27,33 @@ async function handler(req, res) {
     // pantalla de "explorar por categoría".
     const { data, error } = await admin
       .from('codigos_grabovoi')
-      .select('categoria', { count: 'exact', head: false });
+      .select('categoria, color', { count: 'exact', head: false });
     if (error) {
       console.error('roku-catalog: categorias falló', error);
       res.status(500).json({ error: 'server_error' });
       return;
     }
+    // Color representativo por categoría (el más frecuente), para que
+    // las tarjetas de Roku tengan un fondo de respaldo con sentido
+    // mientras no hay imágenes reales — ver docs/ROKU_TV_PLAN.md fase 2.
     const conteo = {};
+    const colores = {};
     for (const row of data) {
       const c = row.categoria || 'Otros';
       conteo[c] = (conteo[c] || 0) + 1;
+      if (row.color) {
+        colores[c] = colores[c] || {};
+        colores[c][row.color] = (colores[c][row.color] || 0) + 1;
+      }
     }
     const categorias = Object.entries(conteo)
-      .map(([nombre, total]) => ({ nombre, total }))
+      .map(([nombre, total]) => {
+        const paleta = colores[nombre];
+        const color = paleta
+          ? Object.entries(paleta).sort((a, b) => b[1] - a[1])[0][0]
+          : '#FFD700';
+        return { nombre, total, color };
+      })
       .sort((a, b) => b.total - a.total);
     res.status(200).json({ categorias });
     return;

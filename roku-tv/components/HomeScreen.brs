@@ -1,19 +1,14 @@
 sub init()
-    m.menu = m.top.findNode("menu")
-    m.menu.observeField("itemSelected", "onMenuSelected")
+    m.rows = m.top.findNode("rows")
+    m.rows.observeField("rowItemSelected", "onRowItemSelected")
     m.progressLabel = m.top.findNode("progressLabel")
     m.loadingLabel = m.top.findNode("loadingLabel")
-    m.menu.visible = false
+    m.rows.visible = false
 
     m.homeTask = m.top.findNode("homeTask")
     m.homeTask.observeField("done", "onHomeResponse")
 end sub
 
-' init() corre en el momento de CreateObject(), ANTES de que quien crea
-' esta pantalla (MainScene) alcance a asignarle m.top.authToken. Leer el
-' token ahí adentro lo agarraba siempre vacío. MainScene llama a esta
-' función explícitamente después de asignar el campo, garantizando el
-' orden correcto.
 function StartLoading() as Void
     m.homeTask.authToken = m.top.authToken
     m.homeTask.uri = ApiBase() + "/roku-home"
@@ -39,42 +34,71 @@ sub onHomeResponse(event as Object)
     p = data.progreso
     m.progressLabel.text = "Racha: " + p.dias_consecutivos.ToStr() + " dias | Cristales: " + p.cristales_energia.ToStr() + " | Nivel: " + Int(p.nivel_energetico).ToStr() + "%"
 
-    m.menuData = []
+    m.rowsData = []
     root = CreateObject("roSGNode", "ContentNode")
 
     if data.secuencia_del_dia <> invalid and data.secuencia_del_dia.id <> invalid
-        AddItem(root, "Repetir secuencia del dia: " + data.secuencia_del_dia.nombre, "sequence", data.secuencia_del_dia.id)
+        AddRow(root, "Tu secuencia del dia", [{
+            title: data.secuencia_del_dia.nombre,
+            subtitle: "Repetir ahora",
+            color: "#FFD700",
+            imageUrl: "",
+            kind: "sequence",
+            id: data.secuencia_del_dia.id
+        }])
     end if
 
-    AddItem(root, "Explorar por categoria", "categories", "")
+    if data.favoritos.Count() > 0
+        items = []
+        for each fav in data.favoritos
+            items.Push({ title: fav.nombre, subtitle: fav.categoria, color: "#8338EC", imageUrl: "", kind: "sequence", id: fav.id })
+        end for
+        AddRow(root, "Tus favoritas", items)
+    end if
 
-    for each fav in data.favoritos
-        AddItem(root, "Favorita: " + fav.nombre, "sequence", fav.id)
-    end for
+    if data.continuar.Count() > 0
+        items = []
+        for each c in data.continuar
+            items.Push({ title: c.code_name, subtitle: c.usage_count.ToStr() + " veces", color: "#1E90FF", imageUrl: "", kind: "sequence", id: c.code_id })
+        end for
+        AddRow(root, "Continuar", items)
+    end if
 
-    for each item in data.continuar
-        AddItem(root, "Continuar: " + item.code_name, "sequence", item.code_id)
-    end for
+    AddRow(root, "Mas", [
+        { title: "Explorar por categoria", subtitle: "", color: "#00CED1", imageUrl: "", kind: "categories", id: "" },
+        { title: "Cerrar sesion", subtitle: "", color: "#555555", imageUrl: "", kind: "logout", id: "" }
+    ])
 
-    AddItem(root, "Cerrar sesion", "logout", "")
-
-    m.menu.content = root
-    m.menu.visible = true
-    m.menu.setFocus(true)
+    m.rows.content = root
+    m.rows.visible = true
+    m.rows.setFocus(true)
 end sub
 
-sub AddItem(root as Object, title as String, kind as String, id as String)
-    node = root.CreateChild("ContentNode")
-    node.title = title
-    m.menuData.Push({ kind: kind, id: id })
+sub AddRow(root as Object, titulo as String, items as Object)
+    row = root.CreateChild("ContentNode")
+    row.title = titulo
+    fila = []
+    for each it in items
+        node = row.CreateChild("ContentNode")
+        node.AddFields({ title: it.title, subtitle: it.subtitle, color: it.color, imageUrl: it.imageUrl })
+        fila.Push({ kind: it.kind, id: it.id })
+    end for
+    m.rowsData.Push(fila)
 end sub
 
-sub onMenuSelected()
-    index = m.menu.itemSelected
-    if index < 0 or index >= m.menuData.Count()
+sub onRowItemSelected(event as Object)
+    indices = event.GetData()
+    rowIndex = indices[0]
+    itemIndex = indices[1]
+    if rowIndex < 0 or rowIndex >= m.rowsData.Count()
         return
     end if
-    item = m.menuData[index]
+    fila = m.rowsData[rowIndex]
+    if itemIndex < 0 or itemIndex >= fila.Count()
+        return
+    end if
+    item = fila[itemIndex]
+
     if item.kind = "sequence"
         m.top.result = { action: "openSequence", id: item.id }
     else if item.kind = "categories"

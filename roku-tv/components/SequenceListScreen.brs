@@ -1,11 +1,8 @@
 sub init()
-    m.menu = m.top.findNode("menu")
-    m.menu.observeField("itemSelected", "onMenuSelected")
+    m.grid = m.top.findNode("grid")
+    m.grid.observeField("itemSelected", "onItemSelected")
     m.loadingLabel = m.top.findNode("loadingLabel")
-    m.menu.visible = false
-
-    m.catalogTask = m.top.findNode("catalogTask")
-    m.catalogTask.observeField("done", "onCatalogResponse")
+    m.grid.visible = false
 end sub
 
 function StartLoading() as Void
@@ -14,6 +11,8 @@ function StartLoading() as Void
     escaper = CreateObject("roUrlTransfer")
     categoriaEscapada = escaper.Escape(m.top.categoria)
 
+    m.catalogTask = m.top.findNode("catalogTask")
+    m.catalogTask.observeField("done", "onCatalogResponse")
     m.catalogTask.authToken = m.top.authToken
     m.catalogTask.uri = ApiBase() + "/roku-catalog?categoria=" + categoriaEscapada + "&limit=100"
     m.catalogTask.method = "GET"
@@ -38,7 +37,12 @@ sub onCatalogResponse(event as Object)
     root = CreateObject("roSGNode", "ContentNode")
     for each seq in data.secuencias
         node = root.CreateChild("ContentNode")
-        node.title = seq.nombre
+        node.AddFields({
+            title: seq.nombre,
+            subtitle: seq.codigo,
+            color: seq.color,
+            imageUrl: ""
+        })
         m.sequenceIds.Push(seq.id)
     end for
 
@@ -48,13 +52,13 @@ sub onCatalogResponse(event as Object)
         return
     end if
 
-    m.menu.content = root
-    m.menu.visible = true
-    m.menu.setFocus(true)
+    m.grid.content = root
+    m.grid.visible = true
+    m.grid.setFocus(true)
 end sub
 
-sub onMenuSelected()
-    index = m.menu.itemSelected
+sub onItemSelected()
+    index = m.grid.itemSelected
     if index < 0 or index >= m.sequenceIds.Count()
         return
     end if

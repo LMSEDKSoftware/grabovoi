@@ -6,11 +6,13 @@
         <function name="StartLoading" />
     </interface>
     <children>
-        <Label id="title" text="ManiGraB TV" translation="[80,40]" color="#FFD700" />
-        <Label id="progressLabel" translation="[80,80]" color="#CCCCCC" text="" />
-        <LabelList id="menu" translation="[80,140]" itemSize="[900,54]" itemSpacing="[0,2]"
-            color="#CCCCCC" focusedColor="#0B132B" numRows="9" />
-        <Label id="loadingLabel" translation="[80,140]" color="#FFFFFF" text="Cargando..." />
+        <Rectangle color="#0B132B" width="1280" height="720" />
+        <Label id="title" text="ManiGraB TV" translation="[60,32]" color="#FFD700" />
+        <Label id="progressLabel" translation="[60,68]" color="#CCCCCC" text="" />
+        <RowList id="rows" translation="[60,120]" rowItemSize="[[280,170]]" rowItemSpacing="[[24,0]]"
+            rowHeights="[210]" rowSpacings="[16]" itemComponentName="SequenceCard"
+            rowLabelColor="#FFD700" showRowLabel="[true]" />
+        <Label id="loadingLabel" translation="[60,120]" color="#FFFFFF" text="Cargando..." />
         <ApiTask id="homeTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
