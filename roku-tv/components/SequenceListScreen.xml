@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SequenceListScreen" extends="Group">
+    <interface>
+        <field id="authToken" type="string" />
+        <field id="categoria" type="string" />
+        <field id="result" type="assocarray" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Label id="title" translation="[80,40]" color="#FFD700" text="" />
+        <LabelList id="menu" translation="[80,120]" itemSize="[900,54]" itemSpacing="[0,2]"
+            color="#CCCCCC" focusedColor="#0B132B" numRows="10" />
+        <Label id="loadingLabel" translation="[80,120]" color="#FFFFFF" text="Cargando..." />
+        <ApiTask id="catalogTask" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/SequenceListScreen.brs" />
+</component>

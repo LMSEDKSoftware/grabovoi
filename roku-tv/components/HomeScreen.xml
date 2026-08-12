@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="HomeScreen" extends="Group">
+    <interface>
+        <field id="authToken" type="string" />
+        <field id="result" type="assocarray" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Label id="title" text="ManiGraB TV" translation="[80,40]" color="#FFD700" />
+        <Label id="progressLabel" translation="[80,80]" color="#CCCCCC" text="" />
+        <LabelList id="menu" translation="[80,140]" itemSize="[900,54]" itemSpacing="[0,2]"
+            color="#CCCCCC" focusedColor="#0B132B" numRows="9" />
+        <Label id="loadingLabel" translation="[80,140]" color="#FFFFFF" text="Cargando..." />
+        <ApiTask id="homeTask" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/HomeScreen.brs" />
+</component>

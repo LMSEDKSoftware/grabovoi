@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="PlayerScreen" extends="Group">
+    <interface>
+        <field id="authToken" type="string" />
+        <field id="secuenciaId" type="string" />
+        <field id="result" type="assocarray" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Label id="nombreLabel" translation="[80,60]" color="#FFD700" text="" />
+        <Label id="descripcionLabel" translation="[80,110]" color="#CCCCCC" wrap="true" width="1100" text="" />
+        <Label id="estadoLabel" translation="[80,600]" color="#FFFFFF" text="Cargando..." />
+        <Audio id="audio" />
+        <Timer id="gapTimer" repeat="false" />
+        <ApiTask id="sequenceTask" />
+        <ApiTask id="completeTask" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/PlayerScreen.brs" />
+</component>

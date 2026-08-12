@@ -56,8 +56,22 @@ async function handler(req, res) {
       .limit(12),
   ]);
 
+  // obtener_codigo_del_dia() solo devuelve codigo+nombre, sin el id de
+  // codigos_grabovoi que necesita el reproductor de Roku (/roku-sequence
+  // busca por id). Se resuelve con una segunda consulta.
+  let secuenciaDelDia = codigoDia?.[0] || null;
+  if (secuenciaDelDia) {
+    const { data: fila } = await admin
+      .from('codigos_grabovoi')
+      .select('id')
+      .eq('codigo', secuenciaDelDia.codigo)
+      .limit(1)
+      .maybeSingle();
+    if (fila) secuenciaDelDia = { ...secuenciaDelDia, id: fila.id };
+  }
+
   res.status(200).json({
-    secuencia_del_dia: codigoDia?.[0] || null,
+    secuencia_del_dia: secuenciaDelDia,
     progreso: {
       dias_consecutivos: progreso?.dias_consecutivos ?? 0,
       total_pilotajes: progreso?.total_pilotajes ?? 0,

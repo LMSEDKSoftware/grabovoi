@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="LoginScreen" extends="Group">
+    <interface>
+        <field id="result" type="assocarray" alwaysNotify="true" />
+    </interface>
+    <children>
+        <Label id="title" text="ManiGraB TV" translation="[80,60]" color="#FFD700" />
+        <Label id="subtitle" text="Inicia sesion con tu cuenta de ManiGraB" translation="[80,110]" color="#FFFFFF" />
+        <LabelList id="menu" translation="[80,180]" itemSize="[600,60]" itemSpacing="[0,4]"
+            color="#CCCCCC" focusedColor="#0B132B" />
+        <Label id="errorLabel" translation="[80,420]" color="#FF6B6B" text="" />
+        <ApiTask id="loginTask" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/LoginScreen.brs" />
+</component>
