@@ -4,7 +4,9 @@
 // arme la cola de reproducción dígito por dígito, replicando
 // NumbersVoiceService exactamente (mismos clips, mismos tiempos). No
 // requiere sesión para leer el detalle; si viene el token de Roku,
-// se usa la voz que el usuario eligió en la app (user_rewards.voice_gender).
+// se usa la voz elegida en roku_account_links.voice_gender — INDEPENDIENTE
+// de user_rewards.voice_gender (app/Alexa). Cambiar la voz en Roku nunca
+// debe tocar esa fila compartida; ver docs/ROKU_TV_PLAN.md.
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -27,16 +29,11 @@ async function vozDelUsuario(admin, authHeader) {
   const token = authHeader.slice('Bearer '.length);
   const { data: link } = await admin
     .from('roku_account_links')
-    .select('user_id, access_token_expires_at')
+    .select('voice_gender, access_token_expires_at')
     .eq('access_token', token)
     .maybeSingle();
   if (!link || new Date(link.access_token_expires_at) <= new Date()) return 'female';
-  const { data } = await admin
-    .from('user_rewards')
-    .select('voice_gender')
-    .eq('user_id', link.user_id)
-    .maybeSingle();
-  return data?.voice_gender || 'female';
+  return link.voice_gender || 'female';
 }
 
 async function handler(req, res) {

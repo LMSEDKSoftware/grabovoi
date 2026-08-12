@@ -7,6 +7,9 @@ sub init()
 
     m.homeTask = m.top.findNode("homeTask")
     m.homeTask.observeField("done", "onHomeResponse")
+
+    m.voiceTask = m.top.findNode("voiceTask")
+    m.voiceTask.observeField("done", "onVoiceChanged")
 end sub
 
 function StartLoading() as Void
@@ -64,8 +67,14 @@ sub onHomeResponse(event as Object)
         AddRow(root, "Continuar", items)
     end if
 
+    m.vozActual = data.progreso.voice_gender
+    if m.vozActual = invalid or m.vozActual = ""
+        m.vozActual = "female"
+    end if
+
     AddRow(root, "Mas", [
         { title: "Explorar por categoria", subtitle: "", color: "#00CED1", imageUrl: "", kind: "categories", id: "" },
+        { title: "Voz: " + m.vozActual, subtitle: "Selecciona para cambiar", color: "#FF8C00", imageUrl: "", kind: "toggle_voice", id: "" },
         { title: "Cerrar sesion", subtitle: "", color: "#555555", imageUrl: "", kind: "logout", id: "" }
     ])
 
@@ -112,5 +121,30 @@ sub onRowItemSelected(event as Object)
         m.top.result = { action: "openCategories" }
     else if item.kind = "logout"
         m.top.result = { action: "logout" }
+    else if item.kind = "toggle_voice"
+        ToggleVoice()
+    end if
+end sub
+
+sub ToggleVoice()
+    siguiente = "male"
+    if m.vozActual = "male"
+        siguiente = "male 2"
+    else if m.vozActual = "male 2"
+        siguiente = "female"
+    end if
+
+    m.voiceTask.authToken = m.top.authToken
+    m.voiceTask.uri = ApiBase() + "/roku-voice"
+    m.voiceTask.method = "POST"
+    m.voiceTask.body = FormatJson({ voz: siguiente })
+    m.voiceTask.control = "RUN"
+end sub
+
+sub onVoiceChanged(event as Object)
+    result = event.GetData()
+    if result.code = 200
+        ' Recarga toda la pantalla para reflejar la voz nueva en la fila "Mas".
+        StartLoading()
     end if
 end sub

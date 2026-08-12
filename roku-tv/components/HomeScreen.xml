@@ -14,6 +14,7 @@
             rowLabelColor="#FFD700" showRowLabel="[true]" />
         <Label id="loadingLabel" translation="[60,120]" color="#FFFFFF" text="Cargando..." />
         <ApiTask id="homeTask" />
+        <ApiTask id="voiceTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
     <script type="text/brightscript" uri="pkg:/components/HomeScreen.brs" />

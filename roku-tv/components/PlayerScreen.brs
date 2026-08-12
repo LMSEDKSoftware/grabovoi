@@ -51,7 +51,11 @@ sub onSequenceResponse(event as Object)
     end if
     m.estadoLabel.text = "Repite cada numero en voz alta junto con la secuencia."
 
+    print "PlayerScreen voz="; data.audio.voz; " tokens="; data.audio.tokens.Count()
+    print "PlayerScreen clip 0="; data.audio.clips["0"]
+
     m.steps = BuildSteps(data.audio)
+    print "PlayerScreen pasos totales construidos="; m.steps.Count()
     m.stepIndex = 0
     m.startEpoch = CreateObject("roDateTime").AsSeconds()
 
@@ -98,11 +102,13 @@ sub RunNextStep()
     m.stepIndex = m.stepIndex + 1
 
     if paso.type = "clip"
+        print "PlayerScreen paso "; m.stepIndex; "/"; m.steps.Count(); " CLIP url="; paso.url
         content = CreateObject("roSGNode", "ContentNode")
         content.url = paso.url
         m.audio.content = content
         m.audio.control = "play"
     else
+        print "PlayerScreen paso "; m.stepIndex; "/"; m.steps.Count(); " SILENCIO ms="; paso.ms
         m.gapTimer.duration = paso.ms / 1000.0
         m.gapTimer.control = "start"
     end if
@@ -110,6 +116,7 @@ end sub
 
 sub onAudioStateChange(event as Object)
     state = event.GetData()
+    print "PlayerScreen audio state="; state
     if state = "finished" or state = "error"
         RunNextStep()
     end if

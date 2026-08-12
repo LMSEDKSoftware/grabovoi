@@ -12,11 +12,11 @@ async function resolverUsuario(admin, authHeader) {
   const token = authHeader.slice('Bearer '.length);
   const { data: link } = await admin
     .from('roku_account_links')
-    .select('user_id, access_token_expires_at')
+    .select('user_id, voice_gender, access_token_expires_at')
     .eq('access_token', token)
     .maybeSingle();
   if (!link || new Date(link.access_token_expires_at) <= new Date()) return null;
-  return link.user_id;
+  return link;
 }
 
 async function handler(req, res) {
@@ -26,11 +26,12 @@ async function handler(req, res) {
   }
 
   const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const userId = await resolverUsuario(admin, req.headers.authorization);
-  if (!userId) {
+  const link = await resolverUsuario(admin, req.headers.authorization);
+  if (!link) {
     res.status(401).json({ error: 'invalid_session' });
     return;
   }
+  const userId = link.user_id;
 
   const [
     { data: codigoDia },
@@ -41,7 +42,7 @@ async function handler(req, res) {
   ] = await Promise.all([
     admin.rpc('obtener_codigo_del_dia'),
     admin.from('usuario_progreso').select('dias_consecutivos, total_pilotajes, nivel_energetico').eq('user_id', userId).maybeSingle(),
-    admin.from('user_rewards').select('cristales_energia, luz_cuantica, voice_gender').eq('user_id', userId).maybeSingle(),
+    admin.from('user_rewards').select('cristales_energia, luz_cuantica').eq('user_id', userId).maybeSingle(),
     admin
       .from('usuario_favoritos')
       .select('codigo_id, codigos_grabovoi(id, codigo, nombre, categoria)')
@@ -78,7 +79,7 @@ async function handler(req, res) {
       nivel_energetico: progreso?.nivel_energetico ?? 0,
       cristales_energia: rewards?.cristales_energia ?? 0,
       luz_cuantica: rewards?.luz_cuantica ?? 0,
-      voice_gender: rewards?.voice_gender ?? 'female',
+      voice_gender: link.voice_gender || 'female',
     },
     favoritos: (favoritos || []).map((f) => f.codigos_grabovoi).filter(Boolean),
     continuar: continuar || [],
