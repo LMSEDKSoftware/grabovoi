@@ -91,16 +91,16 @@ sub RunNextStep()
         return
     end if
 
-    step = m.steps[m.stepIndex]
+    paso = m.steps[m.stepIndex]
     m.stepIndex = m.stepIndex + 1
 
-    if step.type = "clip"
+    if paso.type = "clip"
         content = CreateObject("roSGNode", "ContentNode")
-        content.url = step.url
+        content.url = paso.url
         m.audio.content = content
         m.audio.control = "play"
     else
-        m.gapTimer.duration = step.ms / 1000.0
+        m.gapTimer.duration = paso.ms / 1000.0
         m.gapTimer.control = "start"
     end if
 end sub
