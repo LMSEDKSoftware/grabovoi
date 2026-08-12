@@ -12,20 +12,26 @@
 ' HomeScreen, CategoryScreen y SequenceListScreen.
 
 sub init()
+    print "SequenceCard init() arrancando"
     m.focusBorder = m.top.findNode("focusBorder")
     m.background = m.top.findNode("background")
     m.image = m.top.findNode("image")
     m.scrim = m.top.findNode("scrim")
     m.titleLabel = m.top.findNode("titleLabel")
     m.subtitleLabel = m.top.findNode("subtitleLabel")
+    print "SequenceCard nodos encontrados: focusBorder="; m.focusBorder <> invalid; " background="; m.background <> invalid; " titleLabel="; m.titleLabel <> invalid
+
+    m.top.observeField("itemContent", "onContentChanged")
 
     Layout(280, 170)
+    print "SequenceCard Layout(280,170) aplicado"
     RenderContent()
 end sub
 
 sub onSizeChanged()
     w = m.top.width
     h = m.top.height
+    print "SequenceCard onSizeChanged w="; w; " h="; h
     if w = invalid or h = invalid or w = 0 or h = 0
         return
     end if
@@ -57,14 +63,17 @@ sub Layout(w as Float, h as Float)
 end sub
 
 sub onContentChanged()
+    print "SequenceCard onContentChanged disparado"
     RenderContent()
 end sub
 
 sub RenderContent()
     content = m.top.itemContent
+    print "SequenceCard RenderContent content invalido="; content = invalid
     if content = invalid
         return
     end if
+    print "SequenceCard RenderContent title="; content.title; " color="; content.color
 
     if content.title <> invalid
         m.titleLabel.text = content.title

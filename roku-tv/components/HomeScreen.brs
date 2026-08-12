@@ -69,9 +69,16 @@ sub onHomeResponse(event as Object)
         { title: "Cerrar sesion", subtitle: "", color: "#555555", imageUrl: "", kind: "logout", id: "" }
     ])
 
+    print "HomeScreen filas construidas: "; m.rowsData.Count(); " | root hijos: "; root.GetChildCount()
+    for i = 0 to root.GetChildCount() - 1
+        fila = root.GetChild(i)
+        print "  fila "; i; " titulo="; fila.title; " items="; fila.GetChildCount()
+    end for
+
     m.rows.content = root
     m.rows.visible = true
     m.rows.setFocus(true)
+    print "HomeScreen m.rows.content asignado, visible=true"
 end sub
 
 sub AddRow(root as Object, titulo as String, items as Object)
