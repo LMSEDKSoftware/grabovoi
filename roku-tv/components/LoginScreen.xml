@@ -4,11 +4,12 @@
         <field id="result" type="assocarray" alwaysNotify="true" />
     </interface>
     <children>
-        <Label id="title" text="ManiGraB TV" translation="[80,60]" color="#FFD700" />
-        <Label id="subtitle" text="Inicia sesion con tu cuenta de ManiGraB" translation="[80,110]" color="#FFFFFF" />
+        <Rectangle color="#071226" width="1280" height="720" />
+        <Label id="title" text="ManiGraB TV" translation="[80,60]" color="#FFD83D" />
+        <Label id="subtitle" text="Inicia sesion con tu cuenta de ManiGraB" translation="[80,110]" color="#F4F1E8" />
         <LabelList id="menu" translation="[80,180]" itemSize="[600,60]" itemSpacing="[0,4]"
-            color="#CCCCCC" focusedColor="#0B132B" />
-        <Label id="errorLabel" translation="[80,420]" color="#FF6B6B" text="" />
+            color="#B9C4D8" focusedColor="#071226" />
+        <Label id="errorLabel" translation="[80,420]" color="#FF7777" text="" />
         <ApiTask id="loginTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />

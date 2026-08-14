@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Tarjeta ancha para la lista vertical del Home (diseño validado con
+     ChatGPT: miniatura a la izquierda con el codigo superpuesto, titulo
+     y subtitulo a la derecha). A diferencia de la version original de
+     ChatGPT, esta SI implementa el contrato real de item renderer de
+     MarkupGrid (itemContent/width/height/itemHasFocus) para poder vivir
+     dentro de una lista con scroll y foco real, en vez de tarjetas fijas
+     sin seleccion. Ver SequenceCard.xml para el mismo patron aplicado a
+     la tarjeta cuadrada de las grillas de categoria. -->
+<component name="SequenceRow" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="onContentChanged" />
+        <field id="width" type="float" onChange="onSizeChanged" />
+        <field id="height" type="float" onChange="onSizeChanged" />
+        <field id="itemHasFocus" type="bool" onChange="onFocusChanged" />
+    </interface>
+    <children>
+        <Rectangle id="focusBorder" color="#FFD83D" visible="false" />
+        <Rectangle id="card" color="#13213B" />
+        <!-- Color de categoria SOLO detras de la miniatura (relleno
+             mientras no hay portada real), nunca en toda la tarjeta. -->
+        <Rectangle id="posterBg" color="#13213B" />
+        <Poster id="poster" loadDisplayMode="scaleToFill" visible="false" />
+        <Rectangle id="shade" color="#000000" opacity="0.35" visible="false" />
+        <Label id="numberLabel" color="#FFD83D" horizAlign="center" visible="false" />
+        <Label id="titleLabel" color="#F4F1E8" wrap="true" />
+        <Label id="subtitleLabel" color="#B9C4D8" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/SequenceRow.brs" />
+</component>

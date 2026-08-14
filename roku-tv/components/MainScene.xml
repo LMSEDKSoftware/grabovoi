@@ -3,7 +3,29 @@
     <interface>
     </interface>
     <children>
-        <Rectangle id="background" color="#0B132B" width="1280" height="720" />
+        <Rectangle id="background" color="#071226" width="1280" height="720" />
+
+        <!-- Las pantallas (Home/Categorias/Lista/Reproductor/Login) se
+             intercambian aqui adentro, nunca directo en el Scene, asi
+             el sidebar (declarado despues) siempre queda encima sin
+             importar que pantalla este activa. -->
+        <Group id="content" />
+
+        <!-- Sidebar permanente. Se oculta solo en el login (sin cuenta
+             vinculada todavia no hay nada que navegar). Home/Library
+             navegan de verdad; el resto queda visible pero inerte hasta
+             que existan esas pantallas. Se enfoca con el boton Options,
+             ver onKeyEvent, y con eso se puede navegar sin depender de
+             que las flechas salgan del grid de contenido, que no es un
+             comportamiento garantizado. -->
+        <Group id="sidebar" visible="false">
+            <Rectangle color="#0C1830" width="270" height="720" />
+            <Label text="MANIGRAB TV" color="#FFD83D" translation="[30,40]" width="220" height="30" />
+            <LabelList id="sidebarList" translation="[20,110]" itemSize="[230,44]" itemSpacing="[0,2]"
+                color="#B9C4D8" focusedColor="#0C1830" />
+            <Label text="* para navegar" color="#5A6B85" translation="[30,660]" width="220" height="26" />
+        </Group>
+
         <ApiTask id="checkSessionTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />

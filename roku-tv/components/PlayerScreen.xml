@@ -7,9 +7,34 @@
         <function name="StartLoading" />
     </interface>
     <children>
-        <Label id="nombreLabel" translation="[80,60]" color="#FFD700" text="" />
-        <Label id="descripcionLabel" translation="[80,110]" color="#CCCCCC" wrap="true" width="1100" text="" />
-        <Label id="estadoLabel" translation="[80,600]" color="#FFFFFF" text="Cargando..." />
+        <!-- Fondo/reproduccion principal: UN video con la voz YA
+             incrustada (scripts/generar_video_narrado.py): loop visual
+             + las repeticiones mezcladas en un solo MP4. Roku no deja
+             reproducir un Video y un Audio al mismo tiempo ("only one
+             playing instance supported"), asi que ya no hay dos streams
+             peleando por el reproductor. Si esta secuencia/voz todavia no
+             tiene video narrado (la biblioteca se esta narrando por
+             partes), bgVideo.state pasa a "error" y se cae al modo
+             digito-por-digito de siempre (bgImagen + Audio + gapTimer)
+             como respaldo automatico, ver onBgVideoStateChange. -->
+        <Video id="bgVideo" translation="[0,0]" width="1280" height="720" visible="false" />
+        <Poster id="bgImagen" translation="[0,0]" width="1280" height="720" loadDisplayMode="scaleToFill" visible="false" />
+        <!-- Sin scrim: pedido explicito, nunca se hace visible (queda
+             declarado por si hace falta mas adelante). -->
+        <Rectangle id="scrimJugador" translation="[0,0]" width="1280" height="720" color="#071226" opacity="0.55" visible="false" />
+        <Label id="nombreLabel" translation="[0,60]" width="1280" horizAlign="center" color="#FFD83D" text="" />
+        <!-- El scale va en el GRUPO contenedor, NO en el Label. Asi
+             boundingRect() del Label (adentro, sin escalar) mide en
+             espacio local sin ambiguedad, y el centrado se calcula una
+             sola vez sobre esa medida confiable, ver CentrarCodigo en
+             el .brs. -->
+        <Group id="codigoGrupo" translation="[0,150]" scale="[4.0,4.0]">
+            <Label id="codigoLabel" color="#FFFFFF" text="" />
+        </Group>
+        <Label id="estadoLabel" translation="[80,600]" color="#F4F1E8" text="Cargando..." />
+        <!-- Placeholder de marca, abajo a la derecha, texto por ahora,
+             se puede cambiar por el logo real despues. -->
+        <Label id="logoLabel" translation="[900,670]" width="360" horizAlign="right" color="#FFD83D" text="ManiGraB" />
         <Audio id="audio" />
         <Timer id="gapTimer" repeat="false" />
         <ApiTask id="sequenceTask" />

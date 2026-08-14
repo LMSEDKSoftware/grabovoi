@@ -12,7 +12,7 @@ async function resolverUsuario(admin, authHeader) {
   const token = authHeader.slice('Bearer '.length);
   const { data: link } = await admin
     .from('roku_account_links')
-    .select('user_id, voice_gender, access_token_expires_at')
+    .select('user_id, access_token_expires_at')
     .eq('access_token', token)
     .maybeSingle();
   if (!link || new Date(link.access_token_expires_at) <= new Date()) return null;
@@ -45,7 +45,7 @@ async function handler(req, res) {
     admin.from('user_rewards').select('cristales_energia, luz_cuantica').eq('user_id', userId).maybeSingle(),
     admin
       .from('usuario_favoritos')
-      .select('codigo_id, codigos_grabovoi(id, codigo, nombre, categoria)')
+      .select('codigo_id, codigos_grabovoi(id, codigo, nombre, categoria, color, imagen_url)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(12),
@@ -64,11 +64,11 @@ async function handler(req, res) {
   if (secuenciaDelDia) {
     const { data: fila } = await admin
       .from('codigos_grabovoi')
-      .select('id')
+      .select('id, color, imagen_url')
       .eq('codigo', secuenciaDelDia.codigo)
       .limit(1)
       .maybeSingle();
-    if (fila) secuenciaDelDia = { ...secuenciaDelDia, id: fila.id };
+    if (fila) secuenciaDelDia = { ...secuenciaDelDia, ...fila };
   }
 
   res.status(200).json({
@@ -79,7 +79,6 @@ async function handler(req, res) {
       nivel_energetico: progreso?.nivel_energetico ?? 0,
       cristales_energia: rewards?.cristales_energia ?? 0,
       luz_cuantica: rewards?.luz_cuantica ?? 0,
-      voice_gender: link.voice_gender || 'female',
     },
     favoritos: (favoritos || []).map((f) => f.codigos_grabovoi).filter(Boolean),
     continuar: continuar || [],

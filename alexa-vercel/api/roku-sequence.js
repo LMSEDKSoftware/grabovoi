@@ -3,15 +3,18 @@
 // Detalle de una secuencia + manifiesto de audio para que BrightScript
 // arme la cola de reproducción dígito por dígito, replicando
 // NumbersVoiceService exactamente (mismos clips, mismos tiempos). No
-// requiere sesión para leer el detalle; si viene el token de Roku,
-// se usa la voz elegida en roku_account_links.voice_gender — INDEPENDIENTE
-// de user_rewards.voice_gender (app/Alexa). Cambiar la voz en Roku nunca
-// debe tocar esa fila compartida; ver docs/ROKU_TV_PLAN.md.
+// requiere sesión para leer el detalle.
+//
+// Roku solo usa la voz femenina (decisión de producto: se eliminaron las
+// voces male/male 2 del canal). Antes esto leía roku_account_links.
+// voice_gender por usuario; ya no hace falta esa consulta ni esa
+// independencia de voz por cuenta, así que queda fijo aquí.
 
 const { createClient } = require('@supabase/supabase-js');
 
 const BASE_VOCES = 'https://whtiazgcxdnemrrgjjqf.supabase.co/storage/v1/object/public/roku/voces';
-const VOCES_VALIDAS = { female: 'female', male: 'male', 'male 2': 'male2' };
+const BASE_VIDEOS_NARRADOS = 'https://whtiazgcxdnemrrgjjqf.supabase.co/storage/v1/object/public/roku/videos_narrados';
+const VOZ_SLUG = 'female';
 
 const GAP_DIGITOS_MS = 280;
 const SILENCIO_ESPACIO_MS = 100;
@@ -22,18 +25,6 @@ function clipsDeVoz(vozSlug) {
   const clips = { espacio: `${base}/espacio.mp3`, nuevamente: `${base}/nuevamente.mp3` };
   for (let d = 0; d <= 9; d++) clips[String(d)] = `${base}/${d}.mp3`;
   return clips;
-}
-
-async function vozDelUsuario(admin, authHeader) {
-  if (!authHeader?.startsWith('Bearer ')) return 'female';
-  const token = authHeader.slice('Bearer '.length);
-  const { data: link } = await admin
-    .from('roku_account_links')
-    .select('voice_gender, access_token_expires_at')
-    .eq('access_token', token)
-    .maybeSingle();
-  if (!link || new Date(link.access_token_expires_at) <= new Date()) return 'female';
-  return link.voice_gender || 'female';
 }
 
 async function handler(req, res) {
@@ -50,7 +41,7 @@ async function handler(req, res) {
   const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   const { data: secuencia, error } = await admin
     .from('codigos_grabovoi')
-    .select('id, codigo, nombre, descripcion, categoria, color, fuente_titulo, fuente_url')
+    .select('id, codigo, nombre, descripcion, categoria, color, imagen_url, video_loop_url, fuente_titulo, fuente_url')
     .eq('id', id)
     .maybeSingle();
 
@@ -59,19 +50,24 @@ async function handler(req, res) {
     return;
   }
 
-  const vozElegida = await vozDelUsuario(admin, req.headers.authorization);
-  const vozSlug = VOCES_VALIDAS[vozElegida] || 'female';
-
   const tokens = String(secuencia.codigo)
     .split('')
     .filter((c) => (c >= '0' && c <= '9') || c === '_');
 
   res.status(200).json({
     ...secuencia,
+    // Video con la voz ya integrada (generado por
+    // scripts/generar_video_narrado.py) -- URL predecible por convención,
+    // igual que los clips de voz sueltos; puede no existir todavía para
+    // esta secuencia (la biblioteca se está narrando por partes). El
+    // cliente lo intenta primero y cae al modo dígito-por-dígito con
+    // Audio si el Video falla al cargar, sin necesidad de que el server
+    // confirme de antemano que el archivo existe.
+    video_narrado_url: `${BASE_VIDEOS_NARRADOS}/${VOZ_SLUG}/${secuencia.codigo}.mp4`,
     audio: {
-      voz: vozElegida,
+      voz: VOZ_SLUG,
       tokens,
-      clips: clipsDeVoz(vozSlug),
+      clips: clipsDeVoz(VOZ_SLUG),
       gaps_ms: {
         digito: GAP_DIGITOS_MS,
         espacio: SILENCIO_ESPACIO_MS,

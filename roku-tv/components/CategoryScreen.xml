@@ -6,11 +6,11 @@
         <function name="StartLoading" />
     </interface>
     <children>
-        <Rectangle color="#0B132B" width="1280" height="720" />
-        <Label id="title" text="Explorar por categoria" translation="[60,40]" color="#FFD700" />
-        <MarkupGrid id="grid" translation="[60,110]" itemSize="[280,170]" itemSpacing="[24,24]"
-            numColumns="4" numRows="3" itemComponentName="SequenceCard" />
-        <Label id="loadingLabel" translation="[60,110]" color="#FFFFFF" text="Cargando..." />
+        <Rectangle color="#071226" width="1280" height="720" />
+        <Label id="title" text="Explorar por categoria" translation="[300,40]" color="#FFD83D" />
+        <MarkupGrid id="grid" translation="[300,110]" itemSize="[280,170]" itemSpacing="[24,24]"
+            numColumns="3" numRows="3" itemComponentName="SequenceCard" />
+        <Label id="loadingLabel" translation="[300,110]" color="#F4F1E8" text="Cargando..." />
         <ApiTask id="catalogTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />

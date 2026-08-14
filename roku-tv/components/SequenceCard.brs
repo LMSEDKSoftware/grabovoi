@@ -21,7 +21,8 @@ sub init()
     m.subtitleLabel = m.top.findNode("subtitleLabel")
     print "SequenceCard nodos encontrados: focusBorder="; m.focusBorder <> invalid; " background="; m.background <> invalid; " titleLabel="; m.titleLabel <> invalid
 
-    m.top.observeField("itemContent", "onContentChanged")
+    ' onChange="onContentChanged" ya esta declarado en el <field> del XML;
+    ' un observeField() manual aqui duplicaba la llamada a RenderContent().
 
     Layout(280, 170)
     print "SequenceCard Layout(280,170) aplicado"
@@ -73,29 +74,34 @@ sub RenderContent()
     if content = invalid
         return
     end if
-    print "SequenceCard RenderContent title="; content.title; " color="; content.color
+    print "SequenceCard RenderContent hasField(title)="; content.hasField("title"); " hasField(color)="; content.hasField("color"); " title="; content.title; " color="; content.color
 
-    if content.title <> invalid
+    if content.hasField("title") and content.title <> invalid
         m.titleLabel.text = content.title
+    else
+        m.titleLabel.text = ""
     end if
-    if content.subtitle <> invalid
+
+    if content.hasField("subtitle") and content.subtitle <> invalid
         m.subtitleLabel.text = content.subtitle
     else
         m.subtitleLabel.text = ""
     end if
 
-    color = "#1C2541"
-    if content.color <> invalid and content.color <> ""
+    color = "#13213B"
+    if content.hasField("color") and content.color <> invalid and content.color <> ""
         color = content.color
     end if
     m.background.color = color
 
-    if content.imageUrl <> invalid and content.imageUrl <> ""
+    if content.hasField("imageUrl") and content.imageUrl <> invalid and content.imageUrl <> ""
         m.image.uri = content.imageUrl
         m.image.visible = true
     else
         m.image.visible = false
     end if
+
+    print "SequenceCard RenderContent aplicado. background.color="; m.background.color; " background.width="; m.background.width; " background.height="; m.background.height; " titleLabel.text="; m.titleLabel.text
 end sub
 
 sub onFocusChanged()

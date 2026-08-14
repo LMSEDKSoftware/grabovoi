@@ -27,7 +27,7 @@ async function handler(req, res) {
     // pantalla de "explorar por categoría".
     const { data, error } = await admin
       .from('codigos_grabovoi')
-      .select('categoria, color', { count: 'exact', head: false });
+      .select('categoria, color, imagen_url', { count: 'exact', head: false });
     if (error) {
       console.error('roku-catalog: categorias falló', error);
       res.status(500).json({ error: 'server_error' });
@@ -36,8 +36,11 @@ async function handler(req, res) {
     // Color representativo por categoría (el más frecuente), para que
     // las tarjetas de Roku tengan un fondo de respaldo con sentido
     // mientras no hay imágenes reales — ver docs/ROKU_TV_PLAN.md fase 2.
+    // Imagen representativa: la portada de la primera secuencia de esa
+    // categoría que ya tenga una (no todas las tienen todavía).
     const conteo = {};
     const colores = {};
+    const imagenes = {};
     for (const row of data) {
       const c = row.categoria || 'Otros';
       conteo[c] = (conteo[c] || 0) + 1;
@@ -45,6 +48,7 @@ async function handler(req, res) {
         colores[c] = colores[c] || {};
         colores[c][row.color] = (colores[c][row.color] || 0) + 1;
       }
+      if (row.imagen_url && !imagenes[c]) imagenes[c] = row.imagen_url;
     }
     const categorias = Object.entries(conteo)
       .map(([nombre, total]) => {
@@ -52,7 +56,7 @@ async function handler(req, res) {
         const color = paleta
           ? Object.entries(paleta).sort((a, b) => b[1] - a[1])[0][0]
           : '#FFD700';
-        return { nombre, total, color };
+        return { nombre, total, color, imagen_url: imagenes[nombre] || null };
       })
       .sort((a, b) => b.total - a.total);
     res.status(200).json({ categorias });
@@ -61,7 +65,7 @@ async function handler(req, res) {
 
   let query = admin
     .from('codigos_grabovoi')
-    .select('id, codigo, nombre, descripcion, categoria, color')
+    .select('id, codigo, nombre, descripcion, categoria, color, imagen_url')
     .not('nombre', 'is', null)
     .order('nombre', { ascending: true })
     .range(offset, offset + limit - 1);

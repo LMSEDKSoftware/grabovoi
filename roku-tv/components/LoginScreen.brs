@@ -4,10 +4,11 @@
 ' texto directo en pantalla. Ver docs/ROKU_TV_PLAN.md.
 
 sub init()
-    ' Precargado para pruebas, así solo hay que teclear la contraseña
-    ' con el control remoto. Quitar cuando el canal deje de ser interno.
+    ' Precargado para pruebas, así con un solo OK ya se puede entrar sin
+    ' teclear nada con el control remoto. Quitar cuando el canal deje de
+    ' ser interno.
     m.email = "2005.ivan@gmail.com"
-    m.password = ""
+    m.password = "123456"
 
     m.menu = m.top.findNode("menu")
     m.menu.observeField("itemSelected", "onMenuSelected")
@@ -18,6 +19,7 @@ sub init()
 
     RefreshMenu()
     m.menu.setFocus(true)
+    m.menu.jumpToItem = 2
 end sub
 
 sub RefreshMenu()

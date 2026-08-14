@@ -6,6 +6,11 @@
 ' largo por diseño, por eso esto sí puede sonar completo aquí.
 
 sub init()
+    m.bgVideo = m.top.findNode("bgVideo")
+    m.bgVideo.observeField("state", "onBgVideoStateChange")
+    m.bgImagen = m.top.findNode("bgImagen")
+    m.scrimJugador = m.top.findNode("scrimJugador")
+
     m.audio = m.top.findNode("audio")
     m.audio.observeField("state", "onAudioStateChange")
 
@@ -13,7 +18,8 @@ sub init()
     m.gapTimer.observeField("fire", "onGapTimerFire")
 
     m.nombreLabel = m.top.findNode("nombreLabel")
-    m.descripcionLabel = m.top.findNode("descripcionLabel")
+    m.codigoGrupo = m.top.findNode("codigoGrupo")
+    m.codigoLabel = m.top.findNode("codigoLabel")
     m.estadoLabel = m.top.findNode("estadoLabel")
 
     m.sequenceTask = m.top.findNode("sequenceTask")
@@ -46,18 +52,85 @@ sub onSequenceResponse(event as Object)
     m.codigo = data.codigo
     m.nombre = data.nombre
     m.nombreLabel.text = data.nombre
-    if data.descripcion <> invalid
-        m.descripcionLabel.text = data.descripcion
+    CentrarCodigo(data.codigo)
+    m.estadoLabel.text = ""
+
+    ' Se guardan para el modo de respaldo (digito por digito), por si el
+    ' video narrado falla o todavia no existe para esta secuencia/voz.
+    m.datosAudio = data.audio
+    m.imagenUrl = ""
+    if data.imagen_url <> invalid then m.imagenUrl = data.imagen_url
+
+    m.startEpoch = CreateObject("roDateTime").AsSeconds()
+
+    if data.video_narrado_url <> invalid and data.video_narrado_url <> ""
+        print "PlayerScreen intentando video narrado="; data.video_narrado_url
+        contentVideo = CreateObject("roSGNode", "ContentNode")
+        contentVideo.url = data.video_narrado_url
+        m.bgVideo.content = contentVideo
+        m.bgVideo.control = "play"
+        m.bgVideo.visible = true
+    else
+        print "PlayerScreen sin video_narrado_url, va directo a modo digito por digito"
+        IniciarModoDigitoPorDigito()
     end if
-    m.estadoLabel.text = "Repite cada numero en voz alta junto con la secuencia."
+end sub
 
-    print "PlayerScreen voz="; data.audio.voz; " tokens="; data.audio.tokens.Count()
-    print "PlayerScreen clip 0="; data.audio.clips["0"]
+sub CentrarCodigo(codigo as String)
+    ' El Label NO tiene scale propio (eso evita ambiguedad en
+    ' boundingRect); el scale=[4,4] esta en el Group que lo contiene
+    ' (codigoGrupo). Se mide el Label sin escalar (confiable) y se
+    ' calcula la traduccion del GRUPO en X y en Y para que, ya escalado,
+    ' el texto quede exactamente en el centro de la pantalla -- que es
+    ' donde cae el cruce de la esfera del video de fondo.
+    m.codigoLabel.text = FormatearCodigo(codigo)
+    rect = m.codigoLabel.boundingRect()
+    x = (1280 - rect.width * 4) / 2
+    y = (720 - rect.height * 4) / 2
+    m.codigoGrupo.translation = [x, y]
+end sub
 
-    m.steps = BuildSteps(data.audio)
+function FormatearCodigo(codigo as String) as String
+    texto = ""
+    for i = 1 to Len(codigo)
+        c = Mid(codigo, i, 1)
+        if c = "_"
+            texto = texto + "  "
+        else
+            texto = texto + c
+        end if
+    end for
+    return texto
+end function
+
+sub onBgVideoStateChange(event as Object)
+    state = event.GetData()
+    print "PlayerScreen bgVideo state="; state
+
+    if state = "error"
+        print "PlayerScreen video narrado fallo (errorCode="; m.bgVideo.errorCode; " errorMsg="; m.bgVideo.errorMsg; "), usando modo digito por digito"
+        IniciarModoDigitoPorDigito()
+    else if state = "finished"
+        ' El video narrado ya trae las repeticiones con voz incrustada:
+        ' terminar significa que la secuencia completa ya se reprodujo.
+        FinishPlayback()
+    end if
+end sub
+
+sub IniciarModoDigitoPorDigito()
+    m.bgVideo.control = "stop"
+    m.bgVideo.visible = false
+
+    if m.imagenUrl <> ""
+        m.bgImagen.uri = m.imagenUrl
+        m.bgImagen.visible = true
+    end if
+
+    print "PlayerScreen voz="; m.datosAudio.voz; " tokens="; m.datosAudio.tokens.Count()
+
+    m.steps = BuildSteps(m.datosAudio)
     print "PlayerScreen pasos totales construidos="; m.steps.Count()
     m.stepIndex = 0
-    m.startEpoch = CreateObject("roDateTime").AsSeconds()
 
     RunNextStep()
 end sub
@@ -105,6 +178,8 @@ sub RunNextStep()
         print "PlayerScreen paso "; m.stepIndex; "/"; m.steps.Count(); " CLIP url="; paso.url
         content = CreateObject("roSGNode", "ContentNode")
         content.url = paso.url
+        content.contentType = "audio"
+        content.streamFormat = "mp3"
         m.audio.content = content
         m.audio.control = "play"
     else
@@ -117,7 +192,17 @@ end sub
 sub onAudioStateChange(event as Object)
     state = event.GetData()
     print "PlayerScreen audio state="; state
-    if state = "finished" or state = "error"
+
+    if state = "error"
+        print "PlayerScreen audio errorCode="; m.audio.errorCode; " errorMsg="; m.audio.errorMsg
+        m.estadoLabel.text = "Error de audio " + m.audio.errorCode.ToStr() + ": " + m.audio.errorMsg
+        ' No avanzamos en error: antes esto saltaba en silencio al
+        ' siguiente paso y sonaba "cortado". Mejor detenerse y que el
+        ' error quede visible en pantalla + consola.
+        return
+    end if
+
+    if state = "finished"
         RunNextStep()
     end if
 end sub

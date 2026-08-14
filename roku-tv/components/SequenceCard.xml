@@ -16,12 +16,12 @@
         <!-- Orden importa: lo de abajo se dibuja primero. El borde de
              foco va detrás y más grande, para que se vea como un marco
              alrededor de la tarjeta cuando tiene el foco. -->
-        <Rectangle id="focusBorder" color="#FFD700" visible="false" />
-        <Rectangle id="background" color="#1C2541" />
+        <Rectangle id="focusBorder" color="#FFD83D" visible="false" />
+        <Rectangle id="background" color="#13213B" />
         <Poster id="image" loadDisplayMode="scaleToFill" visible="false" />
-        <Rectangle id="scrim" color="#0B132B" opacity="0.6" />
-        <Label id="titleLabel" color="#FFFFFF" wrap="true" />
-        <Label id="subtitleLabel" color="#CCCCCC" />
+        <Rectangle id="scrim" color="#071226" opacity="0.6" />
+        <Label id="titleLabel" color="#F4F1E8" wrap="true" />
+        <Label id="subtitleLabel" color="#B9C4D8" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/SequenceCard.brs" />
 </component>

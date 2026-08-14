@@ -1,15 +1,12 @@
 sub init()
     m.rows = m.top.findNode("rows")
-    m.rows.observeField("rowItemSelected", "onRowItemSelected")
+    m.rows.observeField("itemSelected", "onItemSelected")
     m.progressLabel = m.top.findNode("progressLabel")
     m.loadingLabel = m.top.findNode("loadingLabel")
     m.rows.visible = false
 
     m.homeTask = m.top.findNode("homeTask")
     m.homeTask.observeField("done", "onHomeResponse")
-
-    m.voiceTask = m.top.findNode("voiceTask")
-    m.voiceTask.observeField("done", "onVoiceChanged")
 end sub
 
 function StartLoading() as Void
@@ -37,83 +34,54 @@ sub onHomeResponse(event as Object)
     p = data.progreso
     m.progressLabel.text = "Racha: " + p.dias_consecutivos.ToStr() + " dias | Cristales: " + p.cristales_energia.ToStr() + " | Nivel: " + Int(p.nivel_energetico).ToStr() + "%"
 
-    m.rowsData = []
+    m.items = []
     root = CreateObject("roSGNode", "ContentNode")
 
     if data.secuencia_del_dia <> invalid and data.secuencia_del_dia.id <> invalid
-        AddRow(root, "Tu secuencia del dia", [{
-            title: data.secuencia_del_dia.nombre,
-            subtitle: "Repetir ahora",
-            color: "#FFD700",
-            imageUrl: "",
-            kind: "sequence",
-            id: data.secuencia_del_dia.id
-        }])
+        dia = data.secuencia_del_dia
+        colorDia = "#13213B"
+        if dia.color <> invalid and dia.color <> "" then colorDia = dia.color
+        imagenDia = ""
+        if dia.imagen_url <> invalid then imagenDia = dia.imagen_url
+        AddItem(root, { title: dia.nombre, subtitle: "Tu secuencia de hoy - repetir ahora", numero: dia.codigo, color: colorDia, imageUrl: imagenDia, kind: "sequence", id: dia.id })
     end if
 
     if data.favoritos.Count() > 0
-        items = []
         for each fav in data.favoritos
-            items.Push({ title: fav.nombre, subtitle: fav.categoria, color: "#8338EC", imageUrl: "", kind: "sequence", id: fav.id })
+            colorFav = "#13213B"
+            if fav.color <> invalid and fav.color <> "" then colorFav = fav.color
+            imagenFav = ""
+            if fav.imagen_url <> invalid then imagenFav = fav.imagen_url
+            AddItem(root, { title: fav.nombre, subtitle: "Favorita - " + fav.categoria, numero: fav.codigo, color: colorFav, imageUrl: imagenFav, kind: "sequence", id: fav.id })
         end for
-        AddRow(root, "Tus favoritas", items)
     end if
 
     if data.continuar.Count() > 0
-        items = []
         for each c in data.continuar
-            items.Push({ title: c.code_name, subtitle: c.usage_count.ToStr() + " veces", color: "#1E90FF", imageUrl: "", kind: "sequence", id: c.code_id })
+            AddItem(root, { title: c.code_name, subtitle: "Continuar - " + c.usage_count.ToStr() + " veces", numero: "", color: "#13213B", imageUrl: "", kind: "sequence", id: c.code_id })
         end for
-        AddRow(root, "Continuar", items)
     end if
 
-    m.vozActual = data.progreso.voice_gender
-    if m.vozActual = invalid or m.vozActual = ""
-        m.vozActual = "female"
-    end if
-
-    AddRow(root, "Mas", [
-        { title: "Explorar por categoria", subtitle: "", color: "#00CED1", imageUrl: "", kind: "categories", id: "" },
-        { title: "Voz: " + m.vozActual, subtitle: "Selecciona para cambiar", color: "#FF8C00", imageUrl: "", kind: "toggle_voice", id: "" },
-        { title: "Cerrar sesion", subtitle: "", color: "#555555", imageUrl: "", kind: "logout", id: "" }
-    ])
-
-    print "HomeScreen filas construidas: "; m.rowsData.Count(); " | root hijos: "; root.GetChildCount()
-    for i = 0 to root.GetChildCount() - 1
-        fila = root.GetChild(i)
-        print "  fila "; i; " titulo="; fila.title; " items="; fila.GetChildCount()
-    end for
+    AddItem(root, { title: "Explorar por categoria", subtitle: "Ver toda la biblioteca", numero: "", color: "#0C1830", imageUrl: "", kind: "categories", id: "" })
+    AddItem(root, { title: "Cerrar sesion", subtitle: "", numero: "", color: "#0C1830", imageUrl: "", kind: "logout", id: "" })
 
     m.rows.content = root
     m.rows.visible = true
     m.rows.setFocus(true)
-    print "HomeScreen m.rows.content asignado, visible=true"
 end sub
 
-sub AddRow(root as Object, titulo as String, items as Object)
-    row = root.CreateChild("ContentNode")
-    row.title = titulo
-    fila = []
-    for each it in items
-        node = row.CreateChild("ContentNode")
-        node.AddFields({ title: it.title, subtitle: it.subtitle, color: it.color, imageUrl: it.imageUrl })
-        fila.Push({ kind: it.kind, id: it.id })
-    end for
-    m.rowsData.Push(fila)
+sub AddItem(root as Object, it as Object)
+    node = root.CreateChild("ContentNode")
+    node.AddFields({ title: it.title, subtitle: it.subtitle, numero: it.numero, color: it.color, imageUrl: it.imageUrl })
+    m.items.Push({ kind: it.kind, id: it.id })
 end sub
 
-sub onRowItemSelected(event as Object)
-    indices = event.GetData()
-    rowIndex = indices[0]
-    itemIndex = indices[1]
-    if rowIndex < 0 or rowIndex >= m.rowsData.Count()
+sub onItemSelected()
+    index = m.rows.itemSelected
+    if index < 0 or index >= m.items.Count()
         return
     end if
-    fila = m.rowsData[rowIndex]
-    if itemIndex < 0 or itemIndex >= fila.Count()
-        return
-    end if
-    item = fila[itemIndex]
+    item = m.items[index]
 
     if item.kind = "sequence"
         m.top.result = { action: "openSequence", id: item.id }
@@ -121,30 +89,5 @@ sub onRowItemSelected(event as Object)
         m.top.result = { action: "openCategories" }
     else if item.kind = "logout"
         m.top.result = { action: "logout" }
-    else if item.kind = "toggle_voice"
-        ToggleVoice()
-    end if
-end sub
-
-sub ToggleVoice()
-    siguiente = "male"
-    if m.vozActual = "male"
-        siguiente = "male 2"
-    else if m.vozActual = "male 2"
-        siguiente = "female"
-    end if
-
-    m.voiceTask.authToken = m.top.authToken
-    m.voiceTask.uri = ApiBase() + "/roku-voice"
-    m.voiceTask.method = "POST"
-    m.voiceTask.body = FormatJson({ voz: siguiente })
-    m.voiceTask.control = "RUN"
-end sub
-
-sub onVoiceChanged(event as Object)
-    result = event.GetData()
-    if result.code = 200
-        ' Recarga toda la pantalla para reflejar la voz nueva en la fila "Mas".
-        StartLoading()
     end if
 end sub

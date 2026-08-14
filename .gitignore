@@ -118,3 +118,7 @@ flutter_*.log
 docs/
 server/
 lib/data/localhost.har
+
+# Salida generada por scripts/generar_assets_secuencias.py y
+# generar_video_narrado.py (regenerable, binarios grandes)
+/output/

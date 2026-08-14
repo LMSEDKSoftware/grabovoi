@@ -6,15 +6,15 @@
         <function name="StartLoading" />
     </interface>
     <children>
-        <Rectangle color="#0B132B" width="1280" height="720" />
-        <Label id="title" text="ManiGraB TV" translation="[60,32]" color="#FFD700" />
-        <Label id="progressLabel" translation="[60,68]" color="#CCCCCC" text="" />
-        <RowList id="rows" translation="[60,120]" rowItemSize="[[280,170]]" rowItemSpacing="[[24,0]]"
-            rowHeights="[210]" rowSpacings="[16]" itemComponentName="SequenceCard"
-            rowLabelColor="#FFD700" showRowLabel="[true]" />
-        <Label id="loadingLabel" translation="[60,120]" color="#FFFFFF" text="Cargando..." />
+        <Rectangle color="#071226" width="1280" height="720" />
+
+        <Label text="TUS SECUENCIAS" color="#F4F1E8" translation="[300,44]" width="700" height="40" />
+        <Label id="progressLabel" translation="[300,84]" color="#B9C4D8" text="" />
+        <MarkupGrid id="rows" translation="[300,150]" itemSize="[900,110]" itemSpacing="[0,14]"
+            numColumns="1" numRows="4" itemComponentName="SequenceRow" />
+        <Label id="loadingLabel" translation="[300,150]" color="#F4F1E8" text="Cargando..." />
+
         <ApiTask id="homeTask" />
-        <ApiTask id="voiceTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
     <script type="text/brightscript" uri="pkg:/components/HomeScreen.brs" />
