@@ -4,10 +4,12 @@
         <field id="authToken" type="string" />
         <field id="result" type="assocarray" alwaysNotify="true" />
         <function name="StartLoading" />
+        <function name="RestoreFocus" />
     </interface>
     <children>
         <Rectangle color="#071226" width="1280" height="720" />
         <Label id="title" text="Explorar por categoria" translation="[300,40]" color="#FFD83D" />
+        <Label id="countLabel" translation="[300,40]" width="940" horizAlign="right" color="#B9C4D8" text="" />
         <MarkupGrid id="grid" translation="[300,110]" itemSize="[280,170]" itemSpacing="[24,24]"
             numColumns="3" numRows="3" itemComponentName="SequenceCard" />
         <Label id="loadingLabel" translation="[300,110]" color="#F4F1E8" text="Cargando..." />

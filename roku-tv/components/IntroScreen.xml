@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Cortinilla de apertura: video corto (roku-tv/video/intro.mp4, ya
+     trae el audio de audio/intro.mp3 mezclado, generado con
+     scripts/generar_intro.py) que se reproduce una vez al abrir el
+     canal, antes de Login/Inicio. Cualquier tecla la salta. -->
+<component name="IntroScreen" extends="Group">
+    <interface>
+        <field id="result" type="assocarray" alwaysNotify="true" />
+        <function name="StartLoading" />
+    </interface>
+    <children>
+        <Rectangle color="#071226" width="1280" height="720" />
+        <Video id="video" translation="[0,0]" width="1280" height="720" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/IntroScreen.brs" />
+</component>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Calcado del layout de "Evolucion Energetica" de la app movil
+     (lib/screens/evolucion/evolucion_screen.dart): titulo + subtitulo,
+     el circulo de racha arriba centrado, y debajo 2 filas x 3 columnas
+     de estadisticas. Datos via /roku-perfil, que ahora trae los mismos
+     3 campos calculados que la app movil (total_minutos, total_sesiones,
+     secuencias_usadas; ver
+     supabase/migrations/20260815200000_roku_estadisticas_evolucion.sql). -->
+<component name="EvolucionScreen" extends="Group">
+    <interface>
+        <field id="authToken" type="string" />
+        <field id="result" type="assocarray" alwaysNotify="true" />
+        <function name="StartLoading" />
+        <function name="RestoreFocus" />
+    </interface>
+    <children>
+        <Rectangle color="#071226" width="1280" height="720" />
+
+        <Label id="title" text="Evolución Energética" color="#FFD700" translation="[300,20]" width="700" height="40">
+            <Font size="32" />
+        </Label>
+        <Label id="subtitle" text="Tu progreso vibracional" translation="[300,62]" color="#B9C4D8" />
+        <Label id="loadingLabel" translation="[300,110]" color="#F4F1E8" text="Cargando..." />
+
+        <Group id="contenido" visible="false">
+            <!-- Circulo de racha, centrado en el area de contenido
+                 (300..1240 => centro en x=770). La imagen es solo el
+                 anillo dorado con resplandor (roku-tv/images/racha_circulo.png);
+                 el numero va encima como texto, igual que el resto de la
+                 app (portadas, tarjetas). -->
+            <Poster id="rachaCirculo" translation="[670,94]" width="200" height="200"
+                loadDisplayMode="scaleToFit" uri="pkg:/images/racha_circulo.png" />
+            <!-- La caja del Label cubre SOLO el area del aro (sin la
+                 llama de arriba): del PNG fuente 540x540, el aro va de
+                 y=131 a y=511, escalado a la caja de 200x200 del
+                 Poster, eso es y=142..283 en pantalla. horizAlign +
+                 vertAlign "center" centran el numero de verdad usando
+                 las metricas reales de la fuente, en vez de calcular la
+                 posicion a mano (eso se rompio al subir el tamano). -->
+            <!-- font="font:LargeBoldSystemFont" como atributo directo del
+                 Label (sin <Font> anidado): asigna la fuente de sistema
+                 al campo font. El tamaño se ajusta despues en
+                 EvolucionScreen.brs via m.rachaValor.font.size, que es
+                 la via documentada para cambiar el tamaño de una fuente
+                 de sistema ya asignada. Centro vertical sin cambios:
+                 117 + 190/2 = 212, igual que antes (142 + 141/2 = 212.5). -->
+            <Label id="rachaValor" translation="[670,117]" width="200" height="190" horizAlign="center" vertAlign="center" color="#F4F1E8" font="font:LargeBoldSystemFont" text="" />
+            <Label id="rachaCaption" text="Días en Racha" translation="[670,292]" width="200" horizAlign="center" color="#B9C4D8" />
+
+            <!-- Fila 1 -->
+            <Rectangle id="cardTiempoTotal" translation="[300,340]" width="290" height="120" color="#13213B" />
+            <Label id="tiempoTotalValor" translation="[324,364]" color="#FFD700" text="">
+                <Font size="30" />
+            </Label>
+            <Label translation="[324,416]" width="242" wrap="true" color="#B9C4D8" text="Tiempo Total" />
+
+            <Rectangle id="cardSecuenciasUsadas" translation="[610,340]" width="290" height="120" color="#13213B" />
+            <Label id="secuenciasUsadasValor" translation="[634,364]" color="#FFD700" text="">
+                <Font size="30" />
+            </Label>
+            <Label translation="[634,416]" width="242" wrap="true" color="#B9C4D8" text="Secuencias Usadas" />
+
+            <Rectangle id="cardTotalPilotajes" translation="[920,340]" width="290" height="120" color="#13213B" />
+            <Label id="totalPilotajesValor" translation="[944,364]" color="#FFD700" text="">
+                <Font size="30" />
+            </Label>
+            <Label translation="[944,416]" width="242" wrap="true" color="#B9C4D8" text="Total Pilotajes" />
+
+            <!-- Fila 2 -->
+            <Rectangle id="cardTiempoSesion" translation="[300,476]" width="290" height="120" color="#13213B" />
+            <Label id="tiempoSesionValor" translation="[324,500]" color="#FFD700" text="">
+                <Font size="30" />
+            </Label>
+            <Label translation="[324,552]" width="242" wrap="true" color="#B9C4D8" text="Tiempo Sesión" />
+
+            <Rectangle id="cardSesiones" translation="[610,476]" width="290" height="120" color="#13213B" />
+            <Label id="sesionesValor" translation="[634,500]" color="#FFD700" text="">
+                <Font size="30" />
+            </Label>
+            <Label translation="[634,552]" width="242" wrap="true" color="#B9C4D8" text="Sesiones" />
+
+            <Rectangle id="cardNivel" translation="[920,476]" width="290" height="120" color="#13213B" />
+            <Label id="nivelValor" translation="[944,500]" color="#FFD700" text="">
+                <Font size="30" />
+            </Label>
+            <Label translation="[944,552]" width="242" wrap="true" color="#B9C4D8" text="Nivel" />
+        </Group>
+
+        <ApiTask id="perfilTask" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/EvolucionScreen.brs" />
+</component>

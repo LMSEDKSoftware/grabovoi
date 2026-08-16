@@ -3,12 +3,20 @@
     <interface>
         <field id="authToken" type="string" />
         <field id="categoria" type="string" />
+        <!-- Si endpointUri viene seteado, se usa tal cual (favoritos/
+             top-usados: ya son una URL completa, no se arman desde una
+             categoria) y titulo se muestra en vez del nombre de la
+             categoria. Ver ShowFavoritos/ShowTopUsados en MainScene.brs. -->
+        <field id="endpointUri" type="string" />
+        <field id="titulo" type="string" />
         <field id="result" type="assocarray" alwaysNotify="true" />
         <function name="StartLoading" />
+        <function name="RestoreFocus" />
     </interface>
     <children>
         <Rectangle color="#071226" width="1280" height="720" />
         <Label id="title" translation="[300,40]" color="#FFD83D" text="" />
+        <Label id="countLabel" translation="[300,40]" width="940" horizAlign="right" color="#B9C4D8" text="" />
         <MarkupGrid id="grid" translation="[300,110]" itemSize="[280,170]" itemSpacing="[24,24]"
             numColumns="3" numRows="3" itemComponentName="SequenceCard" />
         <Label id="loadingLabel" translation="[300,110]" color="#F4F1E8" text="Cargando..." />

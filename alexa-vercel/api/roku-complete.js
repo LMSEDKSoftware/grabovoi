@@ -58,6 +58,7 @@ async function handler(req, res) {
   const codigoId = String(body.codigo_id || '').trim();
   const codigo = String(body.codigo || '').trim();
   const nombre = body.nombre ? String(body.nombre) : null;
+  const categoria = body.categoria ? String(body.categoria) : '';
   const minutos = Number.isFinite(body.minutos) ? body.minutos : 0;
   if (!codigoId || !codigo) {
     res.status(400).json({ error: 'missing_fields' });
@@ -105,10 +106,35 @@ async function handler(req, res) {
     });
   }
 
+  // Mismas "secuencias sincrónicas" que sugiere la app al terminar una
+  // sesión (SequenciaActivadaModal -> _getSincronicosForCurrentCode):
+  // categorias_sincronicas mapea la categoria de lo que se acaba de
+  // completar a hasta N categorias recomendadas (por peso), y de ahi se
+  // toman hasta 2 codigos. Sin categoria no hay nada que sugerir.
+  let sincronicos = [];
+  if (categoria) {
+    const { data: catRows } = await admin
+      .from('categorias_sincronicas')
+      .select('categoria_recomendada')
+      .eq('categoria_principal', categoria)
+      .order('peso', { ascending: false });
+
+    const categoriasRecomendadas = (catRows || []).map((r) => r.categoria_recomendada);
+    if (categoriasRecomendadas.length) {
+      const { data: secRows } = await admin
+        .from('codigos_grabovoi')
+        .select('id, codigo, nombre, categoria')
+        .in('categoria', categoriasRecomendadas)
+        .limit(2);
+      sincronicos = secRows || [];
+    }
+  }
+
   res.status(200).json({
     ya_otorgada: recompensa?.ya_otorgada ?? null,
     cristales_ganados: recompensa?.cristales_ganados ?? null,
     dias_consecutivos: recompensa?.dias_consecutivos ?? null,
+    sincronicos,
   });
 }
 

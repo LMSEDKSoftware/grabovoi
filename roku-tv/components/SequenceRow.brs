@@ -5,13 +5,18 @@
 
 sub init()
     m.focusBorder = m.top.findNode("focusBorder")
+    m.heroBorder = m.top.findNode("heroBorder")
     m.card = m.top.findNode("card")
     m.posterBg = m.top.findNode("posterBg")
     m.poster = m.top.findNode("poster")
     m.shade = m.top.findNode("shade")
     m.numberLabel = m.top.findNode("numberLabel")
+    m.kickerLabel = m.top.findNode("kickerLabel")
     m.titleLabel = m.top.findNode("titleLabel")
     m.subtitleLabel = m.top.findNode("subtitleLabel")
+    m.rewardBg = m.top.findNode("rewardBg")
+    m.rewardLabel = m.top.findNode("rewardLabel")
+    m.destacada = false
 
     Layout(900, 110)
     RenderContent()
@@ -33,6 +38,11 @@ sub Layout(w as Float, h as Float)
     m.focusBorder.width = w + margen * 2
     m.focusBorder.height = h + margen * 2
 
+    heroMargen = 3
+    m.heroBorder.translation = [-heroMargen, -heroMargen]
+    m.heroBorder.width = w + heroMargen * 2
+    m.heroBorder.height = h + heroMargen * 2
+
     m.card.width = w
     m.card.height = h
 
@@ -52,10 +62,32 @@ sub Layout(w as Float, h as Float)
     m.numberLabel.width = posterW
 
     textoX = posterW + margen * 3
-    m.titleLabel.translation = [textoX, h * 0.22]
-    m.titleLabel.width = w - textoX - margen
-    m.subtitleLabel.translation = [textoX, h * 0.62]
-    m.subtitleLabel.width = w - textoX - margen
+    textoW = w - textoX - margen
+
+    rewardW = 170
+    rewardH = 30
+    m.rewardBg.translation = [w - rewardW - margen, h - rewardH - margen]
+    m.rewardBg.width = rewardW
+    m.rewardBg.height = rewardH
+    m.rewardLabel.translation = [w - rewardW - margen, h - rewardH - margen + 6]
+    m.rewardLabel.width = rewardW
+
+    ' La fila destacada (secuencia del dia) mete un renglon extra arriba
+    ' del titulo (el "kicker"), y el subtitulo comparte renglon con la
+    ' recompensa a su derecha en vez de ir debajo (mismo layout que la
+    ' app movil: "Toca para pilotar" + chip, uno al lado del otro).
+    if m.destacada
+        m.kickerLabel.translation = [textoX, 6]
+        m.titleLabel.translation = [textoX, 30]
+        m.subtitleLabel.translation = [textoX, h - rewardH - margen + 6]
+        m.subtitleLabel.width = textoW - rewardW - 14
+    else
+        m.titleLabel.translation = [textoX, h * 0.22]
+        m.subtitleLabel.translation = [textoX, h * 0.62]
+        m.subtitleLabel.width = textoW
+    end if
+    m.kickerLabel.width = textoW
+    m.titleLabel.width = textoW
 end sub
 
 sub onContentChanged()
@@ -67,6 +99,13 @@ sub RenderContent()
     if content = invalid
         return
     end if
+
+    m.destacada = false
+    if content.hasField("destacada") and content.destacada = true then m.destacada = true
+    m.heroBorder.visible = m.destacada
+    m.kickerLabel.visible = m.destacada
+    m.rewardBg.visible = m.destacada
+    m.rewardLabel.visible = m.destacada
 
     if content.hasField("title") and content.title <> invalid
         m.titleLabel.text = content.title
@@ -103,6 +142,14 @@ sub RenderContent()
         m.poster.visible = false
         m.shade.visible = false
     end if
+
+    ' m.destacada pudo haber cambiado arriba; Layout() depende de el para
+    ' decidir donde van titulo/subtitulo, asi que se vuelve a aplicar.
+    w = m.top.width
+    h = m.top.height
+    if w = invalid or w = 0 then w = 900
+    if h = invalid or h = 0 then h = 110
+    Layout(w, h)
 end sub
 
 sub onFocusChanged()

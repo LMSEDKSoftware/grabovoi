@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Reemplaza el LabelList uniforme del sidebar (que solo permite un
+     color para todos los items) por un renderer propio, para poder
+     pintar "Informacion Legal" de amarillo mientras el resto se queda
+     en el gris-azulado de siempre. Mismo contrato itemContent/width/
+     height/itemHasFocus que SequenceCard.xml/SequenceRow.xml. -->
+<component name="SidebarItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="onContentChanged" />
+        <field id="width" type="float" onChange="onSizeChanged" />
+        <field id="height" type="float" onChange="onSizeChanged" />
+        <field id="itemHasFocus" type="bool" onChange="onFocusChanged" />
+    </interface>
+    <children>
+        <!-- Sin rectangulo de fondo: el LabelList original (ver commit
+             44cff0f) no dibujaba ninguno, solo cambiaba el color del
+             texto via focusedColor. El indicador de foco lo sigue
+             dibujando Roku automaticamente (drawFocusFeedback, activo
+             por defecto en MarkupGrid); esto solo cambia el color del
+             texto para que combine, igual que antes. -->
+        <Label id="label" color="#B9C4D8" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/SidebarItem.brs" />
+</component>

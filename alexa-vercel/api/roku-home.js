@@ -7,6 +7,24 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
+// Mismo calculo que MensajesDiariosService._obtenerDiaDelAnio() en la
+// app movil (lib/services/mensajes_diarios_service.dart), para que Roku
+// muestre la misma frase del dia que el celular: dia 1-365 del año.
+function diaDelAnio() {
+  const ahora = new Date();
+  const inicioAnio = new Date(ahora.getFullYear(), 0, 1);
+  const dias = Math.floor((ahora - inicioAnio) / 86400000) + 1;
+  return Math.min(Math.max(dias, 1), 365);
+}
+
+// El Label de Roku no tiene fuente con emoji (glifo en blanco/tofu, ver
+// conversacion) -- se recorta cualquier emoji inicial antes de mandarlo,
+// el texto en si no se toca.
+function sinEmojiInicial(texto) {
+  if (!texto) return texto;
+  return texto.replace(/^[\p{Extended_Pictographic}\s]+/u, '').trim();
+}
+
 async function resolverUsuario(admin, authHeader) {
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.slice('Bearer '.length);
@@ -39,6 +57,7 @@ async function handler(req, res) {
     { data: rewards },
     { data: favoritos },
     { data: continuar },
+    { data: mensajeDia },
   ] = await Promise.all([
     admin.rpc('obtener_codigo_del_dia'),
     admin.from('usuario_progreso').select('dias_consecutivos, total_pilotajes, nivel_energetico').eq('user_id', userId).maybeSingle(),
@@ -55,7 +74,10 @@ async function handler(req, res) {
       .eq('user_id', userId)
       .order('last_used', { ascending: false })
       .limit(12),
+    admin.from('mensajes_diarios').select('mensaje').eq('dia', diaDelAnio()).maybeSingle(),
   ]);
+
+  const fraseDelDia = sinEmojiInicial(mensajeDia?.mensaje) || 'La energía fluye contigo. Cada día es más poderoso.';
 
   // obtener_codigo_del_dia() solo devuelve codigo+nombre, sin el id de
   // codigos_grabovoi que necesita el reproductor de Roku (/roku-sequence
@@ -71,8 +93,26 @@ async function handler(req, res) {
     if (fila) secuenciaDelDia = { ...secuenciaDelDia, ...fila };
   }
 
+  // user_code_history.code_id no tiene foreign key declarada hacia
+  // codigos_grabovoi (a diferencia de usuario_favoritos.codigo_id, que
+  // si la tiene y por eso puede pedirse con el select anidado de arriba)
+  // -- se resuelve el codigo/color/imagen a mano con una segunda
+  // consulta, para que las tarjetas de "Recientes" se vean igual de
+  // completas que las de "Tus favoritas".
+  let continuarConDatos = continuar || [];
+  if (continuarConDatos.length > 0) {
+    const ids = continuarConDatos.map((c) => c.code_id).filter(Boolean);
+    const { data: filas } = await admin
+      .from('codigos_grabovoi')
+      .select('id, codigo, color, imagen_url')
+      .in('id', ids);
+    const porId = new Map((filas || []).map((f) => [f.id, f]));
+    continuarConDatos = continuarConDatos.map((c) => ({ ...c, ...(porId.get(c.code_id) || {}) }));
+  }
+
   res.status(200).json({
     secuencia_del_dia: secuenciaDelDia,
+    frase_del_dia: fraseDelDia,
     progreso: {
       dias_consecutivos: progreso?.dias_consecutivos ?? 0,
       total_pilotajes: progreso?.total_pilotajes ?? 0,
@@ -81,7 +121,7 @@ async function handler(req, res) {
       luz_cuantica: rewards?.luz_cuantica ?? 0,
     },
     favoritos: (favoritos || []).map((f) => f.codigos_grabovoi).filter(Boolean),
-    continuar: continuar || [],
+    continuar: continuarConDatos,
   });
 }
 

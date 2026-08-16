@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Submenu de "Informacion Legal": Politica de Privacidad, Terminos y
+     Condiciones, y Almacenamiento en el Dispositivo (version adaptada de
+     la Politica de Cookies; Roku no usa cookies de navegador, ver
+     LegalDocScreen.brs para el contenido). -->
+<component name="LegalScreen" extends="Group">
+    <interface>
+        <field id="result" type="assocarray" alwaysNotify="true" />
+        <function name="StartLoading" />
+        <function name="RestoreFocus" />
+    </interface>
+    <children>
+        <Rectangle color="#071226" width="1280" height="720" />
+        <Label id="title" text="Información Legal" color="#FFD700" translation="[300,24]" width="700" height="40">
+            <Font size="32" />
+        </Label>
+        <Label text="Documentos legales de ManiGraB" translation="[300,64]" color="#B9C4D8" />
+
+        <MarkupGrid id="grid" translation="[300,120]" itemSize="[700,64]" itemSpacing="[0,14]"
+            numColumns="1" numRows="3" itemComponentName="SidebarItem" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/LegalScreen.brs" />
+</component>

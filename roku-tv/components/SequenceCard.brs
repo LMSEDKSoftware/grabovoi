@@ -19,6 +19,7 @@ sub init()
     m.scrim = m.top.findNode("scrim")
     m.titleLabel = m.top.findNode("titleLabel")
     m.subtitleLabel = m.top.findNode("subtitleLabel")
+    m.subtitleAbajo = false
     print "SequenceCard nodos encontrados: focusBorder="; m.focusBorder <> invalid; " background="; m.background <> invalid; " titleLabel="; m.titleLabel <> invalid
 
     ' onChange="onContentChanged" ya esta declarado en el <field> del XML;
@@ -50,16 +51,29 @@ sub Layout(w as Float, h as Float)
     m.image.width = w
     m.image.height = h
 
-    scrimAltura = h * 0.42
+    padding = 14
+
+    scrimAltura = h * 0.5
     m.scrim.translation = [0, h - scrimAltura]
     m.scrim.width = w
     m.scrim.height = scrimAltura
 
-    padding = 14
-    m.titleLabel.translation = [padding, h - scrimAltura + 10]
+    if m.subtitleAbajo
+        ' Categorias: el conteo ("N secuencias") va debajo del nombre,
+        ' dentro del mismo recuadro -- arriba a la izquierda solo tiene
+        ' sentido para el codigo de una secuencia individual, pedido
+        ' explicito de separar ambos casos.
+        m.titleLabel.translation = [padding, h - scrimAltura + 6]
+        m.titleLabel.height = scrimAltura * 0.55
+        m.subtitleLabel.translation = [padding, h - scrimAltura + scrimAltura * 0.55 + 2]
+    else
+        ' Codigo arriba a la izquierda, directo sobre la imagen (sin
+        ' scrim); titulo abajo, hasta 2 lineas.
+        m.subtitleLabel.translation = [padding, 8]
+        m.titleLabel.translation = [padding, h - scrimAltura + 8]
+        m.titleLabel.height = scrimAltura - 16
+    end if
     m.titleLabel.width = w - padding * 2
-
-    m.subtitleLabel.translation = [padding, h - 24]
     m.subtitleLabel.width = w - padding * 2
 end sub
 
@@ -75,6 +89,9 @@ sub RenderContent()
         return
     end if
     print "SequenceCard RenderContent hasField(title)="; content.hasField("title"); " hasField(color)="; content.hasField("color"); " title="; content.title; " color="; content.color
+
+    m.subtitleAbajo = false
+    if content.hasField("subtitleAbajo") and content.subtitleAbajo = true then m.subtitleAbajo = true
 
     if content.hasField("title") and content.title <> invalid
         m.titleLabel.text = content.title
@@ -102,6 +119,14 @@ sub RenderContent()
     end if
 
     print "SequenceCard RenderContent aplicado. background.color="; m.background.color; " background.width="; m.background.width; " background.height="; m.background.height; " titleLabel.text="; m.titleLabel.text
+
+    ' m.subtitleAbajo pudo haber cambiado arriba; Layout() depende de el
+    ' para decidir donde va el subtitulo, asi que se vuelve a aplicar.
+    w = m.top.width
+    h = m.top.height
+    if w = invalid or w = 0 then w = 280
+    if h = invalid or h = 0 then h = 170
+    Layout(w, h)
 end sub
 
 sub onFocusChanged()

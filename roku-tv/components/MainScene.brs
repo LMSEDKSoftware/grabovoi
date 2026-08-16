@@ -9,31 +9,52 @@ sub init()
     m.currentScreenName = ""
     m.authToken = invalid
 
+    ' Marca de tiempo de arranque del canal, para "Tiempo Sesion" en
+    ' EvolucionScreen (se reinicia cada vez que se abre el canal, igual
+    ' que AppTimeTracker en la app movil -- no es un dato del servidor).
+    m.global.addFields({ rokuSessionEpoch: CreateObject("roDateTime").AsSeconds() })
+
     m.content = m.top.findNode("content")
     m.sidebar = m.top.findNode("sidebar")
     m.sidebarList = m.top.findNode("sidebarList")
     m.sidebarFocused = false
 
+    ' LabelList nativo, identico al commit 44cff0f -- sin tocar su
+    ' apariencia de foco (Roku la dibuja sola). "Informacion Legal" es el
+    ' ultimo item, parte de la misma lista y navegacion que el resto.
     root = CreateObject("roSGNode", "ContentNode")
-    ' Solo "Home" y "Library" llevan a algo real por ahora; el resto se ve
-    ' pero no hace nada todavia (no hay pantallas detras de esas secciones).
-    for each texto in ["Home", "Library", "Most Searched", "My Sequences", "Active Sequences", "Settings"]
+    for each texto in ["Inicio", "Biblioteca cuántica", "Buscar", "Top ten más usados", "Mis favoritos", "Evolución", "Perfil", "Cerrar sesión", "Información Legal"]
         item = root.CreateChild("ContentNode")
         item.title = texto
     end for
     m.sidebarList.content = root
     m.sidebarList.observeField("itemSelected", "onSidebarItemSelected")
 
-    task = m.top.findNode("checkSessionTask")
-    task.observeField("done", "onSessionChecked")
+    m.checkSessionTask = m.top.findNode("checkSessionTask")
+    m.checkSessionTask.observeField("done", "onSessionChecked")
 
+    ShowIntro()
+end sub
+
+sub ShowIntro()
+    screen = CreateObject("roSGNode", "IntroScreen")
+    screen.observeField("result", "onIntroResult")
+    screen.callFunc("StartLoading")
+    SwapScreen("intro", screen)
+end sub
+
+sub onIntroResult(event as Object)
+    IniciarFlujoPrincipal()
+end sub
+
+sub IniciarFlujoPrincipal()
     saved = LoadToken()
     if saved <> invalid
         m.authToken = saved
-        task.authToken = saved
-        task.uri = ApiBase() + "/roku-home"
-        task.method = "GET"
-        task.control = "RUN"
+        m.checkSessionTask.authToken = saved
+        m.checkSessionTask.uri = ApiBase() + "/roku-home"
+        m.checkSessionTask.method = "GET"
+        m.checkSessionTask.control = "RUN"
     else
         ShowLogin()
     end if
@@ -45,9 +66,23 @@ sub onSidebarItemSelected()
         ShowHome()
     else if index = 1
         ShowCategories()
+    else if index = 2
+        ShowBuscar()
+    else if index = 3
+        ShowTopUsados()
+    else if index = 4
+        ShowFavoritos()
+    else if index = 5
+        ShowEvolucion()
+    else if index = 6
+        ShowPerfil()
+    else if index = 7
+        ClearToken()
+        m.authToken = invalid
+        ShowLogin()
+    else if index = 8
+        ShowLegal()
     end if
-    ' Los demas indices (Most Searched/My Sequences/Active Sequences/
-    ' Settings) todavia no tienen pantalla propia -- no hacen nada.
 end sub
 
 sub EnfocarSidebar()
@@ -58,7 +93,12 @@ end sub
 sub EnfocarContenido()
     m.sidebarFocused = false
     if m.currentScreen <> invalid
-        m.currentScreen.setFocus(true)
+        ' Las pantallas son Group planos: setFocus(true) sobre el Group
+        ' no delega el foco a la grilla/lista interna, asi que las
+        ' flechas se quedaban sin nadie que las escuchara despues de
+        ' volver del sidebar. Cada pantalla implementa RestoreFocus()
+        ' para reenfocar su propio nodo navegable (grid/rows/contenido).
+        m.currentScreen.callFunc("RestoreFocus")
     end if
 end sub
 
@@ -84,7 +124,7 @@ sub SwapScreen(name as String, node as Object)
     ' El sidebar es permanente para todas las pantallas autenticadas,
     ' excepto login (sin cuenta no hay nada que navegar) y player (que la
     ' mirada se centre en la secuencia, sin distracciones alrededor).
-    m.sidebar.visible = (name <> "login" and name <> "player")
+    m.sidebar.visible = (name <> "login" and name <> "player" and name <> "intro")
     m.sidebarFocused = false
     node.setFocus(true)
 end sub
@@ -177,6 +217,135 @@ sub onPlayerResult(event as Object)
     result = event.GetData()
     if result.action = "back"
         ShowHome()
+    else if result.action = "openSequence"
+        ' Secuencia sincronica elegida en la pantalla de "Secuencia
+        ' Activada" -- una pantalla de reproductor nueva y limpia, igual
+        ' que cuando se abre desde Home/SequenceList.
+        ShowPlayer(result.id)
+    end if
+end sub
+
+sub ShowBuscar()
+    screen = CreateObject("roSGNode", "SearchScreen")
+    screen.authToken = m.authToken
+    screen.observeField("result", "onBuscarResult")
+    screen.callFunc("StartLoading")
+    SwapScreen("buscar", screen)
+end sub
+
+sub onBuscarResult(event as Object)
+    result = event.GetData()
+    if result.action = "back"
+        ShowHome()
+    else if result.action = "openSequence"
+        ShowPlayer(result.id)
+    end if
+end sub
+
+' Favoritos y top-usados reutilizan SequenceListScreen (misma grilla que
+' Biblioteca cuantica) pero apuntando a un endpoint fijo en vez de armar
+' la URL desde una categoria -- ver el campo endpointUri en
+' SequenceListScreen.xml/.brs.
+sub ShowFavoritos()
+    screen = CreateObject("roSGNode", "SequenceListScreen")
+    screen.authToken = m.authToken
+    screen.titulo = "Mis favoritos"
+    screen.endpointUri = ApiBase() + "/roku-favoritos"
+    screen.observeField("result", "onFavoritosResult")
+    screen.callFunc("StartLoading")
+    SwapScreen("favoritos", screen)
+end sub
+
+sub onFavoritosResult(event as Object)
+    result = event.GetData()
+    if result.action = "back"
+        ShowHome()
+    else if result.action = "openSequence"
+        ShowPlayer(result.id)
+    end if
+end sub
+
+sub ShowTopUsados()
+    screen = CreateObject("roSGNode", "SequenceListScreen")
+    screen.authToken = m.authToken
+    screen.titulo = "Top ten más usados"
+    screen.endpointUri = ApiBase() + "/roku-top-usados"
+    screen.observeField("result", "onTopUsadosResult")
+    screen.callFunc("StartLoading")
+    SwapScreen("topUsados", screen)
+end sub
+
+sub onTopUsadosResult(event as Object)
+    result = event.GetData()
+    if result.action = "back"
+        ShowHome()
+    else if result.action = "openSequence"
+        ShowPlayer(result.id)
+    end if
+end sub
+
+sub ShowEvolucion()
+    screen = CreateObject("roSGNode", "EvolucionScreen")
+    screen.authToken = m.authToken
+    screen.observeField("result", "onEvolucionResult")
+    screen.callFunc("StartLoading")
+    SwapScreen("evolucion", screen)
+end sub
+
+sub onEvolucionResult(event as Object)
+    result = event.GetData()
+    if result.action = "back"
+        ShowHome()
+    end if
+end sub
+
+sub ShowPerfil()
+    screen = CreateObject("roSGNode", "PerfilScreen")
+    screen.authToken = m.authToken
+    screen.observeField("result", "onPerfilResult")
+    screen.callFunc("StartLoading")
+    SwapScreen("perfil", screen)
+end sub
+
+sub onPerfilResult(event as Object)
+    result = event.GetData()
+    if result.action = "back"
+        ShowHome()
+    else if result.action = "logout"
+        ClearToken()
+        m.authToken = invalid
+        ShowLogin()
+    end if
+end sub
+
+sub ShowLegal()
+    screen = CreateObject("roSGNode", "LegalScreen")
+    screen.observeField("result", "onLegalResult")
+    screen.callFunc("StartLoading")
+    SwapScreen("legal", screen)
+end sub
+
+sub onLegalResult(event as Object)
+    result = event.GetData()
+    if result.action = "back"
+        ShowHome()
+    else if result.action = "openDoc"
+        ShowLegalDoc(result.docId)
+    end if
+end sub
+
+sub ShowLegalDoc(docId as String)
+    screen = CreateObject("roSGNode", "LegalDocScreen")
+    screen.docId = docId
+    screen.observeField("result", "onLegalDocResult")
+    screen.callFunc("StartLoading")
+    SwapScreen("legalDoc", screen)
+end sub
+
+sub onLegalDocResult(event as Object)
+    result = event.GetData()
+    if result.action = "back"
+        ShowLegal()
     end if
 end sub
 
@@ -191,6 +360,21 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         else
             EnfocarSidebar()
         end if
+        return true
+    end if
+
+    ' "Izquierda" enfoca el sidebar y "derecha" devuelve el foco al
+    ' contenido -- simetrico, sin necesidad de texto aclaratorio. Esto
+    ' solo llega aqui cuando el nodo enfocado ya no tiene a donde moverse
+    ' en esa direccion (ej. primera/ultima columna de la grilla, o ya
+    ' parado en el sidebar), asi que no compite con la navegacion normal.
+    if key = "left" and not m.sidebarFocused and m.sidebar.visible
+        EnfocarSidebar()
+        return true
+    end if
+
+    if key = "right" and m.sidebarFocused
+        EnfocarContenido()
         return true
     end if
 
@@ -211,6 +395,12 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
             return true
         else if m.currentScreenName = "player"
             ShowHome()
+            return true
+        else if m.currentScreenName = "favoritos" or m.currentScreenName = "topUsados" or m.currentScreenName = "evolucion" or m.currentScreenName = "perfil" or m.currentScreenName = "buscar" or m.currentScreenName = "legal"
+            ShowHome()
+            return true
+        else if m.currentScreenName = "legalDoc"
+            ShowLegal()
             return true
         end if
     end if

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Info de cuenta (correo, miembro desde) + resumen rapido de
+     progreso. Mismos datos que EvolucionScreen (/roku-perfil), esta
+     pantalla destaca identidad de cuenta en vez de metricas. -->
+<component name="PerfilScreen" extends="Group">
+    <interface>
+        <field id="authToken" type="string" />
+        <field id="result" type="assocarray" alwaysNotify="true" />
+        <function name="StartLoading" />
+        <function name="RestoreFocus" />
+    </interface>
+    <children>
+        <Rectangle color="#071226" width="1280" height="720" />
+        <Label text="PERFIL" translation="[300,40]" color="#FFD83D" />
+        <Label id="loadingLabel" translation="[300,110]" color="#F4F1E8" text="Cargando..." />
+
+        <Group id="contenido" translation="[300,110]" visible="false">
+            <Rectangle translation="[0,0]" width="700" height="180" color="#13213B" />
+            <Label id="emailValor" translation="[24,24]" width="650" color="#F4F1E8" text="" />
+            <Label id="miembroDesdeValor" translation="[24,64]" width="650" color="#B9C4D8" text="" />
+            <Label translation="[24,120]" width="650" wrap="true" color="#8A93A6" text="Cuenta de ManiGraB vinculada a este Roku." />
+
+            <Label translation="[0,210]" color="#B9C4D8" text="Resumen rápido" />
+            <Label id="resumenValor" translation="[0,246]" width="700" wrap="true" color="#F4F1E8" text="" />
+        </Group>
+
+        <ApiTask id="perfilTask" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/PerfilScreen.brs" />
+</component>

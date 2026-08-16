@@ -26,6 +26,18 @@ function ClearToken() as Void
     sec.Flush()
 end function
 
+' "2025-10-24T03:41:09+00:00" -> "24 de octubre de 2025" (PerfilScreen).
+function FormatearFechaCorta(iso as String) as String
+    if iso = invalid or iso = ""
+        return ""
+    end if
+    dt = CreateObject("roDateTime")
+    dt.FromISO8601String(iso)
+    meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    mes = meses[dt.GetMonth() - 1]
+    return dt.GetDayOfMonth().ToStr() + " de " + mes + " de " + dt.GetYear().ToStr()
+end function
+
 function ParseJsonSafe(jsonString as String) as Dynamic
     if jsonString = invalid or jsonString = ""
         return invalid

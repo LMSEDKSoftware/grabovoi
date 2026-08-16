@@ -2,20 +2,31 @@ sub init()
     m.grid = m.top.findNode("grid")
     m.grid.observeField("itemSelected", "onItemSelected")
     m.loadingLabel = m.top.findNode("loadingLabel")
+    m.countLabel = m.top.findNode("countLabel")
     m.grid.visible = false
 end sub
 
 function StartLoading() as Void
-    m.top.findNode("title").text = m.top.categoria
-
-    categoriaEscapada = UrlEncode(m.top.categoria)
-
+    m.countLabel.text = ""
     m.catalogTask = m.top.findNode("catalogTask")
     m.catalogTask.observeField("done", "onCatalogResponse")
     m.catalogTask.authToken = m.top.authToken
-    m.catalogTask.uri = ApiBase() + "/roku-catalog?categoria=" + categoriaEscapada + "&limit=100"
+
+    if m.top.endpointUri <> invalid and m.top.endpointUri <> ""
+        m.top.findNode("title").text = m.top.titulo
+        m.catalogTask.uri = m.top.endpointUri
+    else
+        m.top.findNode("title").text = m.top.categoria
+        categoriaEscapada = UrlEncode(m.top.categoria)
+        ' 1000 en vez de 100: categorias como "Salud" tienen 627
+        ' secuencias, el limite viejo dejaba fuera todo lo que pasara de
+        ' las primeras 100 (bug reportado). 1000 es tambien el tope real
+        ' de Supabase/PostgREST por consulta, no tiene sentido pedir mas.
+        m.catalogTask.uri = ApiBase() + "/roku-catalog?categoria=" + categoriaEscapada + "&limit=1000"
+    end if
+
     m.catalogTask.method = "GET"
-    print "SequenceListScreen StartLoading categoria="; m.top.categoria; " uri="; m.catalogTask.uri
+    print "SequenceListScreen StartLoading uri="; m.catalogTask.uri
     m.catalogTask.control = "RUN"
 end function
 
@@ -25,7 +36,7 @@ sub onCatalogResponse(event as Object)
     m.loadingLabel.visible = false
     if result.code <> 200
         m.loadingLabel.visible = true
-        m.loadingLabel.text = "No se pudo cargar la categoria."
+        m.loadingLabel.text = "No se pudo cargar. Presiona atras."
         return
     end if
 
@@ -55,9 +66,15 @@ sub onCatalogResponse(event as Object)
         m.sequenceIds.Push(seq.id)
     end for
 
+    m.countLabel.text = m.sequenceIds.Count().ToStr() + " secuencias"
+
     if m.sequenceIds.Count() = 0
         m.loadingLabel.visible = true
-        m.loadingLabel.text = "No hay secuencias en esta categoria."
+        if m.top.endpointUri <> invalid and m.top.endpointUri <> ""
+            m.loadingLabel.text = "Todavia no hay nada aqui."
+        else
+            m.loadingLabel.text = "No hay secuencias en esta categoria."
+        end if
         return
     end if
 
@@ -65,6 +82,10 @@ sub onCatalogResponse(event as Object)
     m.grid.visible = true
     m.grid.setFocus(true)
 end sub
+
+function RestoreFocus() as Void
+    m.grid.setFocus(true)
+end function
 
 sub onItemSelected()
     index = m.grid.itemSelected

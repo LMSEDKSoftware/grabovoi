@@ -19,8 +19,12 @@
         <Rectangle id="focusBorder" color="#FFD83D" visible="false" />
         <Rectangle id="background" color="#13213B" />
         <Poster id="image" loadDisplayMode="scaleToFill" visible="false" />
+        <!-- Codigo arriba a la izquierda, directo sobre la imagen (sin
+             scrim, pedido explicito). El recuadro de abajo queda solo
+             para el titulo, hasta 2 lineas; ver Layout()/RenderContent()
+             en el .brs. -->
         <Rectangle id="scrim" color="#071226" opacity="0.6" />
-        <Label id="titleLabel" color="#F4F1E8" wrap="true" />
+        <Label id="titleLabel" color="#F4F1E8" wrap="true" vertAlign="top" />
         <Label id="subtitleLabel" color="#B9C4D8" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/SequenceCard.brs" />

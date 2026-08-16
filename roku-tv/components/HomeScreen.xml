@@ -4,14 +4,43 @@
         <field id="authToken" type="string" />
         <field id="result" type="assocarray" alwaysNotify="true" />
         <function name="StartLoading" />
+        <function name="RestoreFocus" />
     </interface>
     <children>
         <Rectangle color="#071226" width="1280" height="720" />
 
-        <Label text="TUS SECUENCIAS" color="#F4F1E8" translation="[300,44]" width="700" height="40" />
-        <Label id="progressLabel" translation="[300,84]" color="#B9C4D8" text="" />
-        <MarkupGrid id="rows" translation="[300,150]" itemSize="[900,110]" itemSpacing="[0,14]"
-            numColumns="1" numRows="4" itemComponentName="SequenceRow" />
+        <!-- Titulo + frase del dia, calcado del "Portal Energetico" de la
+             app movil (lib/screens/home/home_screen.dart). La frase viene
+             de la tabla mensajes_diarios via /roku-home, mismo dia del
+             año que usa el celular, ver roku-home.js. -->
+        <Label id="title" text="Portal Energético" color="#FFD700" translation="[300,24]" width="760" height="44">
+            <Font size="36" />
+        </Label>
+        <!-- Arriba a la derecha, misma fila que el titulo; abajo se
+             pisaba con la tarjeta destacada de "secuencia diaria". -->
+        <Label id="progressLabel" translation="[300,32]" width="940" horizAlign="right" color="#8A93A6" text="" />
+        <Label id="fraseLabel" translation="[300,68]" width="760" height="46" wrap="true" color="#B9C4D8" text="" />
+
+        <!-- "Tu secuencia diaria": una sola tarjeta ancha, sin cambios de
+             diseño (pedido explicito). Grilla de 1x1 en vez de un nodo
+             suelto para reusar el mismo contrato de foco/seleccion que
+             ya tienen todas las demas listas de esta app. -->
+        <MarkupGrid id="heroGrid" translation="[300,140]" itemSize="[900,110]" itemSpacing="[0,0]"
+            numColumns="1" numRows="1" itemComponentName="SequenceRow" />
+
+        <!-- "Tus favoritas" / "Recientes": slider horizontal por fila,
+             estilo Netflix. Cada fila es su propia grilla de 1 renglon
+             (numRows=1); con mas items que numColumns, MarkupGrid se
+             desplaza hacia el lado solo, mismo componente que ya usan
+             Biblioteca/Buscar/Favoritos, sin depender de RowList. -->
+        <Label id="favoritasTitle" text="Tus favoritas" translation="[300,270]" color="#FFD700" />
+        <MarkupGrid id="favoritasGrid" translation="[300,300]" itemSize="[280,170]" itemSpacing="[24,0]"
+            numColumns="3" numRows="1" itemComponentName="SequenceCard" />
+
+        <Label id="recientesTitle" text="Recientes" translation="[300,490]" color="#FFD700" />
+        <MarkupGrid id="recientesGrid" translation="[300,520]" itemSize="[280,170]" itemSpacing="[24,0]"
+            numColumns="3" numRows="1" itemComponentName="SequenceCard" />
+
         <Label id="loadingLabel" translation="[300,150]" color="#F4F1E8" text="Cargando..." />
 
         <ApiTask id="homeTask" />

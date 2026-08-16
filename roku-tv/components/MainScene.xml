@@ -14,16 +14,25 @@
         <!-- Sidebar permanente. Se oculta solo en el login (sin cuenta
              vinculada todavia no hay nada que navegar). Home/Library
              navegan de verdad; el resto queda visible pero inerte hasta
-             que existan esas pantallas. Se enfoca con el boton Options,
-             ver onKeyEvent, y con eso se puede navegar sin depender de
-             que las flechas salgan del grid de contenido, que no es un
-             comportamiento garantizado. -->
+             que existan esas pantallas. Se enfoca con el boton Options o
+             con "izquierda" (cuando el contenido ya no tiene a donde
+             moverse mas a la izquierda), ver onKeyEvent. -->
         <Group id="sidebar" visible="false">
             <Rectangle color="#0C1830" width="270" height="720" />
-            <Label text="MANIGRAB TV" color="#FFD83D" translation="[30,40]" width="220" height="30" />
-            <LabelList id="sidebarList" translation="[20,110]" itemSize="[230,44]" itemSpacing="[0,2]"
+            <!-- Logo + "TV" en vez del texto "MANIGRAB TV" (pedido
+                 explicito). El logo trae su propio padding transparente
+                 centrado (ver roku-tv/images/manigrab_logo.png), asi que
+                 una caja chica con scaleToFit ya lo deja como un icono
+                 compacto sin recortarlo a mano. -->
+            <Poster id="sidebarLogo" translation="[30,32]" width="96" height="68" loadDisplayMode="scaleToFit" uri="pkg:/images/manigrab_logo.png" />
+            <Label text="TV" color="#FFD83D" translation="[134,50]" width="120" height="30" />
+            <!-- LabelList nativo, identico al commit 44cff0f: sin
+                 rectangulo propio, el foco lo dibuja Roku solo.
+                 "Informacion Legal" es el ultimo item, parte de la
+                 misma lista (pedido explicito: debe navegarse igual que
+                 el resto, sin color especial si eso rompe la seleccion). -->
+            <LabelList id="sidebarList" translation="[20,154]" itemSize="[230,44]" itemSpacing="[0,2]"
                 color="#B9C4D8" focusedColor="#0C1830" />
-            <Label text="* para navegar" color="#5A6B85" translation="[30,660]" width="220" height="26" />
         </Group>
 
         <ApiTask id="checkSessionTask" />

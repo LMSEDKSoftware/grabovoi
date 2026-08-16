@@ -16,6 +16,12 @@
     </interface>
     <children>
         <Rectangle id="focusBorder" color="#FFD83D" visible="false" />
+        <!-- Borde dorado permanente para la fila destacada (secuencia del
+             dia, itemContent.destacada=true), calcado del recuadro "Tu
+             secuencia diaria" de la app movil. Mismo truco que
+             focusBorder: rectangulo relleno detras, la tarjeta encima
+             deja ver solo el marco. -->
+        <Rectangle id="heroBorder" color="#FFD700" visible="false" />
         <Rectangle id="card" color="#13213B" />
         <!-- Color de categoria SOLO detras de la miniatura (relleno
              mientras no hay portada real), nunca en toda la tarjeta. -->
@@ -23,8 +29,14 @@
         <Poster id="poster" loadDisplayMode="scaleToFill" visible="false" />
         <Rectangle id="shade" color="#000000" opacity="0.35" visible="false" />
         <Label id="numberLabel" color="#FFD83D" horizAlign="center" visible="false" />
+        <Label id="kickerLabel" color="#FFD700" text="TU SECUENCIA DIARIA" visible="false" />
         <Label id="titleLabel" color="#F4F1E8" wrap="true" />
         <Label id="subtitleLabel" color="#B9C4D8" />
+        <!-- Recompensa "+5 cristales", calcada del chip dorado con
+             diamante de la app movil (sin icono: Roku no tiene emoji en
+             el Label del sistema, ver conversacion). -->
+        <Rectangle id="rewardBg" color="#FFD700" visible="false" />
+        <Label id="rewardLabel" color="#0B132B" horizAlign="center" text="+5 cristales" visible="false" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/SequenceRow.brs" />
 </component>

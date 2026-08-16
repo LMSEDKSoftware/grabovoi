@@ -41,6 +41,7 @@ Requiere SUPABASE_URL y SB_SERVICE_ROLE_KEY en .env (raiz del repo).
 """
 
 import argparse
+import getpass
 import json
 import os
 import re
@@ -80,21 +81,45 @@ DURACION_LOOP_S = 6
 RES_VIDEO = '840x510'
 
 
+_CAMPOS_CREDENCIALES = {
+    'SUPABASE_URL': ('URL de Supabase (https://xxxx.supabase.co)', False),
+    'SB_SERVICE_ROLE_KEY': ('Supabase service_role key', True),
+    'OPENAI_API_KEY': ('OpenAI API key (Enter para omitir si no hace falta)', True),
+}
+
+
 def cargar_env():
+    """Lee .env si existe; lo que falte de ahi se pregunta por consola
+    (con getpass para las claves, para que no queden en el historial de
+    la terminal) en vez de fallar. Nada se escribe a disco -- las
+    credenciales viven solo en la memoria de este proceso y desaparecen
+    cuando el programa termina (pedido explicito: correr esto en
+    maquinas de terceros sin dejar un .env suelto ahi)."""
     env = {}
     ruta = os.path.join(RAIZ, '.env')
-    if not os.path.isfile(ruta):
-        sys.exit(f'No encuentro {ruta}')
-    with open(ruta, encoding='utf-8') as f:
-        for linea in f:
-            linea = linea.strip()
-            if not linea or linea.startswith('#') or '=' not in linea:
-                continue
-            k, v = linea.split('=', 1)
-            env[k.strip()] = v.strip().strip('"').strip("'")
+    if os.path.isfile(ruta):
+        with open(ruta, encoding='utf-8') as f:
+            for linea in f:
+                linea = linea.strip()
+                if not linea or linea.startswith('#') or '=' not in linea:
+                    continue
+                k, v = linea.split('=', 1)
+                env[k.strip()] = v.strip().strip('"').strip("'")
+
+    for clave, (etiqueta, secreta) in _CAMPOS_CREDENCIALES.items():
+        if env.get(clave):
+            continue
+        if os.environ.get(clave):
+            env[clave] = os.environ[clave]
+            continue
+        pedir = getpass.getpass if secreta else input
+        valor = pedir(f'{etiqueta}: ').strip()
+        if valor:
+            env[clave] = valor
+
     for req in ('SUPABASE_URL', 'SB_SERVICE_ROLE_KEY'):
         if not env.get(req):
-            sys.exit(f'Falta {req} en .env')
+            sys.exit(f'Falta {req} (no vino de .env, variable de entorno, ni se ingreso por consola).')
     return env
 
 
@@ -163,9 +188,23 @@ def tam_codigo_segun_largo(texto):
 
 
 _fondo_base_cache = None
+_logo_portada_cache = None
+LOGO_PORTADA = os.path.join(RAIZ, 'roku-tv', 'images', 'manigrab_logo.png')
+ANCHO_LOGO_PORTADA = 160
 
 
-def generar_portada(sec, ruta_salida):
+def cargar_logo_portada():
+    global _logo_portada_cache
+    if _logo_portada_cache is None:
+        logo = Image.open(LOGO_PORTADA).convert('RGBA')
+        escala = ANCHO_LOGO_PORTADA / logo.width
+        _logo_portada_cache = logo.resize(
+            (ANCHO_LOGO_PORTADA, round(logo.height * escala)), Image.LANCZOS
+        )
+    return _logo_portada_cache
+
+
+def generar_portada(sec, ruta_salida, incluir_logo=True):
     global _fondo_base_cache
     if _fondo_base_cache is None:
         _fondo_base_cache = cargar_fondo_base()
@@ -173,40 +212,25 @@ def generar_portada(sec, ruta_salida):
     rgb_cat = hex_a_rgb(sec.get('color'))
     img = _fondo_base_cache.copy()
 
-    # Scrim negro parejo para que el texto sea legible sobre la foto,
+    # Scrim negro parejo para que el logo sea legible sobre la foto,
     # pedido explicitamente por el usuario (30% de opacidad).
     scrim = Image.new('RGB', (ANCHO_IMG, ALTO_IMG), (0, 0, 0))
     img = Image.blend(img, scrim, OPACIDAD_SCRIM)
 
-    draw = ImageDraw.Draw(img)
-
     # Barra de acento del color de categoria, borde izquierdo.
+    draw = ImageDraw.Draw(img)
     draw.rectangle([0, 0, 10, ALTO_IMG], fill=rgb_cat)
 
-    # Marca, arriba a la izquierda.
-    f_marca = fuente(22)
-    draw.text((36, 28), 'MANIGRAB', font=f_marca, fill=(255, 215, 0, 180))
-
-    # Categoria, como etiqueta pequena.
-    f_cat = fuente(24)
-    draw.text((36, 66), (sec.get('categoria') or '').upper(), font=f_cat, fill=rgb_cat)
-
-    # Codigo, grande, con stroke para simular negrita (no hay variante
-    # bold de Noto Sans empaquetada en assets/fonts).
-    texto_codigo = codigo_visual(sec['codigo'])
-    f_codigo = fuente(tam_codigo_segun_largo(texto_codigo))
-    draw.text(
-        (36, 190), texto_codigo, font=f_codigo, fill=(255, 255, 255),
-        stroke_width=2, stroke_fill=(255, 255, 255),
-    )
-
-    # Nombre de la secuencia, envuelto a 2 lineas si hace falta.
-    f_nombre = fuente(32)
-    lineas = textwrap.wrap(sec['nombre'], width=28)[:2]
-    y = ALTO_IMG - 40 - 40 * len(lineas)
-    for linea in lineas:
-        draw.text((36, y), linea, font=f_nombre, fill=(230, 230, 230))
-        y += 40
+    # Ni el codigo ni el nombre van horneados aqui -- pedido explicito:
+    # SequenceCard.brs en Roku ya dibuja titulo y codigo como texto
+    # encima de esta imagen (ver title/subtitle en SequenceCard.xml), asi
+    # que iban duplicados. incluir_logo=False para las imagenes de
+    # categoria (una sola imagen se repite en todas las secuencias de esa
+    # categoria en la grilla -- el logo repetido en cada tarjeta se veia
+    # muy repetitivo, pedido explicito del usuario de sacarlo de ahi).
+    if incluir_logo:
+        logo = cargar_logo_portada()
+        img.paste(logo, (36, 28), logo)
 
     img.save(ruta_salida, quality=92)
 

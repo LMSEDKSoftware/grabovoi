@@ -22,23 +22,107 @@
         <!-- Sin scrim: pedido explicito, nunca se hace visible (queda
              declarado por si hace falta mas adelante). -->
         <Rectangle id="scrimJugador" translation="[0,0]" width="1280" height="720" color="#071226" opacity="0.55" visible="false" />
-        <Label id="nombreLabel" translation="[0,60]" width="1280" horizAlign="center" color="#FFD83D" text="" />
-        <!-- El scale va en el GRUPO contenedor, NO en el Label. Asi
-             boundingRect() del Label (adentro, sin escalar) mide en
-             espacio local sin ambiguedad, y el centrado se calcula una
-             sola vez sobre esa medida confiable, ver CentrarCodigo en
-             el .brs. -->
-        <Group id="codigoGrupo" translation="[0,150]" scale="[4.0,4.0]">
+        <!-- Mismo patron que codigoGrupo: el scale va en el GRUPO, no en
+             el Label, para que boundingRect() mida sin escalar y el
+             centrado (CentrarNombre en el .brs) sea exacto. Titulo a 2x
+             pedido explicito. -->
+        <Group id="nombreGrupo" translation="[0,50]" scale="[2.0,2.0]">
+            <Label id="nombreLabel" color="#FFD83D" text="" />
+        </Group>
+        <!-- Oculto por default: el codigo ahora viene horneado en el
+             video narrado (scripts/generar_video_narrado.py). Este
+             overlay solo se muestra como respaldo cuando no hay video
+             narrado y se cae al modo digito-por-digito, ver
+             IniciarModoDigitoPorDigito en el .brs. -->
+        <Group id="codigoGrupo" translation="[0,180]" scale="[4.0,4.0]" visible="false">
             <Label id="codigoLabel" color="#FFFFFF" text="" />
         </Group>
         <Label id="estadoLabel" translation="[80,600]" color="#F4F1E8" text="Cargando..." />
         <!-- Placeholder de marca, abajo a la derecha, texto por ahora,
              se puede cambiar por el logo real despues. -->
-        <Label id="logoLabel" translation="[900,670]" width="360" horizAlign="right" color="#FFD83D" text="ManiGraB" />
+        <!-- Logo real de la marca, pequeño y centrado abajo (pedido
+             explicito, reemplaza el texto "ManiGraB" que iba a la
+             derecha). El PNG trae su propio padding transparente ya
+             centrado, por eso scaleToFit en una caja cuadrada funciona
+             sin recortar nada a mano. -->
+        <!-- Mismo archivo que el logo del sidebar (MainScene.xml), pero
+             una caja mas chica: manigrab_logo.png se recorto sin el
+             relleno transparente que tenia antes para que el sidebar se
+             viera bien, y esa misma caja de 140x140 ahora hubiera
+             horneado el logo mucho mas grande de lo que se veia en el
+             video originalmente. Esta caja compensa eso para que el
+             watermark del video conserve su tamaño chico de siempre:
+             son dos instancias independientes del mismo logo, cada una
+             con su propio tamaño. -->
+        <Poster id="logoPoster" translation="[605,610]" width="70" height="50" loadDisplayMode="scaleToFit" opacity="0.4" uri="pkg:/images/manigrab_logo.png" />
         <Audio id="audio" />
         <Timer id="gapTimer" repeat="false" />
         <ApiTask id="sequenceTask" />
         <ApiTask id="completeTask" />
+
+        <!-- Pantalla de "Secuencia Activada" al terminar, calcada del
+             SequenciaActivadaModal de la app (mismos textos): titulo +
+             mensaje + cristales ganados + tip de "mantener la vibracion"
+             + hasta 2 secuencias sincronicas sugeridas + volver al menu.
+             Empieza oculta; ver MostrarCompletion en el .brs. -->
+        <Group id="completionGrupo" visible="false">
+            <Rectangle id="completionScrim" translation="[0,0]" width="1280" height="720" color="#071226" opacity="0.9" />
+            <Label id="completionTitulo" translation="[0,50]" width="1280" horizAlign="center" color="#FFD700" text="SECUENCIA ACTIVADA" />
+            <Label id="completionSubtitulo" translation="[190,110]" width="900" wrap="true" horizAlign="center" color="#CCD3E0" text="" />
+            <Label id="completionCristales" translation="[190,190]" width="900" wrap="true" horizAlign="center" color="#FFD700" text="" />
+            <!-- Caja de "mantener la vibracion": rectangulo con borde
+                 simulado (uno dorado detras, uno oscuro encima, inset 2px)
+                 porque Rectangle de Roku no tiene stroke propio. -->
+            <Rectangle id="tipBorde" translation="[190,250]" width="900" height="140" color="#FFD700" opacity="0.4" />
+            <Rectangle id="tipFondo" translation="[192,252]" width="896" height="136" color="#1C2541" />
+            <Label id="tipTitulo" translation="[220,268]" width="840" horizAlign="center" color="#FFD700" text="Es importante mantener la vibración" />
+            <Label id="tipCuerpo" translation="[220,304]" width="840" wrap="true" horizAlign="center" color="#CCD3E0" text="Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética." />
+            <Label id="completionCombinar" translation="[190,410]" width="900" wrap="true" horizAlign="center" color="#F4F1E8" text="Combínalo con las siguientes secuencias para amplificar la resonancia" />
+
+            <!-- Sugerencia 1 -->
+            <Group id="sugerencia1Grupo" translation="[190,480]">
+                <Rectangle id="sugerencia1Borde" width="430" height="110" color="#FFD700" opacity="0" />
+                <Rectangle id="sugerencia1Fondo" translation="[2,2]" width="426" height="106" color="#13213B" />
+                <Label id="sugerencia1Codigo" translation="[24,18]" width="382" color="#FFD700" text="" />
+                <Label id="sugerencia1Nombre" translation="[24,50]" width="382" wrap="true" color="#F4F1E8" text="" />
+                <Label id="sugerencia1Categoria" translation="[24,82]" width="382" color="#8A93A6" text="" />
+            </Group>
+
+            <!-- Sugerencia 2 -->
+            <Group id="sugerencia2Grupo" translation="[660,480]">
+                <Rectangle id="sugerencia2Borde" width="430" height="110" color="#FFD700" opacity="0" />
+                <Rectangle id="sugerencia2Fondo" translation="[2,2]" width="426" height="106" color="#13213B" />
+                <Label id="sugerencia2Codigo" translation="[24,18]" width="382" color="#FFD700" text="" />
+                <Label id="sugerencia2Nombre" translation="[24,50]" width="382" wrap="true" color="#F4F1E8" text="" />
+                <Label id="sugerencia2Categoria" translation="[24,82]" width="382" color="#8A93A6" text="" />
+            </Group>
+
+            <!-- Volver al menu principal -->
+            <Group id="volverMenuGrupo" translation="[440,620]">
+                <Rectangle id="volverMenuBorde" width="400" height="70" color="#FFD700" opacity="0" />
+                <Rectangle id="volverMenuFondo" translation="[2,2]" width="396" height="66" color="#13213B" />
+                <Label id="volverMenuLabel" translation="[0,22]" width="400" horizAlign="center" color="#F4F1E8" text="Volver al menú principal" />
+            </Group>
+        </Group>
+
+        <!-- Aviso "Nota Importante": deslinde de responsabilidad medica,
+             calcado del modal de la app movil (mismo texto). Se muestra
+             ANTES de cargar/reproducir cada secuencia; hay que presionar
+             OK en "Entendido" para continuar (no cualquier tecla, es un
+             reconocimiento explicito). Empieza oculto, ver StartLoading
+             y MostrarDisclaimer en el .brs. -->
+        <Group id="disclaimerGrupo" visible="false">
+            <Rectangle id="disclaimerScrim" translation="[0,0]" width="1280" height="720" color="#071226" opacity="0.9" />
+            <Rectangle id="disclaimerBorde" translation="[220,190]" width="840" height="340" color="#FFD700" />
+            <Rectangle id="disclaimerFondo" translation="[222,192]" width="836" height="336" color="#1C2541" />
+            <Label id="disclaimerTitulo" text="Nota Importante" translation="[220,224]" width="840" horizAlign="center" color="#FFD700">
+                <Font size="28" />
+            </Label>
+            <Label id="disclaimerCuerpo" translation="[260,272]" width="760" wrap="true" horizAlign="center" color="#CCD3E0"
+                text="Las secuencias numéricas gravitacionales NO sustituyen la atención médica profesional. Siempre consulta con profesionales de la salud para cualquier condición médica. Estas secuencias son herramientas complementarias de bienestar." />
+            <Rectangle id="disclaimerBotonFondo" translation="[440,450]" width="400" height="64" color="#FFD700" />
+            <Label id="disclaimerBotonLabel" text="Entendido (OK)" translation="[440,472]" width="400" horizAlign="center" color="#0C1830" />
+        </Group>
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
     <script type="text/brightscript" uri="pkg:/components/PlayerScreen.brs" />

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Visor de un documento legal (Privacidad / Terminos / Almacenamiento).
+     El texto es mas largo que una pantalla, asi que se desplaza: arriba/
+     abajo mueven el grupo "scrollGroup" hacia arriba (contenido) dentro
+     del area visible, ver LegalDocScreen.brs. -->
+<component name="LegalDocScreen" extends="Group">
+    <interface>
+        <field id="docId" type="string" />
+        <field id="result" type="assocarray" alwaysNotify="true" />
+        <function name="StartLoading" />
+        <function name="RestoreFocus" />
+    </interface>
+    <children>
+        <Rectangle color="#071226" width="1280" height="720" />
+        <Label id="title" color="#FFD700" translation="[300,24]" width="900" height="36">
+            <Font size="28" />
+        </Label>
+        <Label id="subtitle" color="#B9C4D8" translation="[300,58]" width="900" text="" />
+        <Label text="Usa arriba / abajo para desplazarte, atrás para volver" color="#5A6B85" translation="[300,684]" />
+
+        <Group id="scrollGroup" translation="[300,96]">
+            <Label id="body" width="900" wrap="true" color="#F4F1E8" text="" />
+        </Group>
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/LegalDocScreen.brs" />
+</component>

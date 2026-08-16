@@ -2,6 +2,7 @@ sub init()
     m.grid = m.top.findNode("grid")
     m.grid.observeField("itemSelected", "onItemSelected")
     m.loadingLabel = m.top.findNode("loadingLabel")
+    m.countLabel = m.top.findNode("countLabel")
     m.grid.visible = false
 
     m.catalogTask = m.top.findNode("catalogTask")
@@ -44,16 +45,23 @@ sub onCatalogResponse(event as Object)
         node.AddFields({
             title: cat.nombre,
             subtitle: cat.total.ToStr() + " secuencias",
+            subtitleAbajo: true,
             color: cat.color,
             imageUrl: imagen
         })
         m.categoryNames.Push(cat.nombre)
     end for
 
+    m.countLabel.text = data.categorias.Count().ToStr() + " categorias"
+
     m.grid.content = root
     m.grid.visible = true
     m.grid.setFocus(true)
 end sub
+
+function RestoreFocus() as Void
+    m.grid.setFocus(true)
+end function
 
 sub onItemSelected()
     index = m.grid.itemSelected

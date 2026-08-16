@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Busqueda por palabra sobre codigos_grabovoi (nombre/descripcion/
+     codigo, mismos 3 campos que ya busca la app). Usa el teclado nativo
+     de Roku (KeyboardDialog, mismo patron que LoginScreen) para pedir el
+     termino, y la misma grilla/SequenceCard que Biblioteca cuantica para
+     mostrar resultados. -->
+<component name="SearchScreen" extends="Group">
+    <interface>
+        <field id="authToken" type="string" />
+        <field id="result" type="assocarray" alwaysNotify="true" />
+        <function name="StartLoading" />
+        <function name="RestoreFocus" />
+    </interface>
+    <children>
+        <Rectangle color="#071226" width="1280" height="720" />
+        <Label id="title" translation="[300,40]" color="#FFD83D" text="BUSCAR" />
+        <Label id="countLabel" translation="[300,40]" width="940" horizAlign="right" color="#B9C4D8" text="" />
+        <Label id="estadoLabel" translation="[300,110]" color="#F4F1E8" text="" />
+        <MarkupGrid id="grid" translation="[300,150]" itemSize="[280,170]" itemSpacing="[24,24]"
+            numColumns="3" numRows="3" itemComponentName="SequenceCard" />
+        <ApiTask id="catalogTask" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/SearchScreen.brs" />
+</component>
