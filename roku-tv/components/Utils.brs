@@ -26,6 +26,33 @@ function ClearToken() as Void
     sec.Flush()
 end function
 
+' Identificador estable de este aparato para este canal, usado en la
+' vinculación por QR: se manda al pedir el código y al consultarlo, para
+' que un número adivinado no sirva desde otra televisión.
+'
+' Lo ideal es GetChannelClientId (lo da Roku y no cambia). El respaldo en
+' el registro existe solo por si roDeviceInfo no estuviera disponible: lo
+' único que importa es que el valor no cambie entre pedir el código y
+' reclamarlo.
+function DeviceId() as String
+    info = CreateObject("roDeviceInfo")
+    if info <> invalid
+        id = info.GetChannelClientId()
+        if id <> invalid and id <> "" then return id
+    end if
+
+    sec = CreateObject("roRegistrySection", "ManiGraBTV")
+    if sec.Exists("device_id")
+        guardado = sec.Read("device_id")
+        if guardado <> invalid and guardado <> "" then return guardado
+    end if
+
+    generado = "tv-" + CreateObject("roDateTime").AsSeconds().ToStr() + "-" + Rnd(999999).ToStr()
+    sec.Write("device_id", generado)
+    sec.Flush()
+    return generado
+end function
+
 ' "2025-10-24T03:41:09+00:00" -> "24 de octubre de 2025" (PerfilScreen).
 function FormatearFechaCorta(iso as String) as String
     if iso = invalid or iso = ""

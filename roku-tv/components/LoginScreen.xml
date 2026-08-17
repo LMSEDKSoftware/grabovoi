@@ -4,13 +4,61 @@
         <field id="result" type="assocarray" alwaysNotify="true" />
     </interface>
     <children>
-        <Rectangle color="#071226" width="1280" height="720" />
-        <Label id="title" text="ManiGraB TV" translation="[80,60]" color="#FFD83D" />
-        <Label id="subtitle" text="Inicia sesion con tu cuenta de ManiGraB" translation="[80,110]" color="#F4F1E8" />
-        <LabelList id="menu" translation="[80,180]" itemSize="[600,60]" itemSpacing="[0,4]"
-            color="#B9C4D8" focusedColor="#071226" />
-        <Label id="errorLabel" translation="[80,420]" color="#FF7777" text="" />
+        <!-- Fondo a pantalla completa. login_bg.jpg es provisional (se
+             genera desde PIL, es solo un degradado); la versión final la
+             entrega el diseño. Debe ser 1280x720 porque el manifest
+             declara ui_resolutions=hd. -->
+        <Poster id="fondo" width="1280" height="720" loadDisplayMode="scaleToFill" uri="pkg:/images/login_bg.jpg" />
+        <!-- Velo oscuro encima: garantiza que el texto se lea sin
+             importar qué tan clara sea la imagen que se ponga después. -->
+        <Rectangle id="velo" color="#071226" opacity="0.55" width="1280" height="720" />
+
+        <!-- Modo por defecto: vinculación con QR. -->
+        <Group id="grupoQr">
+            <Poster id="logo" translation="[72,40]" width="150" height="104" loadDisplayMode="scaleToFit" uri="pkg:/images/manigrab_logo.png" />
+            <Label id="lema" text="Secuencias Grabovoi" translation="[74,146]" width="320" color="#B9C4D8" />
+
+            <Label id="paso1" text="1. Escanea este código QR para iniciar sesión" translation="[72,212]" width="300" height="72" wrap="true" color="#F4F1E8" />
+            <Poster id="qr" translation="[72,296]" width="250" height="250" />
+            <Label id="urlLabel" text="" translation="[72,562]" width="340" height="60" wrap="true" color="#FFD83D" />
+
+            <Label id="paso2" text="2. Luego, ingresa este número cuando te lo pidan" translation="[430,212]" width="420" height="72" wrap="true" color="#F4F1E8" />
+            <!-- font como atributo directo del Label, y el tamaño real se
+                 fija desde LoginScreen.brs con m.codigoValor.font.size.
+                 Un nodo Font anidado no escala de forma confiable; ya se
+                 peleó esa batalla en EvolucionScreen. -->
+            <Label id="codigoValor" text="------" translation="[430,282]" width="420" height="120" vertAlign="center" color="#FFD83D" font="font:LargeBoldSystemFont" />
+            <!-- LabelList de un solo elemento en vez de Button: así el
+                 recuadro de foco se ve idéntico al del resto del canal. -->
+            <LabelList id="regenerar" translation="[430,416]" itemSize="[300,52]" itemSpacing="[0,4]"
+                color="#B9C4D8" focusedColor="#071226" />
+            <Label id="estado" text="" translation="[430,486]" width="430" height="96" wrap="true" color="#B9C4D8" />
+
+            <Rectangle id="panelDerecho" translation="[900,0]" width="380" height="720" color="#0C1830" opacity="0.94" />
+            <Label id="opcionesTitulo" text="OPCIONES ALTERNATIVAS DE INICIO DE SESIÓN" translation="[930,150]" width="320" height="80" wrap="true" horizAlign="center" color="#F4F1E8" />
+            <Label id="opcionesAyuda" text="Sin teléfono a la mano: escribe tu correo y contraseña con el control remoto." translation="[930,246]" width="320" height="96" wrap="true" horizAlign="center" color="#B9C4D8" />
+            <LabelList id="opciones" translation="[930,360]" itemSize="[320,56]" itemSpacing="[0,10]"
+                color="#B9C4D8" focusedColor="#0C1830" />
+        </Group>
+
+        <!-- Modo alterno: el login on-device de siempre. No se quita ni se
+             esconde detrás del QR por gusto; Roku exige que el canal
+             permita entrar sin salir del televisor. -->
+        <Group id="grupoPassword" visible="false">
+            <Label id="tituloPass" text="Inicia sesión con tu cuenta de ManiGraB" translation="[80,60]" width="700" color="#FFD83D" />
+            <Label id="ayudaPass" text="Usa el teclado en pantalla. Presiona Atrás para volver al código QR." translation="[80,108]" width="700" color="#B9C4D8" />
+            <LabelList id="menu" translation="[80,190]" itemSize="[600,60]" itemSpacing="[0,4]"
+                color="#B9C4D8" focusedColor="#071226" />
+            <Label id="errorLabel" translation="[80,430]" width="700" height="72" wrap="true" color="#FF7777" text="" />
+        </Group>
+
+        <!-- Un Task por trámite: pedir código, consultar, y el login con
+             contraseña. Compartir uno solo obligaría a desambiguar quién
+             contestó dentro del mismo observador. -->
+        <ApiTask id="codeTask" />
+        <ApiTask id="pollTask" />
         <ApiTask id="loginTask" />
+        <Timer id="pollTimer" duration="5" repeat="true" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
     <script type="text/brightscript" uri="pkg:/components/LoginScreen.brs" />
