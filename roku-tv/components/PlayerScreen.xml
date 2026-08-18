@@ -84,6 +84,14 @@
              que querias oir las instrucciones, y dejarlo encima de la
              esfera todo el intro estorba. -->
         <Timer id="saltarTimer" duration="1" repeat="true" />
+        <!-- MainScene llama a StartLoading ANTES de meter la pantalla en
+             el arbol (ver ShowPlayer y SwapScreen). Cuando el aviso de
+             salud bloqueaba, ahi solo se ponia visible=true, que es
+             inofensivo en un nodo suelto. Ahora que el aviso se acepta
+             una sola vez habria que arrancar la reproduccion desde esa
+             pantalla todavia sin adjuntar, asi que se deja para el
+             siguiente ciclo. -->
+        <Timer id="arranqueTimer" duration="0.4" repeat="false" />
 
         <Audio id="audio" />
         <Timer id="gapTimer" repeat="false" />

@@ -25,6 +25,9 @@ sub init()
     m.saltarRestante = 0
     m.saltarTimer = m.top.findNode("saltarTimer")
     m.saltarTimer.observeField("fire", "onSaltarTimerFire")
+    m.saltarArmado = false
+    m.arranqueTimer = m.top.findNode("arranqueTimer")
+    m.arranqueTimer.observeField("fire", "onArranqueTimerFire")
     ' Una sola oportunidad por secuencia: una vez que se tomo o se dejo
     ' pasar, el boton no vuelve (si no, un rebuffeo a media cortinilla lo
     ' resucitaria a la mitad de las instrucciones).
@@ -86,12 +89,21 @@ function StartLoading() as Void
     ' hay que despachar en cada secuencia deja de leerse. Queda siempre
     ' disponible en Informacion Legal.
     if DisclaimerAceptado()
-        EmpezarSecuencia()
+        ' No se arranca aqui mismo: esta funcion corre antes de que
+        ' MainScene adjunte la pantalla, y ademas el OK con el que se
+        ' abrio la secuencia en la lista todavia anda en el aire. Si se
+        ' empieza de inmediato, ese OK cae sobre el boton de saltar en
+        ' cuanto aparece y se brinca la cortinilla sola.
+        m.arranqueTimer.control = "start"
         return
     end if
     m.disclaimerGrupo.visible = true
     m.top.setFocus(true)
 end function
+
+sub onArranqueTimerFire()
+    EmpezarSecuencia()
+end sub
 
 sub EmpezarSecuencia()
     m.disclaimerGrupo.visible = false
@@ -255,6 +267,11 @@ sub MostrarSaltar()
     m.saltarRestante = 5
     SaltarTexto()
     m.saltarGrupo.visible = true
+    ' Armado en falso el primer segundo: el boton aparece justo cuando el
+    ' OK que abrio la secuencia todavia puede llegar, y sin esto la
+    ' cortinilla se saltaba sola. Se ve la cuenta regresiva desde el
+    ' principio, pero no responde hasta que baja a 4.
+    m.saltarArmado = false
     m.saltarTimer.control = "start"
 end sub
 
@@ -274,6 +291,9 @@ end sub
 ' El temporizador late cada segundo: cada latido baja la cuenta, y al
 ' llegar a cero el boton se retira.
 sub onSaltarTimerFire()
+    ' Al primer latido ya paso un segundo desde que aparecio: cualquier
+    ' OK heredado de la pantalla anterior ya se consumio.
+    m.saltarArmado = true
     m.saltarRestante = m.saltarRestante - 1
     if m.saltarRestante <= 0
         OcultarSaltar()
@@ -292,6 +312,10 @@ sub onBgVideoPosition(event as Object)
 end sub
 
 sub SaltarIntro()
+    ' Solo se salta sobre un video que ya esta corriendo. Un seek durante
+    ' el buffering inicial no cae donde debe: el reproductor se queda a
+    ' medias y la secuencia arranca sin sus numeros.
+    if m.bgVideo.state <> "playing" then return
     OcultarSaltar()
     m.bgVideo.seek = DuracionIntro()
 end sub
@@ -530,7 +554,9 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     ' Saltar la cortinilla de instrucciones. Solo se traga el OK: "atras"
     ' y lo demas siguen su camino normal (salir del reproductor).
     if m.saltarGrupo <> invalid and m.saltarGrupo.visible and key = "OK"
-        SaltarIntro()
+        ' Si todavia no esta armado se traga el OK sin hacer nada: es el
+        ' que venia de la pantalla anterior, no una peticion de saltar.
+        if m.saltarArmado then SaltarIntro()
         return true
     end if
 
