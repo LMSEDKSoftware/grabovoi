@@ -430,10 +430,37 @@ class ChallengeService extends ChangeNotifier {
     //   throw Exception('Debes iniciar sesión para participar en desafíos.');
     // }
 
-    // Verificar si ya hay un desafío activo
-    final activeChallenge = _getActiveChallenge();
-    if (activeChallenge != null) {
-      throw Exception('Ya tienes un desafío activo: "${activeChallenge.title}". Debes completarlo antes de iniciar uno nuevo.');
+    // _getActiveChallenge() solo mira _userChallenges, un mapa en memoria
+    // que puede estar desactualizado (p. ej. justo al encadenar
+    // automáticamente el siguiente desafío en _iniciarSiguienteDesafioEnCadena,
+    // o si esta instancia del servicio no recargó todavía). Confiar solo en
+    // eso dejaba insertar una fila "enProgreso" duplicada en Supabase para
+    // el mismo challenge_id -- sin restricción única en la tabla, nada lo
+    // frenaba del lado del servidor, y el cron de recordatorios mandaba un
+    // aviso por cada fila. Por eso aquí se vuelve a preguntar a Supabase
+    // directo, la fuente de verdad, antes de insertar.
+    if (_authService.isLoggedIn) {
+      // .limit(1) + lista en vez de .maybeSingle(): si ya existieran dos
+      // filas "enProgreso" duplicadas (el estado roto que este cambio
+      // previene hacia adelante), .maybeSingle() reventaría con un error
+      // de "multiple rows" en vez de simplemente frenar el nuevo insert.
+      final activosEnServidor = await _supabase
+          .from('user_challenges')
+          .select('challenge_id')
+          .eq('user_id', _authService.currentUser!.id)
+          .eq('status', 'enProgreso')
+          .limit(1);
+      if ((activosEnServidor as List).isNotEmpty) {
+        final activeId = activosEnServidor.first['challenge_id'] as String;
+        if (activeId == challengeId) return; // ya está activo este mismo, no es un error
+        final activeTitle = getChallenge(activeId)?.title ?? activeId;
+        throw Exception('Ya tienes un desafío activo: "$activeTitle". Debes completarlo antes de iniciar uno nuevo.');
+      }
+    } else {
+      final activeChallenge = _getActiveChallenge();
+      if (activeChallenge != null) {
+        throw Exception('Ya tienes un desafío activo: "${activeChallenge.title}". Debes completarlo antes de iniciar uno nuevo.');
+      }
     }
 
     final challenge = _availableChallenges.firstWhere(
