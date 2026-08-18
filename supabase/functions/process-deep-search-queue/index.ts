@@ -7,7 +7,63 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const CATEGORY_FOR_IMPORTED_CODES = "Redes sociales";
+// "Redes sociales" no era una categoría: fue un error de implementación
+// que acabó siendo la etiqueta de todo lo importado. "Otros" sí existe en
+// el catálogo y dice la verdad: llegó por importación y falta
+// clasificarlo bien.
+const CATEGORY_FOR_IMPORTED_CODES = "Otros";
+
+// Un título es aprovechable si de verdad dice qué es la secuencia. Los
+// genéricos que se usaban como relleno ("Secuencia", "Código") no
+// distinguen nada: 1128 filas llamadas igual no son un catálogo.
+function tituloAprovechable(titulo: string): boolean {
+  const t = (titulo || "").trim();
+  if (t.length < 3) return false;
+  if (!/[a-záéíóúüñ]/i.test(t)) return false;
+  const generico = t.toLowerCase().replace(/[.\s]+$/, "");
+  return !["secuencia", "codigo", "código", "secuencia importada", "sin nombre"]
+    .includes(generico);
+}
+
+// Un hallazgo entra al catálogo solo si se puede justificar: título real
+// y fuente comprobable. Lo demás va a cuarentena, no se tira.
+function esImportable(item: { nombre?: string; fuente_url?: string }): boolean {
+  return tituloAprovechable(String(item.nombre ?? "")) &&
+    String(item.fuente_url ?? "").trim().length > 0;
+}
+
+// '519_714_812' y '519714812' son el mismo código escrito distinto. El
+// upsert por "codigo" no los ve iguales, y por eso convivían 30
+// duplicados. La base ya lo impide con un índice único sobre el código
+// normalizado; esto evita además que el upsert reviente al chocar.
+async function codigosYaExistentes(
+  supabase: ReturnType<typeof createClient>,
+  codigos: string[],
+): Promise<Set<string>> {
+  const existentes = new Set<string>();
+  if (!codigos.length) return existentes;
+  const { data } = await supabase.from("codigos_grabovoi").select("codigo");
+  for (const fila of (data ?? []) as any[]) {
+    existentes.add(String(fila.codigo).replaceAll("_", ""));
+  }
+  return existentes;
+}
+
+async function aCuarentena(
+  supabase: ReturnType<typeof createClient>,
+  filas: Array<{
+    codigo: string;
+    nombre_detectado?: string | null;
+    fuente_url: string;
+    fuente_titulo?: string | null;
+    contexto?: string | null;
+  }>,
+): Promise<void> {
+  if (!filas.length) return;
+  await supabase
+    .from("codigos_pendientes")
+    .upsert(filas, { onConflict: "codigo,fuente_url", ignoreDuplicates: true });
+}
 const DEFAULT_COLOR = "#FFD700";
 
 type SourceRow = {
@@ -898,18 +954,44 @@ async function discoveryControlled(params: {
       // para resolver el request. Esto alimenta el catálogo sin asociarlos al query del usuario.
       const now = nowIso();
       if (gainItems.length) {
-        const gainInserts = gainItems.map((it) => ({
-          codigo: it.codigo,
-          nombre: it.titulo,
-          descripcion: it.descripcion, // sin keyword
-          categoria: CATEGORY_FOR_IMPORTED_CODES,
-          color: DEFAULT_COLOR,
-          fuente_url: it.fuente_url || null,
-          fuente_titulo: it.fuente_titulo || null,
-          fuente_extracto: it.fuente_extracto || null,
-          created_at: now,
-          updated_at: now,
-        }));
+        // Solo pasan los que se pueden justificar: título real y fuente.
+        // Los demás van a cuarentena en vez de colarse como "Secuencia".
+        const aprovechables = gainItems.filter((it) =>
+          esImportable({ nombre: it.titulo, fuente_url: it.fuente_url })
+        );
+        const descartados = gainItems.filter((it) =>
+          !esImportable({ nombre: it.titulo, fuente_url: it.fuente_url })
+        );
+
+        await aCuarentena(
+          supabase,
+          descartados.map((it) => ({
+            codigo: it.codigo,
+            nombre_detectado: it.titulo || null,
+            fuente_url: it.fuente_url || "(sin fuente)",
+            fuente_titulo: it.fuente_titulo || null,
+            contexto: it.fuente_extracto || null,
+          })),
+        );
+
+        const yaExisten = await codigosYaExistentes(
+          supabase,
+          aprovechables.map((it) => it.codigo),
+        );
+        const gainInserts = aprovechables
+          .filter((it) => !yaExisten.has(it.codigo.replaceAll("_", "")))
+          .map((it) => ({
+            codigo: it.codigo,
+            nombre: it.titulo,
+            descripcion: it.descripcion, // sin keyword
+            categoria: CATEGORY_FOR_IMPORTED_CODES,
+            color: DEFAULT_COLOR,
+            fuente_url: it.fuente_url || null,
+            fuente_titulo: it.fuente_titulo || null,
+            fuente_extracto: it.fuente_extracto || null,
+            created_at: now,
+            updated_at: now,
+          }));
         await supabase
           .from("codigos_grabovoi")
           .upsert(gainInserts, { onConflict: "codigo", ignoreDuplicates: true });
@@ -931,18 +1013,23 @@ async function discoveryControlled(params: {
 
       if (codeList.length) {
         const itemsForRequest: any[] = [];
-        const inserts = codeList.map((codigo) => {
+        const candidatos = codeList.map((codigo) => {
           const it = codes.get(codigo)?.item;
-          const titulo = String(it?.titulo ?? "").trim() || "Secuencia";
+          // Ya no se rellena con "Secuencia": si no hay título, el
+          // hallazgo no está listo para el catálogo y se queda vacío
+          // para que el filtro de abajo lo mande a cuarentena.
+          const titulo = String(it?.titulo ?? "").trim();
           const descripcion = String(it?.descripcion ?? "").trim() ||
-            `Apoyo para ${titulo.toLowerCase()}. Para ${keywordForExtraction.toLowerCase()}.`;
+            (titulo ? `Apoyo para ${titulo.toLowerCase()}. Para ${keywordForExtraction.toLowerCase()}.` : "");
           const fuenteUrl = String(it?.fuente_url ?? "").trim();
           const fuenteTitulo = String(it?.fuente_titulo ?? "").trim();
           const fuenteExtracto = String(it?.fuente_extracto ?? "").trim();
 
+          // El usuario que buscó igual ve todos los resultados; el filtro
+          // solo decide qué se queda guardado para siempre.
           itemsForRequest.push({
             codigo,
-            nombre: titulo,
+            nombre: titulo || codigo,
             descripcion,
             fuente_url: fuenteUrl,
             fuente_titulo: fuenteTitulo,
@@ -962,6 +1049,25 @@ async function discoveryControlled(params: {
             updated_at: now,
           };
         });
+
+        await aCuarentena(
+          supabase,
+          candidatos.filter((c) => !esImportable(c)).map((c) => ({
+            codigo: c.codigo,
+            nombre_detectado: c.nombre || null,
+            fuente_url: c.fuente_url || "(sin fuente)",
+            fuente_titulo: c.fuente_titulo,
+            contexto: c.fuente_extracto,
+          })),
+        );
+
+        const yaExisten = await codigosYaExistentes(
+          supabase,
+          candidatos.map((c) => c.codigo),
+        );
+        const inserts = candidatos
+          .filter((c) => esImportable(c))
+          .filter((c) => !yaExisten.has(c.codigo.replaceAll("_", "")));
 
         // Upsert/ignore duplicates (no sobreescribe códigos curados existentes).
         await supabase
@@ -1020,6 +1126,34 @@ async function discoveryControlled(params: {
   };
 }
 
+// El <title> de la página, para guardar de dónde salió cada hallazgo con
+// algo legible y no solo la URL. deep_search_sources no guarda título, y
+// esa falta de trazabilidad es parte de lo que hacía imposible juzgar los
+// códigos importados.
+function tituloDeLaPagina(html: string): string | null {
+  if (!html) return null;
+  const m = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+  if (!m) return null;
+  const t = m[1].replace(/\s+/g, " ").trim();
+  return t ? t.slice(0, 200) : null;
+}
+
+// El texto que rodea al número en la página. Es lo que permite decidir
+// después si era una secuencia o el pie de un PDF, sin volver a abrir la
+// fuente: "...Versión 1 - 240123 - 150749" canta solo.
+function contextoDelCodigo(text: string, codigo: string): string | null {
+  if (!text) return null;
+  // El código se guarda normalizado (con guiones bajos), pero en la
+  // página puede venir con espacios o guiones.
+  const patron = codigo.replaceAll("_", "[ _-]?");
+  const re = new RegExp(patron);
+  const m = re.exec(text);
+  if (!m || m.index < 0) return null;
+  const desde = Math.max(0, m.index - 90);
+  const hasta = Math.min(text.length, m.index + m[0].length + 90);
+  return text.substring(desde, hasta).replace(/\s+/g, " ").trim();
+}
+
 async function crawlSources(params: {
   supabase: ReturnType<typeof createClient>;
   sourcesLimit: number;
@@ -1058,26 +1192,44 @@ async function crawlSources(params: {
       const now = nowIso();
 
       if (codes.length) {
-        const inserts = codes.map((codigo) => ({
+        // A CUARENTENA, no al catálogo. Esto escribía directo en
+        // codigos_grabovoi con nombre "Secuencia" y sin fuente, y de ahí
+        // salió toda la basura que hubo que limpiar el 17 de agosto:
+        // fechas, horas, números de página y trozos de nombres de PDF.
+        //
+        // No basta con afinar el filtro: NO se puede distinguir basura de
+        // código legítimo mirando solo el número. '121918' es "Permanecer
+        // centrado", una secuencia real del catálogo, y a la vez se lee
+        // como la hora 12:19:18. Cualquier heurística que rechace horas
+        // se come esa secuencia; cualquiera que las acepte deja pasar
+        // '150749'. Por eso decide una persona.
+        //
+        // Se guarda el contexto de la página para poder juzgar después
+        // sin volver a abrir la fuente.
+        const pendientes = codes.map((codigo) => ({
           codigo,
-          nombre: "Secuencia",
-          descripcion: "Secuencia importada desde fuentes externas.",
-          categoria: CATEGORY_FOR_IMPORTED_CODES,
-          color: DEFAULT_COLOR,
-          created_at: now,
-          updated_at: now,
+          nombre_detectado: null,
+          fuente_url: s.url,
+          fuente_titulo: tituloDeLaPagina(html),
+          contexto: contextoDelCodigo(text, codigo),
+          detectado_en: now,
         }));
 
-        const { data: upserted, error: upsertError } = await supabase
-          .from("codigos_grabovoi")
-          .upsert(inserts, { onConflict: "codigo", ignoreDuplicates: true })
+        // onConflict sobre (codigo, fuente_url): rastrear la misma página
+        // cada 24h no debe apilar el mismo hallazgo una y otra vez.
+        const { data: encolados, error: pendientesError } = await supabase
+          .from("codigos_pendientes")
+          .upsert(pendientes, {
+            onConflict: "codigo,fuente_url",
+            ignoreDuplicates: true,
+          })
           .select("codigo");
 
-        if (upsertError) {
-          throw new Error(`codigos_upsert_failed:${upsertError.message}`);
+        if (pendientesError) {
+          throw new Error(`codigos_pendientes_failed:${pendientesError.message}`);
         }
-        const insertedCodes = (upserted ?? []).map((x: any) => String(x.codigo));
-        insertedAll.push(...insertedCodes);
+        const encoladosCodes = (encolados ?? []).map((x: any) => String(x.codigo));
+        insertedAll.push(...encoladosCodes);
       }
 
       await supabase
