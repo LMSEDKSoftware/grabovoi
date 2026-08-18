@@ -8,6 +8,7 @@ sub init()
     m.currentScreen = invalid
     m.currentScreenName = ""
     m.authToken = invalid
+    m.deepLinkPendiente = invalid
 
     ' Marca de tiempo de arranque del canal, para "Tiempo Sesion" en
     ' EvolucionScreen (se reinicia cada vez que se abre el canal, igual
@@ -37,6 +38,29 @@ sub init()
     m.logoutTask = m.top.findNode("logoutTask")
 
     ShowIntro()
+end sub
+
+' Roku pidio abrir una secuencia concreta (busqueda del sistema,
+' "continuar viendo", asistente de voz). Puede llegar antes de que haya
+' sesion, asi que se guarda y se atiende en cuanto la haya.
+sub onDeepLink()
+    id = m.top.deepLinkContentId
+    if id = invalid or id = "" then return
+
+    if m.authToken = invalid
+        m.deepLinkPendiente = id
+        return
+    end if
+    m.deepLinkPendiente = invalid
+    ShowPlayer(id)
+end sub
+
+sub AtenderDeepLinkPendiente()
+    if m.deepLinkPendiente <> invalid and m.deepLinkPendiente <> ""
+        id = m.deepLinkPendiente
+        m.deepLinkPendiente = invalid
+        ShowPlayer(id)
+    end if
 end sub
 
 sub ShowIntro()
@@ -149,6 +173,7 @@ sub onSessionChecked(event as Object)
     result = event.GetData()
     if result.code = 200
         ShowHome()
+        AtenderDeepLinkPendiente()
     else
         ' El servidor ya rechazo este token, no hay nada que avisarle.
         CerrarSesionLocal()
@@ -184,6 +209,7 @@ sub onLoginResult(event as Object)
         m.authToken = result.token
         SaveToken(result.token)
         ShowHome()
+        AtenderDeepLinkPendiente()
     end if
 end sub
 

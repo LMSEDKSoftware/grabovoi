@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <component name="MainScene" extends="Scene">
     <interface>
+        <!-- Deep linking (criterio 5.2). main.brs escribe aqui el
+             contentID con el que Roku pidio abrir el canal, ya sea al
+             arrancar o con el canal ya abierto. -->
+        <field id="deepLinkContentId" type="string" onChange="onDeepLink" />
     </interface>
     <children>
         <Rectangle id="background" color="#071226" width="1280" height="720" />

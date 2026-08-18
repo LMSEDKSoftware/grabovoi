@@ -249,14 +249,20 @@ sub onMenuSelected()
 end sub
 
 sub ShowKeyboard(secure as Boolean)
-    kb = CreateObject("roSGNode", "KeyboardDialog")
+    ' StandardKeyboardDialog y no KeyboardDialog: el criterio 4.12 exige
+    ' teclado por voz para correo, PIN y contrasenas, y el viejo no lo
+    ' soporta. El analisis estatico lo marca como ERROR.
+    '
+    ' Ojo con la forma: aqui el texto y el modo seguro son campos del
+    ' propio dialogo, no de un nodo keyboard anidado como antes.
+    kb = CreateObject("roSGNode", "StandardKeyboardDialog")
     if secure
         kb.title = "Escribe tu contrasena"
-        kb.keyboard.textEditBox.secureMode = true
-        kb.keyboard.text = m.password
+        kb.secureMode = true
+        kb.text = m.password
     else
         kb.title = "Escribe tu correo electronico"
-        kb.keyboard.text = m.email
+        kb.text = m.email
     end if
     kb.buttons = ["OK", "Cancelar"]
     kb.observeField("buttonSelected", "onKeyboardButton")

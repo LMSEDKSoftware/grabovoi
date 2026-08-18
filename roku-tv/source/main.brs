@@ -6,33 +6,52 @@ sub Main(args as Object)
     scene = screen.CreateScene("MainScene")
     screen.Show()
 
+    ' Vigilancia de memoria. El analisis estatico de Roku la exige
+    ' (criterio de Monitoring): si el canal se pasa del limite, el sistema
+    ' lo mata sin avisar, y estos eventos son la unica forma de enterarse
+    ' antes de que pase.
+    monitor = CreateObject("roAppMemoryMonitor")
+    if monitor <> invalid
+        monitor.SetMessagePort(port)
+        monitor.EnableMemoryWarningEvent(true)
+        monitor.EnableLowGeneralMemoryEvent(true)
+        print "memoria: limite del canal="; monitor.GetChannelMemoryLimit(); " disponible="; monitor.GetChannelAvailableMemory(); " usado%="; monitor.GetMemoryLimitPercent()
+    end if
+
+    ' Deep linking: Roku puede pedir que el canal arranque en un contenido
+    ' concreto (busqueda, "continuar viendo", voz). Hace falta declarar
+    ' supports_input_launch=1 en el manifest Y atender los eventos, o la
+    ' certificacion lo rechaza (criterio 5.2).
+    if args <> invalid and args.contentID <> invalid and args.contentID <> ""
+        scene.deepLinkContentId = args.contentID
+    end if
+
+    entrada = CreateObject("roInput")
+    entrada.SetMessagePort(port)
+
     while true
         msg = wait(0, port)
         msgType = type(msg)
+
         if msgType = "roSGScreenEvent"
             if msg.IsScreenClosed()
                 return
             end if
-        end if
-    end while
-end sub
-
-' Punto de entrada propio del salvapantallas: Roku NO llama a Main() para
-' esto, llama a RunScreenSaver(). Corre en su propio proceso, sin sesion
-' ni token, por eso ScreensaverScene no pide nada al servidor.
-sub RunScreenSaver()
-    screen = CreateObject("roSGScreen")
-    port = CreateObject("roMessagePort")
-    screen.SetMessagePort(port)
-
-    scene = screen.CreateScene("ScreensaverScene")
-    screen.Show()
-
-    while true
-        msg = wait(0, port)
-        if type(msg) = "roSGScreenEvent"
-            if msg.IsScreenClosed()
-                return
+        else if msgType = "roInputEvent"
+            ' Peticion de arranque estando el canal ya abierto.
+            if msg.IsInput()
+                info = msg.GetInfo()
+                if info <> invalid and info.contentID <> invalid
+                    scene.deepLinkContentId = info.contentID
+                end if
+            end if
+        else if msgType = "roAppMemoryNotificationEvent"
+            ' No se libera nada por ahora: queda en consola para poder
+            ' diagnosticar un cierre inesperado.
+            if msg.isMemoryWarning()
+                print "memoria: aviso, el canal se acerca a su limite"
+            else if msg.isLowGeneralMemory()
+                print "memoria: el sistema anda justo de memoria general"
             end if
         end if
     end while

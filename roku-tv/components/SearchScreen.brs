@@ -16,9 +16,12 @@ function StartLoading() as Void
 end function
 
 sub ShowKeyboard()
-    kb = CreateObject("roSGNode", "KeyboardDialog")
+    ' StandardKeyboardDialog en todo el canal, aunque aqui no se escriban
+    ' credenciales: tener dos teclados distintos segun la pantalla es
+    ' peor que unificar, y este ademas admite dictado por voz.
+    kb = CreateObject("roSGNode", "StandardKeyboardDialog")
     kb.title = "¿Qué quieres buscar?"
-    if m.terminoActual <> invalid then kb.keyboard.text = m.terminoActual
+    if m.terminoActual <> invalid then kb.text = m.terminoActual
     kb.buttons = ["Buscar", "Cancelar"]
     kb.observeField("buttonSelected", "onKeyboardButton")
     m.pendingKeyboard = kb

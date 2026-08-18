@@ -364,9 +364,9 @@ function NombreCorto(nombre as Dynamic) as String
 end function
 
 sub PedirNombreDeRutina()
-    kb = CreateObject("roSGNode", "KeyboardDialog")
+    kb = CreateObject("roSGNode", "StandardKeyboardDialog")
     kb.title = "Nombre de tu pilotaje"
-    kb.keyboard.text = NombreDeLaLista()
+    kb.text = NombreDeLaLista()
     kb.buttons = ["Guardar", "Cancelar"]
     kb.observeField("buttonSelected", "onNombreDeRutina")
     m.tecladoRutina = kb
