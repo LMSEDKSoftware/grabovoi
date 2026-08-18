@@ -219,6 +219,37 @@ async function consultarCodigo(req, res, body) {
   res.status(200).json({ status: 'linked', access_token: token, expires_in: expiresIn });
 }
 
+// ¿Ese correo tiene cuenta de ManiGraB? Se usa después de que el usuario
+// acepta compartir el correo de su cuenta Roku (ChannelStore getUserData,
+// exigido por el criterio RP 2.1).
+//
+// A propósito NO devuelve un token: eso sería autenticar solo con el
+// correo, y este endpoint no puede comprobar que la petición venga de
+// verdad del sistema Roku con el consentimiento del dueño. Cualquiera
+// podría pedir el token de una cuenta ajena sabiendo su correo. Solo
+// dice si existe, para decidir entre pedir la contraseña o mandar a
+// registrarse; entrar sigue exigiendo la contraseña o el QR.
+async function verificarCorreo(res, admin, body) {
+  const email = String(body.email || '').trim().toLowerCase();
+  const deviceId = String(body.device_id || '').trim();
+  if (!email || !deviceId) {
+    res.status(400).json({ error: 'invalid_request' });
+    return;
+  }
+
+  // Vía función SQL y no supabase-js: auth.users no está expuesta por
+  // PostgREST, y el cliente no tiene getUserByEmail. La función devuelve
+  // solo un booleano, nunca datos de la cuenta.
+  const { data, error } = await admin.rpc('existe_correo', { p_email: email });
+  if (error) {
+    console.error('roku-device: verificar correo falló', error);
+    res.status(500).json({ error: 'server_error' });
+    return;
+  }
+
+  res.status(200).json({ existe: data === true });
+}
+
 async function handler(req, res) {
   if (req.method === 'GET') {
     await responderQr(req, res, String((req.query && req.query.qr) || '').trim());
@@ -243,6 +274,8 @@ async function handler(req, res) {
     await crearCodigo(req, res, body);
   } else if (action === 'poll') {
     await consultarCodigo(req, res, body);
+  } else if (action === 'verificar_correo') {
+    await verificarCorreo(res, admin(), body);
   } else {
     res.status(400).json({ error: 'invalid_action' });
   }

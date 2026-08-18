@@ -52,8 +52,14 @@ sub init()
     m.email = ""
     m.password = ""
 
+    m.tiendaRoku = m.top.findNode("tiendaRoku")
+    m.tiendaRoku.observeField("userData", "onDatosRoku")
+    m.correoTask = m.top.findNode("correoTask")
+    m.correoTask.observeField("done", "onCorreoVerificado")
+    m.correoRoku = ""
+
     LlenarLista(m.regenerar, ["Regenerar código"])
-    LlenarLista(m.opciones, ["Iniciar sesión con contraseña", "¿No tienes cuenta?"])
+    LlenarLista(m.opciones, ["Usar mi cuenta de Roku", "Iniciar sesión con contraseña", "¿No tienes cuenta?"])
     RefreshMenu()
 
     PedirCodigo()
@@ -140,10 +146,77 @@ end sub
 sub onOpcionSeleccionada()
     index = m.opciones.itemSelected
     if index = 0
-        MostrarPassword()
+        PedirCorreoARoku()
     else if index = 1
+        MostrarPassword()
+    else if index = 2
         m.estado.text = "Crea tu cuenta gratis en la app ManiGraB para celular y luego vincula esta televisión."
     end if
+end sub
+
+' ---------------------------------------------------------------
+' Entrar con la cuenta de Roku
+' ---------------------------------------------------------------
+
+' Roku abre su propio dialogo pidiendo permiso para compartir los datos
+' de la cuenta del televisor. Es lo que exige el criterio RP 2.1, y de
+' paso ahorra teclear un correo entero con el control remoto.
+sub PedirCorreoARoku()
+    m.pollTimer.control = "stop"
+    m.estado.text = "Pidiendo permiso para usar el correo de tu cuenta Roku..."
+    m.tiendaRoku.command = "getUserData"
+end sub
+
+sub onDatosRoku(event as Object)
+    datos = event.GetData()
+
+    ' invalid = el usuario dijo que no, o el televisor no tiene ese dato.
+    ' No es un error: simplemente se sigue por los otros caminos.
+    if datos = invalid or datos.email = invalid or datos.email = ""
+        m.estado.text = "No se compartió ningún correo. Puedes entrar con el código QR o con tu contraseña."
+        m.pollTimer.control = "start"
+        return
+    end if
+
+    m.correoRoku = LCase(datos.email)
+    m.estado.text = "Buscando tu cuenta de ManiGraB..."
+
+    m.correoTask.uri = ApiBase() + "/roku-device"
+    m.correoTask.method = "POST"
+    m.correoTask.body = FormatJson({ action: "verificar_correo", email: m.correoRoku, device_id: m.deviceId })
+    m.correoTask.control = "RUN"
+end sub
+
+sub onCorreoVerificado(event as Object)
+    result = event.GetData()
+    parsed = ParseJsonSafe(result.json)
+
+    if result.code <> 200 or parsed = invalid or parsed.existe = invalid
+        m.estado.text = "No se pudo comprobar tu cuenta. Entra con el código QR o con tu contraseña."
+        m.pollTimer.control = "start"
+        return
+    end if
+
+    if parsed.existe = true
+        ' Hay cuenta con ese correo. Se salta directo a la contraseña, ya
+        ' relleno: es el unico dato que falta.
+        '
+        ' A proposito NO se entra con solo el correo: el servidor no puede
+        ' comprobar que esta peticion venga de verdad de este televisor,
+        ' asi que dejar entrar sin contrasena permitiria abrir la cuenta
+        ' de cualquiera sabiendo su correo.
+        m.email = m.correoRoku
+        RefreshMenu()
+        MostrarPassword()
+        m.menu.jumpToItem = 1
+        m.errorLabel.text = ""
+        return
+    end if
+
+    ' No hay cuenta: no se puede crear desde aqui, porque el registro y la
+    ' suscripcion viven en la app movil.
+    m.estado.text = "No encontramos una cuenta de ManiGraB con " + m.correoRoku + ". Descarga la app en tu celular, regístrate gratis, y vuelve aquí para vincular esta televisión."
+    m.pollTimer.control = "start"
 end sub
 
 sub MostrarPassword()

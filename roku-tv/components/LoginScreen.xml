@@ -55,6 +55,13 @@
         <!-- Un Task por trámite: pedir código, consultar, y el login con
              contraseña. Compartir uno solo obligaría a desambiguar quién
              contestó dentro del mismo observador. -->
+        <!-- Pide a Roku el correo de la cuenta del televisor, con permiso
+             explicito del usuario (dialogo del sistema). Lo exige el
+             criterio RP 2.1: un canal con sesion tiene que ofrecer
+             obtener el correo por aqui, no solo tecleandolo.
+             Solo se usa el correo; el resto de la ficha se ignora. -->
+        <ChannelStore id="tiendaRoku" />
+        <ApiTask id="correoTask" />
         <ApiTask id="codeTask" />
         <ApiTask id="pollTask" />
         <ApiTask id="loginTask" />
