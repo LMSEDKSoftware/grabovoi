@@ -61,10 +61,12 @@ void main() async {
     }
   }
 
-  // Cargar variables de entorno locales solo en no-web
+  // Cargar variables de entorno locales solo en no-web. .env.client, NO
+  // .env: ver el comentario en pubspec.yaml -- .env trae claves de
+  // servidor que nunca deben quedar empaquetadas dentro del APK.
   if (!kIsWeb) {
     try {
-      await dotenv.load(fileName: '.env');
+      await dotenv.load(fileName: '.env.client');
     } catch (_) {}
   }
 

@@ -92,7 +92,14 @@ flutter:
     - assets/audios/voice_numbers/female/
     - assets/lottie/
     - assets/icons/
-    - .env
+    # .env.client, NO .env: .env trae tambien la service_role key,
+    # OPENAI_API_KEY, GITHUB_TOKEN y demas -- este asset se empaqueta tal
+    # cual dentro del APK/build web como texto plano, y un APK es un zip
+    # que cualquiera puede desempaquetar. .env.client solo tiene
+    # SUPABASE_URL y SUPABASE_ANON_KEY, las dos unicas que el cliente
+    # deberia poder ver (ANON_KEY esta protegida por RLS del lado del
+    # servidor, para eso existe).
+    - .env.client
 
   fonts:
     - family: Noto Sans

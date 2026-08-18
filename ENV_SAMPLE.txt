@@ -4,6 +4,18 @@ SUPABASE_ANON_KEY=
 SB_SERVICE_ROLE_KEY=
 ENV=dev
 ; Copia este archivo a .env en la raíz y rellena las claves.
+;
+; IMPORTANTE, aparte de .env: crea tambien .env.client en la raiz, con
+; SOLO estas dos lineas (los mismos valores que pusiste arriba):
+;   SUPABASE_URL=...
+;   SUPABASE_ANON_KEY=...
+; .env.client es el que se empaqueta dentro del APK/build web (ver
+; pubspec.yaml assets y lib/main.dart). .env completo NUNCA debe
+; declararse como asset de Flutter: trae la service_role key y otras
+; claves de servidor que quedarian legibles en texto plano dentro del
+; paquete instalable. Sin .env.client la app no inicializa Supabase en
+; Android/iOS (main.dart cae a String.fromEnvironment, vacio fuera de
+; scripts/launch_chrome.sh).
 
 ; Deep search (Edge Functions)
 ; - deep-search-codes: NO usa web search (solo encola requests por usuario)
