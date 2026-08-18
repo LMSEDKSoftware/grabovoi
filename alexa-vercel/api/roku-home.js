@@ -52,6 +52,7 @@ async function handler(req, res) {
   const userId = link.user_id;
 
   const [
+    { data: usuarioAuth },
     { data: codigoDia },
     { data: progreso },
     { data: rewards },
@@ -59,6 +60,10 @@ async function handler(req, res) {
     { data: continuar },
     { data: mensajeDia },
   ] = await Promise.all([
+    // Solo para mostrar en pantalla que cuenta esta conectada. Del perfil
+    // de auth se usa unicamente el correo; nada mas de esa ficha sale de
+    // aqui.
+    admin.auth.admin.getUserById(userId),
     admin.rpc('obtener_codigo_del_dia'),
     admin.from('usuario_progreso').select('dias_consecutivos, total_pilotajes, nivel_energetico').eq('user_id', userId).maybeSingle(),
     admin.from('user_rewards').select('cristales_energia, luz_cuantica').eq('user_id', userId).maybeSingle(),
@@ -111,6 +116,7 @@ async function handler(req, res) {
   }
 
   res.status(200).json({
+    email: usuarioAuth?.user?.email ?? null,
     secuencia_del_dia: secuenciaDelDia,
     frase_del_dia: fraseDelDia,
     progreso: {
