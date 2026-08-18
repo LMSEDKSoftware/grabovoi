@@ -124,6 +124,12 @@ sub onHomeResponse(event as Object)
     ' autenticadas.
 
     RestoreFocus()
+
+    ' Avisa a MainScene de que Inicio ya esta pintado con sus datos, para
+    ' que dispare el beacon AppLaunchComplete. Va al final a proposito:
+    ' antes de este punto la pantalla existe pero esta vacia, y el
+    ' criterio 3.2 mide hasta que se ve de verdad.
+    m.top.result = { action: "rendered" }
 end sub
 
 function RestoreFocus() as Void

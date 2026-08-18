@@ -1,7 +1,7 @@
 title=ManiGraB TV
 major_version=1
 minor_version=0
-build_version=3
+build_version=4
 
 # Medidas exigidas por el analisis estatico de Roku (criterio 6.4). Los
 # atributos mm_icon_side_hd/sd estan obsoletos y se quitaron.

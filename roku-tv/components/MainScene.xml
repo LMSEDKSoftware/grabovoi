@@ -4,6 +4,10 @@
         <!-- Deep linking (criterio 5.2). main.brs escribe aqui el
              contentID con el que Roku pidio abrir el canal, ya sea al
              arrancar o con el canal ya abierto. -->
+        <!-- mediaType se escribe ANTES que contentId a proposito: el
+             observador cuelga del segundo, asi que cuando salta ya tiene
+             los dos datos. -->
+        <field id="deepLinkMediaType" type="string" />
         <field id="deepLinkContentId" type="string" onChange="onDeepLink" />
     </interface>
     <children>

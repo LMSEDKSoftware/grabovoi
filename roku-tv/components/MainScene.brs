@@ -9,6 +9,10 @@ sub init()
     m.currentScreenName = ""
     m.authToken = invalid
     m.deepLinkPendiente = invalid
+    ' Beacons de rendimiento (criterio 3.2). NO son automaticos: la app
+    ' tiene que dispararlos. AppLaunchComplete va una sola vez, cuando la
+    ' pantalla principal ya esta pintada de verdad.
+    m.beaconLanzamiento = false
 
     ' Marca de tiempo de arranque del canal, para "Tiempo Sesion" en
     ' EvolucionScreen (se reinicia cada vez que se abre el canal, igual
@@ -40,12 +44,23 @@ sub init()
     ShowIntro()
 end sub
 
+' Se dispara una sola vez, cuando Inicio termino de pintarse con sus
+' datos. Roku mide desde el arranque hasta aqui y exige menos de 15
+' segundos. Si el canal arranca sin sesion, el tramo del login queda
+' acotado por los beacons de dialogo, que es justo para lo que existen.
+sub SenalarLanzamiento()
+    if m.beaconLanzamiento then return
+    m.beaconLanzamiento = true
+    m.top.signalBeacon("AppLaunchComplete")
+end sub
+
 ' Roku pidio abrir una secuencia concreta (busqueda del sistema,
 ' "continuar viendo", asistente de voz). Puede llegar antes de que haya
 ' sesion, asi que se guarda y se atiende en cuanto la haya.
 sub onDeepLink()
     id = m.top.deepLinkContentId
     if id = invalid or id = "" then return
+    print "deep link contentId="; id; " mediaType="; m.top.deepLinkMediaType
 
     if m.authToken = invalid
         m.deepLinkPendiente = id
@@ -147,8 +162,11 @@ end sub
 ' de cada pantalla ignora esta accion.
 sub onResultGlobal(event as Object)
     result = event.GetData()
-    if result <> invalid and result.action = "sessionExpired"
+    if result = invalid then return
+    if result.action = "sessionExpired"
         CerrarSesionLocal()
+    else if result.action = "rendered"
+        SenalarLanzamiento()
     end if
 end sub
 
@@ -198,6 +216,10 @@ sub SwapScreen(name as String, node as Object)
 end sub
 
 sub ShowLogin()
+    ' El login es un dialogo previo a la pantalla principal, y el criterio
+    ' 3.2 pide acotarlo: sin esto, el tiempo que el usuario tarda en
+    ' teclear su correo contaria como lentitud del canal.
+    m.top.signalBeacon("AppDialogInitiate")
     screen = CreateObject("roSGNode", "LoginScreen")
     screen.observeField("result", "onLoginResult")
     SwapScreen("login", screen)
@@ -206,6 +228,7 @@ end sub
 sub onLoginResult(event as Object)
     result = event.GetData()
     if result.action = "loggedIn"
+        m.top.signalBeacon("AppDialogComplete")
         m.authToken = result.token
         SaveToken(result.token)
         ShowHome()

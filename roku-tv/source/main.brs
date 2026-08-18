@@ -22,8 +22,12 @@ sub Main(args as Object)
     ' concreto (busqueda, "continuar viendo", voz). Hace falta declarar
     ' supports_input_launch=1 en el manifest Y atender los eventos, o la
     ' certificacion lo rechaza (criterio 5.2).
-    if args <> invalid and args.contentID <> invalid and args.contentID <> ""
-        scene.deepLinkContentId = args.contentID
+    ' Un deep link son DOS datos: contentId dice que abrir y mediaType
+    ' como abrirlo. Declarar supports_input_launch y leer solo el primero
+    ' no cuenta como soportarlo.
+    if args <> invalid and args.contentId <> invalid and args.contentId <> ""
+        if args.mediaType <> invalid then scene.deepLinkMediaType = args.mediaType
+        scene.deepLinkContentId = args.contentId
     end if
 
     entrada = CreateObject("roInput")
@@ -41,8 +45,9 @@ sub Main(args as Object)
             ' Peticion de arranque estando el canal ya abierto.
             if msg.IsInput()
                 info = msg.GetInfo()
-                if info <> invalid and info.contentID <> invalid
-                    scene.deepLinkContentId = info.contentID
+                if info <> invalid and info.contentId <> invalid and info.contentId <> ""
+                    if info.mediaType <> invalid then scene.deepLinkMediaType = info.mediaType
+                    scene.deepLinkContentId = info.contentId
                 end if
             end if
         else if msgType = "roAppMemoryNotificationEvent"
