@@ -6,6 +6,9 @@ sub init()
     m.rutinaAviso = m.top.findNode("rutinaAviso")
     m.rutinaTask = m.top.findNode("rutinaTask")
     m.rutinaTask.observeField("done", "onRutinaGuardada")
+    m.combinacionesTask = m.top.findNode("combinacionesTask")
+    m.combinacionesTask.observeField("done", "onCombinacionesRecibidas")
+    m.combinacionesMostradas = []
     m.sequenceIds = []
     ' Modo seleccion: OK marca en vez de abrir, y se guardan solo las
     ' marcadas. Los indices se guardan en el orden en que se fueron
@@ -150,7 +153,7 @@ sub AlternarSeleccion(index as Integer)
         if m.ordenSeleccion.Count() >= 30
             ' El servidor recorta a 30; avisar aqui evita que el usuario
             ' siga marcando cosas que nunca se van a guardar.
-            m.rutinaAviso.text = "Una rutina admite hasta 30 secuencias. Quita alguna para agregar otra."
+            m.rutinaAviso.text = "Máximo 30 por combinación"
             return
         end if
         m.ordenSeleccion.Push(index)
@@ -193,6 +196,105 @@ sub MostrarPistaRutina()
     end if
 end sub
 
+' Al guardar no se asume que la intencion es crear: puede ser sumar a una
+' combinacion que ya existe. Se preguntan las dos cosas en el mismo paso
+' para no obligar a ir a otra pantalla a mitad de la seleccion.
+sub PedirDestino()
+    m.rutinaAviso.text = "Cargando tus combinaciones..."
+    m.combinacionesTask.authToken = m.top.authToken
+    m.combinacionesTask.uri = ApiBase() + "/roku-perfil?rutinas=1"
+    m.combinacionesTask.method = "GET"
+    m.combinacionesTask.control = "RUN"
+end sub
+
+sub onCombinacionesRecibidas(event as Object)
+    result = event.GetData()
+    if SesionVencida(m.top, result) then return
+
+    combinaciones = []
+    if result.code = 200
+        data = ParseJsonSafe(result.json)
+        if data <> invalid and data.rutinas <> invalid then combinaciones = data.rutinas
+    end if
+
+    ' Sin ninguna combinacion todavia no hay nada que elegir: se va
+    ' directo a crear, que es la unica opcion posible.
+    if combinaciones.Count() = 0
+        MostrarPistaRutina()
+        PedirNombreDeRutina()
+        return
+    end if
+
+    botones = ["Crear una combinación nueva"]
+    ' Tope de 6: un dialogo de Roku con mas botones deja de caber en
+    ' pantalla y hay que desplazarlo a ciegas.
+    m.combinacionesMostradas = []
+    for each combinacion in combinaciones
+        if m.combinacionesMostradas.Count() >= 6 then exit for
+        m.combinacionesMostradas.Push(combinacion)
+        botones.Push("Agregar a: " + combinacion.nombre)
+    end for
+
+    dialogo = CreateObject("roSGNode", "Dialog")
+    dialogo.title = "¿Dónde las guardo?"
+    dialogo.message = TextoElegidas() + " seleccionada(s)."
+    dialogo.buttons = botones
+    dialogo.observeField("buttonSelected", "onDestinoElegido")
+    m.dialogoDestino = dialogo
+    m.top.getScene().dialog = dialogo
+    MostrarPistaRutina()
+end sub
+
+function TextoElegidas() as String
+    cuantas = m.ordenSeleccion.Count()
+    if cuantas = 1 then return "1 secuencia"
+    return cuantas.ToStr() + " secuencias"
+end function
+
+sub onDestinoElegido(event as Object)
+    indice = event.GetData()
+    m.top.getScene().dialog = invalid
+
+    if indice = 0
+        PedirNombreDeRutina()
+        return
+    end if
+
+    posicion = indice - 1
+    if posicion < 0 or posicion >= m.combinacionesMostradas.Count() then return
+    AgregarACombinacion(m.combinacionesMostradas[posicion])
+end sub
+
+sub AgregarACombinacion(combinacion as Object)
+    ids = IdsSeleccionados()
+    if ids.Count() = 0 then return
+
+    m.rutinaAviso.text = "Agregando..."
+    m.rutinaTask.authToken = m.top.authToken
+    m.rutinaTask.uri = ApiBase() + "/roku-perfil"
+    m.rutinaTask.method = "POST"
+    m.rutinaTask.body = FormatJson({ action: "rutina_agregar", id: combinacion.id, codigo_ids: ids })
+    m.rutinaTask.control = "RUN"
+end sub
+
+' En el orden en que se fueron eligiendo, que es el orden en que se van a
+' escuchar.
+function IdsSeleccionados() as Object
+    ids = []
+    for each indice in m.ordenSeleccion
+        ids.Push(m.sequenceIds[indice])
+    end for
+    return ids
+end function
+
+' El aviso vive en el hueco del encabezado y ahi caben unos 42
+' caracteres; un nombre largo desbordaria sobre el titulo o el conteo.
+function NombreCorto(nombre as Dynamic) as String
+    if nombre = invalid then return ""
+    if Len(nombre) <= 18 then return nombre
+    return Left(nombre, 17) + "…"
+end function
+
 sub PedirNombreDeRutina()
     kb = CreateObject("roSGNode", "KeyboardDialog")
     kb.title = "Nombre de tu pilotaje"
@@ -210,15 +312,10 @@ sub onNombreDeRutina(event as Object)
     if boton <> 0 then return
     if nombre = "" then nombre = NombreDeLaLista()
 
-    ' En el orden en que se fueron eligiendo, que es el orden en que se
-    ' van a escuchar.
-    ids = []
-    for each indice in m.ordenSeleccion
-        ids.Push(m.sequenceIds[indice])
-    end for
+    ids = IdsSeleccionados()
     if ids.Count() = 0 then return
 
-    m.rutinaAviso.text = "Guardando " + Chr(34) + nombre + Chr(34) + "..."
+    m.rutinaAviso.text = "Guardando..."
     m.rutinaTask.authToken = m.top.authToken
     m.rutinaTask.uri = ApiBase() + "/roku-perfil"
     m.rutinaTask.method = "POST"
@@ -236,11 +333,32 @@ sub onRutinaGuardada(event as Object)
     end if
 
     data = ParseJsonSafe(result.json)
-    total = 0
-    if data <> invalid and data.total <> invalid then total = data.total
-
     SalirModoSeleccion()
-    m.rutinaAviso.text = "Pilotaje guardado con " + total.ToStr() + " secuencias. Lo encuentras en Secuencias Combinadas."
+
+    if data = invalid
+        m.rutinaAviso.text = "Guardado."
+        return
+    end if
+
+    ' La respuesta de agregar trae "agregadas"; la de crear no. Es lo que
+    ' distingue los dos casos, que comparten este mismo ApiTask.
+    if data.agregadas <> invalid
+        nombre = NombreCorto(data.nombre)
+        if data.agregadas = 0
+            if data.lleno = true
+                m.rutinaAviso.text = nombre + " ya tiene 30"
+            else
+                m.rutinaAviso.text = "Ya estaban en " + nombre
+            end if
+        else
+            m.rutinaAviso.text = data.agregadas.ToStr() + " agregadas a " + nombre
+        end if
+        return
+    end if
+
+    total = 0
+    if data.total <> invalid then total = data.total
+    m.rutinaAviso.text = "Combinación creada con " + total.ToStr()
 end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
@@ -251,9 +369,9 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         if not m.modoSeleccion
             EntrarModoSeleccion()
         else if m.ordenSeleccion.Count() > 0
-            PedirNombreDeRutina()
+            PedirDestino()
         else
-            m.rutinaAviso.text = "Marca al menos una secuencia con OK antes de guardar."
+            m.rutinaAviso.text = "Marca al menos una con OK"
         end if
         return true
     end if

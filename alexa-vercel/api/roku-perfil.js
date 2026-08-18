@@ -13,6 +13,7 @@
 //   GET  ?rutina=<uuid>      -> una rutina con sus secuencias en orden
 //   POST {action:"logout"}   -> cierra ESTA sesión
 //   POST {action:"rutina_crear",  nombre, codigo_ids}
+//   POST {action:"rutina_agregar", id, codigo_ids}   añade al final
 //   POST {action:"rutina_borrar", id}
 
 const { createClient } = require('@supabase/supabase-js');
@@ -192,6 +193,95 @@ async function crearRutina(res, admin, userId, body) {
   res.status(200).json({ id: rutina.id, nombre: rutina.nombre, total: ids.length });
 }
 
+// Agregar secuencias a una combinación que ya existe. Se añaden al final,
+// respetando el orden que ya tenía: una combinación es una secuencia de
+// pasos, no un conjunto, y reordenarla al vuelo cambiaría lo que el
+// usuario armó.
+async function agregarARutina(res, admin, userId, body) {
+  const rutinaId = String(body.id || '').trim();
+  const codigoIds = Array.isArray(body.codigo_ids) ? body.codigo_ids.map(String) : [];
+
+  if (!rutinaId) {
+    res.status(400).json({ error: 'missing_id' });
+    return;
+  }
+  if (codigoIds.length === 0) {
+    res.status(400).json({ error: 'empty', message: 'No elegiste ninguna secuencia.' });
+    return;
+  }
+
+  // El filtro por user_id es lo que impide agregar a una combinación
+  // ajena: esta ruta usa service_role y las políticas RLS no aplican.
+  const { data: rutina, error: errorRutina } = await admin
+    .from('rutinas')
+    .select('id, nombre')
+    .eq('id', rutinaId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (errorRutina) {
+    console.error('roku-perfil: buscar rutina falló', errorRutina);
+    res.status(500).json({ error: 'server_error' });
+    return;
+  }
+  if (!rutina) {
+    res.status(404).json({ error: 'not_found' });
+    return;
+  }
+
+  const { data: actuales, error: errorItems } = await admin
+    .from('rutina_items')
+    .select('codigo_id, orden')
+    .eq('rutina_id', rutinaId)
+    .order('orden', { ascending: false });
+
+  if (errorItems) {
+    console.error('roku-perfil: leer items falló', errorItems);
+    res.status(500).json({ error: 'server_error' });
+    return;
+  }
+
+  const yaEstan = new Set((actuales || []).map((i) => i.codigo_id));
+  const siguienteOrden = (actuales || []).length ? (actuales[0].orden ?? 0) + 1 : 0;
+  const espacio = Math.max(0, MAX_ITEMS_RUTINA - (actuales || []).length);
+
+  // Se ignoran en silencio las que ya estaban: el usuario las marcó sin
+  // acordarse, y fallar por eso sería castigarlo por algo irrelevante.
+  const nuevas = codigoIds.filter((id) => !yaEstan.has(id)).slice(0, espacio);
+
+  if (nuevas.length === 0) {
+    res.status(200).json({
+      id: rutina.id,
+      nombre: rutina.nombre,
+      agregadas: 0,
+      total: (actuales || []).length,
+      lleno: espacio === 0,
+    });
+    return;
+  }
+
+  const filas = nuevas.map((codigoId, i) => ({
+    rutina_id: rutinaId,
+    codigo_id: codigoId,
+    orden: siguienteOrden + i,
+  }));
+
+  const { error: errorInsert } = await admin.from('rutina_items').insert(filas);
+  if (errorInsert) {
+    console.error('roku-perfil: agregar items falló', errorInsert);
+    res.status(500).json({ error: 'server_error' });
+    return;
+  }
+
+  res.status(200).json({
+    id: rutina.id,
+    nombre: rutina.nombre,
+    agregadas: nuevas.length,
+    total: (actuales || []).length + nuevas.length,
+    lleno: false,
+  });
+}
+
 async function borrarRutina(res, admin, userId, body) {
   const id = String(body.id || '').trim();
   if (!id) {
@@ -245,6 +335,8 @@ async function handler(req, res) {
 
     if (action === 'rutina_crear') {
       await crearRutina(res, admin, userId, body);
+    } else if (action === 'rutina_agregar') {
+      await agregarARutina(res, admin, userId, body);
     } else if (action === 'rutina_borrar') {
       await borrarRutina(res, admin, userId, body);
     } else {

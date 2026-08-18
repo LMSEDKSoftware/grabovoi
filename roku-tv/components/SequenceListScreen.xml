@@ -33,6 +33,11 @@
         <Label id="rutinaAviso" translation="[540,40]" width="510" horizAlign="center" color="#8A93A6" text="" />
         <ApiTask id="catalogTask" />
         <ApiTask id="rutinaTask" />
+        <!-- Se piden las combinaciones existentes en el momento de
+             guardar, no al abrir la pantalla: son datos que solo hacen
+             falta si de verdad se va a guardar algo, y asi la lista
+             refleja lo que hay ahora mismo. -->
+        <ApiTask id="combinacionesTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
     <script type="text/brightscript" uri="pkg:/components/SequenceListScreen.brs" />
