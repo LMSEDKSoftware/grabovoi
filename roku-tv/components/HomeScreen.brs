@@ -79,6 +79,10 @@ sub onHomeResponse(event as Object)
     ' "Tus favoritas": slider horizontal (mas items que columnas visibles
     ' = se desplaza solo hacia el lado).
     m.favoritosIds = []
+    ' Se apuntan los codigos aqui para poder marcar tambien las de
+    ' "Recientes" que ya sean favoritas, sin pedir la lista otra vez: la
+    ' respuesta de /roku-home ya trae las dos cosas.
+    codigosFavoritos = {}
     favoritasRoot = CreateObject("roSGNode", "ContentNode")
     for each fav in data.favoritos
         colorFav = "#13213B"
@@ -86,8 +90,10 @@ sub onHomeResponse(event as Object)
         imagenFav = ""
         if fav.imagen_url <> invalid then imagenFav = fav.imagen_url
         item = favoritasRoot.CreateChild("ContentNode")
-        item.AddFields({ title: fav.nombre, subtitle: fav.codigo, color: colorFav, imageUrl: imagenFav })
+        ' esFavorito siempre cierto: esta fila ES la de favoritos.
+        item.AddFields({ title: fav.nombre, subtitle: fav.codigo, color: colorFav, imageUrl: imagenFav, esFavorito: true })
         m.favoritosIds.Push(fav.id)
+        if fav.codigo <> invalid then codigosFavoritos[fav.codigo] = true
     end for
     m.favoritasGrid.content = favoritasRoot
     m.favoritasTitle.visible = (m.favoritosIds.Count() > 0)
@@ -104,7 +110,8 @@ sub onHomeResponse(event as Object)
         codigoC = ""
         if c.codigo <> invalid then codigoC = c.codigo
         item = recientesRoot.CreateChild("ContentNode")
-        item.AddFields({ title: c.code_name, subtitle: codigoC, color: colorC, imageUrl: imagenC })
+        ' Aqui si depende: una reciente puede ser favorita o no.
+        item.AddFields({ title: c.code_name, subtitle: codigoC, color: colorC, imageUrl: imagenC, esFavorito: (codigosFavoritos[codigoC] = true) })
         m.recientesIds.Push(c.code_id)
     end for
     m.recientesGrid.content = recientesRoot
