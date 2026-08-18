@@ -217,15 +217,10 @@ sub onCombinacionesRecibidas(event as Object)
         if data <> invalid and data.rutinas <> invalid then combinaciones = data.rutinas
     end if
 
-    ' Sin ninguna combinacion todavia no hay nada que elegir: se va
-    ' directo a crear, que es la unica opcion posible.
-    if combinaciones.Count() = 0
-        MostrarPistaRutina()
-        PedirNombreDeRutina()
-        return
-    end if
-
-    botones = ["Crear una combinación nueva"]
+    ' Favoritos va como destino mas, no como tecla aparte: es tambien una
+    ' lista, y asi se descubre solo en vez de esconderse en un boton que
+    ' nadie adivina. Ademas permite marcar varias de una vez.
+    botones = ["Crear una combinación nueva", "Agregar a Mis favoritos"]
     ' Tope de 6: un dialogo de Roku con mas botones deja de caber en
     ' pantalla y hay que desplazarlo a ciegas.
     m.combinacionesMostradas = []
@@ -260,9 +255,35 @@ sub onDestinoElegido(event as Object)
         return
     end if
 
-    posicion = indice - 1
+    if indice = 1
+        AgregarAFavoritos()
+        return
+    end if
+
+    ' Los dos primeros botones son fijos (crear y favoritos); de ahi en
+    ' adelante van las combinaciones existentes.
+    posicion = indice - 2
     if posicion < 0 or posicion >= m.combinacionesMostradas.Count() then return
     AgregarACombinacion(m.combinacionesMostradas[posicion])
+end sub
+
+sub AgregarAFavoritos()
+    ' Favoritos se guarda por CODIGO, no por id: la llave foranea de
+    ' usuario_favoritos apunta a codigos_grabovoi.codigo. Mandar el uuid
+    ' falla con un error de tipo.
+    codigos = []
+    for each indice in m.ordenSeleccion
+        nodo = m.grid.content.getChild(indice)
+        if nodo <> invalid and nodo.subtitle <> invalid then codigos.Push(nodo.subtitle)
+    end for
+    if codigos.Count() = 0 then return
+
+    m.rutinaAviso.text = "Guardando en favoritos..."
+    m.rutinaTask.authToken = m.top.authToken
+    m.rutinaTask.uri = ApiBase() + "/roku-favoritos"
+    m.rutinaTask.method = "POST"
+    m.rutinaTask.body = FormatJson({ codigos: codigos })
+    m.rutinaTask.control = "RUN"
 end sub
 
 sub AgregarACombinacion(combinacion as Object)
@@ -340,8 +361,18 @@ sub onRutinaGuardada(event as Object)
         return
     end if
 
-    ' La respuesta de agregar trae "agregadas"; la de crear no. Es lo que
-    ' distingue los dos casos, que comparten este mismo ApiTask.
+    ' Las tres respuestas comparten este ApiTask y se distinguen por sus
+    ' campos: favoritos trae "agregados", sumar a una combinacion trae
+    ' "agregadas", y crear no trae ninguno de los dos.
+    if data.agregados <> invalid
+        if data.agregados = 0
+            m.rutinaAviso.text = "Ya estaban en tus favoritos"
+        else
+            m.rutinaAviso.text = data.agregados.ToStr() + " en Mis favoritos"
+        end if
+        return
+    end if
+
     if data.agregadas <> invalid
         nombre = NombreCorto(data.nombre)
         if data.agregadas = 0
