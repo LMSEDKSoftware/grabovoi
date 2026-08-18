@@ -5,9 +5,30 @@
 ' hay límite de duración de respuesta como en Alexa — Roku es formato
 ' largo por diseño, por eso esto sí puede sonar completo aquí.
 
+' Segundos que dura la cortinilla de instrucciones al principio de cada
+' video narrado. NO es una estimacion: es un archivo unico y fijo
+' (output/intro_cortinilla/intro_cortinilla.mp4, ver
+' scripts/generar_intro_cortinilla.py) que se antepone por copia de
+' stream a TODAS las secuencias, asi que el corte cae siempre en el mismo
+' instante. Si algun dia se regenera la cortinilla con otra duracion, hay
+' que actualizar este numero.
+function DuracionIntro() as Float
+    return 36.5
+end function
+
 sub init()
     m.bgVideo = m.top.findNode("bgVideo")
     m.bgVideo.observeField("state", "onBgVideoStateChange")
+    m.bgVideo.observeField("position", "onBgVideoPosition")
+    m.saltarGrupo = m.top.findNode("saltarGrupo")
+    m.saltarLabel = m.top.findNode("saltarLabel")
+    m.saltarRestante = 0
+    m.saltarTimer = m.top.findNode("saltarTimer")
+    m.saltarTimer.observeField("fire", "onSaltarTimerFire")
+    ' Una sola oportunidad por secuencia: una vez que se tomo o se dejo
+    ' pasar, el boton no vuelve (si no, un rebuffeo a media cortinilla lo
+    ' resucitaria a la mitad de las instrucciones).
+    m.saltarConsumido = false
     m.bgImagen = m.top.findNode("bgImagen")
     m.scrimJugador = m.top.findNode("scrimJugador")
 
@@ -47,26 +68,92 @@ sub init()
     m.volverMenuBorde = m.top.findNode("volverMenuBorde")
 
     m.disclaimerGrupo = m.top.findNode("disclaimerGrupo")
+
+    m.rutinaTask = m.top.findNode("rutinaTask")
+    m.rutinaTask.observeField("done", "onRutinaResponse")
+    m.colaLabel = m.top.findNode("colaLabel")
+
+    ' Cola de secuencias por reproducir. Con una secuencia suelta tiene un
+    ' solo elemento; con una rutina, todas sus secuencias en orden.
+    m.cola = []
+    m.colaIndex = 0
 end sub
 
 function StartLoading() as Void
-    ' Deslinde de responsabilidad medica antes de cada secuencia (mismo
-    ' texto que el modal "Nota Importante" de la app movil, pedido
-    ' explicito). Hay que presionar OK para continuar; ver onKeyEvent.
+    ' Deslinde de responsabilidad medica (mismo texto que el modal "Nota
+    ' Importante" de la app movil). Se reconoce UNA vez por aparato: Roku
+    ' no acepta friccion repetida delante del contenido, y un aviso que
+    ' hay que despachar en cada secuencia deja de leerse. Queda siempre
+    ' disponible en Informacion Legal.
+    if DisclaimerAceptado()
+        EmpezarSecuencia()
+        return
+    end if
     m.disclaimerGrupo.visible = true
     m.top.setFocus(true)
 end function
 
 sub EmpezarSecuencia()
     m.disclaimerGrupo.visible = false
+
+    if m.top.rutinaId <> ""
+        m.estadoLabel.text = "Preparando tu pilotaje..."
+        m.rutinaTask.authToken = m.top.authToken
+        m.rutinaTask.uri = ApiBase() + "/roku-perfil?rutina=" + m.top.rutinaId
+        m.rutinaTask.method = "GET"
+        m.rutinaTask.control = "RUN"
+        return
+    end if
+
+    m.cola = [m.top.secuenciaId]
+    m.colaIndex = 0
+    CargarSecuenciaDeLaCola()
+end sub
+
+sub onRutinaResponse(event as Object)
+    result = event.GetData()
+    if SesionVencida(m.top, result) then return
+
+    if result.code <> 200
+        m.estadoLabel.text = "No se pudo cargar la combinación. Presiona atras."
+        return
+    end if
+
+    data = ParseJsonSafe(result.json)
+    if data = invalid or data.secuencias = invalid or data.secuencias.Count() = 0
+        m.estadoLabel.text = "Esa combinación no tiene secuencias. Presiona atras."
+        return
+    end if
+
+    m.cola = []
+    for each secuencia in data.secuencias
+        m.cola.Push(secuencia.id)
+    end for
+    m.colaIndex = 0
+    CargarSecuenciaDeLaCola()
+end sub
+
+sub CargarSecuenciaDeLaCola()
+    m.saltarConsumido = false
+    ActualizarColaLabel()
     m.sequenceTask.authToken = m.top.authToken
-    m.sequenceTask.uri = ApiBase() + "/roku-sequence?id=" + m.top.secuenciaId
+    m.sequenceTask.uri = ApiBase() + "/roku-sequence?id=" + m.cola[m.colaIndex]
     m.sequenceTask.method = "GET"
     m.sequenceTask.control = "RUN"
 end sub
 
+sub ActualizarColaLabel()
+    if m.cola.Count() <= 1
+        m.colaLabel.visible = false
+        return
+    end if
+    m.colaLabel.text = "Secuencia " + (m.colaIndex + 1).ToStr() + " de " + m.cola.Count().ToStr()
+    m.colaLabel.visible = true
+end sub
+
 sub onSequenceResponse(event as Object)
     result = event.GetData()
+    if SesionVencida(m.top, result) then return
     if result.code <> 200
         m.estadoLabel.text = "No se pudo cargar la secuencia. Presiona atras."
         return
@@ -148,12 +235,65 @@ sub onBgVideoStateChange(event as Object)
 
     if state = "error"
         print "PlayerScreen video narrado fallo (errorCode="; m.bgVideo.errorCode; " errorMsg="; m.bgVideo.errorMsg; "), usando modo digito por digito"
+        OcultarSaltar()
         IniciarModoDigitoPorDigito()
+    else if state = "playing"
+        ' Solo tiene sentido ofrecer el salto si de verdad seguimos dentro
+        ' de la cortinilla. Al volver de un seek tambien pasa por aqui.
+        if not m.saltarConsumido and m.bgVideo.position < DuracionIntro()
+            MostrarSaltar()
+        end if
     else if state = "finished"
         ' El video narrado ya trae las repeticiones con voz incrustada:
         ' terminar significa que la secuencia completa ya se reprodujo.
+        OcultarSaltar()
         FinishPlayback()
     end if
+end sub
+
+sub MostrarSaltar()
+    m.saltarRestante = 5
+    SaltarTexto()
+    m.saltarGrupo.visible = true
+    m.saltarTimer.control = "start"
+end sub
+
+sub SaltarTexto()
+    m.saltarLabel.text = "Saltar instrucciones (" + m.saltarRestante.ToStr() + ")"
+end sub
+
+' Lo esconde y lo da por consumido. Es el unico camino para quitarlo, lo
+' dispare quien lo dispare: el temporizador, el fin de la cortinilla, o
+' el propio usuario al presionarlo.
+sub OcultarSaltar()
+    m.saltarTimer.control = "stop"
+    m.saltarGrupo.visible = false
+    m.saltarConsumido = true
+end sub
+
+' El temporizador late cada segundo: cada latido baja la cuenta, y al
+' llegar a cero el boton se retira.
+sub onSaltarTimerFire()
+    m.saltarRestante = m.saltarRestante - 1
+    if m.saltarRestante <= 0
+        OcultarSaltar()
+    else
+        SaltarTexto()
+    end if
+end sub
+
+sub onBgVideoPosition(event as Object)
+    if not m.saltarGrupo.visible then return
+    ' Por si la cortinilla termina antes de que se cumplan los 5 segundos
+    ' (por ejemplo si el video entro tarde en "playing").
+    if event.GetData() >= DuracionIntro()
+        OcultarSaltar()
+    end if
+end sub
+
+sub SaltarIntro()
+    OcultarSaltar()
+    m.bgVideo.seek = DuracionIntro()
 end sub
 
 sub IniciarModoDigitoPorDigito()
@@ -258,10 +398,13 @@ end sub
 sub FinishPlayback()
     m.estadoLabel.text = "Secuencia completada. Guardando tu progreso..."
 
+    ' m.startEpoch se fija al cargar la secuencia, no al empezar cada
+    ' pasada: en una sesion continua esto cuenta el tiempo real de las
+    ' repeticiones, y se registra un solo completado por secuencia.
     endEpoch = CreateObject("roDateTime").AsSeconds()
     minutos = Int((endEpoch - m.startEpoch) / 60)
 
-    body = { codigo_id: m.top.secuenciaId, codigo: m.codigo, nombre: m.nombre, categoria: m.categoria, minutos: minutos }
+    body = { codigo_id: m.cola[m.colaIndex], codigo: m.codigo, nombre: m.nombre, categoria: m.categoria, minutos: minutos }
     m.completeTask.uri = ApiBase() + "/roku-complete"
     m.completeTask.method = "POST"
     m.completeTask.authToken = m.top.authToken
@@ -271,6 +414,21 @@ end sub
 
 sub onCompleteResponse(event as Object)
     result = event.GetData()
+
+    ' Quedan secuencias en la rutina: se encadena la siguiente sin
+    ' mostrar la pantalla de "Secuencia Activada", que es justo lo que
+    ' obligaria a tomar el control a media sesion.
+    if m.colaIndex + 1 < m.cola.Count()
+        m.colaIndex = m.colaIndex + 1
+        m.estadoLabel.text = ""
+        m.bgVideo.control = "stop"
+        m.bgVideo.visible = false
+        m.codigoGrupo.visible = false
+        m.bgImagen.visible = false
+        CargarSecuenciaDeLaCola()
+        return
+    end if
+
     cristales = invalid
     sincronicos = []
     if result.code = 200
@@ -280,6 +438,7 @@ sub onCompleteResponse(event as Object)
             if data.sincronicos <> invalid then sincronicos = data.sincronicos
         end if
     end if
+    m.colaLabel.visible = false
     MostrarCompletion(cristales, sincronicos)
 end sub
 
@@ -360,10 +519,18 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     ' atras, que todavia no termino de cargar.
     if m.disclaimerGrupo <> invalid and m.disclaimerGrupo.visible
         if key = "OK"
+            GuardarDisclaimerAceptado()
             EmpezarSecuencia()
         else if key = "back"
             m.top.result = { action: "back" }
         end if
+        return true
+    end if
+
+    ' Saltar la cortinilla de instrucciones. Solo se traga el OK: "atras"
+    ' y lo demas siguen su camino normal (salir del reproductor).
+    if m.saltarGrupo <> invalid and m.saltarGrupo.visible and key = "OK"
+        SaltarIntro()
         return true
     end if
 

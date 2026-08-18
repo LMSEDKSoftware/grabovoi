@@ -64,7 +64,7 @@
             <Label id="totalPilotajesValor" translation="[944,364]" color="#FFD700" text="">
                 <Font size="30" />
             </Label>
-            <Label translation="[944,416]" width="242" wrap="true" color="#B9C4D8" text="Total Pilotajes" />
+            <Label translation="[944,416]" width="242" wrap="true" color="#B9C4D8" text="Secuencias activadas" />
 
             <!-- Fila 2 -->
             <Rectangle id="cardTiempoSesion" translation="[300,476]" width="290" height="120" color="#13213B" />

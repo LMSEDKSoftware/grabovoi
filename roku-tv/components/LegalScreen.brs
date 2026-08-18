@@ -2,8 +2,11 @@ sub init()
     m.grid = m.top.findNode("grid")
     m.grid.observeField("itemSelected", "onItemSelected")
 
-    m.docIds = ["privacidad", "terminos", "almacenamiento"]
-    titulos = ["Política de Privacidad", "Términos y Condiciones de Uso", "Almacenamiento en el Dispositivo"]
+    ' "Aviso de salud" es el mismo texto del modal que se reconoce una
+    ' sola vez antes de la primera secuencia; aqui queda para releerlo
+    ' cuando se quiera, sin volver a bloquear el contenido.
+    m.docIds = ["privacidad", "terminos", "almacenamiento", "salud"]
+    titulos = ["Política de Privacidad", "Términos y Condiciones de Uso", "Almacenamiento en el Dispositivo", "Aviso de salud"]
 
     root = CreateObject("roSGNode", "ContentNode")
     for each t in titulos

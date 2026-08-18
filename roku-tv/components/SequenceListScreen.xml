@@ -20,7 +20,19 @@
         <MarkupGrid id="grid" translation="[300,110]" itemSize="[280,170]" itemSpacing="[24,24]"
             numColumns="3" numRows="3" itemComponentName="SequenceCard" />
         <Label id="loadingLabel" translation="[300,110]" color="#F4F1E8" text="Cargando..." />
+        <!-- Armar una combinacion: es la unica forma de crearlas hoy (la
+             app movil todavia no las crea), asi que la pista tiene que
+             estar a la vista o la funcion no existe para nadie. Ver
+             onKeyEvent en el .brs.
+             Va en la banda libre del encabezado, entre el titulo y el
+             conteo: abajo se encimaba con la ultima fila de tarjetas. El
+             titulo mas largo del canal ("Top ten mas usados") llega a
+             unos 520, y el conteo arranca cerca de 1070, asi que este
+             hueco da para unos 42 caracteres; los textos del .brs estan
+             recortados a esa medida. -->
+        <Label id="rutinaAviso" translation="[540,40]" width="510" horizAlign="center" color="#8A93A6" text="" />
         <ApiTask id="catalogTask" />
+        <ApiTask id="rutinaTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
     <script type="text/brightscript" uri="pkg:/components/SequenceListScreen.brs" />

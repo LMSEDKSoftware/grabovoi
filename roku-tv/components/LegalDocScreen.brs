@@ -63,6 +63,21 @@ function DocAlmacenamiento() as Object
     return { titulo: "Almacenamiento en el Dispositivo", subtitulo: "Versión para Roku de la Política de Cookies", cuerpo: cuerpo }
 end function
 
+' Mismo deslinde que el modal "Nota Importante" que se reconoce una sola
+' vez antes de la primera secuencia (ver StartLoading en PlayerScreen.brs).
+' Vive tambien aqui para poder releerlo sin volver a bloquear el
+' contenido en cada reproduccion.
+function DocSalud() as Object
+    cuerpo = Parrafos([
+        "Las secuencias numéricas gravitacionales NO sustituyen la atención médica profesional. Siempre consulta con profesionales de la salud para cualquier condición médica. Estas secuencias son herramientas complementarias de bienestar.",
+        "ManiGraB no diagnostica, no trata, no cura ni previene ninguna enfermedad. Nada de lo que se muestra o se escucha en este canal debe interpretarse como consejo médico, ni como motivo para suspender, cambiar o retrasar un tratamiento indicado por un profesional de la salud.",
+        "Si tienes una condición médica, estás bajo tratamiento, estás embarazada o tienes cualquier duda sobre tu salud, consulta a tu médico antes de incorporar estas prácticas a tu rutina.",
+        "Si estás atravesando una emergencia de salud, comunícate de inmediato con los servicios de emergencia de tu país. Este canal no es un servicio de atención ni de acompañamiento en crisis.",
+        "Al usar ManiGraB TV reconoces haber leído este aviso y aceptas que el uso de las secuencias es tu decisión personal y bajo tu propia responsabilidad."
+    ])
+    return { titulo: "Aviso de salud", subtitulo: "Deslinde de responsabilidad médica", cuerpo: cuerpo }
+end function
+
 sub init()
     m.title = m.top.findNode("title")
     m.subtitle = m.top.findNode("subtitle")
@@ -84,6 +99,8 @@ function StartLoading() as Void
         doc = DocPrivacidad()
     else if m.top.docId = "almacenamiento"
         doc = DocAlmacenamiento()
+    else if m.top.docId = "salud"
+        doc = DocSalud()
     end if
 
     if doc = invalid

@@ -26,6 +26,11 @@
         <Rectangle id="scrim" color="#071226" opacity="0.6" />
         <Label id="titleLabel" color="#F4F1E8" wrap="true" vertAlign="top" />
         <Label id="subtitleLabel" color="#B9C4D8" />
+        <!-- Marca de elegida, solo visible en el modo seleccion de
+             SequenceListScreen. Va arriba a la derecha, la unica esquina
+             que no usa ni el codigo ni el titulo. -->
+        <Rectangle id="marcaFondo" color="#FFD700" visible="false" />
+        <Label id="marcaLabel" text="✓" color="#071226" horizAlign="center" visible="false" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/SequenceCard.brs" />
 </component>

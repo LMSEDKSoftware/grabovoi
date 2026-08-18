@@ -36,6 +36,10 @@
         </Group>
 
         <ApiTask id="checkSessionTask" />
+        <!-- Cerrar sesion de verdad: avisa al servidor para que borre el
+             vinculo, no solo el token local. Sin observador a proposito,
+             ver CerrarSesion en el .brs. -->
+        <ApiTask id="logoutTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
     <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />

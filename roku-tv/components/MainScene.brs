@@ -23,7 +23,9 @@ sub init()
     ' apariencia de foco (Roku la dibuja sola). "Informacion Legal" es el
     ' ultimo item, parte de la misma lista y navegacion que el resto.
     root = CreateObject("roSGNode", "ContentNode")
-    for each texto in ["Inicio", "Biblioteca cuántica", "Buscar", "Top ten más usados", "Mis favoritos", "Evolución", "Perfil", "Cerrar sesión", "Información Legal"]
+    ' "Combinaciones" y no "Secuencias Combinadas": el sidebar mide 230 y
+    ' el nombre largo se cortaba a media palabra.
+    for each texto in ["Inicio", "Biblioteca cuántica", "Buscar", "Top ten más usados", "Mis favoritos", "Combinaciones", "Evolución", "Perfil", "Cerrar sesión", "Información Legal"]
         item = root.CreateChild("ContentNode")
         item.title = texto
     end for
@@ -32,6 +34,7 @@ sub init()
 
     m.checkSessionTask = m.top.findNode("checkSessionTask")
     m.checkSessionTask.observeField("done", "onSessionChecked")
+    m.logoutTask = m.top.findNode("logoutTask")
 
     ShowIntro()
 end sub
@@ -73,15 +76,55 @@ sub onSidebarItemSelected()
     else if index = 4
         ShowFavoritos()
     else if index = 5
-        ShowEvolucion()
+        ShowRutinas()
     else if index = 6
-        ShowPerfil()
+        ShowEvolucion()
     else if index = 7
-        ClearToken()
-        m.authToken = invalid
-        ShowLogin()
+        ShowPerfil()
     else if index = 8
+        CerrarSesion()
+    else if index = 9
         ShowLegal()
+    end if
+end sub
+
+' Cerrar sesion completo. Antes esto solo borraba el token del registro
+' del propio Roku: la fila en el servidor seguia viva y el token seguia
+' sirviendo los 90 dias completos, asi que la sesion se iba con el
+' aparato si se vendia o se devolvia.
+'
+' El aviso al servidor se manda y no se espera respuesta: si la red esta
+' caida igual hay que sacar al usuario de aqui, y el token local ya no va
+' a existir para reintentarlo. Por eso logoutTask no tiene observador.
+sub CerrarSesion()
+    if m.authToken <> invalid
+        m.logoutTask.uri = ApiBase() + "/roku-perfil"
+        m.logoutTask.method = "POST"
+        m.logoutTask.authToken = m.authToken
+        m.logoutTask.body = FormatJson({ action: "logout" })
+        m.logoutTask.control = "RUN"
+    end if
+    CerrarSesionLocal()
+end sub
+
+' Solo el lado del aparato. Se usa cuando el servidor YA invalido la
+' sesion por su cuenta (un 401 en cualquier pantalla): avisarle otra vez
+' no tendria sentido.
+sub CerrarSesionLocal()
+    ClearToken()
+    m.authToken = invalid
+    ShowLogin()
+end sub
+
+' Todas las pantallas reportan por el mismo campo "result", asi que
+' basta un observador extra en SwapScreen para atrapar la sesion vencida
+' una sola vez, en vez de repetir la comprobacion en los diez
+' manejadores especificos. Los dos observadores conviven: el especifico
+' de cada pantalla ignora esta accion.
+sub onResultGlobal(event as Object)
+    result = event.GetData()
+    if result <> invalid and result.action = "sessionExpired"
+        CerrarSesionLocal()
     end if
 end sub
 
@@ -107,9 +150,8 @@ sub onSessionChecked(event as Object)
     if result.code = 200
         ShowHome()
     else
-        ClearToken()
-        m.authToken = invalid
-        ShowLogin()
+        ' El servidor ya rechazo este token, no hay nada que avisarle.
+        CerrarSesionLocal()
     end if
 end sub
 
@@ -120,6 +162,7 @@ sub SwapScreen(name as String, node as Object)
     m.currentScreen = node
     m.currentScreenName = name
     m.content.appendChild(node)
+    node.observeField("result", "onResultGlobal")
 
     ' El sidebar es permanente para todas las pantallas autenticadas,
     ' excepto login (sin cuenta no hay nada que navegar) y player (que la
@@ -155,9 +198,7 @@ end sub
 sub onHomeResult(event as Object)
     result = event.GetData()
     if result.action = "logout"
-        ClearToken()
-        m.authToken = invalid
-        ShowLogin()
+        CerrarSesion()
     else if result.action = "openCategories"
         ShowCategories()
     else if result.action = "openSequence"
@@ -284,6 +325,31 @@ sub onTopUsadosResult(event as Object)
     end if
 end sub
 
+sub ShowRutinas()
+    screen = CreateObject("roSGNode", "RutinasScreen")
+    screen.authToken = m.authToken
+    screen.observeField("result", "onRutinasResult")
+    screen.callFunc("StartLoading")
+    SwapScreen("rutinas", screen)
+end sub
+
+sub onRutinasResult(event as Object)
+    result = event.GetData()
+    if result.action = "back"
+        ShowHome()
+    else if result.action = "openRutina"
+        ' El reproductor se encarga de pedir la rutina y armar su cola; asi
+        ' esta escena no necesita otro ApiTask ni esperar una respuesta
+        ' antes de poder cambiar de pantalla.
+        screen = CreateObject("roSGNode", "PlayerScreen")
+        screen.authToken = m.authToken
+        screen.rutinaId = result.id
+        screen.observeField("result", "onPlayerResult")
+        screen.callFunc("StartLoading")
+        SwapScreen("player", screen)
+    end if
+end sub
+
 sub ShowEvolucion()
     screen = CreateObject("roSGNode", "EvolucionScreen")
     screen.authToken = m.authToken
@@ -312,9 +378,7 @@ sub onPerfilResult(event as Object)
     if result.action = "back"
         ShowHome()
     else if result.action = "logout"
-        ClearToken()
-        m.authToken = invalid
-        ShowLogin()
+        CerrarSesion()
     end if
 end sub
 
@@ -396,7 +460,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         else if m.currentScreenName = "player"
             ShowHome()
             return true
-        else if m.currentScreenName = "favoritos" or m.currentScreenName = "topUsados" or m.currentScreenName = "evolucion" or m.currentScreenName = "perfil" or m.currentScreenName = "buscar" or m.currentScreenName = "legal"
+        else if m.currentScreenName = "favoritos" or m.currentScreenName = "topUsados" or m.currentScreenName = "evolucion" or m.currentScreenName = "perfil" or m.currentScreenName = "buscar" or m.currentScreenName = "legal" or m.currentScreenName = "rutinas"
             ShowHome()
             return true
         else if m.currentScreenName = "legalDoc"

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- "Secuencias Combinadas": varias secuencias unidas para una misma
+     intencion, que suenan una tras otra sin tocar el control. La accion
+     de armarlas se llama "arma tu pilotaje", que es como la comunidad
+     de Grabovoi le dice a componer un trabajo con varias secuencias.
+
+     Ojo con el vocabulario: en el resto de la app "pilotaje" ya
+     significa la sesion de UNA secuencia (ver el audio de la cortinilla
+     y la tarjeta de Evolucion), por eso el objeto guardado se llama
+     combinacion y no pilotaje.
+
+     Por dentro las tablas siguen llamandose rutinas / rutina_items (y
+     los componentes RutinasScreen / RutinaFila): existen desde la
+     primera migracion del canal y renombrarlas seria una migracion sin
+     beneficio funcional.
+
+     Se crean desde la propia TV: en cualquier lista de secuencias
+     (favoritos, una categoria, el top diez) se eligen con el boton de
+     opciones, ver SequenceListScreen. Sin eso esta pantalla estaria
+     siempre vacia, porque la app movil tampoco las crea todavia. -->
+<component name="RutinasScreen" extends="Group">
+    <interface>
+        <field id="authToken" type="string" />
+        <field id="result" type="assocarray" alwaysNotify="true" />
+        <function name="StartLoading" />
+        <function name="RestoreFocus" />
+    </interface>
+    <children>
+        <Rectangle color="#071226" width="1280" height="720" />
+        <Label id="title" text="Combinaciones" color="#FFD700" translation="[300,24]" width="560" height="40">
+            <Font size="32" />
+        </Label>
+        <Label id="subtitulo" text="Varias secuencias unidas para una misma intención" translation="[300,66]" width="560" color="#B9C4D8" />
+        <Label id="conteo" text="" translation="[890,30]" width="350" horizAlign="right" color="#B9C4D8" />
+
+        <Label id="loadingLabel" text="Cargando..." translation="[300,140]" width="560" height="200" wrap="true" color="#F4F1E8" />
+
+        <!-- La lista cede ancho para dejar sitio al panel explicativo de
+             la derecha: la funcion es nueva y no se explica sola, y quien
+             llega aqui sin combinaciones necesita ver los pasos, no una
+             pantalla vacia. -->
+        <MarkupGrid id="grid" translation="[300,120]" itemSize="[560,86]" itemSpacing="[0,14]"
+            numColumns="1" numRows="5" itemComponentName="RutinaFila" />
+
+        <!-- Los textos van cortos a proposito: el panel mide 306 utiles y
+             la tipografia por defecto entra a unos 26 caracteres por
+             renglon, asi que una frase larga se sale de la caja en vez de
+             recortarse con puntos suspensivos. -->
+        <Group id="explicacion">
+            <Rectangle translation="[890,120]" width="350" height="500" color="#13213B" />
+            <Label text="Para qué sirven" translation="[912,142]" width="306" color="#FFD700" />
+            <Label translation="[912,178]" width="306" height="110" wrap="true" color="#CCD3E0"
+                text="Unir varias secuencias en un mismo pilotaje le da más resonancia a tu intención." />
+
+            <Label text="Cómo armar una" translation="[912,300]" width="306" color="#FFD700" />
+            <Label translation="[912,336]" width="306" height="260" wrap="true" color="#CCD3E0"
+                text="1. Abre Mis favoritos o una categoría.&#10;2. Presiona Opciones (*).&#10;3. Marca con OK las que quieras unir.&#10;4. Opciones (*) otra vez y ponle nombre a esa combinación." />
+        </Group>
+
+        <!-- Ancho hasta el borde derecho: el panel explicativo termina en
+             620, asi que a esta altura ya no estorba y el texto cabe
+             entero en vez de cortarse a media palabra. -->
+        <Label id="ayuda" translation="[300,650]" width="940" color="#8A93A6"
+            text="OK reproduce la combinación completa. Opciones (*) la borra." />
+
+        <ApiTask id="rutinasTask" />
+        <ApiTask id="borrarTask" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
+    <script type="text/brightscript" uri="pkg:/components/RutinasScreen.brs" />
+</component>

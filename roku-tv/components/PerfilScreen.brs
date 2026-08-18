@@ -18,6 +18,7 @@ end function
 
 sub onPerfilResponse(event as Object)
     result = event.GetData()
+    if SesionVencida(m.top, result) then return
     m.loadingLabel.visible = false
 
     if result.code <> 200

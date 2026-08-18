@@ -3,6 +3,10 @@
     <interface>
         <field id="authToken" type="string" />
         <field id="secuenciaId" type="string" />
+        <!-- Si viene rutinaId, el reproductor pide la rutina y encola sus
+             secuencias en orden; si viene secuenciaId, la cola es de una
+             sola. Ver ArmarCola en el .brs. -->
+        <field id="rutinaId" type="string" />
         <field id="result" type="assocarray" alwaysNotify="true" />
         <function name="StartLoading" />
     </interface>
@@ -17,7 +21,11 @@
              partes), bgVideo.state pasa a "error" y se cae al modo
              digito-por-digito de siempre (bgImagen + Audio + gapTimer)
              como respaldo automatico, ver onBgVideoStateChange. -->
-        <Video id="bgVideo" translation="[0,0]" width="1280" height="720" visible="false" />
+        <!-- notificationInterval baja el refresco de "position" a medio
+             segundo (por default es mas lento): asi el boton de saltar el
+             intro desaparece justo cuando arranca la secuencia, y no unos
+             segundos despues. Ver onBgVideoPosition en el .brs. -->
+        <Video id="bgVideo" translation="[0,0]" width="1280" height="720" notificationInterval="0.5" visible="false" />
         <Poster id="bgImagen" translation="[0,0]" width="1280" height="720" loadDisplayMode="scaleToFill" visible="false" />
         <!-- Sin scrim: pedido explicito, nunca se hace visible (queda
              declarado por si hace falta mas adelante). -->
@@ -55,10 +63,47 @@
              son dos instancias independientes del mismo logo, cada una
              con su propio tamaño. -->
         <Poster id="logoPoster" translation="[605,610]" width="70" height="50" loadDisplayMode="scaleToFit" opacity="0.4" uri="pkg:/images/manigrab_logo.png" />
+        <!-- "Saltar instrucciones", al estilo del boton de saltar intro de
+             cualquier servicio de streaming. Solo aparece mientras corre la
+             cortinilla de instrucciones (los primeros segundos del video
+             narrado, identicos en todo el catalogo); en cuanto empieza la
+             secuencia se esconde solo. Caja oscura con borde dorado en vez
+             del dorado solido del disclaimer: va encima del video y no debe
+             competir con la esfera. Ver SaltarIntro en el .brs. -->
+        <Group id="saltarGrupo" translation="[80,594]" visible="false">
+            <Rectangle id="saltarBorde" width="300" height="68" color="#FFD700" opacity="0.85" />
+            <Rectangle id="saltarFondo" translation="[2,2]" width="296" height="64" color="#0C1830" opacity="0.92" />
+            <!-- El numero entre parentesis es la cuenta regresiva; lo
+                 escribe SaltarTexto en el .brs cada segundo. -->
+            <Label id="saltarLabel" text="" translation="[0,9]" width="300" horizAlign="center" color="#F4F1E8" />
+            <Label id="saltarPista" text="Presiona OK" translation="[0,38]" width="300" horizAlign="center" color="#8A93A6" />
+        </Group>
+
+        <!-- Late cada segundo para mover la cuenta regresiva del boton.
+             A los 5 latidos el boton se quita solo: si no lo tomaste, es
+             que querias oir las instrucciones, y dejarlo encima de la
+             esfera todo el intro estorba. -->
+        <Timer id="saltarTimer" duration="1" repeat="true" />
+
         <Audio id="audio" />
         <Timer id="gapTimer" repeat="false" />
         <ApiTask id="sequenceTask" />
         <ApiTask id="completeTask" />
+        <ApiTask id="rutinaTask" />
+
+        <!-- Indicador de posicion dentro de una rutina ("2 de 5"). Solo se
+             enciende cuando de verdad hay cola. -->
+        <Label id="colaLabel" translation="[80,44]" width="400" color="#8A93A6" text="" visible="false" />
+
+        <!-- Aqui vivia la "sesion continua" (repetir la secuencia hasta
+             cumplir 15/30/45/60 minutos). Se quito: cada video narrado
+             termina con un cierre hablado ("felicidades, acabas de
+             activar tu secuencia para...") que en cada repeticion se
+             volvia a oir, y no hay forma fiable de saber donde empieza
+             ese cierre sin volver a generar los 217 videos, que se
+             descarto por costo. Si algun dia se regeneran sin ese cierre,
+             el final del video coincidiria con el final de las
+             repeticiones y la funcion se puede reponer tal cual. -->
 
         <!-- Pantalla de "Secuencia Activada" al terminar, calcada del
              SequenciaActivadaModal de la app (mismos textos): titulo +
@@ -120,6 +165,8 @@
             </Label>
             <Label id="disclaimerCuerpo" translation="[260,272]" width="760" wrap="true" horizAlign="center" color="#CCD3E0"
                 text="Las secuencias numéricas gravitacionales NO sustituyen la atención médica profesional. Siempre consulta con profesionales de la salud para cualquier condición médica. Estas secuencias son herramientas complementarias de bienestar." />
+            <Label id="disclaimerNota" translation="[260,400]" width="760" wrap="true" horizAlign="center" color="#8A93A6"
+                text="Este aviso se muestra una sola vez. Puedes volver a leerlo cuando quieras en Información Legal." />
             <Rectangle id="disclaimerBotonFondo" translation="[440,450]" width="400" height="64" color="#FFD700" />
             <Label id="disclaimerBotonLabel" text="Entendido (OK)" translation="[440,472]" width="400" horizAlign="center" color="#0C1830" />
         </Group>

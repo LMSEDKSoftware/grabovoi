@@ -19,6 +19,9 @@ sub init()
     m.scrim = m.top.findNode("scrim")
     m.titleLabel = m.top.findNode("titleLabel")
     m.subtitleLabel = m.top.findNode("subtitleLabel")
+    m.marcaFondo = m.top.findNode("marcaFondo")
+    m.marcaLabel = m.top.findNode("marcaLabel")
+    m.contenidoObservado = invalid
     m.subtitleAbajo = false
     print "SequenceCard nodos encontrados: focusBorder="; m.focusBorder <> invalid; " background="; m.background <> invalid; " titleLabel="; m.titleLabel <> invalid
 
@@ -75,6 +78,13 @@ sub Layout(w as Float, h as Float)
     end if
     m.titleLabel.width = w - padding * 2
     m.subtitleLabel.width = w - padding * 2
+
+    lado = 34
+    m.marcaFondo.translation = [w - lado - 8, 8]
+    m.marcaFondo.width = lado
+    m.marcaFondo.height = lado
+    m.marcaLabel.translation = [w - lado - 8, 12]
+    m.marcaLabel.width = lado
 end sub
 
 sub onContentChanged()
@@ -120,6 +130,25 @@ sub RenderContent()
 
     print "SequenceCard RenderContent aplicado. background.color="; m.background.color; " background.width="; m.background.width; " background.height="; m.background.height; " titleLabel.text="; m.titleLabel.text
 
+    ' MarkupGrid recicla las tarjetas entre elementos, asi que hay que
+    ' soltar el nodo anterior antes de escuchar el nuevo: si no, una
+    ' tarjeta seguiria reaccionando a los cambios de una secuencia que ya
+    ' no muestra.
+    '
+    ' Se observa el campo suelto y no basta con itemContent: cambiar
+    ' "seleccionado" DENTRO del nodo no vuelve a disparar onContentChanged,
+    ' que solo salta cuando cambia el nodo entero.
+    if m.contenidoObservado <> invalid
+        m.contenidoObservado.unobserveField("seleccionado")
+    end if
+    if content.hasField("seleccionado")
+        content.observeField("seleccionado", "onSeleccionChanged")
+        m.contenidoObservado = content
+    else
+        m.contenidoObservado = invalid
+    end if
+    PintarMarca()
+
     ' m.subtitleAbajo pudo haber cambiado arriba; Layout() depende de el
     ' para decidir donde va el subtitulo, asi que se vuelve a aplicar.
     w = m.top.width
@@ -127,6 +156,20 @@ sub RenderContent()
     if w = invalid or w = 0 then w = 280
     if h = invalid or h = 0 then h = 170
     Layout(w, h)
+end sub
+
+sub onSeleccionChanged()
+    PintarMarca()
+end sub
+
+sub PintarMarca()
+    marcada = false
+    content = m.top.itemContent
+    if content <> invalid and content.hasField("seleccionado") and content.seleccionado = true
+        marcada = true
+    end if
+    m.marcaFondo.visible = marcada
+    m.marcaLabel.visible = marcada
 end sub
 
 sub onFocusChanged()

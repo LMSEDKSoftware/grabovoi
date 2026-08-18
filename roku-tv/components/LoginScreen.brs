@@ -49,11 +49,8 @@ sub init()
     m.modo = "qr"
     m.zona = "opciones"
 
-    ' Precargado para pruebas, así con un solo OK ya se puede entrar sin
-    ' teclear nada con el control remoto. Quitar cuando el canal deje de
-    ' ser interno.
-    m.email = "2005.ivan@gmail.com"
-    m.password = "123456"
+    m.email = ""
+    m.password = ""
 
     LlenarLista(m.regenerar, ["Regenerar código"])
     LlenarLista(m.opciones, ["Iniciar sesión con contraseña", "¿No tienes cuenta?"])
@@ -156,7 +153,9 @@ sub MostrarPassword()
     m.grupoPassword.visible = true
     m.errorLabel.text = ""
     m.menu.setFocus(true)
-    m.menu.jumpToItem = 2
+    ' Arranca en "Correo electronico": ya no hay credenciales precargadas,
+    ' asi que el primer paso siempre es escribir el correo.
+    m.menu.jumpToItem = 0
 end sub
 
 sub MostrarQr()

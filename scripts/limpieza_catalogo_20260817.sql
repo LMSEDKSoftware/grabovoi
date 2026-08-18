@@ -1,0 +1,68 @@
+-- REGISTRO de la limpieza de codigos_grabovoi del 17 de agosto de 2026.
+-- YA SE EJECUTO en produccion. Esto NO es una migracion y no debe
+-- volver a correrse: queda como constancia de que se toco y por que.
+--
+-- Existe porque la limpieza anterior no se registro en ningun lado, y
+-- meses despues nadie sabia si la categoria "Redes sociales" seguia viva
+-- ni por que. Que quede escrito es lo que evita repetir esa duda.
+--
+-- Respaldos (siguen en la base, no borrarlos sin revisar):
+--   public.backup_redes_sociales_20260817   25 filas
+--   public.backup_duplicados_20260817       61 filas
+--
+-- Resultado: el catalogo paso de 1192 a 1128 secuencias y de 22 a 21
+-- categorias, sin favoritos, entradas de diario ni combinaciones rotas.
+
+-- ---------------------------------------------------------------
+-- 1. Categoria fantasma "Redes sociales" (25 filas borradas)
+-- ---------------------------------------------------------------
+-- No era una categoria: fue un error de implementacion. Las 25 filas
+-- tenian nombre "Secuencia" y descripcion "Secuencia importada desde
+-- fuentes externas", sin fuente, sin imagen, sin uso (0 favoritos, 0
+-- historial). No habia con que recategorizarlas.
+--
+-- Ademas resultaron ser fragmentos truncados de secuencias que YA
+-- estaban en el catalogo completas y con nombre real, por ejemplo:
+--   187_948_181 -> 9187948181       Campo de proteccion vibracional
+--   748_132_148 -> 4748132148       Detener plano negativo
+--   9181419     -> 591_718_9181419  Normalizacion de las Relaciones
+--   494517601   -> 218_494517601    Obtener Trabajo Rapidamente
+-- Y otras 7 no eran codigos: eran fechas, numeros de pagina o trozos del
+-- nombre de un PDF (240123, 150749, 231207_134515, 1331828215...).
+--
+--   delete from public.codigos_grabovoi
+--    where categoria = 'Redes sociales'
+--      and id in (select id from public.backup_redes_sociales_20260817);
+
+-- ---------------------------------------------------------------
+-- 2. Codigos duplicados (30 codigos en 61 filas -> 20 filas)
+-- ---------------------------------------------------------------
+-- Estaban escondidos porque solo diferian en la separacion: '519_714_812'
+-- y '519714812' son el mismo codigo. Comparar por el campo tal cual no
+-- los encuentra; hay que normalizar con replace(codigo,'_','').
+--
+-- Criterio aplicado, en orden de prioridad:
+--   1. Si alguien la referencia (favorito, diario, titulo relacionado),
+--      esa fila se queda: es evidencia de cual significado usa la gente,
+--      y borrarla destruiria contenido del usuario.
+--   2. Si una venia del import defectuoso, esa se va.
+--   3. Si ambas dicen lo mismo, se queda la mejor escrita.
+--   4. Si significan cosas distintas y nadie las usa, se van las dos:
+--      mostrar el significado equivocado es peor que no mostrar ninguno.
+--
+-- Antes de borrar se repuntaron las referencias de las filas fusionadas
+-- hacia la superviviente, con guard de "not exists" por si el usuario ya
+-- tenia las dos. El SQL completo esta en el historial de la sesion.
+
+-- ---------------------------------------------------------------
+-- Consulta para volver a detectar duplicados en el futuro
+-- ---------------------------------------------------------------
+-- Correr esto despues de cada importacion masiva:
+--
+--   select replace(codigo,'_','') as digitos,
+--          count(*) as veces,
+--          string_agg(codigo || ' = ' || nombre || ' [' || categoria || ']', '  ||  ')
+--     from public.codigos_grabovoi
+--    group by 1
+--   having count(*) > 1
+--    order by 2 desc;

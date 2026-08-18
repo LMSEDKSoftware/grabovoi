@@ -9,6 +9,10 @@
 // voces male/male 2 del canal). Antes esto leía roku_account_links.
 // voice_gender por usuario; ya no hace falta esa consulta ni esa
 // independencia de voz por cuenta, así que queda fijo aquí.
+//
+// No agregar un parámetro para elegir voz: es una decisión cerrada, no un
+// pendiente. En el bucket siguen existiendo voces/male y voces/male2 de
+// una etapa anterior; que estén ahí no significa que se puedan usar.
 
 const { createClient } = require('@supabase/supabase-js');
 

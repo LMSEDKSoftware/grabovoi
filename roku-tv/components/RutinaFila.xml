@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Renderer de una rutina en la lista: nombre arriba, cuantas
+     secuencias tiene abajo. Mismo contrato itemContent/width/height/
+     itemHasFocus que SequenceCard.xml y SidebarItem.xml. -->
+<component name="RutinaFila" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="onContentChanged" />
+        <field id="width" type="float" onChange="onSizeChanged" />
+        <field id="height" type="float" onChange="onSizeChanged" />
+        <field id="itemHasFocus" type="bool" onChange="onFocusChanged" />
+    </interface>
+    <children>
+        <!-- Borde dorado simulado con dos rectangulos, igual que las
+             tarjetas de sugerencia del reproductor: Rectangle de Roku no
+             tiene stroke propio. -->
+        <Rectangle id="borde" width="700" height="86" color="#FFD700" opacity="0" />
+        <Rectangle id="fondo" translation="[2,2]" width="696" height="82" color="#13213B" />
+        <Label id="nombre" translation="[24,16]" width="650" color="#F4F1E8" text="" />
+        <Label id="total" translation="[24,50]" width="650" color="#8A93A6" text="" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/RutinaFila.brs" />
+</component>

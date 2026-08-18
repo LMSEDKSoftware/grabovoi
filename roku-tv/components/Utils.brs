@@ -26,6 +26,38 @@ function ClearToken() as Void
     sec.Flush()
 end function
 
+' Un 401 significa que el token ya no vale: caducó a los 90 días, o se
+' cerró sesión desde otra televisión. Antes cualquier respuesta que no
+' fuera 200 se veía igual (una pantalla vacía sin explicación), así que
+' una sesión vencida era indistinguible de un backend caído. Cada
+' pantalla llama esto como primera línea de su manejador de respuesta;
+' MainScene escucha el caso en un solo lugar y devuelve al login.
+function SesionVencida(top as Object, result as Object) as Boolean
+    if result.code = 401
+        top.result = { action: "sessionExpired" }
+        return true
+    end if
+    return false
+end function
+
+' El aviso de salud se reconoce UNA vez por aparato, no antes de cada
+' secuencia: Roku rechaza la fricción repetida delante del contenido, y
+' un modal que hay que despachar cada vez deja de leerse a la tercera.
+' Queda consultable cuando se quiera desde Información Legal.
+function DisclaimerAceptado() as Boolean
+    sec = CreateObject("roRegistrySection", "ManiGraBTV")
+    if sec.Exists("disclaimer_aceptado")
+        return (sec.Read("disclaimer_aceptado") = "1")
+    end if
+    return false
+end function
+
+function GuardarDisclaimerAceptado() as Void
+    sec = CreateObject("roRegistrySection", "ManiGraBTV")
+    sec.Write("disclaimer_aceptado", "1")
+    sec.Flush()
+end function
+
 ' Identificador estable de este aparato para este canal, usado en la
 ' vinculación por QR: se manda al pedir el código y al consultarlo, para
 ' que un número adivinado no sirva desde otra televisión.
