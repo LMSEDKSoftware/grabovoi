@@ -1890,7 +1890,8 @@ class _SincronicosSectionState extends State<_SincronicosSection> {
         });
         
         // Obtener códigos sincrónicos
-        final codigos = await CodigosRepository().getSincronicosByCategoria(categoria);
+        final codigos = await CodigosRepository()
+            .getSincronicosByCategoria(categoria, codigo: widget.codigo);
         
         if (mounted) {
           setState(() {

@@ -124,22 +124,27 @@
             <Label id="tipCuerpo" translation="[220,304]" width="840" wrap="true" horizAlign="center" color="#CCD3E0" text="Este es un avance significativo en tu proceso de manifestación. Lo ideal es realizar sesiones de 2:00 minutos para reforzar la vibración energética." />
             <Label id="completionCombinar" translation="[190,410]" width="900" wrap="true" horizAlign="center" color="#F4F1E8" text="Combínalo con las siguientes secuencias para amplificar la resonancia" />
 
-            <!-- Sugerencia 1 -->
-            <Group id="sugerencia1Grupo" translation="[190,480]">
-                <Rectangle id="sugerencia1Borde" width="430" height="110" color="#FFD700" opacity="0" />
-                <Rectangle id="sugerencia1Fondo" translation="[2,2]" width="426" height="106" color="#13213B" />
-                <Label id="sugerencia1Codigo" translation="[24,18]" width="382" color="#FFD700" text="" />
-                <Label id="sugerencia1Nombre" translation="[24,50]" width="382" wrap="true" color="#F4F1E8" text="" />
-                <Label id="sugerencia1Categoria" translation="[24,82]" width="382" color="#8A93A6" text="" />
+            <!-- Sugerencia 1.
+                 El nombre necesita alto propio (2 renglones) y la
+                 categoria tiene que ir DESPUES de ese alto: con el
+                 nombre suelto en wrap, uno de dos lineas se dibujaba
+                 encima de la categoria ("Manifestacion de potencial a la
+                 realidad" pisando "Manifestacion"). -->
+            <Group id="sugerencia1Grupo" translation="[190,470]">
+                <Rectangle id="sugerencia1Borde" width="430" height="132" color="#FFD700" opacity="0" />
+                <Rectangle id="sugerencia1Fondo" translation="[2,2]" width="426" height="128" color="#13213B" />
+                <Label id="sugerencia1Codigo" translation="[24,14]" width="382" color="#FFD700" text="" />
+                <Label id="sugerencia1Nombre" translation="[24,46]" width="382" height="56" wrap="true" vertAlign="top" color="#F4F1E8" text="" />
+                <Label id="sugerencia1Categoria" translation="[24,102]" width="382" color="#8A93A6" text="" />
             </Group>
 
             <!-- Sugerencia 2 -->
-            <Group id="sugerencia2Grupo" translation="[660,480]">
-                <Rectangle id="sugerencia2Borde" width="430" height="110" color="#FFD700" opacity="0" />
-                <Rectangle id="sugerencia2Fondo" translation="[2,2]" width="426" height="106" color="#13213B" />
-                <Label id="sugerencia2Codigo" translation="[24,18]" width="382" color="#FFD700" text="" />
-                <Label id="sugerencia2Nombre" translation="[24,50]" width="382" wrap="true" color="#F4F1E8" text="" />
-                <Label id="sugerencia2Categoria" translation="[24,82]" width="382" color="#8A93A6" text="" />
+            <Group id="sugerencia2Grupo" translation="[660,470]">
+                <Rectangle id="sugerencia2Borde" width="430" height="132" color="#FFD700" opacity="0" />
+                <Rectangle id="sugerencia2Fondo" translation="[2,2]" width="426" height="128" color="#13213B" />
+                <Label id="sugerencia2Codigo" translation="[24,14]" width="382" color="#FFD700" text="" />
+                <Label id="sugerencia2Nombre" translation="[24,46]" width="382" height="56" wrap="true" vertAlign="top" color="#F4F1E8" text="" />
+                <Label id="sugerencia2Categoria" translation="[24,102]" width="382" color="#8A93A6" text="" />
             </Group>
 
             <!-- Volver al menu principal -->

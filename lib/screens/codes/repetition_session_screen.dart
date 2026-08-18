@@ -2300,7 +2300,8 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
       if (categoria.isEmpty) return [];
       
       // Obtener códigos sincrónicos
-      return await CodigosRepository().getSincronicosByCategoria(categoria);
+      return await CodigosRepository()
+          .getSincronicosByCategoria(categoria, codigo: widget.codigo);
     } catch (e) {
       debugPrint('⚠️ Error al obtener códigos sincrónicos: $e');
       return [];
