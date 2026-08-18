@@ -26,9 +26,13 @@
         <Rectangle id="scrim" color="#071226" opacity="0.6" />
         <Label id="titleLabel" color="#F4F1E8" wrap="true" vertAlign="top" />
         <Label id="subtitleLabel" color="#B9C4D8" />
-        <!-- Marca de elegida, solo visible en el modo seleccion de
-             SequenceListScreen. Va arriba a la derecha, la unica esquina
-             que no usa ni el codigo ni el titulo. -->
+        <!-- Arriba a la derecha, la unica esquina que no usa ni el codigo
+             (arriba izquierda) ni el titulo (abajo).
+             Comparten sitio a proposito: el corazon dice "esta en tus
+             favoritos" y la marca dice "la acabas de elegir". Cuando una
+             tarjeta esta elegida manda la marca, porque en ese momento lo
+             que importa es lo que estas armando. -->
+        <Poster id="favoritoIcono" uri="pkg:/images/favorito.png" visible="false" />
         <Rectangle id="marcaFondo" color="#FFD700" visible="false" />
         <Label id="marcaLabel" text="✓" color="#071226" horizAlign="center" visible="false" />
     </children>

@@ -21,6 +21,7 @@ sub init()
     m.subtitleLabel = m.top.findNode("subtitleLabel")
     m.marcaFondo = m.top.findNode("marcaFondo")
     m.marcaLabel = m.top.findNode("marcaLabel")
+    m.favoritoIcono = m.top.findNode("favoritoIcono")
     m.contenidoObservado = invalid
     m.subtitleAbajo = false
     print "SequenceCard nodos encontrados: focusBorder="; m.focusBorder <> invalid; " background="; m.background <> invalid; " titleLabel="; m.titleLabel <> invalid
@@ -85,6 +86,11 @@ sub Layout(w as Float, h as Float)
     m.marcaFondo.height = lado
     m.marcaLabel.translation = [w - lado - 8, 12]
     m.marcaLabel.width = lado
+
+    ' Mismo hueco que la marca de elegida: nunca se ven las dos a la vez.
+    m.favoritoIcono.translation = [w - lado - 8, 8]
+    m.favoritoIcono.width = lado
+    m.favoritoIcono.height = lado
 end sub
 
 sub onContentChanged()
@@ -140,12 +146,18 @@ sub RenderContent()
     ' que solo salta cuando cambia el nodo entero.
     if m.contenidoObservado <> invalid
         m.contenidoObservado.unobserveField("seleccionado")
+        m.contenidoObservado.unobserveField("esFavorito")
     end if
+    m.contenidoObservado = invalid
     if content.hasField("seleccionado")
         content.observeField("seleccionado", "onSeleccionChanged")
         m.contenidoObservado = content
-    else
-        m.contenidoObservado = invalid
+    end if
+    ' Se escucha aparte para que marcar un favorito desde la TV se vea al
+    ' momento, sin recargar la lista entera.
+    if content.hasField("esFavorito")
+        content.observeField("esFavorito", "onSeleccionChanged")
+        m.contenidoObservado = content
     end if
     PintarMarca()
 
@@ -163,13 +175,23 @@ sub onSeleccionChanged()
 end sub
 
 sub PintarMarca()
-    marcada = false
     content = m.top.itemContent
+
+    marcada = false
     if content <> invalid and content.hasField("seleccionado") and content.seleccionado = true
         marcada = true
     end if
+
+    favorita = false
+    if content <> invalid and content.hasField("esFavorito") and content.esFavorito = true
+        favorita = true
+    end if
+
     m.marcaFondo.visible = marcada
     m.marcaLabel.visible = marcada
+    ' El corazon cede el sitio a la marca de elegida: comparten esquina y
+    ' mientras armas una combinacion importa mas lo que acabas de elegir.
+    m.favoritoIcono.visible = (favorita and not marcada)
 end sub
 
 sub onFocusChanged()

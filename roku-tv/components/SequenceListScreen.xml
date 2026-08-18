@@ -38,6 +38,10 @@
              falta si de verdad se va a guardar algo, y asi la lista
              refleja lo que hay ahora mismo. -->
         <ApiTask id="combinacionesTask" />
+        <!-- Que secuencias ya son favoritas, para pintarles el corazon.
+             Se consulta en paralelo al catalogo y se aplica cuando
+             llegan las dos: cual conteste primero depende de la red. -->
+        <ApiTask id="favoritosTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/Utils.brs" />
     <script type="text/brightscript" uri="pkg:/components/SequenceListScreen.brs" />

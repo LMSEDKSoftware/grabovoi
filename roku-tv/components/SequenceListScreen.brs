@@ -9,6 +9,13 @@ sub init()
     m.combinacionesTask = m.top.findNode("combinacionesTask")
     m.combinacionesTask.observeField("done", "onCombinacionesRecibidas")
     m.combinacionesMostradas = []
+    m.favoritosTask = m.top.findNode("favoritosTask")
+    m.favoritosTask.observeField("done", "onFavoritosRecibidos")
+    ' Codigos que ya son favoritos. Como diccionario y no como lista: se
+    ' consulta una vez por tarjeta y con 627 secuencias en Salud recorrer
+    ' una lista por cada una se nota.
+    m.codigosFavoritos = {}
+    m.codigosRecienMarcados = []
     m.sequenceIds = []
     ' Modo seleccion: OK marca en vez de abrir, y se guardan solo las
     ' marcadas. Los indices se guardan en el orden en que se fueron
@@ -41,7 +48,42 @@ function StartLoading() as Void
     m.catalogTask.method = "GET"
     print "SequenceListScreen StartLoading uri="; m.catalogTask.uri
     m.catalogTask.control = "RUN"
+
+    ' En paralelo, no en cadena: la lista no tiene por que esperar a los
+    ' favoritos para dibujarse, y los corazones aparecen en cuanto
+    ' lleguen.
+    m.favoritosTask.authToken = m.top.authToken
+    m.favoritosTask.uri = ApiBase() + "/roku-favoritos"
+    m.favoritosTask.method = "GET"
+    m.favoritosTask.control = "RUN"
 end function
+
+sub onFavoritosRecibidos(event as Object)
+    result = event.GetData()
+    if result.code <> 200 then return
+
+    data = ParseJsonSafe(result.json)
+    if data = invalid or data.secuencias = invalid then return
+
+    m.codigosFavoritos = {}
+    for each secuencia in data.secuencias
+        if secuencia.codigo <> invalid then m.codigosFavoritos[secuencia.codigo] = true
+    end for
+    PintarFavoritos()
+end sub
+
+' Marca las tarjetas ya dibujadas. Se llama tanto cuando llegan los
+' favoritos (si la lista ya estaba) como cuando llega la lista (si los
+' favoritos ya estaban): el orden depende de la red.
+sub PintarFavoritos()
+    if m.grid.content = invalid then return
+    for i = 0 to m.grid.content.getChildCount() - 1
+        nodo = m.grid.content.getChild(i)
+        if nodo <> invalid and nodo.subtitle <> invalid
+            nodo.esFavorito = (m.codigosFavoritos[nodo.subtitle] = true)
+        end if
+    end for
+end sub
 
 sub onCatalogResponse(event as Object)
     result = event.GetData()
@@ -76,7 +118,8 @@ sub onCatalogResponse(event as Object)
             subtitle: seq.codigo,
             color: seq.color,
             imageUrl: imagen,
-            seleccionado: false
+            seleccionado: false,
+            esFavorito: false
         })
         m.sequenceIds.Push(seq.id)
     end for
@@ -96,6 +139,7 @@ sub onCatalogResponse(event as Object)
     m.grid.content = root
     m.grid.visible = true
     m.grid.setFocus(true)
+    PintarFavoritos()
     MostrarPistaRutina()
 end sub
 
@@ -278,6 +322,9 @@ sub AgregarAFavoritos()
     end for
     if codigos.Count() = 0 then return
 
+    ' Se recuerdan para poder pintarles el corazon en cuanto el servidor
+    ' confirme, sin volver a pedir la lista entera.
+    m.codigosRecienMarcados = codigos
     m.rutinaAviso.text = "Guardando en favoritos..."
     m.rutinaTask.authToken = m.top.authToken
     m.rutinaTask.uri = ApiBase() + "/roku-favoritos"
@@ -365,6 +412,14 @@ sub onRutinaGuardada(event as Object)
     ' campos: favoritos trae "agregados", sumar a una combinacion trae
     ' "agregadas", y crear no trae ninguno de los dos.
     if data.agregados <> invalid
+        ' Se marcan localmente en vez de volver a pedir la lista: el
+        ' servidor ya confirmo, y asi el corazon aparece al instante.
+        for each codigo in m.codigosRecienMarcados
+            m.codigosFavoritos[codigo] = true
+        end for
+        m.codigosRecienMarcados = []
+        PintarFavoritos()
+
         if data.agregados = 0
             m.rutinaAviso.text = "Ya estaban en tus favoritos"
         else
