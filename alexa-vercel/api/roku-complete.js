@@ -106,26 +106,34 @@ async function handler(req, res) {
     });
   }
 
-  // Mismas "secuencias sincrónicas" que sugiere la app al terminar una
-  // sesión (SequenciaActivadaModal -> _getSincronicosForCurrentCode):
-  // categorias_sincronicas mapea la categoria de lo que se acaba de
-  // completar a hasta N categorias recomendadas (por peso), y de ahi se
-  // toman hasta 2 codigos. Sin categoria no hay nada que sugerir.
+  // "Secuencias sincrónicas": las 2 que se ofrecen al terminar, bajo
+  // "Combínalo con las siguientes secuencias para amplificar la
+  // resonancia".
+  //
+  // La selección vive en la función roku_sincronicas (ver
+  // supabase/migrations/20260817230000_sincronicas_curadas.sql) y no
+  // aquí, porque necesita random() y una ventana por categoría, cosas
+  // que PostgREST no sabe expresar. Antes esto era un .in(...).limit(2)
+  // sin ORDER BY: Postgres devolvía siempre las mismas dos filas, así
+  // que las sugerencias eran constantes por categoría desde el primer
+  // día.
+  //
+  // Se manda el código además de la categoría: 45 secuencias tienen
+  // pareja elegida a mano y esas mandan sobre el algoritmo. Sin
+  // p_codigo la función se salta ese nivel y todo cae en el automático.
   let sincronicos = [];
   if (categoria) {
-    const { data: catRows } = await admin
-      .from('categorias_sincronicas')
-      .select('categoria_recomendada')
-      .eq('categoria_principal', categoria)
-      .order('peso', { ascending: false });
-
-    const categoriasRecomendadas = (catRows || []).map((r) => r.categoria_recomendada);
-    if (categoriasRecomendadas.length) {
-      const { data: secRows } = await admin
-        .from('codigos_grabovoi')
-        .select('id, codigo, nombre, categoria')
-        .in('categoria', categoriasRecomendadas)
-        .limit(2);
+    const { data: secRows, error: sincronicosError } = await admin.rpc('roku_sincronicas', {
+      p_categoria: categoria,
+      p_excluir: codigoId,
+      p_limite: 2,
+      p_codigo: codigo,
+    });
+    if (sincronicosError) {
+      // Que falle la sugerencia no debe tumbar el cierre de la sesión:
+      // los cristales y el historial ya se guardaron arriba.
+      console.error('roku-complete: roku_sincronicas falló', sincronicosError);
+    } else {
       sincronicos = secRows || [];
     }
   }
