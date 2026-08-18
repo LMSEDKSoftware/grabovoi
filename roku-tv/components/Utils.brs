@@ -20,9 +20,28 @@ function LoadToken() as Dynamic
     return invalid
 end function
 
+' El correo de la cuenta conectada, al lado del token. Se guarda en el
+' aparato a proposito: la TV ya lo conoce en el momento del login, asi que
+' pintarlo no tiene por que costar una ida al servidor ni esperar su
+' respuesta. Es solo para mostrar; nada se autoriza con este dato.
+function SaveEmail(email as String) as Void
+    sec = CreateObject("roRegistrySection", "ManiGraBTV")
+    sec.Write("account_email", email)
+    sec.Flush()
+end function
+
+function LoadEmail() as String
+    sec = CreateObject("roRegistrySection", "ManiGraBTV")
+    if sec.Exists("account_email")
+        return sec.Read("account_email")
+    end if
+    return ""
+end function
+
 function ClearToken() as Void
     sec = CreateObject("roRegistrySection", "ManiGraBTV")
     sec.Delete("access_token")
+    sec.Delete("account_email")
     sec.Flush()
 end function
 

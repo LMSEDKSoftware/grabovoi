@@ -8,6 +8,7 @@ sub init()
     m.currentScreen = invalid
     m.currentScreenName = ""
     m.authToken = invalid
+    m.userEmail = ""
     m.deepLinkPendiente = invalid
     ' Beacons de rendimiento (criterio 3.2). NO son automaticos: la app
     ' tiene que dispararlos. AppLaunchComplete va una sola vez, cuando la
@@ -93,6 +94,9 @@ sub IniciarFlujoPrincipal()
     saved = LoadToken()
     if saved <> invalid
         m.authToken = saved
+        ' Arranques posteriores: no hubo login que lo trajera, sale del
+        ' registro donde quedo la vez que si lo hubo.
+        m.userEmail = LoadEmail()
         m.checkSessionTask.authToken = saved
         m.checkSessionTask.uri = ApiBase() + "/roku-home"
         m.checkSessionTask.method = "GET"
@@ -152,6 +156,7 @@ end sub
 sub CerrarSesionLocal()
     ClearToken()
     m.authToken = invalid
+    m.userEmail = ""
     ShowLogin()
 end sub
 
@@ -216,13 +221,16 @@ sub SwapScreen(name as String, node as Object)
 end sub
 
 sub ShowLogin()
-    ' El login es un dialogo previo a la pantalla principal, y el criterio
-    ' 3.2 pide acotarlo: sin esto, el tiempo que el usuario tarda en
-    ' teclear su correo contaria como lentitud del canal.
-    m.top.signalBeacon("AppDialogInitiate")
     screen = CreateObject("roSGNode", "LoginScreen")
     screen.observeField("result", "onLoginResult")
     SwapScreen("login", screen)
+
+    ' El beacon va DESPUES de mostrar la pantalla, nunca antes. El
+    ' criterio 3.2 pide acotar el rato que el usuario tarda en teclear su
+    ' correo, pero si esta llamada fallara y estuviera arriba, se llevaria
+    ' por delante la creacion del login y el canal se quedaria en negro.
+    ' Medir nunca debe poder impedir navegar.
+    m.top.signalBeacon("AppDialogInitiate")
 end sub
 
 sub onLoginResult(event as Object)
@@ -231,6 +239,10 @@ sub onLoginResult(event as Object)
         m.top.signalBeacon("AppDialogComplete")
         m.authToken = result.token
         SaveToken(result.token)
+        if result.email <> invalid and result.email <> ""
+            m.userEmail = result.email
+            SaveEmail(result.email)
+        end if
         ShowHome()
         AtenderDeepLinkPendiente()
     end if
@@ -239,6 +251,7 @@ end sub
 sub ShowHome()
     screen = CreateObject("roSGNode", "HomeScreen")
     screen.authToken = m.authToken
+    screen.userEmail = m.userEmail
     screen.observeField("result", "onHomeResult")
     screen.callFunc("StartLoading")
     SwapScreen("home", screen)

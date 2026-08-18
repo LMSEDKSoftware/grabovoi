@@ -9,6 +9,7 @@ sub init()
     m.recientesGrid.observeField("itemSelected", "onRecienteItemSelected")
     m.fraseLabel = m.top.findNode("fraseLabel")
     m.progressLabel = m.top.findNode("progressLabel")
+    m.cuentaLabel = m.top.findNode("cuentaLabel")
     m.loadingLabel = m.top.findNode("loadingLabel")
     m.heroGrid.visible = false
     m.favoritasTitle.visible = false
@@ -52,6 +53,17 @@ sub onHomeResponse(event as Object)
     frase = "La energía fluye contigo. Cada día es más poderoso."
     if data.frase_del_dia <> invalid and data.frase_del_dia <> "" then frase = data.frase_del_dia
     m.fraseLabel.text = frase
+
+    ' Primero el correo que trajo el propio login (ya vive en el aparato,
+    ' no cuesta esperar al servidor); si por el camino del QR viniera
+    ' vacio, se usa el que manda /roku-home.
+    if m.top.userEmail <> invalid and m.top.userEmail <> ""
+        m.cuentaLabel.text = m.top.userEmail
+    else if data.email <> invalid and data.email <> ""
+        m.cuentaLabel.text = data.email
+    else
+        m.cuentaLabel.text = ""
+    end if
 
     p = data.progreso
     m.progressLabel.text = "Racha: " + p.dias_consecutivos.ToStr() + " dias | Cristales: " + p.cristales_energia.ToStr() + " | Nivel: " + Int(p.nivel_energetico).ToStr() + "%"

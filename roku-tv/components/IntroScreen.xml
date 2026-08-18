@@ -11,6 +11,11 @@
     <children>
         <Rectangle color="#071226" width="1280" height="720" />
         <Video id="video" translation="[0,0]" width="1280" height="720" />
+        <!-- Rescate. El video dura 6 s; si a los 12 no ha terminado ni ha
+             dado error, se pasa de largo igualmente. Una cortinilla que
+             se atasca no puede dejar el canal encerrado sin llegar nunca
+             al login: es decoracion, no un paso obligatorio. -->
+        <Timer id="rescate" duration="12" repeat="false" />
     </children>
     <script type="text/brightscript" uri="pkg:/components/IntroScreen.brs" />
 </component>

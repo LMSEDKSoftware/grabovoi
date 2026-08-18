@@ -45,8 +45,13 @@
              esconde detrás del QR por gusto; Roku exige que el canal
              permita entrar sin salir del televisor. -->
         <Group id="grupoPassword" visible="false">
-            <Label id="tituloPass" text="Inicia sesión con tu cuenta de ManiGraB" translation="[80,60]" width="700" color="#FFD83D" />
-            <Label id="ayudaPass" text="Usa el teclado en pantalla. Presiona Atrás para volver al código QR." translation="[80,108]" width="700" color="#B9C4D8" />
+            <!-- Los dos textos se reescriben desde LoginScreen.brs segun
+                 como se llego aqui: el mensaje generico o el de "ya
+                 tienes cuenta" cuando Roku ya confirmo el correo. Por eso
+                 llevan wrap y alto propio: el segundo es bastante mas
+                 largo y antes se salia de la caja. -->
+            <Label id="tituloPass" text="Inicia sesión con tu cuenta de ManiGraB" translation="[80,52]" width="1120" height="40" wrap="true" color="#FFD83D" />
+            <Label id="ayudaPass" text="Usa el teclado en pantalla. Presiona Atrás para volver al código QR." translation="[80,100]" width="1000" height="76" wrap="true" color="#B9C4D8" />
             <LabelList id="menu" translation="[80,190]" itemSize="[600,60]" itemSpacing="[0,4]"
                 color="#B9C4D8" focusedColor="#071226" />
             <Label id="errorLabel" translation="[80,430]" width="700" height="72" wrap="true" color="#FF7777" text="" />

@@ -2,6 +2,7 @@
 <component name="HomeScreen" extends="Group">
     <interface>
         <field id="authToken" type="string" />
+        <field id="userEmail" type="string" />
         <field id="result" type="assocarray" alwaysNotify="true" />
         <function name="StartLoading" />
         <function name="RestoreFocus" />
@@ -19,7 +20,14 @@
         <!-- Arriba a la derecha, misma fila que el titulo; abajo se
              pisaba con la tarjeta destacada de "secuencia diaria". -->
         <Label id="progressLabel" translation="[300,32]" width="940" horizAlign="right" color="#8A93A6" text="" />
-        <Label id="fraseLabel" translation="[300,68]" width="760" height="46" wrap="true" color="#B9C4D8" text="" />
+        <!-- Correo de la cuenta conectada, debajo de la racha y contra el
+             mismo borde derecho. En amarillo porque es dato de identidad,
+             no una estadistica mas: dice de un vistazo con que cuenta
+             entro esta television. -->
+        <Label id="cuentaLabel" translation="[300,64]" width="940" horizAlign="right" color="#FFD700" text="" />
+        <!-- La frase se acorto de 760 a 660 para no cruzarse con el correo
+             cuando este sea largo: comparten altura. -->
+        <Label id="fraseLabel" translation="[300,68]" width="660" height="46" wrap="true" color="#B9C4D8" text="" />
 
         <!-- "Tu secuencia diaria": una sola tarjeta ancha, sin cambios de
              diseño (pedido explicito). Grilla de 1x1 en vez de un nodo

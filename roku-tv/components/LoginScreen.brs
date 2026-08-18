@@ -8,8 +8,12 @@
 '      iniciar sesión sin salir del televisor, así que vive en el panel
 '      derecho, siempre a la vista.
 '
-' Los dos terminan igual, escribiendo {action:"loggedIn", token} en
-' m.top.result, que es lo que MainScene está observando.
+' Los dos terminan igual, escribiendo {action:"loggedIn", token, email}
+' en m.top.result, que es lo que MainScene está observando. El correo va
+' incluido porque en ese momento la TV ya lo conoce: lo tecleó el usuario
+' o lo compartió la cuenta de Roku. Por el camino del QR quien conoce el
+' correo es el teléfono, no la TV, así que ahí puede ir vacío y la
+' pantalla de Inicio cae al que manda el servidor.
 
 sub init()
     m.grupoQr = m.top.findNode("grupoQr")
@@ -28,6 +32,12 @@ sub init()
 
     m.menu = m.top.findNode("menu")
     m.menu.observeField("itemSelected", "onMenuSelected")
+    m.tituloPass = m.top.findNode("tituloPass")
+    m.ayudaPass = m.top.findNode("ayudaPass")
+    ' Se llego a la contrasena despues de que Roku confirmara el correo.
+    ' Cambia solo los textos: el usuario ya sabe que su cuenta existe, y
+    ' el mensaje generico le hacia creer que estaba creando una nueva.
+    m.vieneDeRoku = false
     m.errorLabel = m.top.findNode("errorLabel")
 
     m.codeTask = m.top.findNode("codeTask")
@@ -131,7 +141,7 @@ sub onPollRespuesta(event as Object)
     if parsed.status = "linked" and parsed.access_token <> invalid
         m.pollTimer.control = "stop"
         m.estado.text = "¡Listo! Entrando..."
-        m.top.result = { action: "loggedIn", token: parsed.access_token }
+        m.top.result = { action: "loggedIn", token: parsed.access_token, email: CorreoConocido(parsed) }
     else if parsed.status = "expired"
         ' Caducó (15 minutos) o alguien más lo reclamó. Se pide otro solo,
         ' para que nunca quede un número muerto en la pantalla.
@@ -206,6 +216,7 @@ sub onCorreoVerificado(event as Object)
         ' asi que dejar entrar sin contrasena permitiria abrir la cuenta
         ' de cualquiera sabiendo su correo.
         m.email = m.correoRoku
+        m.vieneDeRoku = true
         RefreshMenu()
         MostrarPassword()
         m.menu.jumpToItem = 1
@@ -225,6 +236,18 @@ sub MostrarPassword()
     m.grupoQr.visible = false
     m.grupoPassword.visible = true
     m.errorLabel.text = ""
+
+    if m.vieneDeRoku
+        m.tituloPass.text = "Ya tienes cuenta de ManiGraB con " + m.email
+        ' Se dice desde el principio que es una sola vez. El token se
+        ' guarda en el registro del televisor y dura 90 dias, asi que a
+        ' partir del siguiente arranque esta TV entra sola.
+        m.ayudaPass.text = "Solo falta tu contraseña de ManiGraB (la misma de la app en tu celular). Se pide una sola vez: esta televisión quedará vinculada y luego entrará sola."
+    else
+        m.tituloPass.text = "Inicia sesión con tu cuenta de ManiGraB"
+        m.ayudaPass.text = "Usa el teclado en pantalla. Presiona Atrás para volver al código QR."
+    end if
+
     m.menu.setFocus(true)
     ' Arranca en "Correo electronico": ya no hay credenciales precargadas,
     ' asi que el primer paso siempre es escribir el correo.
@@ -232,6 +255,7 @@ sub MostrarPassword()
 end sub
 
 sub MostrarQr()
+    m.vieneDeRoku = false
     m.modo = "qr"
     m.grupoPassword.visible = false
     m.grupoQr.visible = true
@@ -288,20 +312,23 @@ sub RefreshMenu()
 
     emailItem = root.CreateChild("ContentNode")
     if m.email = ""
-        emailItem.title = "Correo electronico: (vacio)"
+        emailItem.title = "Correo electrónico: (pulsa OK para escribirlo)"
     else
-        emailItem.title = "Correo electronico: " + m.email
+        emailItem.title = "Correo electrónico: " + m.email
     end if
 
     passwordItem = root.CreateChild("ContentNode")
     if m.password = ""
-        passwordItem.title = "Contrasena: (vacia)"
+        ' "(pulsa OK para escribirla)" y no "(vacia)". Con el texto viejo
+        ' parecia que el canal pedia inventar una contrasena nueva, cuando
+        ' lo que espera es la que el usuario ya tiene en la app.
+        passwordItem.title = "Contraseña: (pulsa OK para escribirla)"
     else
         mask = ""
         for i = 1 to Len(m.password)
             mask = mask + "*"
         end for
-        passwordItem.title = "Contrasena: " + mask
+        passwordItem.title = "Contraseña: " + mask
     end if
 
     enterItem = root.CreateChild("ContentNode")
@@ -362,6 +389,14 @@ sub onKeyboardButton(event as Object)
     m.top.getScene().dialog = invalid
 end sub
 
+' Por el QR el correo lo sabe el telefono. Si el servidor lo devuelve se
+' usa; si no, se cae al que Roku haya compartido, y en ultimo caso vacio.
+function CorreoConocido(parsed as Object) as String
+    if parsed.email <> invalid and parsed.email <> "" then return parsed.email
+    if m.correoRoku <> invalid and m.correoRoku <> "" then return m.correoRoku
+    return ""
+end function
+
 sub DoLogin()
     m.errorLabel.text = ""
     if m.email = "" or m.password = ""
@@ -381,7 +416,7 @@ sub onLoginResponse(event as Object)
     parsed = ParseJsonSafe(result.json)
 
     if code = 200 and parsed <> invalid and parsed.access_token <> invalid
-        m.top.result = { action: "loggedIn", token: parsed.access_token }
+        m.top.result = { action: "loggedIn", token: parsed.access_token, email: m.email }
     else
         if parsed <> invalid and parsed.message <> invalid
             m.errorLabel.text = parsed.message
