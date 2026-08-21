@@ -1,7 +1,7 @@
 name: manifestacion_numerica_grabovoi
 description: App espiritual basada en los códigos de Grigori Grabovoi
 publish_to: 'none'
-version: 2.3.53+68
+version: 2.3.54+69
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -61,7 +61,10 @@ dependencies:
   chewie: ^1.7.4
   
   # Suscripciones y Pagos
-  in_app_purchase: ^3.1.11
+  # >=3.3.0 trae in_app_purchase_android >=0.5.0, que sube la Google Play
+  # Billing Library nativa de 7.1.1 a 8.0.0 -- Play Console exige esto
+  # antes del 1 nov 2026 o rechaza las actualizaciones de la app.
+  in_app_purchase: ^3.3.0
   local_auth: ^2.2.0
   
   # Mantener pantalla encendida (p. ej. durante pilotaje con audio)
