@@ -469,164 +469,38 @@ class SubscriptionService {
     String productId,
     String purchaseId,
   ) async {
+    // Ya NO se escribe user_subscriptions directo desde aquí. Antes esta
+    // función insertaba/actualizaba is_active=true con la sesión del
+    // propio usuario, y la política RLS solo exigía auth.uid()=user_id --
+    // cualquiera podía mandar esa misma petición a mano, sin pagar, y
+    // quedar premium. Ahora se manda el purchaseToken real de Google Play
+    // a la Edge Function verify-purchase, que confirma la compra
+    // directo con Google antes de escribir nada (con service_role, el
+    // único que ya puede crear una fila activa). Ver migración
+    // 20260821090000_cerrar_escritura_directa_suscripciones.sql.
+    final purchaseToken = purchase.verificationData.serverVerificationData;
+    if (purchaseToken.isEmpty) {
+      print('❌ La compra no trae serverVerificationData, no se puede verificar');
+      return;
+    }
+
     try {
-      // Calcular fecha de expiración según el producto
-      DateTime expiryDate;
-      if (productId == monthlyProductId) {
-        expiryDate = DateTime.now().add(const Duration(days: 30));
-      } else if (productId == yearlyProductId) {
-        expiryDate = DateTime.now().add(const Duration(days: 365));
-      } else {
-        print('⚠️ Producto desconocido: $productId');
+      final respuesta = await _supabase.functions.invoke(
+        'verify-purchase',
+        body: {'productId': productId, 'purchaseToken': purchaseToken},
+      );
+
+      final data = respuesta.data;
+      if (respuesta.status != 200 || data is! Map || data['success'] != true) {
+        print('❌ verify-purchase rechazó la compra: ${respuesta.status} $data');
         return;
       }
 
-      // 1) Verificar si ya existe una fila para este user_id + purchase_id
-      Map<String, dynamic>? existing;
-      if (purchaseId.isNotEmpty) {
-        try {
-          existing = await _supabase
-              .from('user_subscriptions')
-              .select('id, is_active, expires_at')
-              .eq('user_id', userId)
-              .eq('purchase_id', purchaseId)
-              .maybeSingle();
-        } catch (e) {
-          print('⚠️ Error buscando suscripción existente para purchase_id=$purchaseId: $e');
-        }
-      }
-
-      // Si purchase_id vacío (Android a veces): buscar suscripción reciente mismo user+product
-      if (existing == null && purchaseId.isEmpty) {
-        final cutoff = DateTime.now().subtract(const Duration(minutes: 2));
-        try {
-          final recent = await _supabase
-              .from('user_subscriptions')
-              .select('id, is_active')
-              .eq('user_id', userId)
-              .eq('product_id', productId)
-              .gte('created_at', cutoff.toIso8601String())
-              .order('created_at', ascending: false)
-              .limit(1)
-              .maybeSingle();
-          if (recent != null) {
-            existing = recent;
-          }
-        } catch (e) {
-          print('⚠️ Error buscando suscripción reciente (purchase_id vacío): $e');
-        }
-      }
-
-      if (existing != null) {
-        // 2a) Ya existe un registro para este purchase_id: actualizarlo y dejar solo uno activo
-        final existingId = existing['id'] as String;
-        await _supabase
-            .from('user_subscriptions')
-            .update({
-              'product_id': productId,
-              'purchase_id': purchaseId.isEmpty ? null : purchaseId,
-              'transaction_date': DateTime.now().toIso8601String(),
-              'expires_at': expiryDate.toIso8601String(),
-              'is_active': true,
-            })
-            .eq('id', existingId);
-
-        await _supabase
-            .from('user_subscriptions')
-            .update({'is_active': false})
-            .eq('user_id', userId)
-            .eq('is_active', true)
-            .neq('id', existingId);
-
-        _applySubscriptionState(productId, expiryDate, userId);
-        print('✅ Suscripción actualizada (id=$existingId): $productId hasta $expiryDate');
-        return;
-      }
-
-      // 2b) No existe este purchase_id: validar que no haya ya una suscripción vigente
-      // Si ya hay una vigente (expires_at > now), no insertar ni sobrescribir con otra
-      final now = DateTime.now();
-      Map<String, dynamic>? validSubscription;
-      try {
-        validSubscription = await _supabase
-            .from('user_subscriptions')
-            .select('id, product_id, expires_at')
-            .eq('user_id', userId)
-            .gt('expires_at', now.toIso8601String())
-            .order('expires_at', ascending: false)
-            .limit(1)
-            .maybeSingle();
-      } catch (e) {
-        print('⚠️ Error buscando suscripción vigente: $e');
-      }
-
-      if (validSubscription != null) {
-        final vigenteProduct = validSubscription['product_id'] as String?;
-        final vigenteExpira = validSubscription['expires_at'] as String?;
-        print('⏭️ Usuario ya tiene suscripción vigente ($vigenteProduct hasta $vigenteExpira). No se inserta ni se sobrescribe con $productId.');
-        _applySubscriptionState(vigenteProduct ?? monthlyProductId, vigenteExpira != null ? DateTime.parse(vigenteExpira) : expiryDate, userId);
-        return;
-      }
-
-      // 2c) No hay suscripción vigente: reutilizar registro existente (expirado) o insertar uno nuevo
-      Map<String, dynamic>? anyExisting;
-      try {
-        anyExisting = await _supabase
-            .from('user_subscriptions')
-            .select('id')
-            .eq('user_id', userId)
-            .order('created_at', ascending: false)
-            .limit(1)
-            .maybeSingle();
-      } catch (e) {
-        print('⚠️ Error buscando suscripción previa para reutilizar: $e');
-      }
-
-      if (anyExisting != null) {
-        final existingId = anyExisting['id'] as String;
-
-        // Desactivar todas las demás y dejar SOLO este registro como activo
-        await _supabase
-            .from('user_subscriptions')
-            .update({'is_active': false})
-            .eq('user_id', userId)
-            .neq('id', existingId);
-
-        await _supabase
-            .from('user_subscriptions')
-            .update({
-              'product_id': productId,
-              'purchase_id': purchaseId.isEmpty ? null : purchaseId,
-              'transaction_date': DateTime.now().toIso8601String(),
-              'expires_at': expiryDate.toIso8601String(),
-              'is_active': true,
-            })
-            .eq('id', existingId);
-
-        _applySubscriptionState(productId, expiryDate, userId);
-        print('✅ Suscripción actualizada reutilizando registro existente (id=$existingId): $productId hasta $expiryDate');
-      } else {
-        // No hay ningún registro previo: crear uno nuevo
-        await _supabase
-            .from('user_subscriptions')
-            .update({'is_active': false})
-            .eq('user_id', userId)
-            .eq('is_active', true);
-
-        await _supabase.from('user_subscriptions').insert({
-          'user_id': userId,
-          'product_id': productId,
-          'purchase_id': purchaseId.isEmpty ? null : purchaseId,
-          'transaction_date': DateTime.now().toIso8601String(),
-          'expires_at': expiryDate.toIso8601String(),
-          'is_active': true,
-        });
-
-        _applySubscriptionState(productId, expiryDate, userId);
-        print('✅ Suscripción insertada (única, sin registros previos): $productId hasta $expiryDate');
-      }
+      final expiryDate = DateTime.parse(data['expires_at'] as String);
+      _applySubscriptionState(productId, expiryDate, userId);
+      print('✅ Suscripción verificada con Google Play y activada: $productId hasta $expiryDate');
     } catch (e) {
-      print('❌ Error procesando compra exitosa: $e');
+      print('❌ Error verificando la compra con el servidor: $e');
     }
   }
 
