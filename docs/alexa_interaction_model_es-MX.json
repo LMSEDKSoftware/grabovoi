@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "secuencias grabovoi",
+      "invocationName": "secuencias numericas",
       "intents": [
         {
           "name": "AMAZON.CancelIntent",

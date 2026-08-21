@@ -1,6 +1,28 @@
 # ManiGraB en Alexa — Plan de implementación (fin de semana)
 
-## Estado: enviada a certificación (2026-08-11)
+## Estado: rechazada en certificación, corregida y lista para reenviar (2026-08-20)
+
+Amazon rechazó el envío del 2026-08-11 por el nombre de invocación:
+"secuencias grabovoi" incluye "grabovoi", un término que Alexa no
+reconoce con precisión confiable al invocar, y que además no es marca
+propia de ManiGraB (es el nombre del método, usado genéricamente por
+terceros) -- pedir una carta firmada del dueño de la marca no era viable,
+no hay un solo dueño identificable de ese término. Se cambió a
+"secuencias numericas" (natural en español, sin término de tercero,
+conserva "secuencias" que ya es parte de la identidad visual de la app).
+"grabovoi" no aparecía en ninguna frase de ejemplo ni respuesta hablada,
+solo en el invocationName y en nombres de tablas internas -- no hizo
+falta tocar nada más del modelo.
+
+Pendiente del lado de la consola (no se puede hacer por API, requiere la
+sesión del desarrollador): actualizar el invocation name en Build >
+Invocation, guardar, reconstruir el modelo, correr Validación de nuevo
+(el botón "Llevar a cabo" -- esa pantalla no se recalcula sola), y
+reenviar a certificación. De paso, apagar el toggle de APL en Interfaces:
+el skill nunca manda una directiva de render, dejarlo encendido declara
+una capacidad multimodal que no se implementa.
+
+## Estado: enviada a certificación (2026-08-11) [primer intento, rechazado]
 
 Enviada con **"Certify now and publish later"** — no App-to-App Account
 Linking (el login es web, vía `alexa-oauth-authorize.js`), así que no
