@@ -154,17 +154,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     return 'Acceso completo';
   }
 
-  String _getFormattedPrice(String productId, String defaultPrice) {
-    // Formatear precios específicos según el producto
-    if (productId == SubscriptionService.monthlyProductId) {
-      // Precio mensual: $88.00
-      return '\$88.00';
-    } else if (productId == SubscriptionService.yearlyProductId) {
-      // Precio anual: $888.00
-      return '\$888.00';
-    }
-    // Si no es uno de los productos esperados, usar el precio por defecto
-    return defaultPrice;
+  // El precio real es el que devuelve Google Play (product.price): ya
+  // viene formateado y convertido a la moneda de la tienda del usuario.
+  // Antes esta función lo ignoraba por completo y mostraba "$88.00"/
+  // "$888.00" fijos sin importar en qué país o moneda estuviera comprando
+  // alguien -- lo que se le cobra de verdad podía no tener nada que ver
+  // con lo que veía en pantalla. El precio base en pesos mexicanos
+  // (88/888) se muestra aparte, como referencia, no como el precio real.
+  String _precioBaseMxn(String productId) {
+    if (productId == SubscriptionService.monthlyProductId) return '\$88.00 MXN';
+    if (productId == SubscriptionService.yearlyProductId) return '\$888.00 MXN';
+    return '';
   }
 
   @override
@@ -551,7 +551,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                               FittedBox(
                                                 fit: BoxFit.scaleDown,
                                                 child: Text(
-                                                  _getFormattedPrice(product.id, product.price),
+                                                  // Precio real: lo que Google Play va a cobrar de
+                                                  // verdad, ya en la moneda de la tienda de quien compra.
+                                                  product.price,
                                                   style: GoogleFonts.inter(
                                                     color: const Color(0xFFFFD700),
                                                     fontSize: isCompact ? 22 : 28,
@@ -560,6 +562,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                                   maxLines: 1,
                                                 ),
                                               ),
+                                              // Solo si la moneda real no es MXN: el precio base
+                                              // siempre se fija en pesos mexicanos, y esto aclara de
+                                              // dónde sale la conversión que ve alguien en otro país.
+                                              if (product.currencyCode != 'MXN')
+                                                Text(
+                                                  'Precio base: ${_precioBaseMxn(product.id)}',
+                                                  style: GoogleFonts.inter(
+                                                    color: Colors.white54,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
                                               if (isYearly)
                                                 Text(
                                                   'Ahorra 33%',
