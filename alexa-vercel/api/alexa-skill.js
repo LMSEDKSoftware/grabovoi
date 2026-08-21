@@ -218,6 +218,32 @@ function alexaResponse({ ssml, shouldEndSession, card, reprompt, sessionAttribut
   return payload;
 }
 
+// Mismo guion y mismo ritmo que la cortinilla de preparación que se
+// antepone a cada video narrado (scripts/generar_intro_cortinilla.py,
+// FRASES/PAUSA_INICIAL_MS/PAUSA_ENTRE_FRASES_MS/PAUSA_FINAL_MS) -- para
+// que la experiencia se sienta igual sin importar si es Roku o Alexa.
+// Solo va antes de una secuencia NUEVA: si el usuario pide "otra vez"
+// justo después de haberla escuchado, repetir toda la preparación se
+// sentiría lento y redundante, no como en Roku (ahí cada video es una
+// selección nueva de la lista, con más aire entre una reproducción y
+// la siguiente).
+const PREPARACION_FRASES = [
+  'Bienvenido a tu pilotaje con Mani Grab.',
+  'Busca un lugar tranquilo, respira profundo y relaja tu cuerpo.',
+  'Visualiza tu intención con claridad, como si ya se hubiera cumplido, '
+    + 'y sostén esa sensación mientras escuchas la secuencia repetirse.',
+  'No necesitas memorizar los números, solo mantente receptivo y en calma.',
+  'Cuando estés listo, comenzamos.',
+];
+
+function preparacionSsml() {
+  return (
+    `<break time="1200ms"/>`
+    + PREPARACION_FRASES.map((f) => escapeXml(f)).join('<break time="500ms"/>')
+    + `<break time="900ms"/>`
+  );
+}
+
 // Mismo ritmo que NumbersVoiceService en la app (voz numérica): cada
 // dígito por separado con una pausa de 280ms entre ellos (no todo el
 // número leído de corrido), y entre cada repetición completa de la
@@ -347,7 +373,7 @@ async function otorgarRecompensa(admin, userId, secuencia) {
 // Núcleo compartido: lee una secuencia N veces, acredita cristales y
 // cierra ofreciendo qué hacer después. Lo usan la repetición diaria, la
 // búsqueda por propósito, la favorita y el "otra vez".
-async function repetirSecuencia(admin, userId, secuencia, { intro, veces }) {
+async function repetirSecuencia(admin, userId, secuencia, { intro, veces, incluirPreparacion = true }) {
   const recompensa = await otorgarRecompensa(admin, userId, secuencia);
 
   let cierre;
@@ -364,7 +390,7 @@ async function repetirSecuencia(admin, userId, secuencia, { intro, veces }) {
 
   const seguimiento = ' ¿Quieres otra secuencia, o saber qué significa esta?';
   const ssml =
-    `<speak>${intro}<break time="800ms"/>` +
+    `<speak>${incluirPreparacion ? preparacionSsml() : ''}${intro}<break time="800ms"/>` +
     `${repeticionesSsml(secuencia.codigo, veces)}<break time="800ms"/>` +
     `${escapeXml(cierre)}${escapeXml(seguimiento)}</speak>`;
 
@@ -496,12 +522,12 @@ function handleExplicarSecuencia(sessionAttributes) {
 // de bloquear con la tarjeta de LinkAccount de una, le regalamos la
 // secuencia UNA vez (no las repeticiones completas ni cristales — eso es
 // lo que la cuenta vinculada da de más) y lo invitamos a la app.
-function respuestaCortesia(secuencia, { intro, incluirInvitacion = true }) {
+function respuestaCortesia(secuencia, { intro, incluirInvitacion = true, incluirPreparacion = true }) {
   const cierre =
     (incluirInvitacion ? `${escapeXml(INVITACION_CORTA)}<break time="400ms"/>` : '') +
     '¿Quieres otra secuencia, o saber qué significa esta?';
   const ssml =
-    `<speak>${intro}<break time="800ms"/>${digitosSsml(secuencia.codigo)}` +
+    `<speak>${incluirPreparacion ? preparacionSsml() : ''}${intro}<break time="800ms"/>${digitosSsml(secuencia.codigo)}` +
     `<break time="1000ms"/>${cierre}</speak>`;
 
   return alexaResponse({
@@ -716,6 +742,7 @@ async function handler(req, res) {
               respuestaCortesia(ultima, {
                 intro: 'Aquí va otra vez.',
                 incluirInvitacion: false,
+                incluirPreparacion: false,
               }),
             );
             return;
@@ -724,6 +751,7 @@ async function handler(req, res) {
             await repetirSecuencia(admin, userId, ultima, {
               intro: 'Vamos otra vez. Repite cada número en voz alta junto conmigo.',
               veces,
+              incluirPreparacion: false,
             }),
           );
           return;
