@@ -14,6 +14,7 @@ import '../../services/supabase_service.dart';
 import '../auth/login_screen.dart';
 import '../sugerencias/sugerencias_screen.dart';
 import 'notifications_settings_screen.dart';
+import 'linked_devices_screen.dart';
 import 'notification_history_screen.dart';
 import 'voice_numbers_settings_screen.dart';
 import '../mural/mural_history_screen.dart';
@@ -1014,6 +1015,22 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               onTap: () {
                 Navigator.pop(context);
                 _showTimezoneInfo(context);
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildConfigMenuItem(
+              context: context,
+              icon: Icons.devices_other,
+              title: 'Dispositivos vinculados',
+              subtitle: 'Alexa, Roku',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LinkedDevicesScreen(),
+                  ),
+                );
               },
             ),
             const SizedBox(height: 16),
