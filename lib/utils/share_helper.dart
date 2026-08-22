@@ -81,14 +81,14 @@ class ShareHelper {
         // Usar shareXFiles con sharePositionOrigin para iOS
         await Share.shareXFiles(
           [XFile(file.path)],
-          text: text ?? 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
+          text: text ?? 'Compartido desde ManiGraB - Secuencias Numéricas',
           sharePositionOrigin: sharePositionOrigin ?? const Rect.fromLTWH(0, 0, 100, 100),
         );
       } else {
         // Para Android o si no hay contexto, compartir normalmente
       await Share.shareXFiles(
         [XFile(file.path)],
-        text: text ?? 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
+        text: text ?? 'Compartido desde ManiGraB - Secuencias Numéricas',
         );
       }
     } catch (e) {

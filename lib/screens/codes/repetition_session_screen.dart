@@ -608,8 +608,8 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Numéricas''';
       // Usar el helper para compartir la imagen (maneja iOS correctamente)
       await ShareHelper.shareImage(
         pngBytes: pngBytes,
-        fileName: 'grabovoi_${widget.codigo}',
-        text: 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
+        fileName: 'manigrab_${widget.codigo}',
+        text: 'Compartido desde ManiGraB - Secuencias Numéricas',
         context: context,
       );
 

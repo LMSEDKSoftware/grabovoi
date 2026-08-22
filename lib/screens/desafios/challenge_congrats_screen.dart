@@ -160,7 +160,7 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
       await ShareHelper.shareImage(
         pngBytes: pngBytes,
         fileName: 'reto_${widget.title.replaceAll(' ', '_')}',
-        text: 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
+        text: 'Compartido desde ManiGraB - Secuencias Numéricas',
         context: context,
       );
 
@@ -197,7 +197,7 @@ class _ChallengeCongratsScreenState extends State<ChallengeCongratsScreen> {
         children: [
           // 1) NOMBRE DE LA APP - Arriba
           Text(
-            'ManiGraB - Manifestaciones Cuánticas Grabovoi',
+            'ManiGraB - Secuencias Numéricas',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 16,

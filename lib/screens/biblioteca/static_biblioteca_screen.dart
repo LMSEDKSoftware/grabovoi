@@ -1885,7 +1885,7 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
               // Si Fase 2 no devolvió 3 códigos, abrir pilotaje manual como antes
               if (mounted) await _abrirPilotajeManualDesdeBusqueda(codigo);
               final mensajeRaw = responseData['mensaje']?.toString() ??
-                  'No se encontraron secuencias oficiales de Grabovoi para este tema.';
+                  'No se encontraron secuencias registradas para este tema.';
               final mensaje = mensajeRaw
                   .replaceAll('códigos', 'secuencias')
                   .replaceAll('código', 'secuencia');
@@ -2704,8 +2704,8 @@ class _StaticBibliotecaScreenState extends State<StaticBibliotecaScreen> {
 
       await ShareHelper.shareImage(
         pngBytes: pngBytes,
-        fileName: 'grabovoi_${codigo.codigo}',
-        text: 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
+        fileName: 'manigrab_${codigo.codigo}',
+        text: 'Compartido desde ManiGraB - Secuencias Numéricas',
         context: context,
       );
 

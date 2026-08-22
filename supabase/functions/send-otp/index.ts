@@ -245,7 +245,7 @@ Deno.serve(async (req) => {
       <div class="container">
         <div class="header">
           <h1 style="color: #1C2541; margin: 0;">ManiGrab</h1>
-          <p style="color: #1C2541; margin: 10px 0 0 0;">Manifestaciones Cuánticas Grabovoi</p>
+          <p style="color: #1C2541; margin: 10px 0 0 0;">Secuencias Numéricas</p>
         </div>
         <div class="content">
           <h2 style="color: #1C2541;">Recuperación de Contraseña</h2>

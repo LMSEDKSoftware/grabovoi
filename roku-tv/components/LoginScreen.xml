@@ -16,7 +16,7 @@
         <!-- Modo por defecto: vinculación con QR. -->
         <Group id="grupoQr">
             <Poster id="logo" translation="[72,40]" width="150" height="104" loadDisplayMode="scaleToFit" uri="pkg:/images/manigrab_logo.png" />
-            <Label id="lema" text="Secuencias Grabovoi" translation="[74,146]" width="320" color="#B9C4D8" />
+            <Label id="lema" text="Secuencias Numéricas" translation="[74,146]" width="320" color="#B9C4D8" />
 
             <Label id="paso1" text="1. Escanea este código QR para iniciar sesión" translation="[72,212]" width="300" height="72" wrap="true" color="#F4F1E8" />
             <Poster id="qr" translation="[72,296]" width="250" height="250" />

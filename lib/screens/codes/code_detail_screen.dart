@@ -472,7 +472,7 @@ class _CodeDetailScreenState extends State<CodeDetailScreen>
       
       final textToCopy = '''${widget.codigo} : $titulo
 $descripcion
-Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabovoi''';
+Obtuve esta información en la app: ManiGraB - Secuencias Numéricas''';
       
       await Clipboard.setData(ClipboardData(text: textToCopy));
       if (mounted) {
@@ -488,7 +488,7 @@ Obtuve esta información en la app: ManiGraB - Manifestaciones Cuánticas Grabov
       // Fallback si hay error - usar datos básicos
       final textToCopy = '''${widget.codigo} : Campo Energético
 Secuencia cuántica para la manifestación y transformación energética.
-Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabovoi''';
+Obtuve esta información en la app: ManiGrab - Secuencias Numéricas''';
       
       await Clipboard.setData(ClipboardData(text: textToCopy));
       if (mounted) {
@@ -807,8 +807,8 @@ Obtuve esta información en la app: ManiGrab - Manifestaciones Cuánticas Grabov
       try {
         await ShareHelper.shareImage(
           pngBytes: pngBytes,
-          fileName: 'grabovoi_${widget.codigo}',
-          text: 'Compartido desde ManiGraB - Manifestaciones Cuánticas Grabovoi',
+          fileName: 'manigrab_${widget.codigo}',
+          text: 'Compartido desde ManiGraB - Secuencias Numéricas',
           context: context,
         );
 

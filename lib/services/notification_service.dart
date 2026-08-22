@@ -540,7 +540,7 @@ class NotificationService {
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'manigrab_notifications',
       'ManiGraB',
-      channelDescription: 'Notificaciones de ManiGraB - Manifestaciones Cuánticas Grabovoi',
+      channelDescription: 'Notificaciones de ManiGraB - Secuencias Numéricas',
       importance: _getImportance(priority),
       priority: _getPriority(priority),
       showWhen: true,

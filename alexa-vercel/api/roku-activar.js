@@ -93,7 +93,7 @@ function pagina(cuerpo) {
 <body>
   <main class="caja">
     <p class="marca">ManiGraB <span>TV</span></p>
-    <p class="lema">Secuencias Grabovoi</p>
+    <p class="lema">Secuencias Numéricas</p>
     ${cuerpo}
   </main>
 </body>
